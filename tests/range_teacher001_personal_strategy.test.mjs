@@ -10,6 +10,7 @@ import {
 } from '../app/src/personal-strategy/domain.mjs';
 import { createPersonalStrategyEvidenceView } from '../app/src/personal-strategy/evidence-view.mjs';
 import { createPersonalStrategySnapshot } from '../app/src/personal-strategy/rfi-inference.mjs';
+import { appStyleSheet, freshIndexDocument, precedes } from './helpers/app-under-test.mjs';
 import {
   RFI_CALIBRATION_INTENTS,
   RFI_SELECTION_INTENTS,
@@ -249,12 +250,10 @@ test('Teacher is scope-isolated, source-derived, and never becomes sync/persiste
 });
 
 test('Teacher architecture and UI seam contain no Training grading or strategy-provider authority', async () => {
-  const [teacherSource, serviceSource, workspaceSource, html, css, localeSource, tutorialSource] = await Promise.all([
+  const [teacherSource, serviceSource, workspaceSource, localeSource, tutorialSource] = await Promise.all([
     readFile(new URL('../app/src/personal-strategy/range-teacher-view.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/range-calibration-service.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/range-calibration-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/tutorial/current-app-tutorials.mjs', import.meta.url), 'utf8'),
   ]);
@@ -265,26 +264,54 @@ test('Teacher architecture and UI seam contain no Training grading or strategy-p
   assert.match(workspaceSource, /getRangeTeacherView/);
   assert.match(workspaceSource, /requestRangeTeacherSession/);
   assert.doesNotMatch(workspaceSource, /StrategyProvider|TrainingResult|gradeAnswer/);
-  assert.match(html, /role="tab"[^>]+aria-controls="calibrationTeacherPanel"/);
-  assert.match(html, /id="calibrationUnderstandingTab"[^>]+aria-selected="true"[^>]+aria-controls="calibrationUnderstandingPanel"/);
-  assert.match(html, /id="calibrationTeacherTab"[^>]*hidden/);
-  assert.match(html, /id="calibrationMatrixTab"[^>]+aria-selected="false"[^>]+aria-controls="calibrationMatrixPanel"[^>]+data-i18n="Matrix Edit"/);
-  const understandingTag = html.match(/<section[^>]+id="calibrationUnderstandingPanel"[^>]*>/)?.[0];
-  assert.ok(understandingTag);
-  assert.doesNotMatch(understandingTag, /\bhidden\b/);
-  assert.ok(html.indexOf('id="calibrationUnderstandingPanel"') < html.indexOf('id="calibrationTeacherPanel"'));
-  assert.match(html, /id="personalUnderstandingTitle"[^>]+data-i18n="What Riverline understands"/);
-  assert.match(html, /id="calibrationTeacherStatus"[^>]+aria-live="polite"/);
-  assert.match(html, /class="calibration-teacher-sections"[^>]+role="region"[^>]+aria-labelledby="calibrationTeacherTitle"[^>]+tabindex="0"/);
-  assert.match(html, /data-teacher-preset="boundaries"/);
-  assert.match(css, /\.calibration-teacher-summary/);
-  assert.match(css, /\.calibration-personal-column\s*\{[^}]*display:\s*grid[^}]*align-content:\s*start/);
-  assert.match(css, /\.personal-understanding-columns\s*\{[^}]*display:\s*grid/);
-  assert.match(css, /\.calibration-teacher-panel\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*padding:\s*clamp\(var\(--space-3\), 1\.1vw, var\(--space-4\)\)[^}]*overflow:\s*visible/);
-  assert.match(css, /\.calibration-teacher-sections\s*\{[^}]*gap:\s*var\(--space-2\)[^}]*align-items:\s*start/);
-  assert.match(css, /\.calibration-teacher-sections > section\s*\{[^}]*padding:\s*var\(--space-2\)/);
-  assert.doesNotMatch(css, /\.calibration-teacher-sections\s*\{[^}]*overflow:\s*auto/);
-  assert.match(css, /@media \(min-width: 1500px\)[\s\S]*?\.calibration-matrix-grid\s*\{[^}]*--personal-matrix-cell:\s*clamp\(34px, 2\.05vw, 40px\)/);
+  // TEST-HYGIENE-001: markup and styles are checked on the parsed Range
+  // Calibration template, instantiated in context, through the cascade.
+  const markup = freshIndexDocument();
+  const css = appStyleSheet();
+  const host = markup.createElement('div');
+  host.appendChild(markup.getElementById('rangeCalibrationTemplate').content.cloneNode(true));
+  markup.getElementById('calibrationMode').appendChild(host);
+  const byId = (id) => host.querySelector(`#${id}`);
+  assert.ok(host.querySelectorAll('[role="tab"]').some((tab) => tab.getAttribute('aria-controls') === 'calibrationTeacherPanel'));
+  const understandingTab = byId('calibrationUnderstandingTab');
+  assert.equal(understandingTab.getAttribute('aria-selected'), 'true');
+  assert.equal(understandingTab.getAttribute('aria-controls'), 'calibrationUnderstandingPanel');
+  assert.equal(byId('calibrationTeacherTab').hidden, true);
+  const matrixTab = byId('calibrationMatrixTab');
+  assert.equal(matrixTab.getAttribute('aria-selected'), 'false');
+  assert.equal(matrixTab.getAttribute('aria-controls'), 'calibrationMatrixPanel');
+  assert.equal(matrixTab.dataset.i18n, 'Matrix Edit');
+  const understanding = byId('calibrationUnderstandingPanel');
+  assert.equal(understanding.localName, 'section');
+  assert.equal(understanding.hidden, false);
+  assert.ok(precedes(understanding, byId('calibrationTeacherPanel')));
+  assert.equal(byId('personalUnderstandingTitle').dataset.i18n, 'What Riverline understands');
+  assert.equal(byId('calibrationTeacherStatus').getAttribute('aria-live'), 'polite');
+  const sections = host.querySelector('.calibration-teacher-sections');
+  assert.equal(sections.getAttribute('role'), 'region');
+  assert.equal(sections.getAttribute('aria-labelledby'), 'calibrationTeacherTitle');
+  assert.equal(sections.getAttribute('tabindex'), '0');
+  assert.ok(host.querySelector('[data-teacher-preset="boundaries"]'));
+  // The rendered summary is styled.
+  const summary = markup.createElement('div');
+  summary.className = 'calibration-teacher-summary';
+  byId('calibrationTeacherPanel').appendChild(summary);
+  assert.ok(css.matchingRules(summary).length > 0);
+  const column = host.querySelector('.calibration-personal-column');
+  assert.equal(css.cascaded(column, 'display'), 'grid');
+  assert.equal(css.cascaded(column, 'align-content'), 'start');
+  assert.equal(css.cascaded(host.querySelector('.personal-understanding-columns'), 'display'), 'grid');
+  const panel = byId('calibrationTeacherPanel');
+  assert.equal(css.cascaded(panel, 'gap'), 'var(--space-3)');
+  assert.equal(css.cascaded(panel, 'padding'), 'clamp(var(--space-3), 1.1vw, var(--space-4))');
+  assert.equal(css.cascaded(panel, 'overflow'), 'visible');
+  assert.equal(css.cascaded(sections, 'gap'), 'var(--space-2)');
+  assert.equal(css.cascaded(sections, 'align-items'), 'start');
+  for (const width of [1024, 1440, 1600]) {
+    for (const property of ['overflow', 'overflow-y']) assert.notEqual(css.cascaded(sections, property, { width }), 'auto', `${property}@${width}`);
+  }
+  assert.equal(css.cascaded(sections.querySelector(':scope > section'), 'padding'), 'var(--space-2)');
+  assert.equal(css.cascaded(host.querySelector('.calibration-matrix-grid'), '--personal-matrix-cell', { width: 1600 }), 'clamp(34px, 2.05vw, 40px)');
   assert.match(localeSource, /Range Teacher/);
   assert.match(tutorialSource, /personal-understanding/);
   assert.match(tutorialSource, /personal-matrix-edit/);

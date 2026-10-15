@@ -18,6 +18,7 @@ import { trainingStudyAudioMeaning } from '../app/src/application/experience-eve
 import { applyChance, CHANCE_TYPES, GAME_MODES, createGameRulesSnapshotFromLegacyGameConfiguration, initializeHandFromGameRulesSnapshot } from '../shared/poker-domain/index.js';
 import { TRAINING_BASIC_TUTORIAL_DEFINITION, TRAINING_FEEDBACK_TUTORIAL_DEFINITION } from '../app/src/tutorial/current-app-tutorials.mjs';
 import { validatedHistoricalTruth } from '../app/src/application/strategy-truth.mjs';
+import { appStyleSheet, bootApp, indexDocument, precedes } from './helpers/app-under-test.mjs';
 
 // Use the actual actor from the canonical fixture, independently of seat labels.
 const state = createPreflopRoleAuditFixtures().bbVsButtonOpen;
@@ -206,7 +207,7 @@ test('inconsistent and minimal historical snapshots fail closed without upgradin
   assert.notEqual(historicalStrategyTruth(evidence).state, 'normative_assessment');
 });
 
-test('shared feedback renders neutral heuristic state and translates every truth/tutorial label in EN/RU/HE', () => {
+test('shared feedback renders neutral heuristic state and translates every truth/tutorial label in EN/RU/HE', async () => {
   const sandbox = { window: {} };
   for (const file of ['product-translations.js', 'tutorial-translations.js']) vm.runInNewContext(fs.readFileSync(new URL(`../app/src/locales/${file}`, import.meta.url), 'utf8'), sandbox);
   const product = sandbox.window.riverlineProductTranslations;
@@ -220,34 +221,53 @@ test('shared feedback renders neutral heuristic state and translates every truth
       }
     }
   }
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const render = logic.slice(logic.indexOf('function renderTrainingEvaluationSummary('), logic.indexOf('function handleTrainingGuess('));
+  // TEST-HYGIENE-001: the feedback summary renders in the booted app (instead
+  // of a vm-sliced logic.js function); styles and markup are checked through
+  // the cascade and the parsed document.
+  const app = await bootApp();
+  await app.navigate('training');
   for (const locale of ['en', 'ru', 'he']) {
     for (const key of keys) assert.ok(product[locale][key], `${locale}: ${key}`);
     for (const definition of [TRAINING_BASIC_TUTORIAL_DEFINITION, TRAINING_FEEDBACK_TUTORIAL_DEFINITION]) {
       for (const key of [definition.titleKey, definition.descriptionKey, ...definition.steps.flatMap((s) => [s.titleKey, s.bodyKey])]) assert.ok(tutorial[locale][key], `${locale}: ${key}`);
     }
-    const elements = new Map();
-    const element = (selector) => { if (!elements.has(selector)) elements.set(selector, { dataset: {}, hidden: false }); return elements.get(selector); };
+    app.window.setLanguage(locale);
     const truth = { state: 'heuristic_comparison', outcome: 'unassessed', claims: {}, comparison: { kind: 'differs' } };
-    const context = { $: element, t: (key) => product[locale][key] || key, trainingTruth: () => truth,
-      truthPresentation: strategyTruthPresentation, trainingActionLabel: (type) => type,
-      evaluation: { chosenAction: { type: 'call' }, chosenProbability: 0.3, bestProbability: 0.7, bestStrategyAction: { label: 'Raise' } }, exercise: { decisionContext: {} } };
-    vm.runInNewContext(`${render}; renderTrainingEvaluationSummary(evaluation, exercise);`, context);
-    assert.equal(element('#trainingGradeBadge').textContent, product[locale]['Differs from heuristic baseline']);
-    assert.match(element('#trainingGradeBadge').className, /--neutral$/);
-    assert.equal(element('#trainingFeedback').dataset.truthState, 'heuristic_comparison');
-    assert.equal(element('#trainingScoreBadge').hidden, true);
-    assert.equal(element('#trainingEvFact').hidden, true);
-    context.evaluation.chosenProbability = context.evaluation.bestProbability = null;
-    vm.runInNewContext('renderTrainingEvaluationSummary(evaluation, exercise);', context);
-    assert.doesNotMatch(element('#trainingBestProbability').textContent, /0%/);
+    const evaluation = { truth, chosenAction: { type: 'call' }, chosenProbability: 0.3, bestProbability: 0.7, bestStrategyAction: { label: 'Raise' } };
+    const exercise = { decisionContext: {} };
+    app.byId('trainingScoreBadge').hidden = false;
+    app.byId('trainingEvFact').hidden = false;
+    app.call('renderTrainingEvaluationSummary', evaluation, exercise);
+    assert.equal(app.byId('trainingGradeBadge').textContent, product[locale]['Differs from heuristic baseline']);
+    assert.match(app.byId('trainingGradeBadge').className, /--neutral$/);
+    assert.equal(app.byId('trainingFeedback').dataset.truthState, 'heuristic_comparison');
+    assert.equal(app.byId('trainingScoreBadge').hidden, true);
+    assert.equal(app.byId('trainingEvFact').hidden, true);
+    evaluation.chosenProbability = evaluation.bestProbability = null;
+    app.call('renderTrainingEvaluationSummary', evaluation, exercise);
+    assert.doesNotMatch(app.byId('trainingBestProbability').textContent, /0%/);
   }
-  const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-  assert.match(css, /\.training-feedback:not\(\[data-truth-state="normative_assessment"\]\)/);
-  assert.match(css, /\[dir="rtl"\] \.hand-review-card-row/);
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  assert.ok(html.indexOf('id="strategyTruthHeading"') < html.indexOf('id="bestAction"'));
+  app.window.setLanguage('en');
+  // Non-normative feedback uses the neutral (info) surface; normative does not.
+  const css = appStyleSheet();
+  const feedback = app.byId('trainingFeedback');
+  assert.equal(css.cascaded(feedback, 'border-inline-start-color'), 'var(--status-info)');
+  feedback.dataset.truthState = 'normative_assessment';
+  assert.notEqual(css.cascaded(feedback, 'border-inline-start-color'), 'var(--status-info)');
+  // Hand review card rows stay LTR (card order) in RTL.
+  const markup = indexDocument();
+  const row = markup.createElement('div');
+  row.className = 'hand-review-card-row';
+  markup.body.appendChild(row);
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try {
+    assert.equal(css.cascaded(row, 'direction'), 'ltr');
+    assert.equal(css.cascaded(row, 'justify-content'), 'flex-end');
+  } finally {
+    markup.documentElement.removeAttribute('dir');
+    row.remove();
+  }
+  assert.ok(precedes(markup.getElementById('strategyTruthHeading'), markup.getElementById('bestAction')));
 });
 
 test('legacy heuristic permissions are constrained on read while original evidence stays intact', () => {

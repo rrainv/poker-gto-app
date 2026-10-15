@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 
 import {
   ACTION_TYPES,
@@ -8,10 +7,16 @@ import {
   isHandResumable,
 } from '../shared/poker-domain/index.js';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
-import { installHomeWorkspaceBridge } from '../app/src/application/home-workspace-bootstrap.mjs';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
 
-const LOGIC = await readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { bootApp } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the logic.js wiring (a canonical state change refreshes
+// Home and the Hand workspace) is observed in the booted app instead of being
+// regex-matched in its source.
+const app = await bootApp();
+// Imported after boot: the bootstrap module graphs self-install page bridges.
+const { installHomeWorkspaceBridge } = await import('../app/src/application/home-workspace-bootstrap.mjs');
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
 
 const HOLE_CARDS = Object.freeze({
   'seat-0': Object.freeze(['Ah', 'Ad']),
@@ -225,10 +230,19 @@ test('active to terminal transition changes the Home projection immediately', as
   playbook.applyAction(ACTION_TYPES.FOLD);
 
   assert.deepEqual(await liveContinuationKinds(home), []);
-  assert.match(
-    LOGIC,
-    /riverline:playbook-state-change'[\s\S]*?scheduleHomeRefresh\(\)[\s\S]*?renderCanonicalHandWorkspace\(\)/,
-  );
+  // In the app, the terminal transition schedules a Home refresh and then
+  // re-renders the Hand workspace.
+  await app.startHand(['As', 'Kd']);
+  const spy = app.spy(['scheduleHomeRefresh', 'renderCanonicalHandWorkspace']);
+  try {
+    await app.handAction('fold');
+    assert.equal(app.call('callPlaybookStateBridge', 'getState').terminal.isTerminal, true);
+    const refresh = spy.sequence.indexOf('scheduleHomeRefresh');
+    assert.ok(refresh >= 0, 'Home refresh scheduled');
+    assert.ok(spy.sequence.indexOf('renderCanonicalHandWorkspace', refresh) > refresh, 'Hand workspace re-rendered after');
+  } finally {
+    spy.restore();
+  }
 });
 
 test('terminal to New Hand restores an active Home continuation', async () => {

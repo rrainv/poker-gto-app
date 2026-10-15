@@ -282,12 +282,26 @@ export class Text extends Node {
   get wholeText() { return this.data; }
   cloneNode() { return new Text(this.data, this.ownerDocument); }
   remove() { this.parentNode?._detach(this); }
+  replaceWith(...items) {
+    const parent = this.parentNode;
+    if (!parent) return;
+    const next = this.nextSibling;
+    parent._detach(this);
+    for (const node of parent._toNodes(items)) parent.insertBefore(node, next);
+  }
 }
 
 export class Comment extends Node {
   constructor(data, ownerDocument) { super(ownerDocument); this.nodeType = 8; this.nodeName = '#comment'; this.data = String(data); }
   cloneNode() { return new Comment(this.data, this.ownerDocument); }
   remove() { this.parentNode?._detach(this); }
+  replaceWith(...items) {
+    const parent = this.parentNode;
+    if (!parent) return;
+    const next = this.nextSibling;
+    parent._detach(this);
+    for (const node of parent._toNodes(items)) parent.insertBefore(node, next);
+  }
 }
 
 class ParentMixin extends Node {

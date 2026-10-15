@@ -14,8 +14,13 @@ import {
   normalizeThemeCustomization,
 } from '../app/src/application/presentation-theme.mjs';
 
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css assertions use parsed markup and
+// the cascade (theme tokens are read from the cascaded root per theme).
+const css = appStyleSheet();
+const markup = indexDocument();
+const root = markup.documentElement;
 const bootstrap = fs.readFileSync(new URL('../app/src/application/presentation-density-bootstrap.mjs', import.meta.url), 'utf8');
 const translations = fs.readFileSync(new URL('../app/src/locales/analysis-translations.js', import.meta.url), 'utf8');
 
@@ -56,12 +61,23 @@ function fixture(initial = {}) {
   return { controller, events, properties, root, storage };
 }
 
-function themeBlock(themeId) {
-  return css.match(new RegExp(`\\[data-theme="${themeId}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`))?.[1] ?? '';
+function withAttributes(attributes, callback) {
+  const previous = Object.fromEntries(Object.keys(attributes).map((name) => [name, root.getAttribute(name)]));
+  for (const [name, value] of Object.entries(attributes)) root.setAttribute(name, value);
+  try { return callback(); } finally {
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === null) root.removeAttribute(name); else root.setAttribute(name, value);
+    }
+  }
 }
 
-function token(block, name) {
-  return block.match(new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1]?.toLowerCase() ?? null;
+function themeBlock(themeId) {
+  return themeId;
+}
+
+function token(themeId, name) {
+  const value = withAttributes({ 'data-theme': themeId }, () => css.cascaded(root, name));
+  return /^#[0-9a-f]{6}$/i.test(value ?? '') ? value.toLowerCase() : null;
 }
 
 test('built-in switching is live, persistent, announced, and limited to three serious themes', () => {
@@ -223,27 +239,47 @@ test('theme, density, and layout stay independent for every supported combinatio
       }
     }
   }
-  assert.doesNotMatch(themeBlock('midnight'), /data-density|data-layout-preset/);
+  // Theme tokens never depend on density or layout preset.
+  const tokens = ['--surface-canvas', '--surface-panel', '--text-primary', '--accent-primary'];
+  const snapshot = (attributes) => withAttributes({ 'data-theme': 'midnight', ...attributes }, () => tokens.map((name) => css.cascaded(root, name)));
+  const baseline = snapshot({ 'data-density': 'comfortable', 'data-layout-preset': 'balanced' });
+  for (const density of ['comfortable', 'compact']) {
+    for (const layout of ['balanced', 'table-focus', 'analysis-focus']) {
+      assert.deepEqual(snapshot({ 'data-density': density, 'data-layout-preset': layout }), baseline, `${density} ${layout}`);
+    }
+  }
 });
 
 test('major workspaces consume the shared semantic surface grammar', () => {
   for (const marker of [
     'id="homeMode"', 'id="homegameMode"', 'id="gtoMode"', 'id="trainingMode"',
     'id="calibrationMode"', 'id="equityMode"', 'id="settingsModal"', 'savedHandViewerBanner',
-  ]) assert.match(html, new RegExp(marker));
-
-  assert.match(css, /\.riverline-shell\s*\{[\s\S]*?background:\s*var\(--surface-canvas\)/);
-  assert.match(css, /\.mode-rail\s*\{[\s\S]*?background:\s*var\(--surface-shell\)/);
-  assert.match(css, /\.panel\s*\{[\s\S]*?background:\s*var\(--surface-panel\)/);
+  ]) {
+    const id = marker.match(/^id="([^"]+)"$/)?.[1];
+    assert.ok(id ? markup.getElementById(id) : markup.getElementById(marker) || markup.querySelector(`[id*="${marker}"], .${marker}`), marker);
+  }
+  const probe = (html) => {
+    const host = markup.createElement('div');
+    host.innerHTML = html;
+    markup.body.appendChild(host);
+    return host.firstElementChild;
+  };
+  const declared = (element) => css.matchingRules(element).flatMap((rule) => rule.declarations.map(({ value }) => value)).join(' ');
+  // Superseded (DS-FOUNDATION-001): the canvas surface is painted by body and
+  // the shell is transparent over it, so the shell still shows --surface-canvas.
+  assert.match(css.cascaded(markup.body, 'background'), /var\(--surface-canvas\)/);
+  assert.equal(css.cascaded(markup.querySelector('.riverline-shell'), 'background'), 'transparent');
+  assert.match(declared(markup.querySelector('.mode-rail')), /var\(--surface-shell\)/);
+  assert.match(declared(probe('<section class="panel"></section>')), /var\(--surface-panel\)/);
   // SHELL-001: the Playbook strip is a quiet status line (its switch moved into
   // the header bar, which uses the shell surface).
-  assert.match(css, /\.playbook-state-source \{[^}]*padding: 0;/);
-  assert.match(css, /SHELL-001: shell composition[\s\S]*?\.workspace-header \{[^}]*background: var\(--surface-shell\)/);
-  assert.match(css, /#equityMode\s*\{[\s\S]*?background:\s*var\(--surface-base\)/);
-  assert.match(css, /\.saved-study-viewer-banner\s*\{[\s\S]*?var\(--surface-inset\)/);
-  assert.match(css, /\.home-game-player-card[\s\S]*?var\(--surface-subtle\)/);
-  assert.match(css, /\.state-block--error[\s\S]*?var\(--status-danger\)/);
-  assert.match(css, /\.state-block--success[\s\S]*?var\(--status-positive\)/);
+  assert.equal(css.cascaded(markup.querySelector('.playbook-state-source'), 'padding'), '0');
+  assert.equal(css.cascaded(markup.querySelector('header.workspace-header'), 'background'), 'var(--surface-shell)');
+  assert.match(declared(markup.getElementById('equityMode')), /var\(--surface-base\)/);
+  assert.match(declared(probe('<div class="saved-study-viewer-banner"></div>')), /var\(--surface-inset\)/);
+  assert.match(declared(probe('<article class="home-game-player-card"></article>')), /var\(--surface-subtle\)/);
+  assert.match(declared(probe('<div class="state-block state-block--error"></div>')), /var\(--status-danger\)/);
+  assert.match(declared(probe('<div class="state-block state-block--success"></div>')), /var\(--status-positive\)/);
 });
 
 test('theme Settings copy is localized for EN RU HE and remains RTL-neutral', () => {
@@ -257,6 +293,13 @@ test('theme Settings copy is localized for EN RU HE and remains RTL-neutral', ()
   assert.match(translations, /Тема рабочей среды/);
   assert.match(translations, /ערכת נושא לסביבת העבודה/);
   assert.match(bootstrap, /riverline:languagechange/);
-  const themeCss = css.slice(css.indexOf('.theme-swatch-grid'), css.indexOf('/* Tooltips, toasts'));
-  assert.doesNotMatch(themeCss, /margin-left|margin-right|padding-left|padding-right|\bleft\s*:|\bright\s*:|direction\s*:/);
+  // SOURCE-SHAPE: the theme Settings section uses logical properties only — a
+  // policy lint over that section as authored (parsed, not regex-matched).
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const themeCss = new StyleSheetModel(raw.slice(raw.indexOf('.theme-swatch-grid'), raw.indexOf('/* Tooltips, toasts')));
+  for (const rule of themeCss.rules) {
+    for (const { property } of rule.declarations) {
+      assert.doesNotMatch(property, /^(?:margin-left|margin-right|padding-left|padding-right|left|right|direction)$/, `${rule.selectorText} ${property}`);
+    }
+  }
 });

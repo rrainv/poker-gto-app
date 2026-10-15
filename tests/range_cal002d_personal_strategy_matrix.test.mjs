@@ -216,12 +216,16 @@ test('Matrix confirmations and corrections append canonical source evidence and 
 });
 
 test('Matrix architecture is snapshot-derived, bounded, keyboard-oriented, and renderer-write-free', async () => {
-  const [projectionSource, workspaceSource, serviceSource, html] = await Promise.all([
+  const [projectionSource, workspaceSource, serviceSource] = await Promise.all([
     readFile(new URL('../app/src/personal-strategy/matrix-projection.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/range-calibration-service.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
   ]);
+  // TEST-HYGIENE-001: index.html assertions use the parsed document
+  // (including template content).
+  const { indexDocument } = await import('./helpers/app-under-test.mjs');
+  const markup = indexDocument();
+  const scopes = [markup, ...markup.querySelectorAll('template').map((template) => template.content)];
 
   assert.doesNotMatch(projectionSource, /StrategyProvider|Equity|WeightedHoldemRange|1326/);
   assert.doesNotMatch(workspaceSource, /saveRangeObservation|createRangeObservation/);
@@ -232,6 +236,8 @@ test('Matrix architecture is snapshot-derived, bounded, keyboard-oriented, and r
   assert.match(workspaceSource, /ArrowLeft:[\s\S]*ArrowDown/);
   assert.match(workspaceSource, /tabIndex = cell\.handClass === matrixSelectedHand/);
   assert.match(workspaceSource, /event\.key === 'Enter' \|\| event\.key === ' '/);
-  assert.match(html, /role="grid" aria-rowcount="13" aria-colcount="13"/);
-  assert.match(html, /id="calibrationMixDialog"[\s\S]*aria-modal="true"/);
+  assert.ok(scopes.some((scope) => scope.querySelector('[role="grid"][aria-rowcount="13"][aria-colcount="13"]')));
+  const dialog = scopes.map((scope) => scope.querySelector('#calibrationMixDialog')).find(Boolean);
+  assert.equal(dialog.getAttribute('role'), 'dialog');
+  assert.equal(dialog.getAttribute('aria-modal'), 'true');
 });

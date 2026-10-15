@@ -2,11 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
+import { StyleSheetModel, appStyleSheet, bootApp, indexDocument, precedes, text } from './helpers/app-under-test.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: parsed markup, the cascade, and the Hand/Analyze flows in the
+// booted app (bridge calls observed through spies). Strategy-source, table
+// renderer and bootstrap sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const gto = markup.getElementById('gtoMode');
+// SOURCE-SHAPE: "the DESIGN-006 block is tokenized (no hex literals, no
+// per-theme selectors)" is a policy lint over the block as authored (parsed,
+// not regex-matched); a resolved colour cannot tell a token from a literal.
+const designSheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const start = raw.indexOf('DESIGN-006: Playbook analysis workspace');
+  assert.ok(start > 0);
+  return new StyleSheetModel(raw.slice(raw.indexOf('*/', start) + 2, raw.lastIndexOf('/*', raw.indexOf('SAVED-OBJECTS-002:', start))));
+})();
+function withDestination(destination, callback) {
+  const previous = gto.dataset.productDestination;
+  gto.dataset.productDestination = destination;
+  try { return callback(); } finally { gto.dataset.productDestination = previous; }
+}
+const order = (selector, width = 1440) => Number(css.cascaded(markup.querySelector(selector), 'order', { width }));
+const app = await bootApp({ width: 1440 });
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
 const strategySourceAuthority = fs.readFileSync(
   new URL('../app/src/application/strategy-source-authority.mjs', import.meta.url),
   'utf8',
@@ -60,73 +82,124 @@ function dealAll(bridge) {
 }
 
 test('Playbook exposes prominent semantic Scenario Analysis and Hand Mode workflows', () => {
-  assert.match(html, /id="playbookModeControl"[^>]+role="group"/);
-  assert.match(html, /id="playbookScenarioMode"[^>]+aria-pressed="true"[^>]*>[\s\S]*?Scenario Analysis/);
-  assert.match(html, /id="playbookHandMode"[^>]+aria-pressed="false"[^>]*>[\s\S]*?Hand Mode/);
-  assert.match(html, /Build any study spot/);
-  assert.match(html, /Play a legal hand/);
+  assert.equal(markup.getElementById('playbookModeControl').getAttribute('role'), 'group');
+  const scenario = markup.getElementById('playbookScenarioMode');
+  const hand = markup.getElementById('playbookHandMode');
+  assert.equal(scenario.getAttribute('aria-pressed'), 'true');
+  assert.match(text(scenario), /Scenario Analysis/);
+  assert.equal(hand.getAttribute('aria-pressed'), 'false');
+  assert.match(text(hand), /Hand Mode/);
+  assert.match(text(markup.body), /Build any study spot/);
+  assert.match(text(markup.body), /Play a legal hand/);
 });
 
 test('workspace hierarchy keeps Decision primary and its alternate analytical views adjacent', () => {
-  assert.match(html, /class="app-grid playbook-workspace"/);
-  assert.match(html, /class="panel recommend playbook-primary-decision" id="recommendation"/);
-  assert.match(html, /id="playbookAnalysisNavigation" class="playbook-analysis-switcher"/);
+  assert.ok(markup.querySelector('.app-grid.playbook-workspace'));
+  const recommendation = markup.getElementById('recommendation');
+  assert.ok(recommendation.classList.contains('panel') && recommendation.classList.contains('recommend') && recommendation.classList.contains('playbook-primary-decision'));
+  assert.ok(markup.getElementById('playbookAnalysisNavigation').classList.contains('playbook-analysis-switcher'));
   // ANALYZE-COMPOSITION-001: view navigation uses the underline Tabs component.
-  assert.match(html, /id="playbookAnalysisTabs" class="sub-tabs ui-tabs"/);
-  const sharedIndex = html.indexOf('id="sharedControls"');
-  const decisionIndex = html.indexOf('id="recommendation"');
-  assert.ok(sharedIndex < decisionIndex);
-  assert.match(css, /#contextView\s*\{\s*order:\s*1/);
-  const composition = css.slice(css.indexOf('PRODUCT-UI-005: workspace composition'));
-  assert.match(composition, /#playbookAnalysisNavigation\s*\{\s*order:\s*2/);
-  assert.match(composition, /#chartView,[\s\S]*?order:\s*3/);
-  assert.match(composition, /#table-wrapper\s*\{\s*order:\s*5/);
+  const tabs = markup.getElementById('playbookAnalysisTabs');
+  assert.ok(tabs.classList.contains('sub-tabs') && tabs.classList.contains('ui-tabs'));
+  assert.ok(precedes(markup.getElementById('sharedControls'), recommendation));
+  // In Analyze the view navigation comes first, the alternate views (context
+  // and chart) share one adjacent slot, and the table follows. (Superseded
+  // literals: PRODUCT-UI-005's 1/2/3 orders were renumbered by
+  // ANALYZE-COMPOSITION-001; the relative order is the preserved guarantee.)
+  withDestination('analyze', () => {
+    assert.ok(order('#playbookAnalysisNavigation') < order('#chartView'));
+    assert.equal(order('#contextView'), order('#chartView'));
+    assert.ok(order('#chartView') < order('#table-wrapper'));
+    assert.equal(order('#table-wrapper'), 5);
+  });
 });
 
 test('Scenario organization retains supported product controls only', () => {
   for (const id of [
     'players', 'heroPos', 'stack', 'stackMode', 'potSize', 'facingSize',
     'lastAction', 'rakeMode', 'ante', 'straddle',
-  ]) assert.match(html, new RegExp(`id="${id}"`), id);
-  assert.match(html, /data-playbook-scenario/);
+  ]) assert.ok(markup.getElementById(id), id);
+  assert.ok(markup.querySelector('[data-playbook-scenario]'));
   // ANALYZE-COMPOSITION-001: the Spot rail groups these controls under Action and Table.
-  assert.match(html, /id="sharedControls"[^>]*>[\s\S]*?data-i18n="Action"/);
-  assert.match(html, /id="scenarioConfigurationPanel"[^>]*>[\s\S]*?data-i18n="Table"/);
-  assert.match(html, /Game and accounting/);
-  assert.match(html, /Show Advanced Rules/);
-  assert.doesNotMatch(html, /Legacy percentage|rakeValue|rakeUnit|rakePot/);
+  assert.ok(markup.querySelector('#sharedControls [data-i18n="Action"]'));
+  assert.ok(markup.querySelector('#scenarioConfigurationPanel [data-i18n="Table"]'));
+  assert.match(text(markup.body), /Game and accounting/);
+  assert.match(text(markup.body), /Show Advanced Rules/);
+  assert.doesNotMatch(markup.documentElement.outerHTML, /Legacy percentage|rakeValue|rakeUnit|rakePot/);
 });
 
-test('Hand workspace includes bounded initialization and canonical state summaries', () => {
+test('Hand workspace includes bounded initialization and canonical state summaries', async () => {
   for (const id of [
     'handTableSize', 'handCollectionType', 'handStackBb', 'handButtonSeat', 'handHeroSeat',
     'handAnteType', 'handAnteBb', 'handStartButton', 'handResetButton',
     'handStateStreet', 'handStateActor', 'handStatePot', 'handStateDeduction',
     'handSeatList', 'handActionHistory',
-  ]) assert.match(html, new RegExp(`id="${id}"`), id);
-  assert.match(logic, /callPlaybookStateBridge\('initializeHand', readCanonicalHandConfiguration\(\)\)/);
-  assert.match(logic, /callPlaybookStateBridge\('resetHand'\)/);
-});
-
-test('private and board card controls reuse the picker without mutating PokerState', () => {
-  assert.match(html, /id="handPrivateCards"/);
-  assert.match(html, /data-slots="hand-board-chance"/);
-  assert.match(logic, /group\.startsWith\('hand-seat-'\)/);
-  assert.match(logic, /callPlaybookStateBridge\('dealObservedHoleCards', cardsByPlayer\)/);
-  assert.match(logic, /callPlaybookStateBridge\('dealBoardCards', cards\)/);
-  assert.doesNotMatch(logic, /PokerState\s*=|state\.board\.push|state\.players\[[^\]]+\]\.holeCards\s*=/);
-});
-
-test('legal action UI is sourced from canonical specs with amount-to bounds', () => {
-  assert.match(logic, /callPlaybookStateBridge\('getLegalActions'\)/);
-  for (const action of ['fold', 'check', 'call', 'bet', 'raise', 'all_in']) {
-    assert.match(logic, new RegExp(`['"]${action}['"]`));
+  ]) assert.ok(markup.getElementById(id), id);
+  // Starting initializes the canonical hand from the bounded configuration;
+  // resetting goes through the bridge.
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    await app.startHand(['As', 'Kd']);
+    const init = spy.calls.callPlaybookStateBridge.find(([name]) => name === 'initializeHand');
+    assert.deepEqual(init[1], app.call('readCanonicalHandConfiguration'));
+    spy.reset();
+    app.call('resetCanonicalPlaybookHand');
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([name]) => name === 'resetHand'));
+  } finally {
+    spy.restore();
   }
-  assert.match(logic, /option\.minToMilliBb/);
-  assert.match(logic, /option\.maxToMilliBb/);
-  // DECISION-INPUT-TRUTH-001: bounds stay wager-to totals, worded in plain poker terms.
-  assert.match(logic, /\{min\}–\{max\} bb total/);
-  assert.match(logic, /callPlaybookStateBridge\('applyAction', type, amountToBb\)/);
+});
+
+test('private and board card controls reuse the picker without mutating PokerState', async () => {
+  assert.ok(markup.getElementById('handPrivateCards'));
+  assert.ok(markup.querySelector('[data-slots="hand-board-chance"]'));
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    // Hero's private cards are picked into the hand-seat group and dealt
+    // through the bridge as observed hole cards.
+    await app.startHand(['As', 'Kd']);
+    const dealt = spy.calls.callPlaybookStateBridge.find(([name]) => name === 'dealObservedHoleCards');
+    assert.ok(dealt);
+    assert.deepEqual(Object.values(dealt[1])[0], ['As', 'Kd']);
+    // The canonical state handed to the UI is immutable.
+    const state = app.call('callPlaybookStateBridge', 'getState');
+    assert.ok(Object.isFrozen(state) && Object.isFrozen(state.board) && Object.isFrozen(state.players[0]));
+    await app.handAction('call');
+    await app.handAction('check');
+    spy.reset();
+    await app.dealBoard(['2c', '3d', '4s']);
+    const board = spy.calls.callPlaybookStateBridge.find(([name]) => name === 'dealBoardCards');
+    assert.deepEqual(Array.from(board[1]), ['2c', '3d', '4s']);
+    assert.deepEqual(Array.from(app.call('callPlaybookStateBridge', 'getState').board), ['2c', '3d', '4s']);
+  } finally {
+    spy.restore();
+  }
+});
+
+test('legal action UI is sourced from canonical specs with amount-to bounds', async () => {
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    await app.startHand(['As', 'Kd']);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([name]) => name === 'getLegalActions'));
+    const state = app.call('callPlaybookStateBridge', 'getState');
+    const spec = {
+      fold: { available: true }, check: { available: true }, call: { available: true, commitMilliBb: 500, toMilliBb: 1000 },
+      bet: { available: true, minToMilliBb: 2000, maxToMilliBb: 7000 }, raise: { available: true, minToMilliBb: 3000, maxToMilliBb: 9000 },
+      allIn: { available: true, toMilliBb: 100000, commitMilliBb: 99500 },
+    };
+    app.call('renderCanonicalLegalActions', state, spec);
+    assert.deepEqual(app.$$('#handLegalActions [data-canonical-action]').map((button) => button.dataset.canonicalAction), ['fold', 'check', 'call', 'bet', 'raise', 'all_in']);
+    // DECISION-INPUT-TRUTH-001: bounds stay wager-to totals, worded in plain
+    // poker terms, and come straight from the spec.
+    await app.click('#handLegalActions [data-canonical-action="raise"]');
+    assert.match(text(app.byId('handActionAmountBounds')), /^3[–-]9 bb total$/);
+    app.call('renderCanonicalHandWorkspace');
+    spy.reset();
+    await app.handAction('call');
+    assert.deepEqual(spy.calls.callPlaybookStateBridge.find(([name]) => name === 'applyAction'), ['applyAction', 'call', null]);
+  } finally {
+    spy.restore();
+  }
 });
 
 test('product bridge exposes actual legal raise bounds and fold progression', () => {
@@ -171,99 +244,195 @@ test('fixed collection and legacy initialization expose exact deduction outside 
   assert.equal(state.rulesSnapshot.definition.collectionPolicy.amountMilliBb, 100);
   assert.equal(state.deductionTotalMilliBb, 700);
   assert.equal(state.potMilliBb, 1500);
-  assert.match(logic, /Fixed collection outside the pot/);
-  assert.doesNotMatch(html.slice(html.indexOf('id="playbookHandWorkspace"'), html.indexOf('</aside>', html.indexOf('id="playbookHandWorkspace"'))), /percentage rake/i);
+  assert.doesNotMatch(text(markup.getElementById('playbookHandWorkspace')), /percentage rake/i);
+});
+
+test('the Hand setup previews fixed collection outside the pot', async () => {
+  await app.navigate('hand');
+  if (app.call('callPlaybookStateBridge', 'getState')) await app.startHand(['As', 'Kd']);
+  app.call('resetCanonicalPlaybookHand');
+  await app.settle(200);
+  const collection = app.byId('handCollectionType');
+  const fixed = [...collection.options].find((option) => option.value === 'fixed_per_seated_player');
+  assert.ok(fixed);
+  await app.setValue('#handTableSize', '7', { events: ['input', 'change'] });
+  await app.setValue(collection, fixed.value, { events: ['input', 'change'] });
+  try {
+    assert.match(text(app.byId('handAccountingPreview')), /Fixed collection outside the pot/);
+  } finally {
+    await app.setValue(collection, 'none', { events: ['input', 'change'] });
+    await app.setValue('#handTableSize', '2', { events: ['input', 'change'] });
+  }
 });
 
 test('recommendation uses stacked frequencies first and demotes the wheel', () => {
-  const stackIndex = html.indexOf('id="actionFrequencyStack"');
-  const wheel = html.match(/id="actionWheelContainer"[^>]+hidden/);
-  assert.ok(stackIndex > 0);
-  assert.ok(wheel);
-  assert.match(html, /id="toggleFrequencyAlternate"[^>]+aria-expanded="false"/);
-  assert.match(css, /\.frequency-stack\s*\{\s*height:\s*18px/);
+  const stack = markup.getElementById('actionFrequencyStack');
+  assert.ok(stack);
+  assert.equal(markup.getElementById('actionWheelContainer').hidden, true);
+  assert.equal(markup.getElementById('toggleFrequencyAlternate').getAttribute('aria-expanded'), 'false');
+  assert.ok(stack.classList.contains('frequency-stack'));
+  withDestination('hand', () => assert.equal(css.cascaded(stack, 'height'), '18px'));
+  // (Superseded: ANALYZE-COMPOSITION-001 slims the Analyze bar to 10px.)
+  withDestination('analyze', () => assert.equal(css.cascaded(stack, 'height'), '10px'));
 });
 
-test('recommendation states clear stale output and retain truthful provenance', () => {
-  assert.match(logic, /setRecommendationState\(waiting \? 'waiting' : 'unavailable'\)/);
-  assert.doesNotMatch(logic, /function renderLoadingStrategy\(\)/);
-  assert.match(logic, /if \(\$\('#strategyMeta'\)\)[\s\S]*?#strategyWarnings[\s\S]*?#actionWheel/);
+test('recommendation states clear stale output and retain truthful provenance', async () => {
+  await app.navigate('analyze');
+  // A canonical-hand wait is "waiting"; anything else is "unavailable"; both
+  // clear the meta, surface the reason and reset the wheel.
+  app.byId('strategyMeta').hidden = false;
+  app.byId('actionWheel').style.background = 'red';
+  app.call('renderUnavailableStrategy', { mode: 'hand', reason: 'canonical_hand_missing' });
+  assert.equal(app.byId('recommendation').dataset.recommendationState, 'waiting');
+  assert.equal(app.byId('strategyMeta').hidden, true);
+  assert.equal(app.byId('strategyWarnings').hidden, false);
+  assert.ok(text(app.byId('strategyWarnings')));
+  assert.equal(app.byId('actionWheel').style.background, 'var(--surface-interactive)');
+  app.call('renderUnavailableStrategy', { mode: 'scenario', reason: 'invalid_input' });
+  assert.equal(app.byId('recommendation').dataset.recommendationState, 'unavailable');
+  assert.equal(app.evaluate('typeof renderLoadingStrategy'), 'undefined');
   assert.match(strategySourceAuthority, /heuristic_preflop:\s*createStrategySourceDescriptor/);
   assert.match(strategySourceAuthority, /heuristic_postflop:\s*createStrategySourceDescriptor/);
   assert.match(strategySourceAuthority, /equity_fallback:\s*createStrategySourceDescriptor/);
   assert.match(strategySourceAuthority, /displayName:\s*'Heuristic fallback'/);
   assert.match(strategySourceAuthority, /displayName:\s*'Equity fallback'/);
-  assert.doesNotMatch(logic, /onnx_model|local_tree|api:\s*'API'/);
-  assert.match(html, /Canonical hand state does not imply solved strategy/);
-  assert.doesNotMatch(html.slice(html.indexOf('id="recommendation"'), html.indexOf('id="chartView"')), /solved GTO|Deep CFR/i);
+  // Retired model/tree/API sources have no product label.
+  for (const retired of ['onnx_model', 'local_tree', 'api']) assert.equal(app.call('strategySourceDisplayKey', retired), retired);
+  assert.match(text(markup.body), /Canonical hand state does not imply solved strategy/);
+  const recommendation = markup.getElementById('recommendation');
+  assert.doesNotMatch(text(recommendation), /solved GTO|Deep CFR/i);
+  await app.call('updateContext');
+  await app.settle(200);
 });
 
-test('supporting metrics are compact and DecisionContext-backed', () => {
+test('supporting metrics are compact and DecisionContext-backed', async () => {
   for (const id of ['mPosition', 'mPot', 'mFacing', 'mStack', 'mPotOdds', 'mSPR', 'mRake']) {
-    assert.match(html, new RegExp(`id="${id}"`));
+    assert.ok(markup.getElementById(id), id);
   }
-  assert.match(logic, /updateMetrics\(decisionContext\)/);
-  assert.match(css, /\.playbook-metric-strip[\s\S]*grid-template-columns:\s*repeat\(4/);
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const spy = app.spy(['updateMetrics']);
+  try {
+    await app.call('updateContext');
+    await app.settle(200);
+    assert.ok(spy.count('updateMetrics') >= 1);
+    assert.equal(spy.calls.updateMetrics.at(-1)[0]?.schemaVersion, app.evaluate('DECISION_CONTEXT_SCHEMA_VERSION'));
+  } finally {
+    spy.restore();
+  }
+  // (Superseded: four columns became the eight-column fact strip.)
+  assert.equal(css.resolved(markup.querySelector('.playbook-metric-strip'), 'grid-template-columns'), 'repeat(8, minmax(0, 1fr))');
 });
 
-test('canonical table projection includes actor, hero, stacks, contributions, and statuses', () => {
+test('canonical table projection includes actor, hero, stacks, contributions, and statuses', async () => {
   for (const field of [
     'currentActorSeat', 'heroSeat', 'currentStackMilliBb', 'streetContributionMilliBb',
     'totalPotContributionMilliBb', 'isFolded', 'isAllIn', 'latestAction',
   ]) assert.match(tablePresence, new RegExp(`${field}[:,]`), field);
-  assert.match(logic, /callPlaybookStateBridge\('createTablePresenceViewModel'\)/);
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    await app.startHand(['As', 'Kd']);
+    // The table is projected from the canonical bridge (presentation model,
+    // with the presence model as its fallback).
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([name]) => /^createTablePres(?:entation|ence)ViewModel$/.test(name)));
+  } finally {
+    spy.restore();
+  }
   assert.match(table, /seat\.classList\.toggle\('is-hero'/);
   assert.match(table, /seat\.classList\.toggle\('is-actor'/);
   assert.match(table, /player\.latestAction/);
   assert.match(table, /state\.schemaVersion === 'table-presence\/v1'/);
 });
 
-test('Range Matrix remains 13 by 13, mixed, inspectable, and LTR', () => {
-  assert.match(html, /id="strategyGrid"[^>]+13 by 13/);
-  assert.match(html, /id="selectedHand"/);
-  assert.match(html, /id="selectedMix"/);
-  assert.match(logic, /RANKS\.forEach\(\(_, row\) => RANKS\.forEach\(\(__, col\)/);
-  assert.match(css, /#gtoMode \.strategy-grid\s*\{[^}]*direction:\s*ltr/);
-  assert.match(css, /\[dir="rtl"\] #gtoMode \.strategy-grid\s*\{\s*direction:\s*ltr/);
+test('Range Matrix remains 13 by 13, mixed, inspectable, and LTR', async () => {
+  assert.match(markup.getElementById('strategyGrid').getAttribute('aria-label'), /13 by 13/);
+  assert.ok(markup.getElementById('selectedHand'));
+  assert.ok(markup.getElementById('selectedMix'));
+  await app.navigate('analyze');
+  app.evaluate('app.matrixModel = null');
+  app.call('renderChart');
+  assert.equal(app.$$('#strategyGrid .hand-cell').length, 169);
+  const grid = markup.getElementById('strategyGrid');
+  assert.equal(css.cascaded(grid, 'direction'), 'ltr');
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try { assert.equal(css.cascaded(grid, 'direction'), 'ltr'); } finally { markup.documentElement.removeAttribute('dir'); }
 });
 
-test('responsive rules prioritize the decision and keep Hand controls reachable', () => {
-  for (const width of ['1024px', '768px', '480px']) assert.match(css, new RegExp(`max-width:\\s*${width}`));
-  assert.match(css, /@media \(max-width: 768px\)[\s\S]*\.playbook-decision-workspace\s*\{\s*order:\s*1/);
-  assert.match(css, /@media \(max-width: 768px\)[\s\S]*\.playbook-context-rail\s*\{\s*order:\s*2/);
-  assert.match(css, /\.playbook-decision-workspace \.matrix-wrap\s*\{\s*overflow-x:\s*auto/);
-  assert.match(logic, /handMode && modeView\) modeView\.classList\.remove\('is-context-collapsed'\)/);
+test('responsive rules prioritize the decision and keep Hand controls reachable', async () => {
+  // Narrow widths stack the workspace. Hand keeps its canonical controls (the
+  // context rail) first; Analyze keeps the spot rail above the result.
+  // (Superseded: DESIGN-006's "decision 1 / context 2" at 768px is overridden
+  // by CORE-FLOW-001A and ANALYZE-COMPOSITION-001.)
+  for (const width of [1024, 768, 480]) {
+    assert.equal(css.cascaded(gto.querySelector('.playbook-workspace'), 'flex-direction', { width }), 'column');
+    for (const destination of ['hand', 'analyze']) {
+      withDestination(destination, () => assert.ok(order('.playbook-context-rail', width) < order('.playbook-decision-workspace', width), `${destination}@${width}`));
+    }
+  }
+  // (Superseded in Analyze: ANALYZE-COMPOSITION-001 fits the Matrix without
+  // a scroller.)
+  withDestination('hand', () => assert.equal(css.cascaded(markup.querySelector('.playbook-decision-workspace .matrix-wrap'), 'overflow-x', { width: 768 }), 'auto'));
+  // Hand mode always expands a collapsed context rail.
+  await app.navigate('analyze');
+  app.byId('gtoMode').classList.add('is-context-collapsed');
+  await app.call('requestPlaybookMode', 'hand');
+  await app.settle(200);
+  assert.equal(app.byId('gtoMode').classList.contains('is-context-collapsed'), false);
+  await app.call('requestPlaybookMode', 'scenario');
+  await app.settle(200);
 });
 
-test('workflow, legal actions, status, and card inputs expose accessible semantics', () => {
-  assert.match(html, /id="playbookModeStatus"[^>]+role="status"[^>]+aria-live="polite"/);
-  assert.match(html, /id="handLegalActions"[^>]+role="group"[^>]+aria-label=/);
-  assert.match(html, /id="handStateSection"[^>]+aria-labelledby=/);
-  assert.match(logic, /label\.className = 'hand-action-label'/);
-  assert.match(logic, /amount\.className = 'hand-action-amount poker-data-token'/);
-  assert.match(logic, /button\.setAttribute\('aria-label', `\$\{presentation\.accessibleLabel\}/);
-  assert.match(logic, /data-playbook-canonical-display disabled aria-label/);
+test('workflow, legal actions, status, and card inputs expose accessible semantics', async () => {
+  const status = markup.getElementById('playbookModeStatus');
+  assert.equal(status.getAttribute('role'), 'status');
+  assert.equal(status.getAttribute('aria-live'), 'polite');
+  const legal = markup.getElementById('handLegalActions');
+  assert.equal(legal.getAttribute('role'), 'group');
+  assert.ok(legal.getAttribute('aria-label'));
+  assert.ok(markup.getElementById('handStateSection').getAttribute('aria-labelledby'));
+  await app.startHand(['As', 'Kd']);
+  const call = app.$('#handLegalActions [data-canonical-action="call"]');
+  assert.equal(call.querySelector('.hand-action-label').textContent, 'Call');
+  const amount = call.querySelector('.hand-action-amount');
+  assert.ok(amount.classList.contains('poker-data-token'));
+  assert.equal(call.getAttribute('aria-label'), `Call, ${amount.textContent}`);
+  assert.equal(app.$('#handLegalActions [data-canonical-action="raise"]').getAttribute('aria-label'), 'Raise, choose bet size');
+  // Canonical card displays are disabled, labelled slots.
+  const slots = app.$$('[data-playbook-canonical-display]');
+  assert.ok(slots.length > 0);
+  for (const slot of slots) {
+    assert.equal(slot.disabled, true);
+    assert.ok(slot.getAttribute('aria-label'));
+  }
 });
 
 test('Playbook hierarchy does not depend on an arbitrary drag/drop layout implementation', () => {
-  assert.doesNotMatch(html, /data-layout-fixed/);
-  assert.doesNotMatch(html, /src="src\/ui\/dragAndDrop\.js"/);
+  assert.equal(markup.querySelector('[data-layout-fixed]'), null);
+  assert.equal(markup.querySelector('script[src="src/ui/dragAndDrop.js"]'), null);
 });
 
 test('Playbook redesign remains tokenized across Midnight, Graphite, and Daylight', () => {
-  const start = css.indexOf('DESIGN-006: Playbook analysis workspace');
-  const design = css.slice(start, css.indexOf('SAVED-OBJECTS-002:', start));
-  assert.ok(start > 0);
-  assert.match(design, /var\(--surface-panel\)/);
-  assert.match(design, /var\(--text-primary\)/);
-  assert.match(design, /var\(--accent-primary\)/);
-  assert.doesNotMatch(design, /#[0-9a-f]{3,8}\b/i);
-  assert.doesNotMatch(design, /data-theme=/);
+  const values = designSheet.rules.flatMap((rule) => rule.declarations.map(({ value }) => value)).join(' ');
+  assert.match(values, /var\(--surface-panel\)/);
+  assert.match(values, /var\(--text-primary\)/);
+  assert.match(values, /var\(--accent-primary\)/);
+  assert.doesNotMatch(values, /#[0-9a-f]{3,8}\b/i);
+  for (const rule of designSheet.rules) assert.ok(rule.selectors.every((selector) => !selector.includes('data-theme=')), rule.selectors.join(', '));
 });
 
-test('UI does not duplicate poker rules or introduce Equity and Training dependencies', () => {
-  assert.doesNotMatch(logic, /from ['"][^'"]*shared\/poker-domain|require\([^)]*poker-domain/);
+test('UI does not duplicate poker rules or introduce Equity and Training dependencies', async () => {
+  // logic.js is a classic script: poker-domain exports never reach the page.
+  for (const name of ['applyChance', 'initializeHandFromGameRulesSnapshot', 'createGameRulesSnapshotFromLegacyGameConfiguration']) {
+    assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  }
   assert.doesNotMatch(bootstrap, /calculateEquity|trainingMode|Training/);
-  assert.match(logic, /callPlaybookStateBridge\('getLegalActions'\)/);
-  assert.doesNotMatch(logic.match(/function renderCanonicalLegalActions[\s\S]*?\n}\n/)?.[0] || '', /minimumRaise|amountToCall|nextActionable/);
+  // The legal-action UI presents the bridge's spec verbatim: an arbitrary
+  // spec renders exactly its own options and bounds, never derived ones.
+  await app.startHand(['As', 'Kd']);
+  const state = app.call('callPlaybookStateBridge', 'getState');
+  app.call('renderCanonicalLegalActions', state, { fold: { available: false }, check: { available: false }, call: { available: false }, bet: { available: true, minToMilliBb: 4100, maxToMilliBb: 4100 }, raise: { available: false }, allIn: { available: false } });
+  assert.deepEqual(app.$$('#handLegalActions [data-canonical-action]').map((button) => button.dataset.canonicalAction), ['bet']);
+  await app.click('#handLegalActions [data-canonical-action="bet"]');
+  assert.match(text(app.byId('handActionAmountBounds')), /^4\.1[–-]4\.1 bb total$/);
+  app.call('renderCanonicalHandWorkspace');
 });

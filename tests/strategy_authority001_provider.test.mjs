@@ -13,11 +13,20 @@ import {
   STRATEGY_PROVIDER_SCHEMA_VERSION,
   createStrategyProvider,
 } from '../app/src/application/strategy-provider.mjs';
-import { installStrategyProviderBridge } from '../app/src/application/strategy-provider-bootstrap.mjs';
+import { bootApp, indexDocument, precedes, strategyProviderProbe, text } from './helpers/app-under-test.mjs';
 
 const require = createRequire(import.meta.url);
 const qa = require('./qa002_adapters.js');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: index.html / logic.js assertions are behavioural: the
+// app boots with its StrategyProvider bridge instrumented so every page
+// resolve is recorded; Playbook, Matrix, Training and analysis flows are run
+// and the page's own presentation functions called. Strategy module sources
+// are outside this ticket.
+const provider = strategyProviderProbe();
+const app = await bootApp({ beforeScripts: provider.beforeScripts });
+// Imported after boot: the module installs the page's bridge on load.
+const { installStrategyProviderBridge } = await import('../app/src/application/strategy-provider-bootstrap.mjs');
+const markup = indexDocument();
 const trainingGenerator = fs.readFileSync(
   new URL('../app/src/application/training-generator.mjs', import.meta.url),
   'utf8',
@@ -176,32 +185,48 @@ test('browser bridge is frozen, narrow, and loaded before classic logic', () => 
       writable: false,
     },
   );
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  assert.ok(html.indexOf('strategy-provider-bootstrap.mjs') < html.indexOf('src/core/logic.js'));
+  const scripts = markup.querySelectorAll('script[src]');
+  const bridgeScript = scripts.find((script) => script.getAttribute('src').endsWith('strategy-provider-bootstrap.mjs'));
+  const logicScript = scripts.find((script) => script.getAttribute('src').split('?')[0] === 'src/core/logic.js');
+  assert.ok(precedes(bridgeScript, logicScript));
 });
 
-test('Playbook, Training, and preflop Matrix converge on the same provider boundary', () => {
-  const update = logic.slice(
-    logic.indexOf('async function updateContext('),
-    logic.indexOf('// Legacy fast evaluator retained for the existing Outs display only.'),
-  );
-  const matrix = logic.slice(
-    logic.indexOf('function renderChart()'),
-    logic.indexOf('function visualActionKind('),
-  );
-  const training = logic.slice(
-    logic.indexOf('async function newRandomTrainingHand('),
-    logic.indexOf('function canonicalTrainingFeedback('),
-  );
-
-  assert.match(update, /strategyProvider\.resolve\(decisionContext\)/);
-  assert.match(training, /callTrainingServiceBridge\('generate', config, \{ strategyProvider \}\)/);
+test('Playbook, Training, and preflop Matrix converge on the same provider boundary', async () => {
+  // Playbook: the main update resolves its DecisionContext through the provider.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const update = await provider.count(() => app.call('updateContext', 'test'));
+  assert.ok(update.includes(app.window.app.decisionContext));
+  // Training: generation receives the page provider.
+  const spy = app.spy(['callTrainingServiceBridge']);
+  try {
+    await app.training.start('focused');
+    const generate = spy.calls.callTrainingServiceBridge.find(([method]) => method === 'generate');
+    assert.ok(generate, 'Training generates through the service');
+    assert.equal(generate[2].strategyProvider, app.evaluate('strategyProvider'));
+  } finally {
+    spy.restore();
+  }
   assert.match(trainingGenerator, /strategyProvider\.resolve\(decisionContext\)/);
-  assert.match(matrix, /strategyProvider\.resolve\(cellDecisionContext\)/);
-  assert.match(matrix, /heroCards: representativeCards/);
-  assert.doesNotMatch(matrix, /calculatePreflopFallbackStrategy|calculateUnifiedPostflopStrategy|evaluatePostflopHandStrength/);
-  assert.doesNotMatch(matrix, /normalizedMatrixActions|openVal|callVal|foldVal/);
-  assert.match(matrix, /provider-backed postflop Matrix deferred/);
+  // Matrix (preflop): one provider resolve per class, each with representative cards.
+  await app.navigate('analyze');
+  const matrix = await provider.count(() => {
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+  });
+  assert.equal(matrix.length, 169);
+  assert.ok(matrix.every((context) => Array.isArray(context.heroCards) && context.heroCards.length === 2));
+  for (const name of ['calculatePreflopFallbackStrategy', 'calculateUnifiedPostflopStrategy', 'evaluatePostflopHandStrength', 'normalizedMatrixActions']) {
+    assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  }
+  // Postflop the provider-backed Matrix is deferred: no cell is resolved.
+  await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['Qh', 'Jh', '2c']);
+  const postflop = await provider.count(() => {
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+  });
+  assert.equal(postflop.length, 0);
+  assert.equal(text(app.byId('selectedHandPrimary')), 'Range expansion unavailable');
 });
 
 test('full three-action preflop mix survives presentation and sums to 100 percent', () => {
@@ -209,21 +234,39 @@ test('full three-action preflop mix survives presentation and sums to 100 percen
   const profile = qa.legacyProfileForStrategyResult(result);
   assert.deepEqual(profile.actions.map((entry) => entry.action.type), ['raise', 'call', 'fold']);
   assert.equal(profile.actions.reduce((sum, entry) => sum + entry.value, 0), 100);
-  assert.doesNotMatch(logic, /actions\s*=\s*actions\.slice\(0,\s*2\)/);
+  // The page presentation keeps all three actions.
+  const presented = app.call('strategyResultPresentationActions', result);
+  assert.equal(presented.length, 3);
+  assert.equal(presented.reduce((sum, entry) => sum + entry.value, 0), 100);
 });
 
-test('provenance remains provider-owned across presentation consumers', () => {
+test('provenance remains provider-owned across presentation consumers', async () => {
   const result = createStrategyResult(candidate());
   const profile = qa.legacyProfileForStrategyResult(result);
   assert.equal(profile.source, result.source);
   assert.equal(profile.provenance, result.source);
-  const strategyPresentation = logic.slice(
-    logic.indexOf('function strategyResultPresentationActions('),
-    logic.indexOf('// evaluateHand removed'),
-  );
-  assert.doesNotMatch(strategyPresentation, /MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE/);
-  assert.match(logic, /strategySourceDisplayLabel\(decision\.strategyResult\)/);
-  assert.match(logic, /strategyPolicySummary\(matrixClaimPolicy\)/);
+  assert.doesNotMatch(JSON.stringify(app.call('strategyResultPresentationActions', result)), /MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE/);
+  // Matrix provenance summarises the provider's claim policy.
+  await app.click('#gtoMode [data-card-set-edit="board"]');
+  await app.click('#cardSetPickerClear');
+  await app.click('#cardSetPickerApply');
+  await app.settle(200);
+  const spy = app.spy(['strategyPolicySummary', 'strategySourceDisplayLabel']);
+  try {
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+    assert.ok(spy.count('strategyPolicySummary') >= 1);
+    assert.ok(text(app.byId('chartSummary')).endsWith(app.call('strategyPolicySummary', app.evaluate('app.matrixModel.claimPolicy'))));
+    // A reviewed decision names its source through the provider's label.
+    spy.reset();
+    await app.startHand(['As', 'Kd']);
+    await app.handAction('fold');
+    app.call('openCanonicalHandReview');
+    const decision = app.window.app.handReview.model?.selectedDecision;
+    if (decision?.strategyResult) assert.ok(spy.calls.strategySourceDisplayLabel.some(([argument]) => argument === decision.strategyResult));
+  } finally {
+    spy.restore();
+  }
 });
 
 test('AnalysisExplanation consumes StrategyResult and never becomes a strategy source', () => {
@@ -232,23 +275,33 @@ test('AnalysisExplanation consumes StrategyResult and never becomes a strategy s
   assert.doesNotMatch(analysisExplanation, /strategy-provider|createStrategyProvider|\.resolve\(/);
 });
 
-test('production source sweep leaves fallback math only behind the provider seam', () => {
-  assert.equal((logic.match(/strategyProvider\.resolve\(/g) || []).length, 3);
-  assert.doesNotMatch(logic, /strategyProvider\.resolve\(null\)/);
-  const analysisRender = logic.slice(
-    logic.indexOf('function renderDecisionAnalysis('),
-    logic.indexOf('function renderPlaybookTableProjection('),
-  );
-  assert.doesNotMatch(analysisRender, /strategyProvider\.resolve\(/);
-  assert.doesNotMatch(logic, /\bactionProfile\s*\(/);
-  assert.doesNotMatch(logic, /\bfallbackStrategyResult\s*\(/);
-  assert.doesNotMatch(logic, /calculatePreflopFallbackStrategy|calculatePostflopHeuristicStrategy|simulateHeuristicEquity/);
+test('production source sweep leaves fallback math only behind the provider seam', async () => {
+  // (The logic.js call-site counts are replaced by runtime accounting: every
+  // page resolve receives a real DecisionContext, and the analysis renderer
+  // never resolves.)
+  await app.navigate('analyze');
+  const tour = await provider.count(async () => {
+    await app.call('updateContext', 'test');
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+    await app.training.start('focused');
+    await app.training.answer();
+  });
+  assert.ok(tour.length > 0);
+  assert.ok(tour.every((context) => context && typeof context === 'object' && context.schemaVersion), 'never resolves a missing context');
+  await app.navigate('analyze');
+  const analysis = await provider.count(() => {
+    app.call('renderPlaybookDecisionAnalysis', app.window.app.decisionContext, app.window.app.strategyResult, app.window.app.playbookResolution);
+  });
+  assert.equal(analysis.length, 0, 'the analysis renderer consumes the resolved result');
+  for (const name of ['actionProfile', 'fallbackStrategyResult', 'calculatePreflopFallbackStrategy', 'calculatePostflopHeuristicStrategy', 'simulateHeuristicEquity']) {
+    assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  }
   assert.equal((preflopHeuristic.match(/calculatePreflopFallbackStrategy\(/g) || []).length, 1);
   assert.equal((preflopHeuristic.match(/calculatePreflopFallbackEvaluation\(/g) || []).length, 3);
   assert.equal((postflopHeuristic.match(/calculatePostflopHeuristicStrategy\(/g) || []).length, 1);
   assert.match(heuristicStrategy, /resolveHeuristicStrategy/);
   assert.match(heuristicEvaluator, /from '\.\.\/\.\.\/\.\.\/shared\/poker-domain\/evaluator\.js'/);
-  assert.equal((logic.match(/strategyResultToLegacyProfile\(/g) || []).length, 3);
   for (const source of [heuristicStrategy, preflopHeuristic, postflopHeuristic, heuristicEvaluator]) {
     assert.doesNotMatch(source, /\b(?:document|window|querySelector|selectedValue|numericValue)\b/);
     assert.doesNotMatch(source, /\bapp\.settings\b|Math\.random\s*=/);

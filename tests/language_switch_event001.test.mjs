@@ -2,30 +2,23 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import vm from 'node:vm';
 
-import { bindAuthenticationUi } from '../app/src/application/authentication-bootstrap.mjs';
 import {
   authenticationOwnerKey,
   createAuthenticationOwnerChangeGuard,
 } from '../app/src/application/authentication-owner-change.mjs';
 
-const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
-const LOGIC = read('../app/src/core/logic.js');
-const INDEX = read('../app/index.html');
+import { bootApp, indexDocument, strategyProviderProbe, text } from './helpers/app-under-test.mjs';
 
-function runtimeFunction(source, name) {
-  const start = source.indexOf(`function ${name}(`);
-  assert.notEqual(start, -1, `missing runtime function ${name}`);
-  const open = source.indexOf('{', source.indexOf(')', start));
-  let depth = 0;
-  for (let index = open; index < source.length; index += 1) {
-    if (source[index] === '{') depth += 1;
-    if (source[index] === '}') depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
-  }
-  throw new Error(`unterminated runtime function ${name}`);
-}
+// TEST-HYGIENE-001: logic.js / index.html assertions run in the booted app
+// (real authchange events, real language switches, spied page functions)
+// instead of vm-evaluating slices of logic.js. Bootstrap sources are outside
+// this ticket.
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+const probe = strategyProviderProbe();
+const app = await bootApp({ beforeScripts: probe.beforeScripts });
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { bindAuthenticationUi } = await import('../app/src/application/authentication-bootstrap.mjs');
 
 const DICTIONARY = {
   en: {},
@@ -151,47 +144,32 @@ test('owner-change guard ignores a repeated owner but never a real or legacy cha
   assert.equal(changed(event('a')), true);
 });
 
-function logicAuthListener() {
-  const marker = "window.addEventListener('riverline:authchange', ";
-  const start = LOGIC.indexOf(marker);
-  assert.notEqual(start, -1);
-  const body = LOGIC.slice(start + marker.length, LOGIC.indexOf("window.addEventListener('riverline:trainingmemoryready'", start));
-  return body.trim().replace(/\);$/, '');
-}
-
-function logicAuthHarness() {
-  const calls = { homeRefresh: [], trainingCleared: 0, savedSource: 0, ownerChanged: 0 };
-  const context = {
-    calls, $: () => null,
-    scheduleHomeRefresh(options) { calls.homeRefresh.push(options); if (options?.clearPrivateState) calls.ownerChanged += 1; },
-    clearTrainingMemoryOwnerPresentation() { calls.trainingCleared += 1; },
-    refreshTrainingMemoryPanel() {},
-    refreshSavedStudySource() { calls.savedSource += 1; },
-    activeWorkspaceMode: () => 'gto',
+test('logic.js clears Saved/Training owner state only when the owner actually changed', async () => {
+  const spy = app.spy(['scheduleHomeRefresh', 'clearTrainingMemoryOwnerPresentation', 'refreshSavedStudySource']);
+  const dispatch = async (detail) => {
+    app.window.dispatchEvent(new app.window.CustomEvent('riverline:authchange', { detail }));
+    await app.settle(50);
   };
-  vm.createContext(context);
-  vm.runInContext(`${runtimeFunction(LOGIC, 'authenticationOwnerChanged')}
-    ${LOGIC.match(/let lastAuthenticationOwnerKey[^;]*;/)[0]}
-    this.listener = ${logicAuthListener()};`, context);
-  return { calls, dispatch: (detail) => context.listener({ detail }) };
-}
-
-test('logic.js clears Saved/Training owner state only when the owner actually changed', () => {
-  const h = logicAuthHarness();
-  h.dispatch({ status: 'guest', signedIn: false, ownerKey: 'guest-1' });
-  assert.equal(h.calls.ownerChanged, 1);
-  assert.equal(h.calls.trainingCleared, 1);
-  h.dispatch({ status: 'guest', signedIn: false, ownerKey: 'guest-1' });
-  assert.equal(h.calls.ownerChanged, 1, 'same owner repeated: Saved ownerChanged must not run');
-  assert.equal(h.calls.trainingCleared, 1);
-  assert.equal(h.calls.savedSource, 1);
-  h.dispatch({ status: 'signed_in', signedIn: true, ownerKey: 'account-a' });
-  assert.equal(h.calls.ownerChanged, 2, 'real sign-in clears private state');
-  assert.equal(h.calls.homeRefresh.at(-1).clearPrivateState, true);
-  assert.equal(h.calls.trainingCleared, 2);
-  h.dispatch({ status: 'guest', signedIn: false });
-  h.dispatch({ status: 'guest', signedIn: false });
-  assert.equal(h.calls.ownerChanged, 4, 'events without ownerKey keep clearing exactly as before');
+  const ownerChanged = () => spy.calls.scheduleHomeRefresh.filter(([options]) => options?.clearPrivateState).length;
+  try {
+    await dispatch({ status: 'guest', signedIn: false, ownerKey: 'guest-language-1' });
+    assert.equal(ownerChanged(), 1);
+    assert.equal(spy.count('clearTrainingMemoryOwnerPresentation'), 1);
+    const savedSource = spy.count('refreshSavedStudySource');
+    await dispatch({ status: 'guest', signedIn: false, ownerKey: 'guest-language-1' });
+    assert.equal(ownerChanged(), 1, 'same owner repeated: Saved ownerChanged must not run');
+    assert.equal(spy.count('clearTrainingMemoryOwnerPresentation'), 1);
+    assert.equal(spy.count('refreshSavedStudySource'), savedSource);
+    await dispatch({ status: 'signed_in', signedIn: true, ownerKey: 'account-a' });
+    assert.equal(ownerChanged(), 2, 'real sign-in clears private state');
+    assert.equal(spy.calls.scheduleHomeRefresh.at(-1)[0].clearPrivateState, true);
+    assert.equal(spy.count('clearTrainingMemoryOwnerPresentation'), 2);
+    await dispatch({ status: 'guest', signedIn: false });
+    await dispatch({ status: 'guest', signedIn: false });
+    assert.equal(ownerChanged(), 4, 'events without ownerKey keep clearing exactly as before');
+  } finally {
+    spy.restore();
+  }
 });
 
 test('Home Game and Study inbox route authchange through the owner-change guard', () => {
@@ -205,73 +183,76 @@ test('Home Game and Study inbox route authchange through the owner-change guard'
 });
 
 // Training source claim: static data-i18n placeholders must never overwrite a written claim.
-function fakeSourceElement(key) {
-  return { textContent: key || '', title: '', className: '', hidden: false, dataset: key ? { i18n: key } : {} };
+const SOURCE_IDS = ['trainingStrategySource', 'trainingReferenceSummaryValue', 'trainingReferenceSummaryNote'];
+// An element is safe across a language switch when it is either unkeyed or
+// its text is exactly the translation of its key (so re-translation cannot
+// replace a written claim with a placeholder).
+function assertSourceElementsKeyedOrUnkeyed(label) {
+  for (const id of SOURCE_IDS) {
+    const element = app.byId(id);
+    if (element.dataset.i18n) assert.equal(element.textContent, app.call('t', element.dataset.i18n), `${label}: ${id} keyed`);
+  }
 }
 
-function trainingSourceHarness() {
-  const elements = new Map([
-    ['#trainingStrategySource', fakeSourceElement('Source unavailable')],
-    ['#trainingReferenceSummaryTitle', fakeSourceElement('Strategy source')],
-    ['#trainingReferenceSummaryValue', fakeSourceElement('Source unavailable')],
-    ['#trainingReferenceSummaryNote', fakeSourceElement('A source summary appears with each exercise.')],
-    ['#trainingSourceLimitation', fakeSourceElement(null)],
-  ]);
-  let language = 'en';
-  const t = (key, values = {}) => String(DICTIONARY[language][key] ?? key).replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
-  const descriptor = { id: 'heuristic_fallback', displayNameKey: 'Heuristic fallback', family: 'heuristic' };
-  const context = {
-    t, app: { training: { memoryRedrillNote: '' } },
-    $: (selector) => elements.get(selector) || null,
-    requireStrategyProviderBridge: () => ({ sourceDescriptorFor: () => descriptor }),
-    trainingTruth: () => ({ claimPolicy: { source: descriptor, primaryLimitation: null } }),
-    truthPresentation: () => ({ sourceLabel: 'Strategy source' }),
-    trainingSameSpotIsActive: () => false,
-    sameSpotSourceRole: () => 'Strategy source',
-    localizedStrategyLimitation: () => '',
-    strategyPolicySummary: () => t('Heuristic fallback'),
-  };
-  vm.createContext(context);
-  vm.runInContext(['strategySourceDisplayKey', 'strategySourceDisplayLabel', 'setSourceClaimText', 'renderTrainingSource']
-    .map((name) => runtimeFunction(LOGIC, name)).join('\n'), context);
-  return {
-    elements,
-    render: (exercise) => context.renderTrainingSource(exercise),
-    // The i18n runtime re-translates every [data-i18n] element on setLanguage().
-    switchLanguage(value) {
-      language = value;
-      for (const element of elements.values()) if (element.dataset.i18n) element.textContent = t(element.dataset.i18n);
-    },
-    t,
-  };
-}
-
-test('Training source badge and baseline panel keep the same claim across EN → RU → HE → EN', () => {
-  const h = trainingSourceHarness();
-  h.render({ seed: 7, strategyResult: { source: 'heuristic_fallback', sourceVersion: '1' } });
-  const badge = h.elements.get('#trainingStrategySource');
-  const value = h.elements.get('#trainingReferenceSummaryValue');
-  assert.equal(badge.textContent, 'Heuristic fallback');
+test('Training source badge and baseline panel keep the same claim across EN → RU → HE → EN', async () => {
+  await app.training.start('focused');
+  const badge = app.byId('trainingStrategySource');
+  const value = app.byId('trainingReferenceSummaryValue');
+  const claim = text(badge);
+  assert.ok(claim);
+  assert.notEqual(claim, 'Source unavailable');
+  const key = Object.keys(DICTIONARY.en).find((candidate) => DICTIONARY.en[candidate] === claim) || claim;
   for (const language of ['ru', 'he', 'en']) {
-    h.switchLanguage(language);
-    assert.equal(badge.textContent, h.t('Heuristic fallback'), `${language} badge`);
-    assert.equal(value.textContent, h.t('Heuristic fallback'), `${language} baseline value`);
-    assert.notEqual(badge.textContent, h.t('Source unavailable'));
+    app.window.setLanguage(language);
+    await app.settle(50);
+    assert.equal(text(badge), app.call('t', key), `${language} badge`);
+    assert.equal(text(value), app.call('t', key), `${language} baseline value`);
+    assert.notEqual(text(badge), app.call('t', 'Source unavailable'));
   }
 });
 
-test('every Training source writer keys or unkeys the element instead of raw textContent', () => {
-  assert.match(INDEX, /id="trainingStrategySource"[^>]*data-i18n="Source unavailable"/, 'placeholder markup is the hazard this guards');
-  for (const id of ['trainingStrategySource', 'trainingReferenceSummaryValue', 'trainingReferenceSummaryNote']) {
-    assert.doesNotMatch(LOGIC, new RegExp(`\\$\\('#${id}'\\)\\.textContent\\s*=`), `${id} raw write`);
-    assert.doesNotMatch(LOGIC, new RegExp(`(sourceElement|referenceValue|referenceNote)\\.textContent\\s*=`), 'aliased raw write');
+test('every Training source writer keys or unkeys the element instead of raw textContent', async () => {
+  // The placeholder markup is the hazard this guards.
+  assert.equal(indexDocument().getElementById('trainingStrategySource').dataset.i18n, 'Source unavailable');
+  await app.training.start('focused');
+  assertSourceElementsKeyedOrUnkeyed('exercise');
+  await app.training.answer();
+  assertSourceElementsKeyedOrUnkeyed('feedback');
+  await app.training.next();
+  assertSourceElementsKeyedOrUnkeyed('next exercise');
+  for (const language of ['ru', 'he', 'en']) {
+    app.window.setLanguage(language);
+    await app.settle(50);
+    assertSourceElementsKeyedOrUnkeyed(language);
   }
 });
 
-test('language refresh re-renders an open Training review from its existing model only', () => {
-  const body = runtimeFunction(LOGIC, 'refreshLocalizedTrainingRuntime');
-  assert.match(body, /app\.handReview\.source === 'training_full_hand' && app\.handReview\.model/);
-  assert.doesNotMatch(body, /refreshActiveHandReviewModel|strategyProvider\.resolve|schedulePlaybookUpdate|equity/i);
-  const runtime = runtimeFunction(LOGIC, 'refreshLocalizedRuntime');
-  assert.doesNotMatch(runtime, /authchange|scheduleHomeRefresh|clearSavedOwnerPresentation|clearTrainingMemoryOwnerPresentation/);
+test('language refresh re-renders an open Training review from its existing model only', async () => {
+  await app.training.playFullHand();
+  await app.click('#trainingReviewHand');
+  await app.settle(300);
+  assert.equal(app.window.app.handReview.source, 'training_full_hand');
+  const model = app.window.app.handReview.model;
+  const spy = app.spy([
+    'refreshLocalizedTrainingRuntime', 'renderFullHandTrainingSnapshot', 'renderActiveHandReview', 'refreshActiveHandReviewModel', 'schedulePlaybookUpdate',
+    'scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'clearTrainingMemoryOwnerPresentation',
+  ].filter((name) => app.evaluate(`typeof ${name}`) === 'function'));
+  try {
+    const resolves = await probe.count(async () => {
+      for (const language of ['ru', 'he', 'en']) {
+        app.window.setLanguage(language);
+        await app.settle(50);
+      }
+    });
+    assert.equal(resolves.length, 0, 'no strategy is resolved on a language switch');
+    assert.equal(spy.count('refreshLocalizedTrainingRuntime'), 3, 'every switch completes the localized refresh');
+    assert.equal(spy.count('renderActiveHandReview'), 3, 'the open review re-renders');
+    for (const name of ['refreshActiveHandReviewModel', 'schedulePlaybookUpdate', 'scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'clearTrainingMemoryOwnerPresentation']) {
+      if (spy.calls[name]) assert.equal(spy.count(name), 0, name);
+    }
+  } finally {
+    spy.restore();
+  }
+  assert.equal(app.window.app.handReview.source, 'training_full_hand');
+  assert.equal(app.window.app.handReview.model, model, 'the review keeps its existing model');
 });

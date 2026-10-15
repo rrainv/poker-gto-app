@@ -14,12 +14,35 @@ import {
   resolveWorkspaceLayoutPreset,
 } from '../app/src/application/presentation-layout.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, bootApp, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css assertions are behavioural
+// (parsed markup, and the cascade with each preset applied to the document;
+// Training is checked in the booted app, which restructures its columns).
+// Translation and bootstrap sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const root = markup.documentElement;
+const gto = markup.getElementById('gtoMode');
 const translations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 const bootstrap = fs.readFileSync(new URL('../app/src/application/presentation-density-bootstrap.mjs', import.meta.url), 'utf8');
-// Bounded before the surface styles DS-FOUNDATION-001 relocated from riverline-design.css.
-const presetCss = css.slice(css.indexOf('LAYOUT-PRESETS-001: first-class workspace composition'), css.indexOf('Surface styles relocated from the retired'));
+// SOURCE-SHAPE: "preset CSS is RTL-neutral (no physical direction/margin/
+// padding/left/right)" is a policy lint over the LAYOUT-PRESETS-001 block as
+// authored (parsed, not regex-matched); the cascade cannot tell a physical
+// property that happens to be symmetric from a logical one.
+const presetSheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  return new StyleSheetModel(raw.slice(raw.indexOf('LAYOUT-PRESETS-001: first-class workspace composition'), raw.indexOf('Surface styles relocated from the retired')));
+})();
+const PRESETS = ['balanced', 'table-focus', 'analysis-focus'];
+function withPreset(preset, destination, callback) {
+  const previous = [root.dataset.layoutPreset, gto.dataset.productDestination];
+  root.dataset.layoutPreset = preset;
+  if (destination) gto.dataset.productDestination = destination;
+  try { return callback(); } finally { [root.dataset.layoutPreset, gto.dataset.productDestination] = previous; }
+}
+const LAYOUT_PROPERTIES = ['display', 'flex-direction', 'order', 'grid-template-columns', 'grid-template-areas', 'grid-area', 'grid-column', 'grid-row', 'position'];
+const layoutOf = (elements, width) => elements.map((element) => LAYOUT_PROPERTIES.map((property) => css.cascaded(element, property, { width })).join('|'));
 
 class MemoryStorage {
   constructor(initial = {}) {
@@ -201,19 +224,26 @@ test('surviving presets have immutable, workspace-specific product jobs', () => 
 });
 
 test('Settings exposes only the three globally relevant preset labels', () => {
-  assert.match(html, /data-layout-preset="balanced"/);
-  assert.match(html, /data-layout-preset-field hidden/);
-  assert.match(html, /id="layoutPresetControl"[^>]+role="group"/);
-  assert.equal((html.match(/data-layout-preset-option=/g) || []).length, 3);
-  assert.doesNotMatch(html, /data-layout-preset-option="controls-first"/);
+  const field = markup.querySelector('[data-layout-preset-field]');
+  assert.equal(field.hidden, true);
+  assert.equal(root.dataset.layoutPreset, 'balanced');
+  const control = markup.getElementById('layoutPresetControl');
+  assert.equal(control.getAttribute('role'), 'group');
+  const options = markup.querySelectorAll('[data-layout-preset-option]').map((button) => button.dataset.layoutPresetOption);
+  assert.deepEqual(options, ['balanced', 'table-focus', 'analysis-focus']);
   assert.match(bootstrap, /createPresentationDensityController/);
   assert.match(bootstrap, /createPresentationLayoutController/);
   assert.match(bootstrap, /storage: window\.localStorage/g);
   assert.match(bootstrap, /MutationObserver/);
   assert.doesNotMatch(bootstrap, /PokerState|StrategyProvider|Equity|Training/);
-  assert.match(presetCss, /\.layout-preset-control\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s);
-  assert.match(presetCss, /\.layout-preset-control \.ui-tab\s*\{[^}]*flex:\s*1 1 0[^}]*white-space:\s*nowrap/s);
-  assert.match(presetCss, /@media \(max-width: 620px\)[\s\S]*?\.layout-preset-control\s*\{[^}]*grid-template-columns:\s*repeat\(2,/);
+  // One row of equal, non-wrapping tabs; two columns at narrow widths.
+  const tab = control.querySelector('.ui-tab');
+  assert.equal(css.cascaded(control, 'display', { width: 1440 }), 'flex');
+  assert.equal(css.cascaded(control, 'flex-wrap', { width: 1440 }), 'nowrap');
+  assert.equal(css.cascaded(tab, 'flex', { width: 1440 }), '1 1 0');
+  assert.equal(css.cascaded(tab, 'white-space', { width: 1440 }), 'nowrap');
+  assert.equal(css.cascaded(control, 'display', { width: 600 }), 'grid');
+  assert.match(css.cascaded(control, 'grid-template-columns', { width: 600 }), /^repeat\(2,/);
 
   for (const key of [
     'Workspace layout',
@@ -229,37 +259,97 @@ test('Settings exposes only the three globally relevant preset labels', () => {
 });
 
 test('Hand and Analyze presets change composition rather than only maximum width', () => {
-  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*\.playbook-workspace\s*\{[^}]*grid-template-areas:\s*"decision context"/s);
-  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*#handStageDock\s*\{\s*order:\s*2/s);
-  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*#table-wrapper\s*\{\s*order:\s*4/s);
-  assert.match(presetCss, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-workspace\s*\{[^}]*"decision context"\s*"decision support"/s);
-  assert.match(presetCss, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-support-rail\s*\{[^}]*grid-area:\s*support[^}]*position:\s*static/s);
-  assert.doesNotMatch(html, /Controls First/);
-  assert.doesNotMatch(presetCss, /playbook[^\n{]*\{[^}]*display:\s*none/s);
+  const workspace = gto.querySelector('.playbook-workspace');
+  const dock = markup.getElementById('handStageDock');
+  const table = markup.getElementById('table-wrapper');
+  // Hand Table Focus: decision first, then context; live facts precede the
+  // table. (Superseded literals: HAND stage composition later pins the dock
+  // to order 1 and the live table to order 5; the dock-before-table order is
+  // the preserved guarantee.)
+  withPreset('table-focus', 'hand', () => {
+    assert.equal(css.cascaded(workspace, 'grid-template-areas', { width: 1440 }), '"decision context"');
+    assert.ok(Number(css.cascaded(dock, 'order', { width: 1440 })) < Number(css.cascaded(table, 'order', { width: 1440 })));
+  });
+  withPreset('balanced', 'hand', () => assert.notEqual(css.cascaded(workspace, 'grid-template-areas', { width: 1440 }), '"decision context"'));
+  // Analyze: Analysis Focus mirrors Balanced's spot rail / result columns.
+  // (Superseded: the "decision support" row and the support-rail placement
+  // were replaced by ANALYZE-COMPOSITION-001, which has no support rail in
+  // Analyze in any preset.)
+  const support = gto.querySelector('.playbook-support-rail');
+  withPreset('balanced', 'analyze', () => {
+    assert.equal(css.cascaded(workspace, 'grid-template-areas', { width: 1600 }), '"context decision"');
+    assert.equal(css.cascaded(support, 'display', { width: 1600 }), 'none');
+  });
+  withPreset('analysis-focus', 'analyze', () => {
+    assert.equal(css.cascaded(workspace, 'grid-template-areas', { width: 1600 }), '"decision context"');
+    assert.equal(css.cascaded(support, 'display', { width: 1600 }), 'none');
+  });
+  assert.equal(markup.querySelector('[data-layout-preset-option="controls-first"]'), null);
+  assert.doesNotMatch(markup.body.textContent, /Controls First/);
+  // Presets never hide a Playbook surface that Balanced shows.
+  const surfaces = gto.querySelectorAll('[class*="playbook"], #handStageDock, #table-wrapper');
+  for (const destination of ['hand', 'analyze']) {
+    for (const width of [1440, 1600]) {
+      const balanced = withPreset('balanced', destination, () => surfaces.map((element) => css.cascaded(element, 'display', { width })));
+      for (const preset of PRESETS) {
+        withPreset(preset, destination, () => surfaces.forEach((element, index) => {
+          if (balanced[index] !== 'none') assert.notEqual(css.cascaded(element, 'display', { width }), 'none', `${preset}/${destination}@${width}: ${element.id || element.className}`);
+        }));
+      }
+    }
+  }
 });
 
-test('Training and Equity use meaningful Balanced compositions without hidden layout variants', () => {
-  assert.doesNotMatch(presetCss, /data-layout-preset="(?:table-focus|controls-first)"[^}]*\.training-workspace/s);
-  assert.match(presetCss, /\.training-workspace\[data-training-full-hand-phase="off"\]\s*\{[^}]*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\)/s);
-  assert.match(presetCss, /training-full-hand-phase="off"[^}]*> :is\(\.training-insight-column, \.training-setup-column\)\s*\{[^}]*display:\s*contents/s);
-  assert.match(presetCss, /#trainingHistoryPanel\s*\{[^}]*grid-column:\s*1 \/ span 4[^}]*grid-row:\s*3/s);
-  assert.match(presetCss, /#trainingSetupPanel\s*\{[^}]*grid-column:\s*9 \/ -1[^}]*grid-row:\s*1/s);
-  assert.match(presetCss, /\.training-session-panel\s*\{[^}]*grid-column:\s*9 \/ -1[^}]*grid-row:\s*2/s);
-  assert.match(presetCss, /data-training-state="feedback"[^}]*#trainingSolution\s*\{[^}]*grid-column:\s*9 \/ -1/s);
-  assert.doesNotMatch(presetCss, /data-layout-preset="(?:table-focus|analysis-focus|controls-first)"[^}]*\.calibration-personal/s);
-  assert.doesNotMatch(presetCss, /data-layout-preset="analysis-focus"[^}]*\.equity-workspace/s);
-  assert.doesNotMatch(presetCss, /data-layout-preset="controls-first"[^}]*\.equity-workspace/s);
+test('Training and Equity use meaningful Balanced compositions without hidden layout variants', async () => {
+  // No preset changes any rule that applies to Training, Equity or Range
+  // Calibration surfaces.
+  const surfaces = ['#trainingMode', '#equityMode', '#calibrationMode']
+    .flatMap((selector) => [markup.querySelector(selector), ...markup.querySelectorAll(`${selector} [class*="workspace"], ${selector} [class*="panel"], ${selector} [class*="column"]`)]);
+  assert.ok(surfaces.length > 20);
+  for (const width of [1440, 1600]) {
+    const rulesFor = () => surfaces.map((element) => css.matchingRules(element, { width }).map((rule) => rule.order).join(','));
+    const balanced = withPreset('balanced', 'hand', rulesFor);
+    for (const preset of PRESETS) assert.deepEqual(withPreset(preset, 'analyze', rulesFor), balanced, `${preset}@${width}`);
+  }
+  // Training's Balanced composition: a decision column and an insight rail.
+  // (Superseded: the 12-column grid with per-panel column placements was
+  // replaced by TRAINING-COMPOSITION-001's two-column decision/insight grid,
+  // into which the running app gathers the panels as a study rail.)
+  const app = await bootApp({ width: 1440 });
+  await app.navigate('training');
+  const training = app.$('.training-workspace');
+  const rail = app.$('.training-study-rail');
+  assert.equal(training.dataset.trainingFullHandPhase, 'off');
+  for (const preset of PRESETS) {
+    app.document.documentElement.dataset.layoutPreset = preset;
+    assert.equal(css.cascaded(training, 'grid-template-columns', { width: 1440 }), 'minmax(0, 1fr) minmax(320px, 360px)');
+    assert.equal(css.cascaded(training, 'grid-template-areas', { width: 1440 }), '"decision insight"');
+    assert.equal(css.cascaded(app.$('.training-decision-column'), 'grid-area', { width: 1440 }), 'decision');
+    assert.equal(css.cascaded(rail, 'grid-area', { width: 1440 }), 'insight');
+    for (const panel of ['trainingSetupPanel', 'trainingHistoryPanel']) {
+      assert.equal(app.byId(panel).parentElement, rail, panel);
+      assert.equal(css.cascaded(app.byId(panel), 'grid-column', { width: 1440 }), 'auto', panel);
+    }
+  }
+  app.document.documentElement.dataset.layoutPreset = 'balanced';
 });
 
 test('1024 uses the established safe stack and preset CSS remains RTL-neutral', () => {
-  assert.match(presetCss, /@media \(min-width: 1320px\)/);
-  assert.match(presetCss, /@media \(min-width: 1500px\)/);
-  const narrowSelectorRules = presetCss.slice(
-    presetCss.indexOf('@media (max-width: 620px)'),
-    presetCss.indexOf('@media (min-width: 1320px)'),
-  );
-  assert.doesNotMatch(narrowSelectorRules, /data-layout-preset=/);
-  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?#gtoMode \.playbook-workspace[\s\S]*?flex-direction:\s*column/);
-  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.training-workspace,[\s\S]*?\.equity-workspace[\s\S]*?flex-direction:\s*column/);
-  assert.doesNotMatch(presetCss, /(?:^|\n)\s*direction\s*:|margin-left|margin-right|padding-left|padding-right|\bleft\s*:|\bright\s*:/);
+  // Presets only take effect from 1320px; below that every preset shares the
+  // canonical layout.
+  const surfaces = [gto.querySelector('.playbook-workspace'), ...gto.querySelector('.playbook-workspace').children,
+    markup.getElementById('handStageDock'), markup.getElementById('table-wrapper'), markup.getElementById('layoutPresetControl')];
+  for (const destination of ['hand', 'analyze']) {
+    for (const width of [600, 1024]) {
+      const balanced = withPreset('balanced', destination, () => layoutOf(surfaces, width));
+      for (const preset of PRESETS) assert.deepEqual(withPreset(preset, destination, () => layoutOf(surfaces, width)), balanced, `${preset}/${destination}@${width}`);
+    }
+  }
+  assert.equal(css.cascaded(gto.querySelector('.playbook-workspace'), 'flex-direction', { width: 1024 }), 'column');
+  assert.equal(css.cascaded(markup.querySelector('.training-workspace'), 'flex-direction', { width: 1024 }), 'column');
+  assert.equal(css.cascaded(markup.querySelector('.equity-workspace'), 'flex-direction', { width: 1024 }), 'column');
+  const physical = /^(?:direction|margin-left|margin-right|padding-left|padding-right|left|right)$/;
+  for (const rule of presetSheet.rules) {
+    for (const { property } of rule.declarations) assert.doesNotMatch(property, physical, rule.selectors.join(', '));
+  }
 });
