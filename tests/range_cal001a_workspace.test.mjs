@@ -5,30 +5,55 @@ import fs from 'node:fs';
 import { createRangeCalibrationLifecycle } from '../app/src/application/range-calibration-lifecycle.mjs';
 import { normalizeModeNames } from '../app/src/application/range-calibration-service.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural (parsed markup and templates, the cascade, the running shell).
+// Bootstrap/workspace/service/storage/audit sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const templateContent = (id) => markup.getElementById(id).content;
+function mountTemplate(id) {
+  // Instantiate a template into the parsed document so selectors and the
+  // cascade see it in context.
+  const host = markup.createElement('div');
+  host.appendChild(templateContent(id).cloneNode(true));
+  (markup.getElementById('calibrationMode') || markup.body).appendChild(host);
+  return host;
+}
+const workspaceHost = mountTemplate('rangeCalibrationTemplate');
+const modalHost = mountTemplate('calibrationProfileModalTemplate');
 const bootstrap = fs.readFileSync(new URL('../app/src/application/range-calibration-bootstrap.mjs', import.meta.url), 'utf8');
 const workspace = fs.readFileSync(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8');
 const service = fs.readFileSync(new URL('../app/src/application/range-calibration-service.mjs', import.meta.url), 'utf8');
 const browserStorage = fs.readFileSync(new URL('../app/src/personal-strategy/browser-storage.mjs', import.meta.url), 'utf8');
 const visualAudit = fs.readFileSync(new URL('./tooling/audit_range_cal001a.cjs', import.meta.url), 'utf8');
 
-test('Personal Strategy is the top-level destination while its existing workspace remains canonical', () => {
-  const destinations = [...html.matchAll(/data-navigation-id="([^"]+)"/g)].map((match) => match[1]);
+test('Personal Strategy is the top-level destination while its existing workspace remains canonical', async () => {
+  const destinations = markup.querySelectorAll('[data-navigation-id]').map((node) => node.dataset.navigationId);
   assert.deepEqual(destinations.slice(0, 9), ['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved', 'home', 'home-game', 'guide']);
-  assert.match(html, /data-mode="calibration"[^>]*data-navigation-id="personal-strategy"[^>]*data-mode-title="Personal Strategy"/);
-  assert.match(html, /id="calibrationMode" class="mode-view range-calibration-mode"/);
+  const item = markup.querySelector('[data-navigation-id="personal-strategy"]');
+  assert.equal(item.dataset.mode, 'calibration');
+  assert.equal(item.dataset.modeTitle, 'Personal Strategy');
+  const view = markup.getElementById('calibrationMode');
+  assert.ok(view.classList.contains('mode-view') && view.classList.contains('range-calibration-mode'));
   for (const destination of ['hand', 'analyze', 'training', 'equity', 'guide']) assert.ok(destinations.includes(destination));
-  assert.match(logic, /const activeView = \$\(`#\$\{mode\}Mode`\)/);
+  // Navigation shows the `${mode}Mode` view for the destination.
+  await app.navigate('personal-strategy');
+  assert.ok(app.byId('calibrationMode').classList.contains('active'));
+  assert.equal(app.byId('calibrationMode').style.display, 'block');
+  await app.navigate('home');
 });
 
 test('the full Personal Strategy workspace remains dormant until Personal Strategy is opened', async () => {
-  assert.match(html, /<template id="rangeCalibrationTemplate">/);
-  assert.match(html, /<template id="calibrationProfileModalTemplate">/);
+  assert.equal(markup.getElementById('rangeCalibrationTemplate').localName, 'template');
+  assert.equal(markup.getElementById('calibrationProfileModalTemplate').localName, 'template');
   assert.doesNotMatch(bootstrap, /from ['"].*personal-strategy/);
   assert.match(bootstrap, /import\('\.\/range-calibration-workspace\.mjs'\)/);
-  assert.doesNotMatch(logic, /rangeCalibrationRepository|loadSnapshot/);
+  // The classic runtime holds no Personal Strategy repository or snapshot loader.
+  assert.equal(app.evaluate('typeof rangeCalibrationRepository'), 'undefined');
+  assert.equal(app.evaluate('typeof loadSnapshot'), 'undefined');
 
   let selected = false;
   let mountCalls = 0;
@@ -56,36 +81,60 @@ test('the full Personal Strategy workspace remains dormant until Personal Strate
 });
 
 test('Game Setup editor accepts any positive number of named Approaches and contains no interpolation controls', () => {
-  const personalIds = [...html.matchAll(/\bid="((?:calibration|personal)[^"]*)"/g)].map((match) => match[1]);
+  // Every calibration/personal id across the page and both templates is unique.
+  const personal = (nodes) => nodes.map((node) => node.id).filter((id) => /^(?:calibration|personal)/.test(id));
+  const pageIds = personal(markup.querySelectorAll('[id]').filter((node) => !workspaceHost.contains(node) && !modalHost.contains(node)));
+  const templateIds = ['rangeCalibrationTemplate', 'calibrationProfileModalTemplate'].flatMap((id) => personal(templateContent(id).querySelectorAll('[id]')));
+  const personalIds = [...pageIds, ...templateIds];
+  assert.ok(templateIds.length > 10);
   assert.equal(new Set(personalIds).size, personalIds.length, 'Workspace and modal fields must resolve to distinct DOM elements');
-  const modal = html.slice(html.indexOf('id="calibrationProfileModalTemplate"'), html.indexOf('</template>', html.indexOf('id="calibrationProfileModalTemplate"')));
-  assert.match(modal, /id="personalApproachNameFields"/);
-  assert.doesNotMatch(modal, /id="calibrationModeName[123]"|three strategy modes/);
+  const modal = modalHost;
+  assert.ok(modal.querySelector('#personalApproachNameFields'));
+  assert.equal(modal.querySelector('#calibrationModeName1, #calibrationModeName2, #calibrationModeName3'), null);
+  assert.doesNotMatch(text(modal), /three strategy modes/i);
   assert.deepEqual(normalizeModeNames(['Usual']), ['Usual']);
   const names = ['Usual', 'Against Alex', 'Deep', 'Short', 'Experiment'];
   assert.deepEqual(normalizeModeNames(names), names);
   assert.throws(() => normalizeModeNames([]), /At least one Approach/);
   assert.throws(() => normalizeModeNames(['Usual', 'usual']), /different/);
-  assert.doesNotMatch(modal, /type="range"|styleValue|interpolation|Tight 0|Loose 100/i);
+  assert.equal(modal.querySelector('input[type="range"]'), null);
+  assert.doesNotMatch(modal.innerHTML, /styleValue|interpolation|Tight 0|Loose 100/i);
   assert.match(workspace, /entry\.modes\.map\(\(candidate\) => candidate\.displayName\)/);
   assert.match(workspace, /personalApproachNameFields'\)\.replaceChildren\(\.\.\.names\.map/);
-  assert.match(html, /id="personalApproachForm"[\s\S]*?type="submit"[^>]*data-i18n="Add Approach"/);
+  const form = [workspaceHost, modalHost].map((host) => host.querySelector('#personalApproachForm')).find(Boolean) || markup.getElementById('personalApproachForm');
+  const submit = form.querySelector('[type="submit"]');
+  assert.equal(submit.dataset.i18n, 'Add Approach');
 });
 
 test('Game Setup editor groups dynamically generated Approach fields beneath an accessible legend', () => {
-  const modal = html.slice(html.indexOf('id="calibrationProfileModalTemplate"'), html.indexOf('</template>', html.indexOf('id="calibrationProfileModalTemplate"')));
-  assert.match(modal, /<fieldset class="calibration-mode-name-fields">[\s\S]*?<legend[^>]*>Approaches<\/legend>[\s\S]*?<div id="personalApproachNameFields" class="calibration-mode-name-inputs">/);
-  assert.match(css, /\.calibration-mode-name-fields \{[^}]*padding: 0;[^}]*border: 0;/);
-  assert.match(css, /\.calibration-mode-name-fields legend \{[^}]*overflow-wrap: anywhere;/);
+  const fieldset = modalHost.querySelector('fieldset.calibration-mode-name-fields');
+  assert.ok(fieldset);
+  assert.equal(text(fieldset.querySelector('legend')), 'Approaches');
+  const inputs = fieldset.querySelector('div#personalApproachNameFields');
+  assert.ok(inputs.classList.contains('calibration-mode-name-inputs'));
+  assert.equal(css.cascaded(fieldset, 'padding'), '0');
+  assert.equal(css.cascaded(fieldset, 'border'), '0');
+  assert.equal(css.cascaded(fieldset.querySelector('legend'), 'overflow-wrap'), 'anywhere');
   assert.match(workspace, /label\.append\(caption, input\)/);
   assert.match(workspace, /input\.required = true; input\.dir = 'auto'/);
-  assert.match(css, /\.calibration-mode-name-inputs input \{[^}]*min-inline-size: 0;[^}]*text-overflow: ellipsis;/);
+  const input = markup.createElement('input');
+  inputs.appendChild(input);
+  assert.equal(css.cascaded(input, 'min-inline-size'), '0');
+  assert.equal(css.cascaded(input, 'text-overflow'), 'ellipsis');
+  input.remove();
 });
 
 test('profile editor keeps its footer usable by scrolling only the form body when viewport height is constrained', () => {
-  assert.match(css, /\.calibration-profile-modal \.modal-body \{[^}]*min-block-size: 0;[^}]*flex: 1 1 auto;[^}]*overflow-y: auto;[^}]*overscroll-behavior: contain;/);
-  assert.match(css, /\.calibration-profile-modal-actions \{[^}]*flex: 0 0 auto;[^}]*justify-content: flex-end;/);
-  assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.calibration-mode-name-inputs \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+  const dialog = modalHost.querySelector('.calibration-profile-modal');
+  const body = dialog.querySelector('.modal-body');
+  assert.equal(css.cascaded(body, 'min-block-size'), '0');
+  assert.equal(css.cascaded(body, 'flex'), '1 1 auto');
+  assert.equal(css.cascaded(body, 'overflow-y'), 'auto');
+  assert.equal(css.cascaded(body, 'overscroll-behavior'), 'contain');
+  const actions = dialog.querySelector('.calibration-profile-modal-actions');
+  assert.equal(css.cascaded(actions, 'flex'), '0 0 auto');
+  assert.equal(css.cascaded(actions, 'justify-content'), 'flex-end');
+  assert.equal(css.cascaded(modalHost.querySelector('.calibration-mode-name-inputs'), 'grid-template-columns', { width: 600 }), 'minmax(0, 1fr)');
 });
 
 test('focused renderer audit covers long-name modal geometry across desktop sizes, RTL, locales, theme, and zoom', () => {
@@ -106,37 +155,44 @@ test('focused renderer audit covers long-name modal geometry across desktop size
 });
 
 test('context builder remains truthful while the bounded RFI question loop is operational', () => {
-  const template = html.slice(html.indexOf('id="rangeCalibrationTemplate"'), html.indexOf('</template>', html.indexOf('id="rangeCalibrationTemplate"')));
+  const template = workspaceHost;
   for (const id of ['calibrationEnvironment', 'calibrationTableSize', 'calibrationHeroPosition', 'calibrationEffectiveStack']) {
-    assert.match(template, new RegExp(`id="${id}"`));
+    assert.ok(template.querySelector(`#${id}`), id);
   }
-  assert.match(template, /Ready to calibrate this range/);
-  assert.match(template, /id="calibrationStartQuestions"[^>]+data-i18n="Start questions"/);
+  assert.match(text(template), /Ready to calibrate this range/);
+  assert.equal(template.querySelector('#calibrationStartQuestions').dataset.i18n, 'Start questions');
   assert.match(workspace, /button\.dataset\.calibrationAction = action\.type/);
   assert.match(service, /RFI calibration supports only canonical fold and raise actions/);
-  assert.match(template, /data-i18n="Inferred high">Inferred high/);
-  assert.doesNotMatch(template, /confidence|data-calibration-action="call"/i);
+  assert.ok(template.querySelectorAll('[data-i18n="Inferred high"]').some((node) => text(node) === 'Inferred high'));
+  assert.doesNotMatch(template.innerHTML, /confidence/i);
+  assert.equal(template.querySelector('[data-calibration-action="call"]'), null);
   assert.doesNotMatch(workspace, /saveRangeObservation|createRangeObservation|StrategyProvider|from ['"][^'"]*training/i);
 });
 
 test('workspace localization and RTL preserve poker notation as LTR data islands', () => {
-  assert.match(html, /range-calibration-translations\.js/);
-  assert.match(html, /data-i18n="Personal Strategy"|data-i18n-aria-label="Personal Strategy"/);
-  assert.match(html, /data-i18n-aria-label="How Range Calibration works"/);
-  assert.match(css, /\[dir="rtl"\] \.calibration-context-preview div[\s\S]*?direction: ltr/);
-  assert.match(html, /id="calibrationPreviewSpot" class="poker-data-token"/);
-  assert.match(html, /id="calibrationStackHelp" class="poker-data-token"/);
-  assert.match(html, /id="calibrationProfileSelect"[^>]*dir="auto"/);
+  assert.ok(markup.querySelectorAll('script[src]').some((script) => script.getAttribute('src').includes('range-calibration-translations.js')));
+  assert.ok(markup.querySelector('[data-i18n="Personal Strategy"], [data-i18n-aria-label="Personal Strategy"]'));
+  assert.ok([markup, workspaceHost].some((root) => root.querySelector('[data-i18n-aria-label="How Range Calibration works"]')));
+  const cell = workspaceHost.querySelector('.calibration-context-preview div');
+  markup.documentElement.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(cell, 'direction'), 'ltr');
+  markup.documentElement.setAttribute('dir', 'ltr');
+  for (const id of ['calibrationPreviewSpot', 'calibrationStackHelp']) {
+    assert.ok(workspaceHost.querySelector(`#${id}`).classList.contains('poker-data-token'), id);
+  }
+  assert.equal(workspaceHost.querySelector('#calibrationProfileSelect').getAttribute('dir'), 'auto');
   assert.match(workspace, /button\.dir = 'auto'/);
 });
 
 test('desktop responsive rules reflow context and session controls without page overflow', () => {
-  const ticketCss = css.slice(css.indexOf('RANGE-CAL-001A: isolated Range Calibration workspace'));
-  assert.match(ticketCss, /grid-template-columns: minmax\(0, 1\.58fr\) minmax\(280px, \.62fr\)/);
-  assert.match(ticketCss, /@media \(max-width: 1180px\)[\s\S]*?\.calibration-main-grid \{ grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(ticketCss, /@media \(max-width: 820px\)[\s\S]*?\.calibration-empty-state \{ grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(ticketCss, /#calibrationMode[\s\S]*?overflow-x: hidden/);
-  assert.match(css, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation \{[^}]*display: flex;[^}]*overflow-x: auto/);
+  const grid = workspaceHost.querySelector('.calibration-main-grid');
+  assert.equal(css.cascaded(grid, 'grid-template-columns', { width: 1440 }), 'minmax(0, 1.58fr) minmax(280px, .62fr)');
+  assert.equal(css.cascaded(grid, 'grid-template-columns', { width: 1100 }), 'minmax(0, 1fr)');
+  assert.equal(css.cascaded(workspaceHost.querySelector('.calibration-empty-state'), 'grid-template-columns', { width: 800 }), 'minmax(0, 1fr)');
+  assert.equal(css.cascaded(markup.getElementById('calibrationMode'), 'overflow-x'), 'hidden');
+  const navigation = markup.querySelector('.mode-navigation');
+  assert.equal(css.cascaded(navigation, 'display', { width: 800 }), 'flex');
+  assert.equal(css.cascaded(navigation, 'overflow-x', { width: 800 }), 'auto');
 });
 
 test('profile dialog and mode controls have keyboard and focus-management fundamentals', () => {
@@ -156,5 +212,3 @@ test('UI and workspace modules do not read or write Web Storage directly', () =>
   assert.match(service, /createPersonalStrategyBrowserStorage/);
   assert.match(browserStorage, /globalThis\.localStorage/);
 });
-
-function templateSource() { return html.slice(html.indexOf('id="rangeCalibrationTemplate"'), html.indexOf('</template>', html.indexOf('id="rangeCalibrationTemplate"'))); }

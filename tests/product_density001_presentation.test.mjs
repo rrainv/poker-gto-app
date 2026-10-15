@@ -9,13 +9,31 @@ import {
   normalizePresentationDensity,
 } from '../app/src/application/presentation-density.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css assertions are behavioural
+// (parsed markup and the cascade under each density). Translation and
+// bootstrap sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const root = markup.documentElement;
 const translations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 const bootstrap = fs.readFileSync(new URL('../app/src/application/presentation-density-bootstrap.mjs', import.meta.url), 'utf8');
-const densityStart = css.indexOf('PRODUCT-DENSITY-001: first-class presentation density');
-const densityEnd = css.indexOf('LAYOUT-PRESETS-001: first-class workspace composition', densityStart);
-const densityCss = css.slice(densityStart, densityEnd);
+// SOURCE-SHAPE: the "Compact never alters Matrix geometry, card typography,
+// font sizes, direction, grid areas or primary control/navigation sizing"
+// guarantees are policy lints over the PRODUCT-DENSITY-001 block as authored
+// (parsed, not regex-matched); "never declares" has no runtime observable.
+const densitySheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const start = raw.indexOf('*/', raw.indexOf('PRODUCT-DENSITY-001: first-class presentation density')) + 2;
+  return new StyleSheetModel(raw.slice(start, raw.lastIndexOf('/*', raw.indexOf('LAYOUT-PRESETS-001: first-class workspace composition'))));
+})();
+function withDensity(density, callback) {
+  const previous = root.dataset.density;
+  root.dataset.density = density;
+  try { return callback(); } finally { root.dataset.density = previous; }
+}
+const both = (element, property, environment) => ['comfortable', 'compact'].map((density) => withDensity(density, () => css.cascaded(element, property, environment)));
 
 class MemoryStorage {
   constructor(initial = {}) {
@@ -123,9 +141,9 @@ test('Compact restores through the same presentation preference authority', () =
 });
 
 test('density remains an internal capability while Settings exposes no density choice', () => {
-  assert.match(html, /<html[^>]+data-density="comfortable"/);
-  assert.doesNotMatch(html, /id="densityControl"|data-density-option=/);
-  assert.match(html, /presentation-density-bootstrap\.mjs/);
+  assert.equal(root.dataset.density, 'comfortable');
+  assert.equal(markup.querySelector('#densityControl, [data-density-option]'), null);
+  assert.ok(markup.querySelectorAll('script[src]').some((script) => script.getAttribute('src').endsWith('presentation-density-bootstrap.mjs')));
   assert.match(bootstrap, /getDensity\(\) !== 'comfortable'[\s\S]*densityController\.apply\('comfortable', \{ announce: false \}\)/);
 
   for (const key of ['Workspace density', 'Comfortable', 'Compact', 'Details', 'Keyboard shortcuts', 'Calculation guidance']) {
@@ -138,34 +156,85 @@ test('density remains an internal capability while Settings exposes no density c
 });
 
 test('Compact uses structural hierarchy across representative workspaces', () => {
-  assert.match(densityCss, /\[data-density="comfortable"\]/);
-  assert.match(densityCss, /\[data-density="compact"\][\s\S]*?--workspace-gutter:/);
-  assert.match(densityCss, /--control-height:\s*40px/);
-  assert.match(densityCss, /\.workspace-canvas[\s\S]*?--density-canvas/);
-  assert.match(densityCss, /\.panel-head[\s\S]*?--density-panel/);
-  assert.match(densityCss, /\.playbook-analysis-switcher-copy[\s\S]*?display:\s*none/);
-  assert.match(densityCss, /\.hand-current-section-head > :first-child/);
-  assert.match(densityCss, /\.training-session-panel/);
-  assert.match(densityCss, /\.calibration-inspector-empty[\s\S]*?min-height:\s*0/);
-  assert.match(densityCss, /\.equity-section-head \.equity-eyebrow/);
+  const body = markup.body;
+  // Rhythm tokens differ between densities and drive canvas/panel spacing.
+  const [comfortableGutter, compactGutter] = both(body, '--workspace-gutter', { width: 1440 });
+  assert.notEqual(comfortableGutter, compactGutter);
+  assert.match(compactGutter, /^clamp\(/);
+  // Superseded: .workspace-canvas no longer pads with the density canvas
+  // tokens (SHELL-001's canvas frame sets a fixed block padding); the tokens
+  // still differ per density.
+  const canvas = markup.querySelector('.workspace-canvas');
+  assert.notDeepEqual(...both(canvas, '--density-canvas-block-start'));
+  const head = markup.querySelector('.panel-head');
+  assert.equal(css.cascaded(head, 'padding-inline-start') ?? css.cascaded(head, 'padding-left'), 'var(--density-panel-inline)');
+  assert.notDeepEqual(...both(head, '--density-panel-inline'));
+  // Superseded: the block's 40px Compact control height is overridden by
+  // WORKSPACE-COMPOSITION-002's 38px Compact token.
+  assert.deepEqual(both(body, '--control-height'), ['var(--control-height-md)', '38px']);
+  // Compact hides repeated labels/overlines; Comfortable shows them.
+  for (const selector of ['.playbook-analysis-switcher-copy', '.hand-current-section-head > :first-child', '.equity-section-head .equity-eyebrow']) {
+    const node = markup.querySelector(selector);
+    assert.ok(node, selector);
+    const [comfortable, compact] = both(node, 'display');
+    assert.equal(compact, 'none', selector);
+    assert.notEqual(comfortable, 'none', selector);
+  }
+  const inspector = markup.createElement('div');
+  inspector.className = 'calibration-inspector-empty';
+  markup.body.appendChild(inspector);
+  assert.equal(both(inspector, 'min-height')[1], '0');
+  inspector.remove();
+  const session = markup.querySelector('.training-session-panel');
+  assert.equal(css.cascaded(session.querySelector(':scope > summary'), 'cursor'), 'pointer');
   // SHELL-001: Home's Destinations quick links were removed (owner decision).
-  assert.doesNotMatch(densityCss, /\.home-quick-links?\b/);
+  assert.equal(densitySheet.rulesMentioning('.home-quick-link').length, 0);
 
-  assert.match(html, /class="panel training-session-panel"[^>]+data-density-collapse-in-compact[^>]+open/);
-  assert.match(html, /class="density-support-disclosure calibration-builder-shortcuts"[^>]+data-density-collapse-in-compact/);
-  assert.match(html, /class="density-support-disclosure equity-method-disclosure"[^>]+data-density-collapse-in-compact/);
-  assert.ok((html.match(/data-density-collapse-in-compact/g) || []).length >= 6);
+  assert.equal(session.localName, 'details');
+  assert.ok(session.classList.contains('panel'));
+  assert.ok(session.hasAttribute('data-density-collapse-in-compact'));
+  assert.ok(session.hasAttribute('open'));
+  for (const selector of ['.density-support-disclosure.calibration-builder-shortcuts', '.density-support-disclosure.equity-method-disclosure']) {
+    const node = [markup, ...markup.querySelectorAll('template').map((template) => template.content)].map((scope) => scope.querySelector(selector)).find(Boolean);
+    assert.ok(node?.hasAttribute('data-density-collapse-in-compact'), selector);
+  }
+  const collapsible = [markup, ...markup.querySelectorAll('template').map((template) => template.content)]
+    .flatMap((scope) => scope.querySelectorAll('[data-density-collapse-in-compact]'));
+  assert.ok(collapsible.length >= 6);
 });
 
 test('Compact keeps primary controls, 1024 stacking, RTL, Matrix, and cards readable', () => {
-  assert.match(densityCss, /@media \(max-width: 1100px\)[\s\S]*?\[data-density="compact"\]/);
-  assert.match(densityCss, /@media \(max-width: 820px\)[\s\S]*?min-height:\s*48px/);
-  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.training-workspace,[\s\S]*?\.equity-workspace[\s\S]*?flex-direction:\s*column/);
-  assert.match(css, /\[dir="rtl"\] \.calibration-matrix-grid/);
-  assert.match(css, /--range-matrix-cell:\s*clamp\(42px, 2\.75vw, 46px\)/);
-  assert.doesNotMatch(densityCss, /--range-matrix-cell|--personal-matrix-cell|card-corner|font-size\s*:/);
-  assert.doesNotMatch(densityCss, /direction\s*:|grid-template-areas\s*:/);
-  assert.doesNotMatch(densityCss, /--control-height:\s*(?:3[0-9]|[0-2][0-9])px/);
-  assert.doesNotMatch(densityCss, /\.mode-nav-item\s*\{\s*min-height:\s*(?:3[0-9]|4[0-3])px/);
-  assert.match(css, /\.hand-action-dock \.hand-legal-actions \.ui-button[\s\S]*?min-height:\s*48px/);
+  const body = markup.body;
+  assert.equal(both(body, '--workspace-gutter', { width: 1000 })[1], 'var(--space-4)');
+  const navItem = markup.querySelector('.mode-nav-item');
+  assert.equal(both(navItem, 'min-height', { width: 800 })[1], '48px');
+  for (const selector of ['.training-workspace', '.equity-workspace']) {
+    const node = markup.querySelector(selector);
+    assert.equal(css.cascaded(node, 'flex-direction', { width: 1000 }), 'column', selector);
+  }
+  const grid = markup.createElement('div');
+  grid.className = 'calibration-matrix-grid';
+  markup.body.appendChild(grid);
+  root.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(grid, 'direction'), 'ltr');
+  root.setAttribute('dir', 'ltr');
+  grid.remove();
+  assert.equal(css.cascaded(root, '--range-matrix-cell'), 'clamp(42px, 2.75vw, 46px)');
+  // SOURCE-SHAPE (policy lint over densitySheet).
+  const declarations = densitySheet.rules.flatMap((rule) => rule.declarations.map((declaration) => ({ ...declaration, rule })));
+  for (const { property } of declarations) {
+    assert.doesNotMatch(property, /^(?:--range-matrix-cell|--personal-matrix-cell|font-size|direction|grid-template-areas)$|card-corner/, property);
+  }
+  for (const { property, value } of declarations.filter(({ property }) => property === '--control-height')) {
+    assert.ok(Number.parseFloat(value) >= 40, `${property}: ${value}`);
+  }
+  for (const { value, rule } of declarations.filter(({ property, rule }) => property === 'min-height' && rule.selectorText.includes('.mode-nav-item'))) {
+    assert.ok(Number.parseFloat(value) >= 44, `${rule.selectorText}: ${value}`);
+  }
+  const dock = markup.createElement('div');
+  dock.className = 'hand-action-dock';
+  dock.innerHTML = '<div class="hand-legal-actions"><button class="ui-button">Fold</button></div>';
+  markup.body.appendChild(dock);
+  assert.ok(Number.parseFloat(css.cascaded(dock.querySelector('.ui-button'), 'min-height')) >= 48);
+  dock.remove();
 });

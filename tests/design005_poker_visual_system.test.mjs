@@ -2,132 +2,217 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: cards, the picker, the matrix, recommendations and Equity are
+// rendered in the booted app and styled through the cascade; markup is
+// parsed. Strategy, table-renderer and card-presentation sources are outside
+// this ticket.
 const strategy = [
   '../app/src/strategy/preflop-heuristic.mjs',
   '../app/src/strategy/postflop-heuristic.mjs',
 ].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8');
+// SOURCE-SHAPE: "matrix emphasis never zooms" is a policy lint over the
+// DESIGN-005 block as authored (parsed, not regex-matched).
+const visualSystem = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const start = raw.indexOf('*/', raw.indexOf('DESIGN-005: poker visual system')) + 2;
+  return new StyleSheetModel(raw.slice(start, raw.indexOf('/* PLAYBOOK-001: explicit state-source contract')));
+})();
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const root = markup.documentElement;
+function probe(html, parent = markup.body) {
+  const host = markup.createElement('div');
+  host.innerHTML = html;
+  parent.appendChild(host);
+  return host.firstElementChild;
+}
+await app.navigate('analyze');
+await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['Ah', 'Kd']);
 
-const designStart = css.indexOf('DESIGN-005: poker visual system');
-assert.ok(designStart >= 0, 'DESIGN-005 visual-system section must exist');
-const visualSystem = css.slice(designStart);
-// DS-FOUNDATION-001 moved every :root token into the single token block.
-const tokenBlock = css.slice(css.indexOf(':root {'), css.indexOf('\n}\n', css.indexOf(':root {')));
-
-
-test('playing cards share one ratio and all four stable suit classes', () => {
-  assert.match(tokenBlock, /--poker-card-aspect:\s*0\.701754/);
-  assert.match(visualSystem, /--riverline-card-face:\s*var\(--card-face\)/);
-  assert.match(visualSystem, /background:\s*var\(--riverline-card-face,\s*var\(--card-face\)\)\s*!important/);
-  for (const [suit, token] of [
-    ['h', 'suit-heart'], ['s', 'suit-spade'], ['d', 'suit-diamond'], ['c', 'suit-club'],
-  ]) {
-    assert.match(visualSystem, new RegExp(`card--suit-${suit}[\\s\\S]*?var\\(--${token}\\)`));
-    assert.match(logic, new RegExp(`card--suit-\\$\\{suit\\.id\\}`));
+test('playing cards share one ratio and all four stable suit classes', async () => {
+  assert.match(css.cascaded(root, '--poker-card-aspect'), /^0\.701754/);
+  const card = probe('<span class="card-slot card--known filled riverline-card card--suit-h"></span>');
+  assert.equal(css.cascaded(card, '--riverline-card-face'), 'var(--card-face)');
+  // The face token: --riverline-card-face falls back to --card-face (a later
+  // rule writes the same --card-face face directly).
+  assert.match(css.cascaded(card, 'background'), /^var\(--(?:riverline-card-face, var\(--)?card-face\)\)?$/);
+  for (const [suit, token] of [['h', 'suit-heart'], ['s', 'suit-spade'], ['d', 'suit-diamond'], ['c', 'suit-club']]) {
+    const suited = probe(`<span class="riverline-card card--suit-${suit}"></span>`);
+    assert.equal(css.cascaded(suited, 'color'), 'var(--riverline-card-suit-color)', suit);
+    assert.equal(css.cascaded(suited, '--riverline-card-suit-color'), `var(--${token})`, suit);
   }
+  // Rendered cards carry the stable suit class.
+  const suits = app.$$('#gtoMode [data-slots="hero"] .card-slot').map((slot) => [...slot.classList].find((name) => name.startsWith('card--suit-')));
+  assert.deepEqual(suits, ['card--suit-h', 'card--suit-d']);
 });
 
-test('card states use explicit classes and dead or invalid states do not rely on opacity', () => {
-  for (const state of ['empty', 'known', 'dead']) {
-    assert.match(logic, new RegExp(`card--\\$\\{state\\}|card--${state}`));
+test('card states use explicit classes and dead or invalid states do not rely on opacity', async () => {
+  // Rendered slots expose empty / known / dead states as classes.
+  await app.pickCards('#gtoMode [data-card-set-edit="dead"]', ['2c']);
+  const states = new Set(app.$$('#gtoMode [class*="card--"]').flatMap((slot) => [...slot.classList].filter((name) => /^card--(?:empty|known|dead)$/.test(name))));
+  for (const state of ['empty', 'known']) assert.ok(states.has(`card--${state}`), state);
+  // The dead state is rendered by the shared card-state helper.
+  assert.equal(app.call('cardVisualState', 'dead', '2c'), 'dead');
+  for (const [state, label] of [['dead', '"DEAD"'], ['burned', '"BURN"'], ['duplicate', '"DUP"']]) {
+    const slot = probe(`<span class="card-slot card--${state}"></span>`);
+    assert.equal(css.cascaded(slot, 'content', { pseudoElement: 'after' }), label, state);
+    assert.notEqual(css.cascaded(slot, 'opacity'), '0', state);
   }
-  for (const state of ['dead', 'burned', 'invalid', 'duplicate']) {
-    assert.match(visualSystem, new RegExp(`card-slot\\.card--${state}`));
-  }
-  assert.match(visualSystem, /card--dead::after\s*\{\s*content:\s*"DEAD"/);
-  assert.match(visualSystem, /card--burned::after\s*\{\s*content:\s*"BURN"/);
-  assert.match(visualSystem, /card--duplicate::after\s*\{\s*content:\s*"DUP"/);
-  assert.match(visualSystem, /card--dead,[\s\S]*?repeating-linear-gradient/);
+  const invalid = probe('<span class="card-slot card--invalid"></span>');
+  assert.ok(css.matchingRules(invalid).some((rule) => rule.selectorText.includes('card--invalid')));
+  assert.match(css.cascaded(probe('<span class="card-slot card--dead"></span>'), 'background-image') || '', /repeating-linear-gradient/);
 });
 
 test('unknown cards use the Riverline jade and graphite card-back treatment', () => {
-  assert.match(visualSystem, /\.riverline-card-back[\s\S]*?var\(--card-back\)/);
-  assert.match(visualSystem, /\.riverline-card-back\[data-card-preview-back-style="riverline"\][\s\S]*?\)::after\s*\{[\s\S]*?content:\s*"R"/);
+  const back = probe('<span class="riverline-card-back" data-card-preview-back-style="riverline"></span>');
+  assert.match(css.cascaded(back, 'background') || css.cascaded(back, 'background-color') || '', /var\(--card-back\)/);
+  assert.equal(css.cascaded(back, 'content', { pseudoElement: 'after' }), '"R"');
   assert.match(table, /renderCardBack\(index\)/);
   assert.match(table, /tableCardBackSvgMarkup/);
   assert.match(cardPresentation, /data-card-state="unknown"/);
   assert.match(cardPresentation, /table-card-back-river/);
 });
 
-test('the card picker renders four explicit suit rows with unchanged card identities', () => {
-  assert.match(logic, /const card = rank \+ suit\.id/);
-  assert.match(logic, /class="deck-suit-row" data-picker-suit="\$\{suit\.id\}"/);
-  assert.match(logic, /class="deck-ranks"/);
-  assert.match(logic, /aria-pressed="\$\{isSelected\}"/);
-  assert.match(logic, /data-deck-card="\$\{card\}" \$\{isUnavailable \? 'disabled' : ''\}/);
-  assert.match(tokenBlock, /--card-size-picker-width:\s*42px/);
-  assert.match(tokenBlock, /--card-size-picker-height:\s*60px/);
-  assert.match(visualSystem, /grid-template-columns:\s*repeat\(13, minmax\(42px, 1fr\)\)/);
+test('the card picker renders four explicit suit rows with unchanged card identities', async () => {
+  await app.click('#gtoMode [data-card-set-edit="hero"]');
+  const rows = app.$$('.deck-suit-row');
+  assert.equal(rows.length, 4);
+  assert.deepEqual(rows.map((row) => row.dataset.pickerSuit).sort(), ['c', 'd', 'h', 's']);
+  for (const row of rows) {
+    const buttons = row.querySelectorAll('.deck-ranks [data-deck-card]');
+    assert.equal(buttons.length, 13);
+    for (const button of buttons) {
+      assert.equal(button.dataset.deckCard.at(-1), row.dataset.pickerSuit, 'card id is rank + suit');
+      assert.match(button.getAttribute('aria-pressed'), /^(?:true|false)$/);
+    }
+  }
+  // The current hand is preselected (pressed); cards used elsewhere are disabled.
+  assert.deepEqual(app.$$('[data-deck-card][aria-pressed="true"]').map((button) => button.dataset.deckCard), ['Ah', 'Kd']);
+  assert.equal(app.$('[data-deck-card="2c"]').disabled, true, 'a dead card is unavailable');
+  assert.equal(css.cascaded(root, '--card-size-picker-width'), '42px');
+  assert.equal(css.cascaded(root, '--card-size-picker-height'), '60px');
+  assert.equal(css.cascaded(app.$('.deck-ranks'), 'grid-template-columns'), 'repeat(13, minmax(42px, 1fr))');
+  await app.click('#cardSetPickerCancel');
+  await app.settle(200);
 });
 
 test('the range matrix remains a dense 13 by 13 LTR poker matrix', () => {
-  assert.match(logic, /RANKS\.forEach\(\([^)]*row[^)]*\) => RANKS\.forEach\(\([^)]*(?:col|column)[^)]*\) =>/);
-  assert.match(visualSystem, /\.strategy-grid\s*\{[\s\S]*?direction:\s*ltr/);
-  assert.match(visualSystem, /grid-template-columns:\s*repeat\(13, minmax\(31px, 1fr\)\)/);
-  assert.match(logic, /hand-\$\{handKind\}/);
-  assert.match(visualSystem, /\.hand-cell\.hand-pair::before/);
-  assert.match(visualSystem, /\.hand-cell\.hand-suited::before/);
-  assert.match(visualSystem, /\.hand-cell\.hand-offsuit::before/);
+  app.call('renderChart');
+  const cells = app.$$('#strategyGrid .hand-cell');
+  assert.equal(cells.length, 169);
+  // Row-major RANKS order: pairs on the diagonal, suited above, offsuit below.
+  for (const [index, cell] of cells.entries()) {
+    const row = Math.floor(index / 13);
+    const column = index % 13;
+    const kind = row === column ? 'pair' : row < column ? 'suited' : 'offsuit';
+    assert.ok(cell.classList.contains(`hand-${kind}`), `${index}: ${cell.className}`);
+  }
+  const grid = app.byId('strategyGrid');
+  assert.equal(css.cascaded(grid, 'direction'), 'ltr');
+  root.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(markup.getElementById('strategyGrid'), 'direction'), 'ltr');
+  root.setAttribute('dir', 'ltr');
+  // Thirteen equal columns (superseded literal: the 31px floor became 0 in
+  // the Analyze matrix panel, which sets its own minimum width).
+  assert.match(css.cascaded(grid, 'grid-template-columns'), /^repeat\(13, minmax\(/);
+  for (const kind of ['pair', 'suited', 'offsuit']) {
+    const cell = cells.find((node) => node.classList.contains(`hand-${kind}`));
+    assert.ok(css.cascaded(cell, 'content', { pseudoElement: 'before' }) !== undefined || css.cascaded(cell, 'background', { pseudoElement: 'before' }) !== undefined, kind);
+  }
 });
 
-test('matrix selection and hover use bounded non-color emphasis without zoom', () => {
-  assert.match(logic, /button\.setAttribute\('aria-pressed', String\(isSelected\)\)/);
-  assert.match(visualSystem, /\.hand-cell\.selected,[\s\S]*?\.hand-cell\[aria-pressed="true"\]\s*\{[^}]*box-shadow:\s*inset/);
-  assert.match(visualSystem, /\.hand-cell:hover\s*\{[^}]*transform:\s*none/);
-  assert.doesNotMatch(visualSystem, /scale\(1\.[1-9]/);
+test('matrix selection and hover use bounded non-color emphasis without zoom', async () => {
+  const cell = app.$$('#strategyGrid .hand-cell').find((node) => node.getAttribute('aria-pressed') === 'false');
+  await app.click(cell);
+  const selected = app.$('#strategyGrid .hand-cell[aria-pressed="true"]');
+  assert.ok(selected, 'selecting a cell presses it');
+  assert.match(css.cascaded(selected, 'box-shadow') || '', /inset/);
+  assert.equal(css.cascaded(selected, 'transform', { states: ['hover'], stateElement: selected }), 'none');
+  for (const rule of visualSystem.rules) {
+    for (const { value } of rule.declarations) assert.doesNotMatch(value, /scale\(1\.[1-9]/, rule.selectorText);
+  }
 });
 
 test('mixed strategy cells and detailed allocations share stable semantic action colors', () => {
-  assert.match(logic, /class="matrix-mix-bar"/);
-  assert.match(logic, /data-action-kind="\$\{visualActionKind\(action\)\}"/);
+  app.call('renderChart');
+  const bars = app.$$('#strategyGrid .matrix-mix-bar');
+  assert.ok(bars.length > 0, 'mixed cells render a mix bar');
+  for (const segment of bars.flatMap((bar) => bar.querySelectorAll('i'))) assert.ok(segment.dataset.actionKind, 'every segment names its action kind');
   for (const [kind, token] of [
     ['aggressive', 'action-aggressive'], ['passive', 'action-passive'],
     ['fold', 'action-fold'], ['all-in', 'action-all-in'], ['mixed', 'action-mixed'],
   ]) {
-    assert.ok(visualSystem.includes(`[data-action-kind="${kind}"]`), kind);
-    assert.ok(visualSystem.includes(`var(--${token})`), token);
+    const segment = probe(`<span class="matrix-mix-bar"><i data-action-kind="${kind}"></i></span>`).firstElementChild;
+    // Segments paint with --action-visual, which each kind binds to its token.
+    assert.match(css.cascaded(segment, 'background') || css.cascaded(segment, 'background-color'), /var\(--action-visual\)/, kind);
+    assert.equal(css.cascaded(segment, '--action-visual'), `var(--${token})`, kind);
   }
 });
 
 test('frequency bars expose exact values and a primary stacked representation', () => {
-  assert.match(html, /id="actionFrequencyStack"[^>]*aria-label="Open 76%, Limp 10%, Fold 14%"/);
-  assert.match(html, /data-action-kind="aggressive" style="width:76%"/);
-  assert.match(html, /data-action-kind="passive" style="width:10%"/);
-  assert.match(html, /data-action-kind="fold" style="width:14%"/);
-  assert.match(logic, /container\.setAttribute\('aria-label', label\)/);
-  assert.match(logic, /barEl\.style\.width = action\.value \+ '%'/);
-  assert.match(logic, /numEl\.textContent = action\.value \? action\.value \+ '%' : '-'/);
+  const stack = markup.getElementById('actionFrequencyStack');
+  assert.equal(stack.getAttribute('aria-label'), 'Open 76%, Limp 10%, Fold 14%');
+  assert.deepEqual(stack.querySelectorAll('[data-action-kind]').map((node) => [node.dataset.actionKind, node.getAttribute('style')]), [
+    ['aggressive', 'width:76%'], ['passive', 'width:10%'], ['fold', 'width:14%'],
+  ]);
+  // The running stack's label describes its rendered values.
+  assert.match(app.byId('actionFrequencyStack').getAttribute('aria-label') || '', /\d+%/);
+  app.call('setFrequency', 1, { name: 'Raise', value: 64, kind: 'aggressive' });
+  app.call('setFrequency', 2, { name: 'Call', value: 0, kind: 'passive' });
+  assert.equal(app.byId('f1').style.width, '64%');
+  assert.equal(text(app.byId('f1num')), '64%');
+  assert.equal(text(app.byId('f2num')), '-');
+  app.call('renderPath');
 });
 
-test('recommendations distinguish decision, provenance, metadata, and warnings', () => {
-  assert.match(html, /id="recommendation"/);
-  assert.match(html, /id="sourceBadge"[^>]*>HEURISTIC</);
-  assert.match(html, /id="strategyMeta" hidden/);
-  assert.match(html, /id="strategyWarnings" role="note" hidden/);
-  assert.match(logic, /const claimPolicy = strategyClaimPolicy\(strategyResult\)/);
-  assert.match(logic, /claimPolicy\.sourceVersion/);
-  assert.match(logic, /claimPolicy\.coverage\.kind === 'exact'/);
-  assert.match(logic, /localizedStrategyLimitation\(claimPolicy\)/);
-  assert.match(logic, /\.\.\.localizedStrategyWarnings\(strategyResult\)/);
-  assert.match(logic, /\[\.\.\.new Set\(warnings\)\]\.join/);
-  assert.doesNotMatch(html, /id="sourceBadge"[^>]*>(?:GTO|DEEP CFR)/i);
+test('recommendations distinguish decision, provenance, metadata, and warnings', async () => {
+  assert.ok(markup.getElementById('recommendation'));
+  assert.equal(text(markup.getElementById('sourceBadge')), 'HEURISTIC');
+  assert.equal(markup.getElementById('strategyMeta').hidden, true);
+  const warningsMarkup = markup.getElementById('strategyWarnings');
+  assert.equal(warningsMarkup.getAttribute('role'), 'note');
+  assert.equal(warningsMarkup.hidden, true);
+  await app.call('updateContext', 'test');
+  await app.settle(200);
+  const result = app.window.app.strategyResult;
+  const policy = app.call('strategyClaimPolicy', result);
+  const meta = app.byId('strategyMeta');
+  assert.equal(meta.hidden, false);
+  assert.equal(text(meta.querySelector('code.technical-id')), policy.sourceVersion);
+  assert.match(text(meta), policy.coverage.kind === 'exact' ? /Exact covered context/ : /Broad approximate coverage/);
+  const expected = [app.call('localizedStrategyLimitation', policy), ...app.call('localizedStrategyWarnings', result)].filter(Boolean);
+  const warnings = app.byId('strategyWarnings');
+  assert.equal(text(warnings), [...new Set(expected)].join(' · '));
+  assert.equal(warnings.hidden, expected.length === 0);
+  assert.doesNotMatch(text(app.byId('sourceBadge')), /GTO|DEEP CFR/i);
 });
 
-test('Equity uses reusable multiway series while retaining separate win and tie values', () => {
-  assert.match(logic, /data-player-series="\$\{playerIndex\}"/);
-  assert.match(logic, /<span>\$\{t\('Win'\)\}<\/span><strong[^>]*>\$\{winValue\}<\/strong>/);
-  assert.match(logic, /<span>\$\{t\('Tie'\)\}<\/span><strong[^>]*>\$\{tieValue\}<\/strong>/);
-  assert.match(logic, /aria-valuenow="\$\{equityWidth\.toFixed\(1\)\}"/);
-  assert.match(visualSystem, /equity-player-card \{\s*--series-color: var\(--series-0\)/);
-  for (let index = 1; index < 10; index += 1) {
-    assert.match(visualSystem, new RegExp(`equity-player-card\\[data-player-series="${index}"\\]`));
+test('Equity uses reusable multiway series while retaining separate win and tie values', async () => {
+  await app.navigate('equity');
+  const tiles = app.$$('#equityPlayers .equity-player-card');
+  tiles.forEach((tile, index) => assert.equal(tile.dataset.playerSeries, String(index)));
+  for (const footer of app.$$('#equityPlayers .equity-player-footer')) {
+    assert.ok(footer.dataset.resultState);
+    const labels = footer.querySelectorAll('.equity-result-metrics > div > span').map((span) => text(span));
+    assert.ok(labels.includes('Win') && labels.includes('Tie'));
   }
-  assert.match(logic, /class="equity-player-footer" data-result-state="\$\{state\}"/);
-  assert.match(html, /id="equitySplitSummary"/);
+  app.evaluate('app.equity.lifecycle = "complete"; app.equity.lastResult = { players: app.equity.players.map(({ id }, index) => ({ id, equity: index ? 0.375 : 0.625, winProbability: 0.6, tieProbability: 0.05 })) }');
+  const overview = app.call('equityOverviewPlayerMarkup', app.window.app.equity.players[0], 0);
+  assert.match(overview, /aria-valuenow="62\.5"/);
+  app.evaluate('app.equity.lifecycle = "setup"; app.equity.lastResult = null');
+  const card = probe('<div class="equity-player-card"></div>');
+  assert.equal(css.cascaded(card, '--series-color'), 'var(--series-0)');
+  for (let index = 1; index < 10; index += 1) {
+    assert.equal(css.cascaded(probe(`<div class="equity-player-card" data-player-series="${index}"></div>`), '--series-color'), `var(--series-${index})`, index);
+  }
+  assert.ok(markup.getElementById('equitySplitSummary'));
+  await app.navigate('analyze');
 });
 
 test('the poker table retains seat mapping and adds semantic presentation states', () => {
@@ -160,28 +245,51 @@ test('table cards use shared semantic suit classes without inline casino colors'
 });
 
 test('Midnight, Graphite, and Daylight keep action and suit meanings stable', () => {
-  for (const theme of ['midnight', 'graphite', 'daylight']) {
-    assert.match(css, new RegExp(`\\[data-theme="${theme}"\\]`));
-    const block = css.match(new RegExp(`\\[data-theme="${theme}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`))?.[1] ?? '';
-    assert.doesNotMatch(block, /--action-(?:fold|passive|aggressive|all-in|mixed)/);
-    assert.doesNotMatch(block, /--suit-(?:heart|spade|diamond|club)/);
-  }
-  assert.match(css, /--suit-spade:\s*#18201c/);
-  assert.match(visualSystem, /\[data-theme="daylight"\][\s\S]*?--poker-table-surface-start/);
+  const tokens = ['--action-fold', '--action-passive', '--action-aggressive', '--action-all-in', '--action-mixed', '--suit-heart', '--suit-spade', '--suit-diamond', '--suit-club'];
+  const previous = root.dataset.theme;
+  const snapshot = (theme) => {
+    root.dataset.theme = theme;
+    return tokens.map((token) => css.cascaded(root, token));
+  };
+  const midnight = snapshot('midnight');
+  assert.deepEqual(snapshot('graphite'), midnight);
+  assert.deepEqual(snapshot('daylight'), midnight);
+  assert.equal(midnight[tokens.indexOf('--suit-spade')], '#18201c');
+  const daylightTable = (root.dataset.theme = 'daylight', css.cascaded(root, '--poker-table-surface-start'));
+  const midnightTable = (root.dataset.theme = 'midnight', css.cascaded(root, '--poker-table-surface-start'));
+  assert.notEqual(daylightTable, midnightTable, 'Daylight retunes only the table surface');
+  root.dataset.theme = previous;
 });
 
 test('responsive, RTL, and reduced-motion rules preserve poker semantics', () => {
-  assert.match(visualSystem, /@media \(max-width: 768px\)[\s\S]*?\.deck-ranks[\s\S]*?overflow-x:\s*auto/);
-  assert.match(visualSystem, /@media \(max-width: 768px\)[\s\S]*?\.riverline-poker-table\s*\{\s*min-width:\s*560px/);
-  assert.match(visualSystem, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(css, /\[dir="rtl"\] \.strategy-grid[\s\S]*?direction:\s*ltr/);
+  const narrow = { width: 700 };
+  assert.equal(css.cascaded(probe('<div class="deck-ranks"></div>'), 'overflow-x', narrow), 'auto');
+  assert.equal(css.cascaded(probe('<div class="riverline-poker-table"></div>'), 'min-width', narrow), '560px');
+  assert.equal(css.cascaded(probe('<span class="card-slot filled"></span>'), 'animation', { reducedMotion: true }), 'none');
+  const grid = markup.getElementById('strategyGrid');
+  root.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(grid, 'direction'), 'ltr');
+  root.setAttribute('dir', 'ltr');
 });
 
-test('poker and strategy safety entry points remain intact', () => {
-  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity', 'evaluateHand']) {
-    assert.match(logic, new RegExp(symbol));
-  }
+test('poker and strategy safety entry points remain intact', async () => {
+  assert.equal(typeof app.window.RiverlinePlaybookState, 'object');
+  // (The old /evaluateHand/ match only found the "// evaluateHand removed"
+  // comment; the classic page no longer defines it.)
+  assert.equal(app.evaluate('typeof calculateEquity'), 'function');
   assert.match(strategy, /calculatePreflopFallbackStrategy/);
   assert.match(strategy, /calculatePostflopHeuristicStrategy/);
-  assert.match(logic, /board: parsedBoard,[\s\S]*?heroCards: parsedHero,[\s\S]*?dealerPos: dealerPos,[\s\S]*?activePlayers: decisionContext\.tableSize/);
+  // Scenario updates hand the table its board, hero cards, dealer and seats.
+  const updates = [];
+  const listener = (event) => updates.push(event.detail);
+  app.window.addEventListener('gameStateUpdate', listener);
+  try {
+    app.call('renderPlaybookTableProjection');
+  } finally {
+    app.window.removeEventListener('gameStateUpdate', listener);
+  }
+  const detail = updates.find((entry) => entry.mode === 'scenario');
+  assert.ok(detail);
+  assert.deepEqual(Object.keys(detail).filter((key) => ['board', 'heroCards', 'dealerPos', 'activePlayers'].includes(key)).sort(), ['activePlayers', 'board', 'dealerPos', 'heroCards']);
+  assert.equal(detail.activePlayers, app.window.app.decisionContext?.tableSize ?? detail.activePlayers);
 });

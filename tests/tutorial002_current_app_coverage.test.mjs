@@ -8,13 +8,25 @@ import { HOME_TUTORIAL_DEFINITION } from '../app/src/tutorial/home-tutorial.mjs'
 import { SAVED_TUTORIAL_DEFINITION } from '../app/src/tutorial/saved-tutorial.mjs';
 import { CURRENT_APP_TUTORIAL_DEFINITIONS } from '../app/src/tutorial/current-app-tutorials.mjs';
 
-const [html, bootstrap, logic, css, translationSource] = await Promise.all([
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
+import { appStyleSheet, bootApp, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural (parsed markup, the cascade, the running shell's tutorial
+// offers). The tutorial bootstrap and translation sources are outside this
+// ticket.
+const [bootstrap, translationSource] = await Promise.all([
   readFile(new URL('../app/src/application/tutorial-bootstrap.mjs', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
-  readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/tutorial-translations.js', import.meta.url), 'utf8'),
 ]);
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const probe = (html) => {
+  const host = markup.createElement('div');
+  host.innerHTML = html;
+  markup.body.appendChild(host);
+  return host.firstElementChild;
+};
 
 const definitions = [HOME_TUTORIAL_DEFINITION, SAVED_TUTORIAL_DEFINITION, ...CURRENT_APP_TUTORIAL_DEFINITIONS];
 const byId = new Map(definitions.map((definition) => [definition.id, definition]));
@@ -73,7 +85,9 @@ test('all definition copy is complete in EN, RU, and HE with no runtime fallback
 });
 
 test('every tutorial target is a semantic DOM anchor and conditional states are named', () => {
-  const anchors = new Set([...html.matchAll(/data-tutorial-anchor="([^"]+)"/g)].map((match) => match[1]));
+  const anchorNodes = [markup, ...markup.querySelectorAll('template').map((template) => template.content)]
+    .flatMap((root) => root.querySelectorAll('[data-tutorial-anchor]'));
+  const anchors = new Set(anchorNodes.map((node) => node.dataset.tutorialAnchor));
   for (const definition of definitions) {
     for (const step of definition.steps) assert.ok(anchors.has(step.anchor), `${definition.id}: ${step.anchor}`);
   }
@@ -83,7 +97,7 @@ test('every tutorial target is a semantic DOM anchor and conditional states are 
   ]) {
     assert.match(bootstrap, new RegExp(`['"]${precondition}['"]`));
   }
-  assert.doesNotMatch(html, /data-tutorial-anchor="(?:left|right|top|bottom|column|row)-/);
+  for (const anchor of anchors) assert.doesNotMatch(anchor, /^(?:left|right|top|bottom|column|row)-/, anchor);
 });
 
 test('truthfulness copy preserves Scenario, Replay, strategy, Training, Equity, Matrix, and calibration boundaries', () => {
@@ -111,7 +125,7 @@ test('truthfulness copy preserves Scenario, Replay, strategy, Training, Equity, 
   assert.doesNotMatch(Object.values(copy).join('\n'), /EV loss is|solver accuracy is|exploitability score|confidence: \d+%/i);
 });
 
-test('first-use policy offers only contextual basics while advanced tours remain discoverable', () => {
+test('first-use policy offers only contextual basics while advanced tours remain discoverable', async () => {
   const prompted = definitions.filter((definition) => definition.firstUsePolicy === 'prompt').map((definition) => definition.id);
   assert.deepEqual(prompted, [
     'home.first-use', 'playbook.scenario-basics', 'playbook.hand-mode',
@@ -121,8 +135,26 @@ test('first-use policy offers only contextual basics while advanced tours remain
   assert.match(bootstrap, /candidate\.firstUsePolicy === 'prompt'/);
   assert.match(bootstrap, /persistence\.shouldOffer\(candidate\)/);
   assert.match(bootstrap, /controller\.getState\(\)\.status === 'active'/);
-  assert.match(logic, /offerForWorkspace\?\.\(mode, activeView\)/);
-  assert.match(logic, /offerForWorkspace\?\.\('gto'/);
+  // The shell offers a workspace's tutorial with its active view on
+  // navigation, and offers the Playbook ('gto') tutorial on mode switches.
+  const tutorials = app.window.RiverlineTutorials;
+  const offers = [];
+  Object.defineProperty(app.window, 'RiverlineTutorials', {
+    configurable: true, enumerable: false,
+    value: { ...tutorials, offerForWorkspace: (workspace, view) => { offers.push([workspace, view?.id]); } },
+  });
+  try {
+    await app.navigate('equity');
+    assert.deepEqual(offers.at(-1), ['equity', 'equityMode']);
+    await app.navigate('analyze');
+    offers.length = 0;
+    await app.call('requestPlaybookMode', 'hand');
+    await app.settle(200);
+    assert.ok(offers.some(([workspace, view]) => workspace === 'gto' && view === 'gtoMode'), JSON.stringify(offers));
+  } finally {
+    Object.defineProperty(app.window, 'RiverlineTutorials', { configurable: true, enumerable: false, value: tutorials });
+    await app.navigate('home');
+  }
 });
 
 test('workspace discovery supports one direct restart or a compact accessible chooser', () => {
@@ -134,8 +166,8 @@ test('workspace discovery supports one direct restart or a compact accessible ch
   assert.match(bootstrap, /event\.key === 'Escape'/);
   assert.match(bootstrap, /\(list\.querySelector\('button'\) \?\? close\)\.focus\?\.\(\)/);
   assert.match(bootstrap, /tutorialInvoker\?\.focus/);
-  assert.match(html, /id="settingsTutorialButton"/);
-  assert.match(css, /\.tutorial-chooser[\s\S]*?max-height: calc\(100dvh/);
+  assert.ok(markup.getElementById('settingsTutorialButton'));
+  assert.match(css.cascaded(probe('<div class="tutorial-chooser"></div>'), 'max-height'), /^calc\(100dvh/);
 });
 
 test('controller exposes all definitions for a workspace without changing start semantics', () => {
@@ -156,6 +188,18 @@ test('inactive tutorial integration stays presentation-only and dormant', () => 
   assert.doesNotMatch(bootstrap, /MutationObserver|setInterval|resolveStrategy|calculateEquity|generateTrainingExercise|indexedDB/);
   assert.doesNotMatch(bootstrap, /from ['"][^'"]*(?:strategy|equity|training|replay|saved-study|poker-domain)/i);
   assert.match(bootstrap, /chooserMounted: Boolean\(chooser\)/);
-  assert.match(css, /prefers-reduced-motion: reduce[\s\S]*?\.tutorial-spotlight/);
-  assert.match(css, /body:has\(#settingsModal\.show\) \.tutorial-layer/);
+  // Reduced motion: the spotlight and coach do not animate (the spotlight
+  // never interpolates its geometry at all).
+  for (const className of ['tutorial-spotlight', 'tutorial-coach']) {
+    assert.equal(css.cascaded(probe(`<div class="${className}"></div>`), 'transition', { reducedMotion: true }), 'none', className);
+  }
+  assert.equal(css.cascaded(probe('<div class="tutorial-spotlight"></div>'), 'transition'), 'none');
+  // Over an open Settings dialog the tutorial layer rises above the backdrop.
+  const layer = probe('<div class="tutorial-layer"></div>');
+  const settings = markup.getElementById('settingsModal');
+  const closed = css.cascaded(layer, 'z-index');
+  settings.classList.add('show');
+  assert.equal(css.cascaded(layer, 'z-index'), 'calc(var(--z-modal-backdrop) + 1)');
+  settings.classList.remove('show');
+  assert.notEqual(closed, 'calc(var(--z-modal-backdrop) + 1)');
 });

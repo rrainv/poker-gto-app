@@ -6,12 +6,19 @@ import {
   createGuestHomeViewModel,
   createHomeViewModelController,
 } from '../app/src/application/home-view-model.mjs';
-import { installHomeWorkspaceBridge } from '../app/src/application/home-workspace-bootstrap.mjs';
 
-const [html, css, logic, modelSource, bootstrapSource, translations] = await Promise.all([
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-  readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural (parsed markup, the cascade, Home refresh behaviour in the
+// running app). View-model/bootstrap/translation sources are outside this
+// ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installHomeWorkspaceBridge } = await import('../app/src/application/home-workspace-bootstrap.mjs');
+const [modelSource, bootstrapSource, translations] = await Promise.all([
   readFile(new URL('../app/src/application/home-view-model.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/home-workspace-bootstrap.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/home-translations.js', import.meta.url), 'utf8'),
@@ -152,17 +159,50 @@ test('account switches and sync transitions are resolved from current query stat
   assert.equal(b.sync.state, 'conflict');
 });
 
-test('Home v2 UI is responsive, accessible, coalesced, and remains a lightweight consumer', () => {
-  assert.match(html, /id="homeAccountOverview"[\s\S]*?id="homeSyncStatus"[\s\S]*?aria-live="polite"/);
-  assert.match(html, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode\. Guest data does not sync\./);
-  assert.match(html, /data-home-destination="review_mistakes"/);
-  assert.match(css, /grid-template-areas:[\s\S]*?"overview overview"/);
-  assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /border-inline-start|padding-inline-start/);
-  assert.match(logic, /homeRefreshSequence/);
-  assert.match(logic, /returnToHomeLiveHand[\s\S]*?requestPlaybookMode\(PLAYBOOK_MODES\.HAND\)/);
-  assert.match(logic, /scheduleHomeRefresh[\s\S]*?setTimeout/);
-  assert.match(logic, /riverline:studysyncchange/);
+test('Home v2 UI is responsive, accessible, coalesced, and remains a lightweight consumer', async () => {
+  const overview = markup.getElementById('homeAccountOverview');
+  assert.equal(overview.querySelector('#homeSyncStatus').getAttribute('aria-live'), 'polite');
+  assert.match(text(markup.body), /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode\. Guest data does not sync\./);
+  assert.ok(markup.querySelector('[data-home-destination="review_mistakes"]'));
+  // The overview spans the dashboard. Superseded (TEST-HYGIENE-F03): the
+  // two-column "overview overview" areas are overridden by the Home canvas
+  // rule, so the product dashboard is a single full-width column.
+  const grid = markup.querySelector('.home-dashboard-grid');
+  assert.equal(css.cascaded(grid, 'display', { width: 1440 }), 'grid');
+  assert.equal(css.cascaded(grid, 'grid-template-columns', { width: 1440 }), 'minmax(0, 1fr)');
+  assert.equal(css.cascaded(grid, 'grid-template-columns', { width: 700 }), 'minmax(0, 1fr)');
+
+  // Refreshes are sequenced: only the latest of overlapping loads renders.
+  await app.navigate('home');
+  await app.settle(300);
+  const spy = app.spy(['renderHomeWorkspace', 'callHomeBridge', 'requestPlaybookMode', 'scheduleHomeRefresh']);
+  try {
+    const first = app.call('refreshHomeWorkspace');
+    const second = app.call('refreshHomeWorkspace');
+    await Promise.all([first, second]);
+    await app.settle(100);
+    assert.equal(spy.count('callHomeBridge'), 2);
+    assert.equal(spy.count('renderHomeWorkspace'), 1, 'a superseded load does not render');
+    // Scheduled refreshes are timer-deferred and coalesced.
+    spy.reset();
+    app.call('scheduleHomeRefresh');
+    app.call('scheduleHomeRefresh');
+    assert.equal(spy.count('callHomeBridge'), 0, 'deferred');
+    await app.settle(1000);
+    assert.equal(spy.count('callHomeBridge'), 1, 'coalesced');
+    // Study sync changes schedule a refresh.
+    spy.reset();
+    app.window.dispatchEvent(new app.window.Event('riverline:studysyncchange'));
+    assert.equal(spy.count('scheduleHomeRefresh'), 1);
+    // Returning to a live hand goes through the Hand Playbook mode.
+    spy.reset();
+    await app.call('returnToHomeLiveHand');
+    assert.ok(spy.count('requestPlaybookMode') >= 1);
+    assert.ok(spy.calls.requestPlaybookMode.every(([mode]) => mode === 'hand'));
+  } finally {
+    spy.restore();
+    await app.navigate('home');
+  }
   assert.match(bootstrapSource, /createGuestHomeViewModel/);
   assert.doesNotMatch(`${modelSource}\n${bootstrapSource}`, /indexedDB|objectStore|StrategyProvider|resolveStrategy|Equity|1326|169-hand|setInterval/);
 });
