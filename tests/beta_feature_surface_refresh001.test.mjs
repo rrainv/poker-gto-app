@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { deriveFeatureSurfaceRoles, contrastRatio, PRESENTATION_THEMES, createPresentationThemeController } from '../app/src/application/presentation-theme.mjs';
 import { tableSeatAnchors } from '../app/src/application/table-presentation.mjs';
 import { createTrainingLineupPreview } from '../app/src/ui/training-lineup-preview.mjs';
 import { deriveSeatAssignments, POSITIONS_BY_TABLE_SIZE } from '../shared/poker-domain/positions.js';
 import { createTableCast } from '../app/src/ui/table-environment.mjs';
 import { groupPresentedRunouts } from '../app/src/application/advanced-equity-workspace.mjs';
+import { appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
+
+const css = appStyleSheet();
 
 test('feature foregrounds remain readable across built-ins and opposing extreme custom inputs', () => {
   const extremes = ['#000000', '#ffffff', '#808080', '#ff0000', '#00ff00', '#0000ff'];
@@ -92,9 +94,25 @@ test('runout groups separate category improvement from Equity and preserve unava
 });
 
 test('Understanding reserves the second column only for a visible question and collapses on narrow screens', () => {
-  // DS-FOUNDATION-001 retired riverline-design.css; its surface rules now live at the end of styles.css.
-  const css = (() => { const all = readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8'); return all.slice(all.indexOf('Surface styles relocated from the retired')); })();
-  assert.match(css, /calibration-configured-state > \.calibration-personal-column\s*\{\s*grid-column: 1 \/ -1; grid-row: auto/);
-  assert.match(css, /calibration-configured-state:has\(> \.calibration-question-view:not\(\[hidden\]\)\)\s*\{\s*grid-template-columns: minmax\(0, 1.05fr\) minmax\(0, 1fr\)/);
-  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*calibration-configured-state:has[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
+  // TEST-HYGIENE-001: resolved through the cascade on the real Personal
+  // Strategy markup instead of matching the relocated surface CSS text.
+  // Protects: the personal column spans the full width; a visible question
+  // view opens a second column; narrow screens collapse back to one column.
+  const document = freshIndexDocument();
+  const mount = document.getElementById('rangeCalibrationMount') || document.body;
+  mount.appendChild(document.getElementById('rangeCalibrationTemplate').content.cloneNode(true));
+  // The Understanding view of the Personal Strategy workspace.
+  document.querySelector('.range-calibration-workspace').dataset.personalView = 'understanding';
+  const state = document.getElementById('calibrationConfiguredState');
+  const question = state.querySelector(':scope > .calibration-question-view');
+  const personal = state.querySelector(':scope > .calibration-personal-column');
+  assert.ok(question && personal);
+  assert.equal(css.cascaded(personal, 'grid-column'), '1 / -1');
+  assert.equal(css.cascaded(personal, 'grid-row'), 'auto');
+  question.hidden = true;
+  const hiddenColumns = css.cascaded(state, 'grid-template-columns');
+  question.hidden = false;
+  assert.equal(css.cascaded(state, 'grid-template-columns'), 'minmax(0, 1.05fr) minmax(0, 1fr)');
+  assert.notEqual(hiddenColumns, 'minmax(0, 1.05fr) minmax(0, 1fr)', 'no second column without a visible question');
+  assert.equal(css.cascaded(state, 'grid-template-columns', { width: 1000 }), 'minmax(0, 1fr)');
 });

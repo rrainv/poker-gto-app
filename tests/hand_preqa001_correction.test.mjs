@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
 import { createTablePresenceViewModel } from '../app/src/application/table-presence-view-model.mjs';
 import { createReplayTimelineViewModel } from '../app/src/application/replay-timeline-view-model.mjs';
@@ -62,10 +62,12 @@ test('explicit setup uses canonical definitions and old setup values preserve th
   assert.equal(handSetupRulesDefinition({collectionType:'none',gameMode:'clubgg'}).collectionPolicy.type,'none');
   assert.throws(()=>handSetupRulesDefinition({collectionType:'percentage'}),/Unsupported/);
   assert.throws(()=>createHandSetupRulesSnapshot({collectionType:'fixed_per_seated_player',tableSize:6},{type:'none',amountMilliBb:0}));
-  const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
-  assert.doesNotMatch(html,/id="handGameMode"/);
-  assert.match(html,/id="handCollectionType"/);
-  assert.match(html,/data-i18n="Fixed collection"/);
+  // TEST-HYGIENE-001: queried as markup instead of matching index.html text.
+  const markup=indexDocument();
+  assert.equal(markup.getElementById('handGameMode'),null);
+  const collection=markup.getElementById('handCollectionType');
+  assert.ok(collection);
+  assert.ok(collection.querySelector('[data-i18n="Fixed collection"]'),'the collection control offers Fixed collection');
 });
 
 test('public chance availability follows legal pending cards for active, folded, and all-in Hero', () => {

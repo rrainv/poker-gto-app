@@ -20,8 +20,8 @@ test('player names use an in-place label/input editor with commit, cancel, and b
   // blur commits, and the input text is selected when editing starts.
   const label = labelFor(1);
   const input = inputFor(1);
-  assert.equal(label.tagName, 'button');
-  assert.equal(input.tagName, 'input');
+  assert.equal(label.localName, 'button');
+  assert.equal(input.localName, 'input');
   assert.equal(input.hidden, true);
   assert.equal(input.closest('.equity-player-name-editor'), label.closest('.equity-player-name-editor'));
 

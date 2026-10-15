@@ -41,7 +41,7 @@ test('Home is the real landing workspace with bounded recurring study sections',
   for (const id of ['homeQuickStartTitle', 'homeStrategyTitle', 'homeOtherTitle']) assert.equal(markup.getElementById(id), null, id);
   assert.equal(markup.querySelector('.home-destinations-rail'), null);
   const reviewTitle = markup.getElementById('homeReviewTitle');
-  assert.equal(reviewTitle.tagName, 'h2');
+  assert.equal(reviewTitle.localName, 'h2');
   assert.equal(text(reviewTitle), 'Review');
   const mistakes = markup.getElementById('homeReviewMistakesLink');
   assert.equal(mistakes.dataset.homeDestination, 'review_mistakes');

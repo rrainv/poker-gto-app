@@ -42,7 +42,7 @@ test('first-use composition puts concrete teaching before secondary understandin
   const workspace = document.getElementById('rangeCalibrationTemplate').content;
   assert.ok(precedes(workspace.getElementById('calibrationQuestionView'), workspace.getElementById('calibrationUnderstandingPanel')));
   const disclosure = workspace.getElementById('personalContextInputDisclosure');
-  assert.equal(disclosure.tagName, 'details');
+  assert.equal(disclosure.localName, 'details');
   assert.match(text(disclosure.querySelector(':scope > summary')), /^Add context or an exception/);
   assert.ok(workspace.getElementById('personalQuestionAddContext'));
   assert.doesNotMatch(text(workspace), /about five|5 questions|About 30 questions|Up to 75 questions|Question \d+ of \d+/i);

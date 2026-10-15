@@ -135,7 +135,7 @@ test('Training study hints and pricing copy remain truthful before and after an 
   const training = markup.getElementById('trainingMode');
   assert.ok(training.querySelector('#trainingSolutionEyebrow'));
   const hint = training.querySelector('#trainingRevealHint');
-  assert.equal(hint.tagName, 'button');
+  assert.equal(hint.localName, 'button');
   assert.equal(text(hint), 'Get a hint');
   assert.equal(markup.getElementById('trainingShowSolution'), null);
   assert.match(text(training), /Get a nudge about the spot\./);

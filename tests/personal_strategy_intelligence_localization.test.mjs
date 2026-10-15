@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { CALIBRATION_SETUP_TUTORIAL_DEFINITION, CALIBRATION_ANSWERS_TUTORIAL_DEFINITION } from '../app/src/tutorial/current-app-tutorials.mjs';
+import { indexDocument, text } from './helpers/app-under-test.mjs';
 import { RFI_MAPPING_FAMILIES, RFI_MAPPING_REASON_KEYS, RFI_MAPPING_FAMILY_REASON_KEYS } from '../app/src/personal-strategy/structural-range-mapping.mjs';
 
-const [html, workspace, localeSource, tutorialSource, productSource, calibrationWorkspace] = await Promise.all([
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
+const [workspace, localeSource, tutorialSource, productSource, calibrationWorkspace] = await Promise.all([
   readFile(new URL('../app/src/application/personal-strategy-understanding-workspace.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/range-calibration-translations.js', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/tutorial-translations.js', import.meta.url), 'utf8'),
@@ -20,10 +20,17 @@ vm.runInNewContext(productSource, context);
 const catalog = Object.fromEntries(['en', 'ru', 'he'].map(language => [language, {
   ...context.window.riverlineProductTranslations[language], ...context.window.riverlineRangeCalibrationTranslations[language],
 }]));
-const template = html.slice(html.indexOf('<template id="rangeCalibrationTemplate">'))
-  .split('</template>')[0];
+// TEST-HYGIENE-001: index.html is queried as parsed markup (template content
+// and attributes) instead of being sliced and matched as text.
+const markup = indexDocument();
+const template = markup.getElementById('rangeCalibrationTemplate').content;
+const i18nKeys = (root) => root.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-aria-label]')
+  .flatMap((node) => ['data-i18n', 'data-i18n-placeholder', 'data-i18n-aria-label']
+    .map((name) => node.getAttribute(name)).filter((value) => value !== null));
+const anchors = new Set([markup, ...markup.querySelectorAll('template').map((node) => node.content)]
+  .flatMap((root) => root.querySelectorAll('[data-tutorial-anchor]').map((node) => node.dataset.tutorialAnchor)));
 const keys = new Set([
-  ...[...template.matchAll(/data-i18n(?:-placeholder|-aria-label)?="([^"]+)"/g)].map((match) => match[1]),
+  ...i18nKeys(template),
   ...[...workspace.matchAll(/\b(?:t|button)\((['"])(.*?)\1/g)].map((match) => match[2]),
   ...[...calibrationWorkspace.matchAll(/\btranslated\((['"])(.*?)\1/g)]
     .map((match) => match[2]).filter((key) => !key.startsWith('analysis.')),
@@ -54,7 +61,7 @@ test('Personal Strategy template and Understanding controls have EN/RU/HE copy w
 });
 
 test('range mapping copy has no fixed onboarding quota or corrupted reason punctuation', () => {
-  assert.doesNotMatch(template, /about five questions|5 questions|About 5|Up to 75 questions/i);
+  assert.doesNotMatch(text(template), /about five questions|5 questions|About 5|Up to 75 questions/i);
   const reasons = [...Object.values(RFI_MAPPING_REASON_KEYS), ...Object.values(RFI_MAPPING_FAMILY_REASON_KEYS)];
   assert.doesNotMatch(reasons.join(' '), /Let\?s|questionKind|boundaryLikelihood/);
   for (const key of reasons) {
@@ -64,15 +71,15 @@ test('range mapping copy has no fixed onboarding quota or corrupted reason punct
 });
 
 test('Personal Strategy navigation and Approach selection use current product copy in all languages', () => {
-  const navigation = html.match(/<button[^>]+data-navigation-id="personal-strategy"[^>]*>/)[0];
-  const subtitle = navigation.match(/data-mode-subtitle="([^"]+)"/)[1];
+  const subtitle = markup.querySelector('button[data-navigation-id="personal-strategy"]').dataset.modeSubtitle;
   assert.match(subtitle, /understands.*intended play.*Matrix Edit/);
   for (const language of ['en', 'ru', 'he']) {
     assert.equal(typeof context.window.riverlineProductTranslations[language][subtitle], 'string');
   }
-  const approaches = html.match(/<div[^>]+id="calibrationModeOptions"[^>]*>/)[0];
-  assert.match(approaches, /aria-label="Approaches"/);
-  assert.match(approaches, /data-i18n-aria-label="Approaches"/);
+  const approaches = [markup, template].map((root) => root.getElementById('calibrationModeOptions')).find(Boolean);
+  assert.equal(approaches.localName, 'div');
+  assert.equal(approaches.getAttribute('aria-label'), 'Approaches');
+  assert.equal(approaches.dataset.i18nAriaLabel, 'Approaches');
 });
 
 test('Personal Strategy v2 tutorials reference live anchors and translate the confirmation and evidence boundaries', () => {
@@ -84,7 +91,7 @@ test('Personal Strategy v2 tutorials reference live anchors and translate the co
     for (const language of ['en', 'ru', 'he']) for (const key of referenced) {
       assert.equal(typeof tutorials[language][key], 'string', `${language}: ${key}`);
     }
-    for (const step of definition.steps) assert.ok(html.includes(`data-tutorial-anchor="${step.anchor}"`), step.anchor);
+    for (const step of definition.steps) assert.ok(anchors.has(step.anchor), step.anchor);
   }
   const content = JSON.stringify(CALIBRATION_SETUP_TUTORIAL_DEFINITION);
   const start = CALIBRATION_SETUP_TUTORIAL_DEFINITION.steps.find((step) => step.id === 'start');

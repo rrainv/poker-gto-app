@@ -66,7 +66,7 @@ test('Playbook resolves DecisionContext through the deterministic StrategyProvid
 test('strategy source provenance is static, truthful, and noninteractive', async () => {
   // SHELL-001: the header badge is the Badge component (source variant).
   const status = markup.getElementById('strategySourceStatus');
-  assert.equal(status.tagName, 'div');
+  assert.equal(status.localName, 'div');
   assert.ok(status.classList.contains('strategy-source-status') && status.classList.contains('ui-badge'));
   assert.equal(status.dataset.variant, 'source');
   assert.equal(text(status.querySelector('strong')), 'Heuristic fallback');

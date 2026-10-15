@@ -79,7 +79,7 @@ export function assertDeclared(selector, property, expected, environment = {}, s
 /** Assert the cascaded value of a property on a DOM element. */
 export function assertCascaded(node, property, expected, options = {}, sheet = appStyleSheet()) {
   const actual = sheet.cascaded(node, property, options);
-  const label = node.id ? `#${node.id}` : `<${node.tagName} class="${node.className}">`;
+  const label = node.id ? `#${node.id}` : `<${node.localName} class="${node.className}">`;
   const message = `${label} { ${property} } with ${JSON.stringify(options)}`;
   if (expected instanceof RegExp) assert.match(actual ?? '', expected, message);
   else assert.equal(actual, expected, message);

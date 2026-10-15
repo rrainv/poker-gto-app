@@ -353,19 +353,15 @@ export class StyleSheetModel {
       }
       if (compareRank(rank, best.rank) >= 0) best = { declaration, rank };
     };
-    for (const rule of this.rules) {
-      if (!rule.declarations.some((declaration) => propertyMatches(declaration.property, property))) continue;
-      if (!conditionsApply(rule.conditions, env)) continue;
-      let ruleSpecificity = null;
-      for (const selector of rule.selectors) {
-        const [complex] = parseSelector(selector);
-        const pseudoElement = complex.parts.at(-1).compound.pseudoElement;
-        if ((pseudoElement || null) !== (options.pseudoElement || null)) continue;
-        if (!matchesComplex(element, complex, context)) continue;
-        const current = specificity(selector);
-        if (!ruleSpecificity || compareSpecificity(current, ruleSpecificity) > 0) ruleSpecificity = current;
-      }
-      if (!ruleSpecificity) continue;
+    const matched = new Map();
+    for (const entry of this._candidates(element, this._propertyIndex(property))) {
+      if ((entry.pseudoElement || null) !== (options.pseudoElement || null)) continue;
+      if (!conditionsApply(entry.rule.conditions, env)) continue;
+      if (!matchesComplex(element, entry.complex, context)) continue;
+      const previous = matched.get(entry.rule);
+      if (!previous || compareSpecificity(entry.specificity, previous) > 0) matched.set(entry.rule, entry.specificity);
+    }
+    for (const [rule, ruleSpecificity] of matched) {
       for (const declaration of rule.declarations) {
         if (propertyMatches(declaration.property, property)) consider(declaration, [...ruleSpecificity, rule.order]);
       }
@@ -389,12 +385,53 @@ export class StyleSheetModel {
   matchingRules(element, options = {}) {
     const env = this.environment(options.environment || options);
     const context = { states: options.states ? new Set(options.states) : undefined, stateElement: options.stateElement, allowPseudoElements: true };
-    return this.rules.filter((rule) => conditionsApply(rule.conditions, env) && rule.selectors.some((selector) => {
-      const [complex] = parseSelector(selector);
-      const pseudoElement = complex.parts.at(-1).compound.pseudoElement;
-      if ((pseudoElement || null) !== (options.pseudoElement || null)) return false;
-      return matchesComplex(element, complex, context);
-    }));
+    const rules = new Set();
+    for (const entry of this._candidates(element, this._propertyIndex(null))) {
+      if (rules.has(entry.rule)) continue;
+      if ((entry.pseudoElement || null) !== (options.pseudoElement || null)) continue;
+      if (conditionsApply(entry.rule.conditions, env) && matchesComplex(element, entry.complex, context)) rules.add(entry.rule);
+    }
+    return [...rules].sort((left, right) => left.order - right.order);
+  }
+
+  // Rule hashing (as browsers do): each selector is bucketed by its key
+  // (rightmost) compound's id, first class or tag, so lookups only test
+  // selectors that can possibly match an element.
+  _propertyIndex(property) {
+    this._indexes ||= new Map();
+    const key = property ?? '*all*';
+    if (this._indexes.has(key)) return this._indexes.get(key);
+    const buckets = new Map();
+    const add = (bucket, entry) => {
+      if (!buckets.has(bucket)) buckets.set(bucket, []);
+      buckets.get(bucket).push(entry);
+    };
+    for (const rule of this.rules) {
+      if (property !== null && !rule.declarations.some((declaration) => propertyMatches(declaration.property, property))) continue;
+      for (const selector of rule.selectors) {
+        let complex;
+        try {
+          [complex] = parseSelector(selector);
+        } catch {
+          continue;
+        }
+        const compound = complex.parts.at(-1).compound;
+        const entry = { rule, selector, complex, pseudoElement: compound.pseudoElement, specificity: specificity(selector) };
+        if (compound.ids.length) add(`#${compound.ids[0]}`, entry);
+        else if (compound.classes.length) add(`.${compound.classes[0]}`, entry);
+        else if (compound.tag && compound.tag !== '*') add(compound.tag, entry);
+        else add('*', entry);
+      }
+    }
+    this._indexes.set(key, buckets);
+    return buckets;
+  }
+
+  *_candidates(element, buckets) {
+    const keys = ['*', element.localName];
+    if (element.id) keys.push(`#${element.id}`);
+    for (const className of element.classList || []) keys.push(`.${className}`);
+    for (const key of keys) yield* buckets.get(key) || [];
   }
 
   /** Cascaded value with var() references resolved against the element's custom properties. */

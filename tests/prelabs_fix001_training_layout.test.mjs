@@ -21,7 +21,7 @@ test('Training context marks compact values as atomic without freezing descripti
   }
   const facing = app.byId('trainingFacingVal');
   assert.equal(facing.classList.contains('training-context-value--atomic'), false);
-  assert.equal(facing.tagName, 'strong');
+  assert.equal(facing.localName, 'strong');
   assert.equal(css.cascaded(facing, 'overflow-wrap'), 'normal');
   assert.equal(css.cascaded(facing, 'word-break'), 'normal');
   assert.notEqual(css.cascaded(facing, 'white-space'), 'nowrap');
@@ -33,7 +33,7 @@ test('the constrained desktop grid reflows before atomic values can split', asyn
   // never scrolls horizontally; rendering a spot clears (not forces) display.
   const narrow = { width: 1000 };
   assert.equal(css.cascaded(strip(), 'grid-template-columns', narrow), 'repeat(2, minmax(0, 1fr))');
-  const cells = strip().children.filter((child) => child.tagName === 'div');
+  const cells = strip().children.filter((child) => child.localName === 'div');
   assert.ok(cells.length >= 4);
   cells.forEach((cell, index) => {
     const divider = css.cascaded(cell, 'border-inline-start', narrow);
@@ -47,7 +47,7 @@ test('the constrained desktop grid reflows before atomic values can split', asyn
   });
   for (const node of [app.document.documentElement, app.document.body, app.$('.riverline-shell')]) {
     for (const width of [1920, 1366, 1000, 800]) {
-      assert.doesNotMatch(css.cascaded(node, 'overflow-x', { width }) || '', /scroll|auto/, `${node.tagName} at ${width}`);
+      assert.doesNotMatch(css.cascaded(node, 'overflow-x', { width }) || '', /scroll|auto/, `${node.localName} at ${width}`);
     }
   }
 

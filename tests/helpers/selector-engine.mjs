@@ -256,21 +256,21 @@ function pseudoMatches(element, { name, argument }, context) {
     case 'first-child': return elementSiblings(element)[0] === element;
     case 'last-child': return elementSiblings(element).at(-1) === element;
     case 'only-child': return elementSiblings(element).length === 1;
-    case 'first-of-type': return elementSiblings(element).find((node) => node.tagName === element.tagName) === element;
-    case 'last-of-type': return elementSiblings(element).filter((node) => node.tagName === element.tagName).at(-1) === element;
+    case 'first-of-type': return elementSiblings(element).find((node) => node.localName === element.localName) === element;
+    case 'last-of-type': return elementSiblings(element).filter((node) => node.localName === element.localName).at(-1) === element;
     case 'nth-child': return nthMatches(parseNth(argument), elementSiblings(element).indexOf(element) + 1);
     case 'nth-last-child': {
       const siblings = elementSiblings(element);
       return nthMatches(parseNth(argument), siblings.length - siblings.indexOf(element));
     }
     case 'nth-of-type': {
-      const siblings = elementSiblings(element).filter((node) => node.tagName === element.tagName);
+      const siblings = elementSiblings(element).filter((node) => node.localName === element.localName);
       return nthMatches(parseNth(argument), siblings.indexOf(element) + 1);
     }
     case 'empty': return element.childNodes.every((node) => node.nodeType === 8 || (node.nodeType === 3 && node.textContent === ''));
-    case 'checked': return element.checked === true || (element.tagName === 'option' && element.selected === true);
-    case 'disabled': return FORM_CONTROLS.has(element.tagName) && element.disabled === true;
-    case 'enabled': return FORM_CONTROLS.has(element.tagName) && element.disabled !== true;
+    case 'checked': return element.checked === true || (element.localName === 'option' && element.selected === true);
+    case 'disabled': return FORM_CONTROLS.has(element.localName) && element.disabled === true;
+    case 'enabled': return FORM_CONTROLS.has(element.localName) && element.disabled !== true;
     case 'focus': return element.ownerDocument?.activeElement === element;
     case 'focus-within': return Boolean(element.ownerDocument?.activeElement && element.contains(element.ownerDocument.activeElement));
     case 'focus-visible': return Boolean(context.states?.has('focus-visible') && element.ownerDocument?.activeElement === element);
@@ -281,18 +281,18 @@ function pseudoMatches(element, { name, argument }, context) {
     case 'focus-within-visible':
       return Boolean(context.states?.has(name) && (context.stateElement ? context.stateElement === element : true));
     case 'link':
-    case 'any-link': return element.tagName === 'a' && element.hasAttribute('href');
+    case 'any-link': return element.localName === 'a' && element.hasAttribute('href');
     case 'defined': return true;
     case 'placeholder-shown': return element.hasAttribute('placeholder') && !element.value;
     case 'required': return element.hasAttribute('required');
-    case 'optional': return FORM_CONTROLS.has(element.tagName) && !element.hasAttribute('required');
+    case 'optional': return FORM_CONTROLS.has(element.localName) && !element.hasAttribute('required');
     case 'invalid':
     case 'user-invalid': return false;
-    case 'valid': return FORM_CONTROLS.has(element.tagName);
+    case 'valid': return FORM_CONTROLS.has(element.localName);
     case 'read-only': return element.hasAttribute('readonly');
     case 'indeterminate': return element.indeterminate === true;
     case 'open': return element.hasAttribute('open');
-    case 'modal': return element.tagName === 'dialog' && element._modal === true;
+    case 'modal': return element.localName === 'dialog' && element._modal === true;
     case 'popover-open': return false;
     case 'lang': return (element.closest('[lang]')?.getAttribute('lang') || '').startsWith(argument);
     case 'dir': return (element.closest('[dir]')?.getAttribute('dir') || 'ltr') === argument;
@@ -305,7 +305,7 @@ function pseudoMatches(element, { name, argument }, context) {
 function compoundMatches(element, compound, context) {
   if (!element || element.nodeType !== 1) return false;
   if (compound.pseudoElement && !context.allowPseudoElements) return false;
-  if (compound.tag && compound.tag !== '*' && element.tagName !== compound.tag) return false;
+  if (compound.tag && compound.tag !== '*' && element.localName !== compound.tag) return false;
   for (const id of compound.ids) if (element.id !== id) return false;
   for (const className of compound.classes) if (!element.classList.contains(className)) return false;
   for (const attribute of compound.attributes) if (!attributeMatches(element, attribute)) return false;

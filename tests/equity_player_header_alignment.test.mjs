@@ -20,7 +20,7 @@ test('the compact player header resets global semantic-header padding', () => {
   const heads = app.$$('#equityPlayers .equity-player-head');
   assert.ok(heads.length >= 2);
   for (const head of heads) {
-    assert.equal(head.tagName, 'header');
+    assert.equal(head.localName, 'header');
     assert.equal(css.cascaded(head, 'min-block-size'), '28px');
     assert.equal(css.cascaded(head, 'align-items'), 'center');
     assert.equal(css.cascaded(head, 'margin'), '0');

@@ -307,35 +307,61 @@ class ParentMixin extends Node {
     for (const node of [...this.childNodes]) this._detach(node);
     this.append(...items);
   }
-  *_descendants() {
-    for (const child of this.childNodes) {
-      if (child.nodeType !== 1) continue;
-      yield child;
-      yield* child._descendants();
-      if (child.tagName === 'template' && child._content && this._includeTemplates) yield* child._content._descendants();
+  // Descendant elements in document order (iterative; template contents excluded).
+  _descendants() {
+    const result = [];
+    const stack = [];
+    for (let index = this.childNodes.length - 1; index >= 0; index -= 1) stack.push(this.childNodes[index]);
+    while (stack.length) {
+      const node = stack.pop();
+      if (node.nodeType !== 1) continue;
+      result.push(node);
+      const children = node.childNodes;
+      for (let index = children.length - 1; index >= 0; index -= 1) stack.push(children[index]);
     }
+    return result;
+  }
+  _byIdFastPath(selector) {
+    const match = /^#([A-Za-z_][\w-]*)$/.exec(selector);
+    if (!match) return undefined;
+    const document = this.nodeType === 9 ? this : this.ownerDocument;
+    const found = document?.getElementById?.(match[1]) ?? null;
+    if (found && this.nodeType !== 9 && !(this !== found && this.contains(found))) return this._scanById(match[1]);
+    return found;
+  }
+  _scanById(id) {
+    for (const element of this._descendants()) if (element.id === id) return element;
+    return null;
   }
   querySelectorAll(selector, context = {}) {
     const parsed = parseSelector(selector);
     const scope = this.nodeType === 1 ? this : null;
     const result = [];
+    const matchContext = { scope, ...context };
     for (const element of this._descendants()) {
-      if (parsed.some((complex) => matchesComplex(element, complex, { scope, ...context }))) result.push(element);
+      for (const complex of parsed) {
+        if (matchesComplex(element, complex, matchContext)) { result.push(element); break; }
+      }
     }
     Object.defineProperty(result, 'item', { value: (index) => result[index] ?? null });
     return result;
   }
   querySelector(selector) {
+    if (this.isConnected || this.nodeType === 9) {
+      const fast = this._byIdFastPath(selector);
+      if (fast !== undefined) return fast;
+    }
     const parsed = parseSelector(selector);
     const scope = this.nodeType === 1 ? this : null;
+    const matchContext = { scope };
     for (const element of this._descendants()) {
-      if (parsed.some((complex) => matchesComplex(element, complex, { scope }))) return element;
+      for (const complex of parsed) if (matchesComplex(element, complex, matchContext)) return element;
     }
     return null;
   }
   getElementsByTagName(name) {
     const tag = name.toLowerCase();
-    return [...this._descendants()].filter((element) => tag === '*' || element.tagName === tag);
+    return [...this._descendants()].filter((element) => tag === '*' || element.localName === tag);
   }
   getElementsByClassName(names) {
     const wanted = names.split(/\s+/).filter(Boolean);
@@ -356,12 +382,20 @@ export class DocumentFragment extends ParentMixin {
 
 class DOMTokenList {
   constructor(element, attribute) { this._element = element; this._attribute = attribute; }
-  _read() { return (this._element.getAttribute(this._attribute) || '').split(/\s+/).filter(Boolean); }
+  _read() {
+    const text = this._element.getAttribute(this._attribute) || '';
+    if (this._cacheText !== text) {
+      this._cacheText = text;
+      this._cache = text.split(/\s+/).filter(Boolean);
+      this._cacheSet = new Set(this._cache);
+    }
+    return this._cache;
+  }
   _write(tokens) { this._element.setAttribute(this._attribute, [...new Set(tokens)].join(' ')); }
   get length() { return this._read().length; }
   get value() { return this._element.getAttribute(this._attribute) || ''; }
   item(index) { return this._read()[index] ?? null; }
-  contains(token) { return this._read().includes(token); }
+  contains(token) { this._read(); return this._cacheSet.has(token); }
   add(...tokens) { const current = this._read(); this._write([...current, ...tokens.filter((token) => !current.includes(token))]); }
   remove(...tokens) {
     if (!this._element.hasAttribute(this._attribute)) return;
@@ -474,14 +508,19 @@ const BOOLEAN_REFLECTIONS = {
 const ARIA_PROPERTIES = ['Label', 'Hidden', 'Expanded', 'Pressed', 'Selected', 'Checked', 'Current', 'Disabled', 'Live', 'Busy', 'Modal', 'Controls', 'Describedby', 'Labelledby', 'Valuenow', 'Valuemin', 'Valuemax', 'Valuetext', 'Orientation', 'Haspopup', 'Atomic', 'Sort', 'Level', 'Roledescription', 'Description', 'Invalid', 'Readonly', 'Required', 'Multiselectable', 'Placeholder', 'Keyshortcuts', 'Posinset', 'Setsize', 'Colcount', 'Rowcount', 'Colindex', 'Rowindex', 'Relevant'];
 
 let uid = 0;
+const LOWER_NAMES = new Map();
+function lowerName(name) {
+  const lower = String(name).toLowerCase();
+  if (typeof name === 'string' && LOWER_NAMES.size < 5000) LOWER_NAMES.set(name, lower);
+  return lower;
+}
 
 export class Element extends ParentMixin {
   constructor(tagName, ownerDocument, namespaceURI = 'http://www.w3.org/1999/xhtml') {
     super(ownerDocument);
     this.nodeType = 1;
     this.namespaceURI = namespaceURI;
-    this.tagName = namespaceURI === 'http://www.w3.org/1999/xhtml' ? String(tagName).toLowerCase() : String(tagName);
-    this.localName = this.tagName;
+    this.localName = namespaceURI === 'http://www.w3.org/1999/xhtml' ? String(tagName).toLowerCase() : String(tagName);
     this._attributes = new Map();
     this._uid = uid += 1;
     this.classList = new DOMTokenList(this, 'class');
@@ -496,14 +535,16 @@ export class Element extends ParentMixin {
     this._content = null;
     this._rect = null;
   }
-  get nodeName() { return this.tagName.toUpperCase(); }
+  // HTML elements report upper-case tag names (as browsers do); SVG keeps case.
+  get tagName() { return this.namespaceURI === 'http://www.w3.org/1999/xhtml' ? this.localName.toUpperCase() : this.localName; }
+  get nodeName() { return this.tagName; }
   get attributes() {
     const list = [...this._attributes].map(([name, value]) => ({ name, value, localName: name, nodeName: name }));
     return Object.assign(list, { getNamedItem: (name) => list.find((item) => item.name === name) || null });
   }
   getAttributeNames() { return [...this._attributes.keys()]; }
   getAttribute(name) {
-    const key = String(name).toLowerCase();
+    const key = LOWER_NAMES.get(name) ?? lowerName(name);
     return this._attributes.has(key) ? this._attributes.get(key) : null;
   }
   getAttributeNS(_, name) { return this.getAttribute(name); }
@@ -511,7 +552,7 @@ export class Element extends ParentMixin {
     const key = String(name).toLowerCase();
     const previous = this.getAttribute(key);
     this._attributes.set(key, String(value));
-    if (key === 'value' && this._value === undefined && this.tagName === 'option') this._value = undefined;
+    if (key === 'value' && this._value === undefined && this.localName === 'option') this._value = undefined;
     this.ownerDocument?._noteMutation?.(this, 'attributes', key, previous);
   }
   setAttributeNS(_, name, value) { this.setAttribute(name, value); }
@@ -523,7 +564,7 @@ export class Element extends ParentMixin {
     this.ownerDocument?._noteMutation?.(this, 'attributes', key, previous);
   }
   removeAttributeNS(_, name) { this.removeAttribute(name); }
-  hasAttribute(name) { return this._attributes.has(String(name).toLowerCase()); }
+  hasAttribute(name) { return this._attributes.has(LOWER_NAMES.get(name) ?? lowerName(name)); }
   hasAttributes() { return this._attributes.size > 0; }
   toggleAttribute(name, force) {
     const has = this.hasAttribute(name);
@@ -535,14 +576,14 @@ export class Element extends ParentMixin {
   get tabIndex() {
     const value = this.getAttribute('tabindex');
     if (value !== null) return Number(value);
-    return ['a', 'button', 'input', 'select', 'textarea'].includes(this.tagName) ? 0 : -1;
+    return ['a', 'button', 'input', 'select', 'textarea'].includes(this.localName) ? 0 : -1;
   }
   set tabIndex(value) { this.setAttribute('tabindex', String(value)); }
   get type() {
-    if (this.tagName === 'button') return (this.getAttribute('type') || 'submit').toLowerCase();
-    if (this.tagName === 'input') return (this.getAttribute('type') || 'text').toLowerCase();
-    if (this.tagName === 'select') return this.multiple ? 'select-multiple' : 'select-one';
-    if (this.tagName === 'textarea') return 'textarea';
+    if (this.localName === 'button') return (this.getAttribute('type') || 'submit').toLowerCase();
+    if (this.localName === 'input') return (this.getAttribute('type') || 'text').toLowerCase();
+    if (this.localName === 'select') return this.multiple ? 'select-multiple' : 'select-one';
+    if (this.localName === 'textarea') return 'textarea';
     return this.getAttribute('type') || '';
   }
   set type(value) { this.setAttribute('type', value); }
@@ -551,27 +592,27 @@ export class Element extends ParentMixin {
   get src() { return this.getAttribute('src') || ''; }
   set src(value) { this.setAttribute('src', value); }
   get value() {
-    if (this.tagName === 'select') {
+    if (this.localName === 'select') {
       const selected = this.options.find((option) => option.selected) || (this.multiple ? null : this.options.find((option) => !option.disabled));
       return selected ? selected.value : '';
     }
-    if (this.tagName === 'option') return this.hasAttribute('value') ? this.getAttribute('value') : this.textContent.trim();
-    if (this.tagName === 'textarea') return this._value ?? this.textContent;
+    if (this.localName === 'option') return this.hasAttribute('value') ? this.getAttribute('value') : this.textContent.trim();
+    if (this.localName === 'textarea') return this._value ?? this.textContent;
     if (this._value !== undefined) return this._value;
-    if (this.tagName === 'input' && ['checkbox', 'radio'].includes(this.type)) return this.getAttribute('value') ?? 'on';
-    if (this.tagName === 'input' && this.type === 'range') {
+    if (this.localName === 'input' && ['checkbox', 'radio'].includes(this.type)) return this.getAttribute('value') ?? 'on';
+    if (this.localName === 'input' && this.type === 'range') {
       return this.getAttribute('value') ?? String((Number(this.getAttribute('min') ?? 0) + Number(this.getAttribute('max') ?? 100)) / 2);
     }
     return this.getAttribute('value') ?? '';
   }
   set value(next) {
-    if (this.tagName === 'select') {
+    if (this.localName === 'select') {
       for (const option of this.options) option._selected = option.value === String(next);
       return;
     }
-    if (this.tagName === 'option') { this.setAttribute('value', next); return; }
+    if (this.localName === 'option') { this.setAttribute('value', next); return; }
     let text = next == null ? '' : String(next);
-    if (this.tagName === 'input' && this.type === 'range') {
+    if (this.localName === 'input' && this.type === 'range') {
       const min = Number(this.getAttribute('min') ?? 0);
       const max = Number(this.getAttribute('max') ?? 100);
       const numeric = Number(text);
@@ -599,10 +640,10 @@ export class Element extends ParentMixin {
     if (next && select && !select.multiple) for (const option of select.options) option._selected = false;
     this._selected = Boolean(next);
   }
-  get options() { return this.tagName === 'select' ? this.querySelectorAll('option') : undefined; }
-  get selectedOptions() { return this.tagName === 'select' ? this.options.filter((option) => option.selected) : undefined; }
+  get options() { return this.localName === 'select' ? this.querySelectorAll('option') : undefined; }
+  get selectedOptions() { return this.localName === 'select' ? this.options.filter((option) => option.selected) : undefined; }
   get selectedIndex() {
-    if (this.tagName !== 'select') return undefined;
+    if (this.localName !== 'select') return undefined;
     const options = this.options;
     const index = options.findIndex((option) => option.selected);
     if (index >= 0) return index;
@@ -612,20 +653,20 @@ export class Element extends ParentMixin {
   get form() { return this.closest('form'); }
   get labels() { return this.id ? this.ownerDocument.querySelectorAll(`label[for="${this.id}"]`) : []; }
   get content() {
-    if (this.tagName !== 'template') return undefined;
+    if (this.localName !== 'template') return undefined;
     if (!this._content) this._content = new DocumentFragment(this.ownerDocument);
     return this._content;
   }
-  get elements() { return this.tagName === 'form' || this.tagName === 'fieldset' ? this.querySelectorAll('input, select, textarea, button') : undefined; }
+  get elements() { return this.localName === 'form' || this.localName === 'fieldset' ? this.querySelectorAll('input, select, textarea, button') : undefined; }
   get innerHTML() {
-    const nodes = this.tagName === 'template' ? this.content.childNodes : this.childNodes;
-    if (RAW_TEXT_ELEMENTS.has(this.tagName)) return nodes.map((node) => node.data ?? '').join('');
+    const nodes = this.localName === 'template' ? this.content.childNodes : this.childNodes;
+    if (RAW_TEXT_ELEMENTS.has(this.localName)) return nodes.map((node) => node.data ?? '').join('');
     return nodes.map(serializeNode).join('');
   }
   set innerHTML(markup) {
-    const target = this.tagName === 'template' ? this.content : this;
+    const target = this.localName === 'template' ? this.content : this;
     for (const node of [...target.childNodes]) target._detach(node);
-    if (RAW_TEXT_ELEMENTS.has(this.tagName)) { this.textContent = markup; return; }
+    if (RAW_TEXT_ELEMENTS.has(this.localName)) { this.textContent = markup; return; }
     const nodes = parseFragmentNodes(String(markup ?? ''), this.ownerDocument);
     target._insertAt(0, nodes);
   }
@@ -638,6 +679,15 @@ export class Element extends ParentMixin {
     parent._detach(this);
     parent._insertAt(index, nodes);
   }
+  // HTMLOptionElement.text / HTMLAnchorElement.text / HTMLScriptElement.text.
+  get text() {
+    if (this.localName === 'option') return this.textContent.replace(/\s+/g, ' ').trim();
+    if (['a', 'script', 'title'].includes(this.localName)) return this.textContent;
+    return undefined;
+  }
+  set text(value) { this.textContent = value; }
+  get index() { return this.localName === 'option' ? (this.closest('select')?.options.indexOf(this) ?? 0) : undefined; }
+  get label() { return this.localName === 'option' ? (this.getAttribute('label') ?? this.text) : this.getAttribute('label') ?? ''; }
   get innerText() { return this.textContent; }
   set innerText(value) { this.textContent = value; }
   get outerText() { return this.textContent; }
@@ -686,7 +736,7 @@ export class Element extends ParentMixin {
     return null;
   }
   cloneNode(deep = false) {
-    const clone = this.ownerDocument.createElementNS(this.namespaceURI, this.tagName);
+    const clone = this.ownerDocument.createElementNS(this.namespaceURI, this.localName);
     for (const [name, value] of this._attributes) clone._attributes.set(name, value);
     if (this._value !== undefined) clone._value = this._value;
     if (this._checked !== undefined) clone._checked = this._checked;
@@ -699,8 +749,8 @@ export class Element extends ParentMixin {
   get isContentEditable() { return this.getAttribute('contenteditable') === 'true' || this.getAttribute('contenteditable') === ''; }
   // Interaction ---------------------------------------------------------
   click() {
-    if (this.disabled && ['button', 'input', 'select', 'textarea'].includes(this.tagName)) return;
-    const toggles = this.tagName === 'input' && ['checkbox', 'radio'].includes(this.type);
+    if (this.disabled && ['button', 'input', 'select', 'textarea'].includes(this.localName)) return;
+    const toggles = this.localName === 'input' && ['checkbox', 'radio'].includes(this.type);
     const previous = this.checked;
     if (toggles) this.checked = this.type === 'radio' ? true : !previous;
     const view = this.ownerDocument.defaultView;
@@ -715,17 +765,17 @@ export class Element extends ParentMixin {
       return;
     }
     if (!allowed) return;
-    if (this.tagName === 'label') {
+    if (this.localName === 'label') {
       const control = this.getAttribute('for') ? this.ownerDocument.getElementById(this.getAttribute('for')) : this.querySelector('input, select, textarea, button');
       if (control && control !== this) control.click();
       return;
     }
-    if (this.tagName === 'summary' && this.parentNode?.tagName === 'details') {
+    if (this.localName === 'summary' && this.parentNode?.localName === 'details') {
       this.parentNode.toggleAttribute('open');
       this.parentNode.dispatchEvent(new (view?.Event || Event)('toggle'));
       return;
     }
-    if ((this.tagName === 'button' && this.type === 'submit') || (this.tagName === 'input' && this.type === 'submit')) {
+    if ((this.localName === 'button' && this.type === 'submit') || (this.localName === 'input' && this.type === 'submit')) {
       const form = this.form;
       if (form) form.requestSubmit(this);
     }
@@ -865,9 +915,9 @@ export class Document extends ParentMixin {
     this.cookie = '';
     this.title = '';
   }
-  get documentElement() { return this.children.find((node) => node.tagName === 'html') || this.children[0] || null; }
-  get head() { return this.documentElement?.children.find((node) => node.tagName === 'head') || null; }
-  get body() { return this.documentElement?.children.find((node) => node.tagName === 'body') || null; }
+  get documentElement() { return this.children.find((node) => node.localName === 'html') || this.children[0] || null; }
+  get head() { return this.documentElement?.children.find((node) => node.localName === 'head') || null; }
+  get body() { return this.documentElement?.children.find((node) => node.localName === 'body') || null; }
   get activeElement() { return this._activeElement && this._activeElement.isConnected ? this._activeElement : this.body; }
   get dir() { return this.documentElement?.getAttribute('dir') || ''; }
   set dir(value) { this.documentElement?.setAttribute('dir', value); }
@@ -905,8 +955,14 @@ export class Document extends ParentMixin {
   importNode(node, deep) { return node.cloneNode(deep); }
   adoptNode(node) { return node; }
   getElementById(id) {
-    for (const element of this._descendants()) if (element.id === id) return element;
-    return null;
+    const key = String(id);
+    this._idCache ||= new Map();
+    const cached = this._idCache.get(key);
+    if (cached && cached.getAttribute('id') === key && cached.getRootNode() === this) return cached;
+    const found = this._scanById(key);
+    if (found) this._idCache.set(key, found);
+    else this._idCache.delete(key);
+    return found;
   }
   getElementsByName(name) { return [...this._descendants()].filter((element) => element.getAttribute('name') === name); }
   getSelection() { return { removeAllRanges() {}, addRange() {}, toString: () => '', rangeCount: 0 }; }
@@ -941,7 +997,7 @@ export function parseFragmentNodes(markup, document) {
   const root = new DocumentFragment(document);
   const stack = [root];
   const current = () => stack.at(-1);
-  const container = (node) => (node.tagName === 'template' ? node.content : node);
+  const container = (node) => (node.localName === 'template' ? node.content : node);
   const append = (node) => {
     const parent = current();
     node.parentNode = container(parent) === parent ? parent : container(parent);
@@ -969,7 +1025,7 @@ export function parseFragmentNodes(markup, document) {
       const close = markup.indexOf('>', open);
       const name = markup.slice(open + 2, close).trim().toLowerCase();
       for (let depth = stack.length - 1; depth > 0; depth -= 1) {
-        if (stack[depth].tagName === name) { stack.length = depth; break; }
+        if (stack[depth].localName === name) { stack.length = depth; break; }
       }
       index = close + 1;
       continue;
@@ -993,7 +1049,7 @@ export function parseFragmentNodes(markup, document) {
     const tagName = nameMatch[0].toLowerCase();
     const selfClosing = /\/\s*$/.test(body);
     const attributeSource = body.slice(nameMatch[0].length).replace(/\/\s*$/, '');
-    const parentTag = current().tagName;
+    const parentTag = current().localName;
     if (AUTO_CLOSE[parentTag]?.has(tagName)) stack.pop();
     const namespace = tagName === 'svg' || stack.some((node) => node.namespaceURI === 'http://www.w3.org/2000/svg') ? 'http://www.w3.org/2000/svg' : 'http://www.w3.org/1999/xhtml';
     const element = new Element(namespace === 'http://www.w3.org/2000/svg' ? nameMatch[0] : tagName, document, namespace);
@@ -1022,7 +1078,7 @@ export function parseFragmentNodes(markup, document) {
 export function parseHTML(markup) {
   const document = new Document();
   const nodes = parseFragmentNodes(markup.replace(/^﻿/, ''), document);
-  let html = nodes.find((node) => node.nodeType === 1 && node.tagName === 'html');
+  let html = nodes.find((node) => node.nodeType === 1 && node.localName === 'html');
   if (!html) {
     html = document.createElement('html');
     const body = document.createElement('body');
@@ -1036,22 +1092,22 @@ export function parseHTML(markup) {
 export function serializeNode(node) {
   if (node.nodeType === 3) {
     const parent = node.parentNode;
-    return parent && RAW_TEXT_ELEMENTS.has(parent.tagName) && parent.tagName !== 'textarea' && parent.tagName !== 'title' ? node.data : escapeText(node.data);
+    return parent && RAW_TEXT_ELEMENTS.has(parent.localName) && parent.localName !== 'textarea' && parent.localName !== 'title' ? node.data : escapeText(node.data);
   }
   if (node.nodeType === 8) return `<!--${node.data}-->`;
   if (node.nodeType === 11) return node.childNodes.map(serializeNode).join('');
   const attributes = [...node._attributes].map(([name, value]) => ` ${name}="${escapeAttribute(value)}"`).join('');
-  const open = `<${node.tagName}${attributes}>`;
-  if (VOID_ELEMENTS.has(node.tagName)) return open;
-  const children = node.tagName === 'template' ? node.content.childNodes : node.childNodes;
-  return `${open}${children.map(serializeNode).join('')}</${node.tagName}>`;
+  const open = `<${node.localName}${attributes}>`;
+  if (VOID_ELEMENTS.has(node.localName)) return open;
+  const children = node.localName === 'template' ? node.content.childNodes : node.childNodes;
+  return `${open}${children.map(serializeNode).join('')}</${node.localName}>`;
 }
 
 /** Visible text of an element tree: skips hidden subtrees, scripts and styles. */
 export function visibleText(element) {
   if (element.nodeType === 3) return element.data;
   if (element.nodeType !== 1 && element.nodeType !== 11) return '';
-  if (element.nodeType === 1 && (element.hidden || ['script', 'style', 'template'].includes(element.tagName))) return '';
+  if (element.nodeType === 1 && (element.hidden || ['script', 'style', 'template'].includes(element.localName))) return '';
   return element.childNodes.map(visibleText).join('');
 }
 

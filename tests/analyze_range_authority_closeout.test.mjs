@@ -7,19 +7,36 @@ import {
   createRepresentativeRangeComparisonFacts,
 } from '../app/src/application/range-comparison-facts.mjs';
 import { projectPreflopHandClassesAfterCardRemoval } from '../app/src/application/range-card-removal.mjs';
+import { bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
 
-const [logic, comparisonFactsSource, rangeAnalysisSource, bootstrap, html] = await Promise.all([
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
+const [comparisonFactsSource, rangeAnalysisSource, bootstrap] = await Promise.all([
   readFile(new URL('../app/src/application/range-comparison-facts.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/range-analysis.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/analysis-explanation-bootstrap.mjs', import.meta.url), 'utf8'),
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
 ]);
 
-const renderer = logic.slice(
-  logic.indexOf('function rangeRemovalPresentation'),
-  logic.indexOf('function renderBettingTree'),
-);
+// TEST-HYGIENE-001: logic.js / index.html assertions are behavioural: the
+// Range Category Comparison is rendered in the running app and compared with
+// the canonical comparison facts, instead of slicing the renderer source.
+const markup = indexDocument();
+const app = await bootApp();
+await app.navigate('analyze');
+await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['Qs', 'Qd']);
+await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['As', 'Ad', '7c']);
+await app.pickCards('#gtoMode [data-card-set-edit="dead"]', ['Ah', 'Ac']);
+await app.click('[data-gto-view="range"]');
+await app.settle(200);
+const rendered = app.call('renderRangeAdvantage');
+
+function expectedFacts(side) {
+  const ranges = app.evaluate('PREFLOP_RANGES');
+  const position = side === 'hero' ? (app.byId('rangeAdvHeroPos')?.value || 'BTN') : (app.byId('rangeAdvVilPos')?.value || 'BB');
+  const range = ranges[position] || ranges[side === 'hero' ? 'BTN' : 'BB'];
+  const context = app.window.app.decisionContext;
+  const blockers = [...context.board, ...context.deadCards, ...(side === 'hero' ? [] : context.heroCards)];
+  const removal = app.call('projectHandClassesAfterCardRemoval', [...range], blockers);
+  return app.call('representativeRangeComparisonFacts', range, app.window.app.gto.board.filter(Boolean), removal);
+}
 
 function projectSample(sampleHandClasses, board, extraBlockers = []) {
   return projectPreflopHandClassesAfterCardRemoval({
@@ -29,11 +46,24 @@ function projectSample(sampleHandClasses, board, extraBlockers = []) {
 }
 
 test('comparison renderer contains no evaluator, category-ranking, flush-draw, or straight-draw mathematics', () => {
-  assert.doesNotMatch(logic, /function scoreSevenJs|function scoreRangeHand/);
-  assert.doesNotMatch(renderer, /evaluateFive|evaluateSeven|deriveExactHandFacts|RANK_VAL|hasFD|hasSD|isFlush|isStraight|getCombinations/);
-  assert.doesNotMatch(renderer, /suits\.filter|ranks\[k\s*\+\s*3\]|categoryRank\s*[><=]/);
-  assert.match(renderer, /createRepresentativeRangeComparisonFacts/);
-  assert.match(renderer, /comparisonFacts\?\.cells/);
+  // Protects: the page has no evaluator of its own; every rendered cell shows
+  // exactly the category/state of the canonical comparison facts.
+  for (const name of ['scoreSevenJs', 'scoreRangeHand', 'evaluateFive', 'evaluateSeven', 'hasFD', 'hasSD']) {
+    assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  }
+  assert.equal(rendered?.status ?? 'available', 'available');
+  for (const [side, gridId] of [['hero', 'heroRangeGrid'], ['villain', 'villainRangeGrid']]) {
+    const facts = expectedFacts(side);
+    const cells = app.$$(`#${gridId} .range-cell`);
+    assert.equal(cells.length, 169);
+    for (const cell of cells) {
+      const fact = facts.cells[cell.dataset.hand];
+      const state = fact?.state === 'fully_removed' ? 'fully-removed' : fact?.state === 'not_in_sample' ? 'not-in-sample' : 'eligible';
+      assert.equal(cell.dataset.sampleState, state, `${side} ${cell.dataset.hand}`);
+      const category = { very_strong_made: 'very-strong', strong_made: 'strong-made', marginal_or_draw: 'marginal-draw', air: 'air' }[fact?.category] || 'none';
+      assert.equal(cell.dataset.category, category, `${side} ${cell.dataset.hand}`);
+    }
+  }
 });
 
 test('DOM-free application projection delegates exact classification to canonical Range Analysis facts', () => {
@@ -67,9 +97,13 @@ test('independent representative shares preserve forty percent versus twenty per
   );
   assert.equal(strongShare(hero), 0.4);
   assert.equal(strongShare(opponent), 0.2);
-  assert.match(renderer, /heroAdvBar'\)\) \$\('#heroAdvBar'\)\.style\.width = `\$\{\(heroStrongShare \* 100\)/);
-  assert.match(renderer, /villainAdvBar'\)\) \$\('#villainAdvBar'\)\.style\.width = `\$\{\(villainStrongShare \* 100\)/);
-  assert.doesNotMatch(renderer, /100\s*-\s*hero|combinedShare/);
+  // Protects: each advantage bar shows its own side's strong share on the same
+  // 0-100% scale (not complementary widths).
+  for (const [side, bar] of [['hero', 'heroAdvBar'], ['villain', 'villainAdvBar']]) {
+    const facts = expectedFacts(side);
+    const share = (facts.categoryShares.very_strong_made || 0) + (facts.categoryShares.strong_made || 0);
+    assert.equal(app.byId(bar).style.width, `${(share * 100).toFixed(1)}%`, side);
+  }
 });
 
 test('fully removed and not-in-sample remain distinct structured states', () => {
@@ -84,8 +118,12 @@ test('fully removed and not-in-sample remain distinct structured states', () => 
   assert.equal(facts.cells.KK.state, RANGE_COMPARISON_CELL_STATES.NOT_IN_SAMPLE);
   assert.equal(facts.coverage.fullyRemovedSampleClassCount, 1);
   assert.equal(facts.coverage.notInSampleClassCount, 1);
-  assert.match(renderer, /cell\?\.state === 'fully_removed'/);
-  assert.match(renderer, /cell\?\.state === 'not_in_sample'/);
+  // Both states render distinctly in the page.
+  const fullyRemoved = app.$('#heroRangeGrid .range-cell.is-fully-removed, #villainRangeGrid .range-cell.is-fully-removed');
+  const notInSample = app.$('#heroRangeGrid .range-cell.is-not-in-sample');
+  assert.ok(fullyRemoved && notInSample);
+  assert.match(fullyRemoved.getAttribute('aria-label'), /Unavailable after known-card removal/);
+  assert.match(notInSample.getAttribute('aria-label'), /Not in sample/);
 });
 
 test('representative-sample basis is immutable and visibly rejects class-wide generalization', () => {
@@ -100,7 +138,7 @@ test('representative-sample basis is immutable and visibly rejects class-wide ge
   assert.equal(facts.generalizesToEveryComboInClass, false);
   assert.equal(facts.normalization.available, false);
   assert.equal(Object.isFrozen(facts), true);
-  assert.match(logic, /Shares describe those representatives only, not every combo in each class/);
-  assert.match(logic, /category does not describe every combo in that class/);
-  assert.match(html, /Unavailable · class sample has no combo weights/);
+  assert.match(text(app.byId('rangeCoverageBasis')), /Shares describe those representatives only, not every combo in each class/);
+  assert.match(text(app.byId('rangeComparisonLimitation')), /category does not describe every combo in that class/);
+  assert.match(text(markup.body), /Unavailable · class sample has no combo weights/);
 });
