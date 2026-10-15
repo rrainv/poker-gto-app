@@ -8,10 +8,16 @@ import { handSetupRulesDefinition } from '../app/src/application/hand-setup-rule
 import { ACTION_TYPES, PHASES } from '../shared/poker-domain/index.js';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
 
-const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: live controls, Abort, and table-size validation run in the
+// booted Hand workspace; markup is parsed and styling resolved through the
+// cascade. Renderer and translation sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
 const RENDERER = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-const CSS = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const TRANSLATIONS = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 
 const HOLE_CARDS = Object.freeze([
@@ -119,77 +125,142 @@ test('one all-in player is skipped while remaining multiway actors complete the 
   assert.equal(waiting.players.find((player) => player.playerId === allInPlayerId).currentStackMilliBb, 0);
 });
 
-test('live controls are re-derived after Replay so legal Raise and exact-count board commits cannot stay disabled', () => {
-  assert.match(LOGIC, /input\.disabled = false/);
-  assert.match(LOGIC, /range\.disabled = false/);
-  assert.match(LOGIC, /minimumPreset\.disabled = false/);
-  assert.match(LOGIC, /maximumPreset\.disabled = false/);
-  assert.match(LOGIC, /syncCanonicalSizedActionCommitState\(\)/);
-  assert.match(LOGIC, /handDealBoardButton'\)\.disabled = normalizedDecisionCards\(app\.playbookHandDraft\.board\)\.length !== expected/);
-  assert.match(LOGIC, /const expected = Number\(state\?\.pendingChance\?\.cardCount\) \|\| 0/);
+test('live controls are re-derived after Replay so legal Raise and exact-count board commits cannot stay disabled', async () => {
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('call');
+  const sizing = ['handActionAmountBb', 'handActionAmountRange', 'handSizingMinPreset', 'handSizingMaxPreset'];
+  await app.click('#handReplayPreviousButton');
+  await app.settle(200);
+  await app.click('#handReplayLiveButton');
+  await app.settle(200);
+  // Back at the live endpoint, choosing the legal Raise re-enables every
+  // sizing control (Replay left them disabled) and re-derives the commit.
+  const raise = app.$('[data-canonical-action="raise"]');
+  assert.equal(raise.disabled, false);
+  await app.click(raise);
+  for (const id of sizing) assert.equal(app.byId(id).disabled, false, id);
+  assert.equal(app.byId('handCommitSizedAction').disabled, false, 'the minimum raise can be committed');
+  app.byId('handActionSizing').hidden = true;
+  // Finish preflop; the flop commit is enabled only with exactly three cards.
+  for (let round = 0; round < 20 && !app.call('callPlaybookStateBridge', 'getState').pendingChance; round += 1) {
+    await app.click(app.$('[data-canonical-action="check"]:not([disabled])') || app.$('[data-canonical-action="call"]:not([disabled])'));
+    await app.settle(200);
+  }
+  assert.equal(app.call('callPlaybookStateBridge', 'getState').pendingChance.cardCount, 3);
+  const deal = app.byId('handDealBoardButton');
+  assert.equal(deal.disabled, true);
+  await app.pickCards('[data-card-set-edit="hand-board-chance"]', ['2c', '3c']);
+  assert.equal(deal.disabled, true, 'two cards cannot commit a flop');
+  await app.pickCards('[data-card-set-edit="hand-board-chance"]', ['2c', '3c', '4c']);
+  assert.equal(deal.disabled, false, 'exactly three cards can');
 });
 
-test('Abort Hand is confirmed, clears only canonical live transients, and returns to setup', () => {
-  assert.match(HTML, /id="handResetButton"[^>]*ui-button--danger-secondary[^>]*data-i18n="Abort hand"/);
-  assert.match(LOGIC, /Abort this hand\? Unsaved current live progress will be discarded\. Saved hands and spots will not be changed\./);
-  assert.match(LOGIC, /callPlaybookStateBridge\('resetHand'\)/);
-  assert.match(LOGIC, /resetCanonicalHandDraft\(\)/);
-  assert.match(LOGIC, /handSetupDisclosure'\)\?\.setAttribute\('open', ''\)/);
-  assert.doesNotMatch(LOGIC.slice(LOGIC.indexOf('function resetCanonicalPlaybookHand('), LOGIC.indexOf('function prepareCanonicalNewHand(')), /savedStudy.*(?:delete|remove|clear)/i);
+test('Abort Hand is confirmed, clears only canonical live transients, and returns to setup', async () => {
+  const reset = markup.getElementById('handResetButton');
+  assert.ok(reset.classList.contains('ui-button--danger-secondary'));
+  assert.equal(reset.dataset.i18n, 'Abort hand');
+  await app.startHand(['As', 'Kd']);
+  app.byId('handSetupDisclosure')?.removeAttribute('open');
+  const confirm = app.window.confirm;
+  const prompts = [];
+  app.window.confirm = (message) => { prompts.push(message); return true; };
+  const spy = app.spy(['callPlaybookStateBridge', 'resetCanonicalHandDraft', 'callSavedStudyBridge']);
+  try {
+    await app.click('#handResetButton');
+    await app.settle(200);
+    assert.deepEqual(prompts, ['Abort this hand? Unsaved current live progress will be discarded. Saved hands and spots will not be changed.']);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'resetHand'));
+    assert.ok(spy.count('resetCanonicalHandDraft') >= 1);
+    // Saved study is never touched.
+    assert.ok(spy.calls.callSavedStudyBridge.every(([method]) => !/delete|remove|clear/i.test(method)), JSON.stringify(spy.calls.callSavedStudyBridge.map(([method]) => method)));
+  } finally {
+    spy.restore();
+    app.window.confirm = confirm;
+  }
+  assert.equal(app.call('callPlaybookStateBridge', 'getState'), null);
+  assert.ok(app.byId('handSetupDisclosure').hasAttribute('open'), 'returns to setup');
 });
 
-test('player-count validation preserves invalid input and blocks start instead of clamping', () => {
+test('player-count validation preserves invalid input and blocks start instead of clamping', async () => {
+  await app.navigate('hand');
+  assert.equal(app.call('callPlaybookStateBridge', 'getState'), null, 'setup state');
+  const tableSize = app.byId('handTableSize');
+  const collection = app.byId('handCollectionType');
+  const start = app.byId('handStartButton');
   for (const collectionType of ['none', 'fixed_per_seated_player']) {
+    if (![...collection.options].some((option) => option.value === collectionType)) continue;
+    collection.value = collectionType;
     const minimum = handSetupRulesDefinition({ collectionType }).tableSize.minimumSeated;
     for (const raw of ['', '-1', '1', '2.5', '2', '6', '7', '10', '11']) {
-      const controller = createCanonicalLiveController({ enabled: true });
-      let initializations = 0;
-      const controls = new Map(Object.entries({ handTableSize: raw, handCollectionType: collectionType,
-        handStackBb: '100', handButtonSeat: '0', handHeroSeat: '0', handAnteType: 'none', handAnteBb: '0',
-        handStartButton: '', handTableSizeError: '', handAccountingPreview: '',
-      }).map(([id, value]) => [`#${id}`, { value, dataset: {}, attributes: {}, focus() {},
-        setAttribute(key, next) { this.attributes[key] = next; } }]));
-      const context = vm.createContext({
-        $: id => controls.get(id), selectedValue: id => controls.get(id)?.value,
-        t: text => text, formatCanonicalBb: amount => `${amount / 1000} bb`, toast() {}, clearToast() {},
-        app: { handReview: { source: null } }, resetCanonicalHandDraft() {}, renderCanonicalHandWorkspace() {},
-        callPlaybookStateBridge(method, ...args) {
-          if (method === 'handSetupRulesDefinition') return handSetupRulesDefinition(...args);
-          if (method === 'handSetupPositions') return handSetupPositions(...args);
-          if (method === 'getState') return controller.getState();
-          if (method === 'initializeHand') { initializations++; return controller.initialize(...args); }
-          throw new Error(`Unexpected bridge call: ${method}`);
-        },
-      });
-      vm.runInContext(LOGIC.slice(LOGIC.indexOf('function canonicalHandTableSizeValidation('),
-        LOGIC.indexOf('function resetCanonicalHandDraft(')), context);
-      vm.runInContext(LOGIC.slice(LOGIC.indexOf('function startCanonicalPlaybookHand('),
-        LOGIC.indexOf('function resetCanonicalPlaybookHand(')), context);
+      tableSize.value = raw;
       const expectedValid = raw !== '' && Number.isInteger(Number(raw)) && Number(raw) >= minimum && Number(raw) <= 10;
-      assert.equal(context.syncHandSeatSelectors().valid, expectedValid, `${collectionType}: ${raw}`);
-      assert.equal(controls.get('#handTableSize').value, raw, 'validation preserves what the user entered');
-      assert.equal(controls.get('#handStartButton').disabled, !expectedValid);
-      assert.equal(controls.get('#handTableSize').attributes['aria-invalid'], String(!expectedValid));
-      const result = context.startCanonicalPlaybookHand();
+      assert.equal(app.call('syncHandSeatSelectors').valid, expectedValid, `${collectionType}: ${raw}`);
+      assert.equal(tableSize.value, raw, 'validation preserves what the user entered');
+      assert.equal(start.disabled, !expectedValid);
+      assert.equal(tableSize.getAttribute('aria-invalid'), String(!expectedValid));
+      const spy = app.spy(['callPlaybookStateBridge']);
+      let result;
+      try {
+        result = app.call('startCanonicalPlaybookHand');
+      } finally {
+        spy.restore();
+      }
+      const initializations = spy.calls.callPlaybookStateBridge.filter(([method]) => method === 'initializeHand').length;
       assert.equal(initializations, expectedValid ? 1 : 0, 'invalid input cannot reach canonical initialization');
-      assert.equal(result?.players.length ?? null, expectedValid ? Number(raw) : null);
-      assert.equal(controls.get('#handTableSize').value, raw, 'Start must not clamp invalid input either');
+      assert.equal(result?.players?.length ?? null, expectedValid ? Number(raw) : null);
+      assert.equal(tableSize.value, raw, 'Start must not clamp invalid input either');
+      if (expectedValid) {
+        app.call('callPlaybookStateBridge', 'resetHand');
+        app.call('resetCanonicalHandDraft');
+        app.call('renderCanonicalHandWorkspace');
+      }
     }
   }
-  assert.match(HTML, /id="handTableSizeError"[^>]*role="alert"/);
+  tableSize.value = '6';
+  collection.value = 'none';
+  app.call('syncHandSeatSelectors');
+  assert.equal(markup.getElementById('handTableSizeError').getAttribute('role'), 'alert');
 });
 
 test('corrected table, history, Review, localization, bidi, and Daylight contracts are structural', () => {
   assert.doesNotMatch(RENDERER, /table-seat-connector|table-card-cradle/);
   assert.match(RENDERER, /data-card-lane="radial-felt"/);
   assert.match(RENDERER, /cardCenterDistance = Math\.max\([\s\S]*?seatVector\.radialExtent \+ cardRadialExtent \+ cardSeatGap,[\s\S]*?feltEntryDistance \+ 1/);
-  assert.match(HTML, /id="handHistoryDisclosure"[^>]*open/);
-  assert.match(HTML, /id="handHistorySelectionSummary"/);
-  assert.match(CSS, /#handActionHistory:is\([\s\S]*?max-block-size:[\s\S]*?overflow-y: auto/);
-  assert.match(CSS, /is-hand-review-open[\s\S]*?grid-template-columns: minmax\(190px, 220px\) minmax\(0, 1fr\) minmax\(250px, 280px\)/);
-  assert.match(HTML, /id="handReviewReplayRailMount"/);
+  assert.ok(markup.getElementById('handHistoryDisclosure').hasAttribute('open'));
+  assert.ok(markup.getElementById('handHistorySelectionSummary'));
+  const gto = markup.getElementById('gtoMode');
+  gto.dataset.productDestination = 'hand';
+  const history = markup.getElementById('handActionHistory');
+  for (const variant of ['replay-timeline--compact', 'replay-timeline--review']) {
+    history.className = `replay-timeline ${variant}`;
+    assert.equal(css.cascaded(history, 'overflow-y'), 'auto', variant);
+    assert.ok(css.cascaded(history, 'max-block-size'), variant);
+  }
+  gto.classList.add('is-hand-review-open');
+  const surface = markup.getElementById('handReviewSurface');
+  surface.dataset.reviewSource = 'canonical_hand';
+  // Superseded: the three-column (decisions / detail / Replay rail) Review
+  // grid became a two-column review with the rail beside it (later Hand
+  // composition rule).
+  assert.equal(css.cascaded(surface, 'grid-template-columns', { width: 1440 }), 'minmax(0, 1fr) minmax(320px, .43fr)');
+  assert.ok(markup.getElementById('handReviewReplayRailMount'));
   assert.match(TRANSLATIONS, /'Hero': 'Игрок'/);
   assert.match(TRANSLATIONS, /'Hero': 'הירו'/);
-  assert.match(LOGIC, /document\.documentElement\.dir === 'rtl' \? `\\u2066\$\{amount\}\\u2069`/);
-  assert.match(CSS, /\[data-theme="daylight"\] #gtoMode\[data-product-destination="hand"\]/);
+  // Amounts are isolated LTR runs in RTL.
+  const html = app.document.documentElement;
+  assert.equal(app.call('formatCanonicalBb', 2500), '2.5 bb');
+  html.dir = 'rtl';
+  try {
+    assert.equal(app.call('formatCanonicalBb', 2500), '⁦2.5 bb⁩');
+  } finally {
+    html.dir = 'ltr';
+  }
+  // Daylight gives Hand surfaces their own panel treatment.
+  const root = markup.documentElement;
+  const dock = markup.querySelector('.hand-replay-rail') || markup.querySelector('.hand-review-surface');
+  root.dataset.theme = 'daylight';
+  const daylight = css.cascaded(dock, 'background');
+  root.dataset.theme = 'midnight';
+  assert.equal(daylight, 'var(--surface-panel)');
+  assert.notEqual(css.cascaded(dock, 'background'), daylight);
 });

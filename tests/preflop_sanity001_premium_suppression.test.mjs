@@ -196,20 +196,32 @@ test('suppressed distributions stay deterministic and trusted call-price semanti
   assert.equal(cheap.details.priceAdjustmentApplied, true);
 });
 
-test('the fix remains inside the DOM-free heuristic and all consumers retain StrategyProvider authority', () => {
+test('the fix remains inside the DOM-free heuristic and all consumers retain StrategyProvider authority', async () => {
   const preflopSource = fs.readFileSync(
     new URL('../app/src/strategy/preflop-heuristic.mjs', import.meta.url),
     'utf8',
   );
-  const logicSource = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
   const trainingSource = fs.readFileSync(
     new URL('../app/src/application/training-generator.mjs', import.meta.url),
     'utf8',
   );
   assert.doesNotMatch(preflopSource, /document\.|window\.|globalThis\.|querySelector|localStorage/);
   assert.doesNotMatch(preflopSource, /solved GTO|solver-derived|\bCFR\b|\bNash\b/i);
-  assert.match(logicSource, /strategyProvider\.resolve\(cellDecisionContext\)/);
-  assert.doesNotMatch(logicSource, /calculatePreflopFallbackStrategy/);
+  // TEST-HYGIENE-001: the page's Matrix resolves every cell through the
+  // StrategyProvider, and the classic page has no direct heuristic entry
+  // point (was a logic.js source match).
+  const { bootApp, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+  const provider = strategyProviderProbe();
+  const app = await bootApp({ beforeScripts: provider.beforeScripts });
+  assert.equal(app.evaluate('typeof calculatePreflopFallbackStrategy'), 'undefined');
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const cells = await provider.count(() => {
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+  });
+  assert.equal(cells.length, 169);
+  assert.ok(cells.every((context) => context.street === 'preflop' && context.heroCards.length === 2));
   assert.match(trainingSource, /strategyProvider\.resolve\(decisionContext\)/);
   assert.doesNotMatch(trainingSource, /calculatePreflopFallbackStrategy/);
 });

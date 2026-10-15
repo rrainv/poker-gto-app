@@ -84,3 +84,53 @@ export function assertCascaded(node, property, expected, options = {}, sheet = a
   if (expected instanceof RegExp) assert.match(actual ?? '', expected, message);
   else assert.equal(actual, expected, message);
 }
+
+/**
+ * Count StrategyProvider resolves made by the page. Pass `probe.beforeScripts`
+ * to bootApp(): the page's RiverlineStrategy bridge is wrapped as it is
+ * installed so every provider it creates records resolve() calls while
+ * `probe.count(fn)` runs. (The bridge and its providers are frozen, so they
+ * are re-exposed as frozen copies with a counting resolve.)
+ */
+export function strategyProviderProbe() {
+  const resolves = [];
+  let counting = false;
+  return {
+    resolves,
+    beforeScripts(window) {
+      const define = Object.defineProperty;
+      Object.defineProperty = function instrumented(target, property, descriptor) {
+        if (target === window && property === 'RiverlineStrategy' && descriptor?.value) {
+          Object.defineProperty = define;
+          const bridge = descriptor.value;
+          const wrapped = Object.freeze({
+            ...bridge,
+            createProvider(options) {
+              const provider = bridge.createProvider(options);
+              return Object.freeze({
+                ...provider,
+                resolve(decisionContext, ...rest) {
+                  if (counting) resolves.push(decisionContext);
+                  return provider.resolve(decisionContext, ...rest);
+                },
+              });
+            },
+          });
+          return define(target, property, { ...descriptor, value: wrapped });
+        }
+        return define(target, property, descriptor);
+      };
+    },
+    /** Run `callback` (sync or async) and return the contexts resolved meanwhile. */
+    async count(callback) {
+      resolves.length = 0;
+      counting = true;
+      try {
+        await callback();
+      } finally {
+        counting = false;
+      }
+      return [...resolves];
+    },
+  };
+}

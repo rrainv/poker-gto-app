@@ -4,9 +4,15 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { projectPreflopHandClassesAfterCardRemoval } from '../app/src/application/range-card-removal.mjs';
 
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+import { bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / logic.js assertions are behavioural: the
+// Matrix, StrategyResult presentation, range comparison, Equity and Training
+// hint copy run in the booted app (instead of vm-sliced logic.js), and markup
+// is parsed. i18n and analysis-explanation sources are outside this ticket.
 const locales = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
+const markup = indexDocument();
+const app = await bootApp();
 
 function sourceBetween(source, start, end) {
   const from = source.indexOf(start);
@@ -16,21 +22,32 @@ function sourceBetween(source, start, end) {
   return source.slice(from, to);
 }
 
+await app.navigate('analyze');
+await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+const freshChart = () => {
+  app.evaluate('app.matrixModel = null');
+  app.call('renderChart');
+  return app.$$('#strategyGrid .hand-cell');
+};
+
 test('Matrix exposes only heuristic strategy-frequency views', () => {
-  const select = sourceBetween(html, '<select id="chartAction"', '</select>');
-  assert.deepEqual(
-    [...select.matchAll(/<option value="([^"]+)"/g)].map((match) => match[1]),
-    ['strategy', 'raise', 'call', 'fold'],
-  );
-  assert.doesNotMatch(html + locales, /EV Heatmap \(bb\)|Equity % Heatmap/);
-  assert.doesNotMatch(logic, /estEV|estEq|\(score - 4\.0\) \* 0\.22|30 \+ score \* 2\.8/);
+  const select = markup.getElementById('chartAction');
+  assert.deepEqual(select.querySelectorAll('option').map((option) => option.value), ['strategy', 'raise', 'call', 'fold']);
+  assert.doesNotMatch(text(markup.body) + locales, /EV Heatmap \(bb\)|Equity % Heatmap/);
+  for (const name of ['estEV', 'estEq']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  // Every view renders frequencies (or Unavailable), never EV or equity estimates.
+  for (const view of ['strategy', 'raise', 'call', 'fold']) {
+    app.byId('chartAction').value = view;
+    const cells = freshChart();
+    assert.equal(cells.length, 169, view);
+    for (const cell of cells) assert.doesNotMatch(text(cell), /bb|EV|equity/i, `${view}: ${text(cell)}`);
+  }
+  app.byId('chartAction').value = 'strategy';
+  freshChart();
 });
 
 test('canonical StrategyResult presentation allocates exactly 100 visible percent', () => {
-  const helper = sourceBetween(logic, 'function strategyResultPresentationActions(', 'function strategyResultToLegacyProfile(');
-  const context = {};
-  vm.runInNewContext(`${helper}\nglobalThis.present = strategyResultPresentationActions;`, context);
-
+  const present = (result) => app.call('strategyResultPresentationActions', result);
   for (const entries of [
     [['Raise', 'raise', 1 / 3], ['Call', 'call', 1 / 3], ['Fold', 'fold', 1 / 3]],
     [['Raise', 'raise', 0.666], ['Call', 'call', 0.111], ['Fold', 'fold', 0.223]],
@@ -39,170 +56,124 @@ test('canonical StrategyResult presentation allocates exactly 100 visible percen
     const result = {
       actions: entries.map(([label, type, probability]) => ({ label, action: { type }, probability })),
     };
-    const presented = context.present(result);
+    const presented = present(result);
     assert.equal(presented.reduce((sum, entry) => sum + entry.value, 0), 100);
     assert.ok(presented.every((entry) => Number.isInteger(entry.value) && entry.value >= 0));
   }
-  assert.deepEqual(Array.from(context.present({ actions: [] })), []);
+  assert.deepEqual(Array.from(present({ actions: [] })), []);
 });
 
-test('Matrix uses current context, labels unavailable cells, and discloses fallback provenance', () => {
-  const matrix = sourceBetween(logic, 'function renderChart()', 'function visualActionKind(');
-  assert.match(matrix, /app\.decisionContext\?\.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION/);
-  assert.match(matrix, /heroCards: representativeCards/);
-  assert.match(matrix, /strategyProvider\.resolve\(cellDecisionContext\)/);
-  assert.match(matrix, /actions = strategyResultPresentationActions\(cellStrategyResult\)/);
-  assert.doesNotMatch(matrix, /calculatePreflopFallbackStrategy|evaluatePostflopHandStrength/);
-  assert.match(matrix, /actions\.length \? `\$\{val \|\| 0\}%` : t\('Unavailable'\)/);
-  assert.match(matrix, /strategyPolicySummary\(matrixClaimPolicy\)/);
-  assert.match(matrix, /dataset\.strategyPrecision/);
-  assert.match(matrix, /provider-backed postflop Matrix deferred/);
+test('Matrix uses current context, labels unavailable cells, and discloses fallback provenance', async () => {
+  // Every cell is resolved for the current context through the canonical
+  // presentation of a provider StrategyResult.
+  const spy = app.spy(['strategyResultPresentationActions', 'strategyPolicySummary']);
+  let cells;
+  try {
+    cells = freshChart();
+    assert.ok(spy.count('strategyResultPresentationActions') >= 169);
+    assert.ok(spy.count('strategyPolicySummary') >= 1);
+  } finally {
+    spy.restore();
+  }
+  for (const name of ['calculatePreflopFallbackStrategy', 'evaluatePostflopHandStrength']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  for (const cell of cells) assert.ok(cell.dataset.strategyPrecision, 'every cell records its strategy precision');
+  const context = app.window.app.decisionContext;
+  assert.match(text(app.byId('chartSummary')), new RegExp(`${context.stackBb ?? context.effectiveStackBb} bb`));
+  // Changing the context changes the Matrix model key (it is never stale).
+  const before = app.evaluate('app.matrixModel.key');
+  await app.setValue('#players', String(context.tableSize === 6 ? 7 : 6));
+  freshChart();
+  assert.notEqual(app.evaluate('app.matrixModel.key'), before);
+  // Postflop the Matrix is not guessed: the grid is withheld and labelled
+  // unavailable. (The per-cell "provider-backed postflop Matrix deferred"
+  // label is unreachable because postflop returns before cells render.)
+  await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['Qh', 'Jh', '2c']);
+  const postflop = freshChart();
+  assert.equal(postflop.length, 0);
+  assert.equal(app.$('.range-matrix-layout').hidden, true);
+  assert.equal(app.byId('postflopMatrixEmpty').hidden, false);
+  assert.equal(text(app.byId('selectedHandPrimary')), 'Range expansion unavailable');
+  assert.equal(text(app.byId('selectedRangeSource')), 'Unavailable');
 });
 
-function fakeElement(value = '') {
-  return {
-    value,
-    hidden: false,
-    textContent: '',
-    dataset: {},
-    style: {},
-    children: [],
-    replaceChildren(...children) { this.children = children; },
-    append(...children) { this.children.push(...children); },
-  };
-}
-
-function rangeHarness() {
-  const elements = new Map([
-    ['rangeAdvHeroPos', fakeElement('BTN')],
-    ['rangeAdvVilPos', fakeElement('BB')],
-    ['rangeAdvantageStatus', fakeElement()],
-    ['rangeAdvantageAnalysis', fakeElement()],
-    ['heroRangeTitle', fakeElement()],
-    ['villainRangeTitle', fakeElement()],
-    ['heroAdvBar', fakeElement()],
-    ['villainAdvBar', fakeElement()],
-    ['heroRangeScore', fakeElement()],
-    ['villainRangeScore', fakeElement()],
-    ['rangeConclusion', fakeElement()],
-  ]);
-  const range = (stats) => Object.assign(new Set(['AA']), { stats });
-  const ranges = {
-    BTN: range({ veryStrong: 20, strongMade: 20, marginal: 10, air: 50, total: 100 }),
-    UTG: range({ veryStrong: 5, strongMade: 10, marginal: 20, air: 65, total: 100 }),
-    BB: range({ veryStrong: 10, strongMade: 15, marginal: 25, air: 50, total: 100 }),
-    CO: range({ veryStrong: 15, strongMade: 20, marginal: 20, air: 45, total: 100 }),
-  };
-  const context = {
-    app: {
-      playbookMode: 'scenario',
-      gto: { board: ['As', 'Kd', '2c'] },
-      decisionContext: {
-        schemaVersion: 'decision-context/v1',
-        board: ['As', 'Kd', '2c'],
-        deadCards: [],
-        heroCards: [],
-      },
-    },
-    PLAYBOOK_MODES: { SCENARIO: 'scenario', HAND: 'hand' },
-    DECISION_CONTEXT_SCHEMA_VERSION: 'decision-context/v1',
-    PREFLOP_RANGES: ranges,
-    $: (selector) => elements.get(selector.slice(1)) || null,
-    t: (text) => text,
-    representativeRangeComparisonFacts: (range) => ({
-      categoryCounts: {
-        very_strong_made: range.stats.veryStrong,
-        strong_made: range.stats.strongMade,
-        marginal_or_draw: range.stats.marginal,
-        air: range.stats.air,
-      },
-      categoryShares: {
-        very_strong_made: range.stats.veryStrong / range.stats.total,
-        strong_made: range.stats.strongMade / range.stats.total,
-        marginal_or_draw: range.stats.marginal / range.stats.total,
-        air: range.stats.air / range.stats.total,
-      },
-      coverage: {
-        eligibleRepresentativeCount: range.stats.total,
-        suppliedSampleClassCount: range.stats.total,
-      },
-      cells: {},
-    }),
-    rangeComparisonStats: (facts) => ({
-      veryStrong: facts.categoryCounts.very_strong_made,
-      strongMade: facts.categoryCounts.strong_made,
-      marginal: facts.categoryCounts.marginal_or_draw,
-      air: facts.categoryCounts.air,
-      total: facts.coverage.eligibleRepresentativeCount,
-    }),
-    renderRangeGrid: () => {},
-    renderRangeCategoryBars: () => {},
-    rangeRemovalPresentation: () => ({ affectedClasses: 0, unavailableClasses: 0, removedCombos: 0 }),
-    projectHandClassesAfterCardRemoval: projectPreflopHandClassesAfterCardRemoval,
-    document: { createElement: () => fakeElement(), querySelector: () => null },
-  };
-  const rangeFunction = sourceBetween(logic, 'function renderRangeAdvantage()', 'function renderBettingTree()');
-  vm.runInNewContext(`${rangeFunction}\nglobalThis.render = renderRangeAdvantage;`, context);
-  return { context, elements };
-}
-
-test('Range comparison dedicated selectors are authoritative and both change the analysis', () => {
-  const rangeSource = sourceBetween(logic, 'function renderRangeAdvantage()', 'function renderBettingTree()');
-  assert.match(rangeSource, /#rangeAdvHeroPos/);
-  assert.match(rangeSource, /#rangeAdvVilPos/);
-  assert.doesNotMatch(rangeSource, /#heroPos|rangeAdvVillainPos/);
-
-  const { context, elements } = rangeHarness();
-  const first = context.render();
-  elements.get('rangeAdvHeroPos').value = 'UTG';
-  const heroChanged = context.render();
+test('Range comparison dedicated selectors are authoritative and both change the analysis', async () => {
+  // (Board from the previous test: a flop is required.)
+  assert.ok(app.window.app.gto.board.filter(Boolean).length >= 3);
+  await app.setValue('#rangeAdvHeroPos', 'BTN', { events: ['change'] });
+  await app.setValue('#rangeAdvVilPos', 'BB', { events: ['change'] });
+  const first = app.call('renderRangeAdvantage');
+  // Each dedicated selector re-renders the comparison on change.
+  await app.setValue('#rangeAdvHeroPos', 'UTG', { events: ['change'] });
+  assert.equal(text(app.byId('heroRangeTitle')), 'Hero sample (UTG)');
+  const heroChanged = app.call('renderRangeAdvantage');
   assert.notEqual(heroChanged.heroStrongShare, first.heroStrongShare);
-  assert.equal(elements.get('heroRangeTitle').textContent, 'Hero sample (UTG)');
-
-  elements.get('rangeAdvVilPos').value = 'CO';
-  const villainChanged = context.render();
+  await app.setValue('#rangeAdvVilPos', 'CO', { events: ['change'] });
+  assert.equal(text(app.byId('villainRangeTitle')), 'Villain sample (CO)');
+  const villainChanged = app.call('renderRangeAdvantage');
   assert.notEqual(villainChanged.villainStrongShare, heroChanged.villainStrongShare);
-  assert.equal(elements.get('villainRangeTitle').textContent, 'Villain sample (CO)');
-  assert.match(logic, /\['rangeAdvHeroPos', 'rangeAdvVilPos'\][\s\S]*addEventListener\('change', renderRangeAdvantage\)/);
+  // The Hero position control does not drive the comparison.
+  const heroPos = app.byId('heroPos');
+  if (heroPos) {
+    const previous = heroPos.value;
+    await app.setValue(heroPos, [...heroPos.options].map((option) => option.value).find((value) => value !== previous), { events: ['change'] });
+    assert.equal(text(app.byId('heroRangeTitle')), 'Hero sample (UTG)');
+    await app.setValue(heroPos, previous, { events: ['change'] });
+  }
 });
 
-test('Range comparison is descriptive, limitation-labelled, and context-safe in Hand Mode', () => {
-  const rangeSource = sourceBetween(logic, 'function renderRangeAdvantage()', 'function renderBettingTree()');
-  assert.doesNotMatch(logic + locales, /Significant Nut Advantage|Villain Nut Advantage|use large bet sizes and overbets|bet very frequently \(using smaller bet sizes\)|distributing equity evenly/);
-  assert.match(rangeSource, /heuristic fixed-range\/category analysis/);
-  assert.match(rangeSource, /one canonical surviving representative per eligible sampled class/);
-  assert.match(rangeSource, /category does not describe every combo in that class/);
-  assert.match(rangeSource, /not solver range advantage, range-vs-range equity/);
-
-  const { context, elements } = rangeHarness();
-  context.app.playbookMode = 'hand';
-  Object.defineProperty(context.app.gto, 'board', {
-    get() { throw new Error('Scenario board must not be read in Hand Mode'); },
-  });
-  const result = context.render();
+test('Range comparison is descriptive, limitation-labelled, and context-safe in Hand Mode', async () => {
+  assert.doesNotMatch(locales, /Significant Nut Advantage|Villain Nut Advantage|use large bet sizes and overbets|bet very frequently \(using smaller bet sizes\)|distributing equity evenly/);
+  app.call('renderRangeAdvantage');
+  const analysis = text(app.byId('rangeAdvantageAnalysis')) + ' ' + text(app.byId('rangeAdvantageStatus'));
+  assert.doesNotMatch(analysis, /Significant Nut Advantage|Villain Nut Advantage|overbets|distributing equity evenly/);
+  for (const phrase of [
+    /heuristic fixed-range\/category analysis/,
+    /one canonical surviving representative per eligible sampled class/,
+    /category does not describe every combo in that class/,
+    /not solver range advantage, range-vs-range equity/,
+  ]) assert.match(analysis, phrase);
+  await app.call('requestPlaybookMode', 'hand');
+  await app.settle(200);
+  const result = app.call('renderRangeAdvantage');
   assert.equal(result.status, 'unavailable');
-  assert.equal(elements.get('rangeAdvantageAnalysis').hidden, true);
-  assert.match(elements.get('rangeAdvantageStatus').textContent, /Canonical hand history does not establish weighted ranges/);
+  assert.equal(app.byId('rangeAdvantageAnalysis').hidden, true);
+  assert.match(text(app.byId('rangeAdvantageStatus')), /Canonical hand history does not establish weighted ranges/);
+  await app.call('requestPlaybookMode', 'scenario');
+  await app.settle(200);
 });
 
-test('Equity results omit the tautological Total equity summary without touching canonical calculations', () => {
-  const equityHtml = sourceBetween(html, 'id="equityMode"', 'id="infoMode"');
-  const equityRender = sourceBetween(logic, 'function clearEquityResults(', 'function resetEquityCalculator(');
-  assert.doesNotMatch(equityHtml, /Total equity|equitySum/);
-  assert.doesNotMatch(equityRender, /equityTotal|equitySum/);
-  assert.match(equityHtml, /id="equitySplitSummary"/);
-  assert.match(equityHtml, /id="eqDeckCount"/);
+test('Equity results omit the tautological Total equity summary without touching canonical calculations', async () => {
+  const equity = markup.getElementById('equityMode');
+  assert.doesNotMatch(text(equity), /Total equity/);
+  assert.equal(equity.querySelector('#equitySum, #equityTotal, [id*="equitySum"]'), null);
+  assert.ok(equity.querySelector('#equitySplitSummary'));
+  assert.ok(equity.querySelector('#eqDeckCount'));
+  await app.navigate('equity');
+  app.call('clearEquityResults');
+  assert.equal(app.$('#equityMode [id*="equityTotal"], #equityMode [id*="equitySum"]'), null);
+  assert.doesNotMatch(text(app.byId('equityMode')), /Total equity/);
+  await app.navigate('analyze');
 });
 
-test('related analytical surfaces retain explicit truthfulness boundaries', () => {
-  assert.match(logic, /MDF \([^)]*\) is a range-level reference, not a threshold for this hand/);
-  assert.match(logic, /no EV is implied/);
+test('related analytical surfaces retain explicit truthfulness boundaries', async () => {
+  // Guided Training states MDF as a range-level reference, and solutions say
+  // no EV is implied.
+  await app.navigate('training');
+  app.window.app.training.currentContext = { hero_pos: 'BTN', facingSize: 3, callAmount: 2, potOdds: 25, mdf: 60 };
+  app.byId('trainingDifficulty').value = 'guided';
+  app.call('updateAssistanceDisplay');
+  assert.match(text(app.byId('trainingHintText')), /MDF \([^)]*\) is a range-level reference, not a threshold for this hand/);
+  app.byId('trainingDifficulty').value = 'hard';
+  app.call('updateAssistanceDisplay');
+  await app.training.start('focused');
+  await app.training.answer();
+  assert.match(text(app.byId('trainingSolution')), /no EV is implied/);
   const explanation = fs.readFileSync(new URL('../app/src/application/analysis-explanation.mjs', import.meta.url), 'utf8');
   assert.match(explanation, /claimPolicy\.claims\[STRATEGY_CLAIMS\.ACTION_EV\]/);
   const spr = sourceBetween(explanation, 'function sprSection(', 'function historyText(');
   assert.match(spr, /context\.effectiveStackBb/);
   assert.doesNotMatch(spr, /context\.stackBb\b/);
   assert.match(explanation, /The strategy source supplies no action EV comparison/);
-  const facts = sourceBetween(logic, 'function trustedAnalysisFacts(', 'function renderDecisionAnalysis(');
-  assert.doesNotMatch(facts, /originalEquity|facts\.equity/);
+  // Trusted facts carry only history, never an equity figure.
+  assert.deepEqual(Object.keys(app.call('trustedAnalysisFacts', [])), ['actionHistory']);
 });

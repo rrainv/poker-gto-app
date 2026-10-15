@@ -3,51 +3,130 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, bootApp } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: styles.css / logic.js assertions are behavioural: the
+// cascade resolves the polish rules on probes and rendered elements, and
+// entrances, feedback grades, reduced-motion scrolling and cue events are
+// observed in the booted app. SoundFX/manifest/teacher sources are outside
+// this ticket.
+const css = appStyleSheet();
+const app = await bootApp();
+// SOURCE-SHAPE: "the polish block never uses bounce/spin/flash/infinite
+// motion" is a policy lint over the POLISH-FINAL-001 block as authored
+// (parsed, not regex-matched).
+const polishSheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const start = raw.indexOf('*/', raw.indexOf('POLISH-FINAL-001: restrained product-feel language')) + 2;
+  return new StyleSheetModel(raw.slice(start));
+})();
+const probe = (html) => {
+  const host = app.document.createElement('div');
+  host.innerHTML = html;
+  app.document.body.appendChild(host);
+  return host.firstElementChild;
+};
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
 const foleyManifest = fs.readFileSync(new URL('../app/src/core/AudioFoleyManifest.js', import.meta.url), 'utf8');
 const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
-const polishCss = css.slice(css.indexOf('POLISH-FINAL-001: restrained product-feel language'));
 
 test('shared analysis card notation has a compact explicit contrast surface', () => {
   assert.match(teacher, /analysis-mini-card riverline-card card--suit-\$\{suitId\}/);
   assert.match(teacher, /presentation\.displayCardRank/);
   assert.match(teacher, /presentation\.appendCardFaceContents/);
   assert.match(teacher, /unicode-bidi|analysis-card-token/);
-  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*background:[^}]*--riverline-card-face/);
-  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*border:[^}]*--riverline-card-border/);
-  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*box-shadow:/);
+  const mini = probe('<span class="analysis-mini-card riverline-card card--suit-h" data-card-size="mini"></span>');
+  assert.match(css.cascaded(mini, 'background') || '', /--(?:riverline-)?card-face/);
+  assert.match(css.cascaded(mini, 'border') || css.cascaded(mini, 'border-color') || '', /--(?:riverline-)?card-border/);
+  assert.ok(css.cascaded(mini, 'box-shadow') && css.cascaded(mini, 'box-shadow') !== 'none');
   assert.match(teacher, /token\.dataset\.cardSize = 'mini'/);
   assert.doesNotMatch(teacher, /replace\(['"]T['"],\s*['"]10['"]\)/);
 });
 
-test('motion language is tokenized, event-scoped, and avoids large animated trees', () => {
+test('motion language is tokenized, event-scoped, and avoids large animated trees', async () => {
+  const root = app.document.documentElement;
   for (const token of ['--motion-micro', '--motion-standard', '--motion-emphasis']) {
-    // DS-FOUNDATION-001 moved every :root token into the single token block.
-    assert.match(css.slice(0, css.indexOf('\n}\n')), new RegExp(`${token}:\\s*var\\(--duration-`));
+    assert.match(css.cascaded(root, token), /^var\(--duration-/, token);
   }
-  assert.match(logic, /classList\.toggle\('is-analysis-entering', isHidden\)/);
-  assert.match(logic, /classList\.toggle\('is-view-entering', item === destination\)/);
-  assert.match(polishCss, /training-study-hint-content \.analysis-study-hint[\s\S]*riverline-hint-enter/);
-  assert.match(polishCss, /\.equity-player-results\[data-result-state="complete"\]/);
-  assert.match(polishCss, /visibility 0s linear var\(--motion-standard\)/);
-  assert.doesNotMatch(polishCss, /bounce|spin|flash|infinite/i);
+  // Opening the analysis panel and switching Analyze views mark only the
+  // entering element, which runs the panel entrance.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const teacher = app.byId('teacherContent');
+  if (app.byId('toggleTeacher').getAttribute('aria-expanded') === 'true') await app.click('#toggleTeacher');
+  await app.click('#toggleTeacher');
+  assert.ok(teacher.classList.contains('is-analysis-entering'));
+  assert.match(css.cascaded(teacher, 'animation') || '', /riverline-panel-enter/);
+  await app.click('#toggleTeacher');
+  assert.equal(teacher.classList.contains('is-analysis-entering'), false);
+  const tab = app.$$('.sub-tab[data-gto-view]').find((node) => node.getAttribute('aria-selected') !== 'true');
+  await app.click(tab);
+  const entering = app.$$('.gto-view.is-view-entering');
+  assert.equal(entering.length, 1);
+  assert.match(css.cascaded(entering[0], 'animation') || '', /riverline-panel-enter/);
+  const hint = probe('<div class="training-study-hint-content"><div class="analysis-study-hint"></div></div>').firstElementChild;
+  assert.match(css.cascaded(hint, 'animation'), /riverline-hint-enter/);
+  // A collapsing table keeps visibility until the collapse finishes.
+  assert.match(css.cascaded(probe('<div class="table-wrapper collapsed"></div>'), 'transition'), /visibility 0s linear var\(--motion-standard\)/);
+  for (const rule of polishSheet.rules) {
+    for (const { value } of rule.declarations) assert.doesNotMatch(value, /bounce|spin|flash|infinite/i, rule.selectorText);
+  }
+  for (const name of polishSheet.keyframes.keys()) assert.doesNotMatch(name, /bounce|spin|flash/i);
 });
 
-test('answer feedback remains semantic while correct and mistake states get calm emphasis', () => {
-  assert.match(logic, /delete feedbackDiv\.dataset\.accepted/);
-  assert.match(logic, /trainingFeedback'\)\.dataset\.grade = presentation\.tone/);
-  assert.match(polishCss, /data-truth-state="normative_assessment"\]\[data-grade="success"[\s\S]*--status-success/);
-  assert.match(polishCss, /data-truth-state="normative_assessment"\]\[data-grade="error"[\s\S]*--status-danger/);
-  assert.match(polishCss, /@keyframes riverline-answer-enter[\s\S]*opacity:\s*0[\s\S]*translate:\s*0 -5px/);
+test('answer feedback remains semantic while correct and mistake states get calm emphasis', async () => {
+  // Answering grades the feedback with the presentation tone and never keeps
+  // a stale "accepted" flag.
+  await app.training.start('focused');
+  const feedback = app.byId('trainingFeedback');
+  feedback.dataset.accepted = 'stale';
+  await app.training.answer();
+  assert.ok(feedback.dataset.grade, 'graded with the presentation tone');
+  assert.equal(feedback.dataset.accepted, undefined);
+  for (const [grade, token] of [['success', '--status-success'], ['error', '--status-danger']]) {
+    const node = probe(`<div class="training-feedback" data-truth-state="normative_assessment" data-grade="${grade}"></div>`);
+    assert.equal(css.cascaded(node, 'border-inline-start-color'), `var(${token})`, grade);
+  }
+  const frames = css.keyframes.get('riverline-answer-enter');
+  const from = frames.find((frame) => frame.offsets.includes('from'));
+  assert.deepEqual(Object.fromEntries(from.declarations.map(({ property, value }) => [property, value])), { opacity: '0', translate: '0 -5px' });
 });
 
-test('reduced motion makes all nonessential animation and transition near-instant', () => {
-  assert.match(polishCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-duration:\s*\.01ms !important/);
-  assert.match(polishCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*transition-duration:\s*\.01ms !important/);
-  assert.match(polishCss, /training-study-hint-content \.analysis-study-hint[\s\S]*animation:\s*none !important/);
-  assert.match(logic, /prefers-reduced-motion: reduce[\s\S]*behavior: reducedMotion \? 'auto' : 'smooth'/);
+test('reduced motion makes all nonessential animation and transition near-instant', async () => {
+  const reduced = { reducedMotion: true };
+  const any = probe('<div class="deck-card"></div>');
+  assert.equal(css.cascaded(any, 'animation-duration', reduced), '.01ms');
+  assert.equal(css.cascaded(any, 'transition-duration', reduced), '.01ms');
+  const hint = probe('<div class="training-study-hint-content"><div class="analysis-study-hint"></div></div>').firstElementChild;
+  assert.equal(css.cascaded(hint, 'animation', reduced), 'none');
+  // Revealing an Analyze view scrolls smoothly, or instantly under reduced motion.
+  await app.navigate('analyze');
+  const media = app.environment.media;
+  const reveal = async () => {
+    const tab = app.$$('.sub-tab[data-gto-view]').find((node) => node.getAttribute('aria-selected') !== 'true');
+    const view = tab.dataset.gtoView;
+    await app.click(tab);
+    const destination = view === 'context' ? app.byId('contextView') : app.byId(`${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
+    return destination._scrolledIntoView;
+  };
+  try {
+    app.environment.media = { ...media, reducedMotion: false };
+    const smooth = await reveal();
+    app.environment.media = { ...media, reducedMotion: true };
+    const instant = await reveal();
+    if (smooth || instant) {
+      assert.equal(smooth?.behavior, 'smooth');
+      assert.equal(instant?.behavior, 'auto');
+    } else {
+      // Views revealed without scrolling: check the Hand Review scroll path.
+      await app.startHand(['As', 'Kd']);
+      await app.handAction('fold');
+      app.call('openCanonicalHandReview');
+      assert.equal(app.byId('handReviewSurface')._scrolledIntoView?.behavior, 'auto');
+    }
+  } finally {
+    app.environment.media = media;
+  }
 });
 
 function createSoundHarness(initialSound = null) {
@@ -191,10 +270,29 @@ test('hint sound remains throttled and triggered once per revealed hint', async 
   await harness.soundFx.playHint();
   await harness.soundFx.playHint();
   assert.equal(harness.oscillatorCount(), 2);
-  assert.equal((logic.match(/SoundFX\.play/g) || []).length, 0);
-  assert.match(logic, /renderAnalysisStudyHints[\s\S]{0,420}emitStudyExperience\('reference_comparison_revealed'/);
-  assert.equal((logic.match(/emitTrainingDecisionResultExperience\(/g) || []).length, 2);
-  assert.doesNotMatch(logic, /(?:hover|progress|bindSliderPair)[\s\S]{0,120}emitStudyExperience/);
+  // Cues are event-owned: one comparison event per revealed hint, one result
+  // per answer, none from hover, progress or slider input. (The "logic.js
+  // never calls SoundFX.play directly" call-site lint lives in
+  // prelabs_fix001_firefox_audio as SOURCE-SHAPE.)
+  const spy = app.spy(['emitStudyExperience', 'emitTrainingDecisionResultExperience', 'renderAnalysisStudyHints']);
+  try {
+    await app.training.start('focused');
+    spy.reset();
+    await app.click('#trainingRevealHint');
+    assert.equal(spy.count('renderAnalysisStudyHints'), 1);
+    assert.equal(spy.calls.emitStudyExperience.filter(([type]) => type === 'reference_comparison_revealed').length, 1);
+    assert.ok(spy.sequence.indexOf('renderAnalysisStudyHints') < spy.sequence.indexOf('emitStudyExperience'));
+    spy.reset();
+    await app.training.answer();
+    assert.equal(spy.count('emitTrainingDecisionResultExperience'), 1);
+    await app.navigate('analyze');
+    spy.reset();
+    await app.setValue('#players', '5');
+    app.dispatch(app.$('.mode-nav-item'), new app.window.MouseEvent('mouseover', { bubbles: true }));
+    assert.equal(spy.count('emitStudyExperience'), 0);
+  } finally {
+    spy.restore();
+  }
 });
 
 test('audio preference persistence and enabled default remain unchanged', () => {

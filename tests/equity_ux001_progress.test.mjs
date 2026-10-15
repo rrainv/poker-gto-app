@@ -9,8 +9,13 @@ import {
 } from '../app/src/application/equity-progress.mjs';
 import { EQUITY_WORKER_MESSAGES } from '../app/src/application/equity-worker-runtime.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / logic.js assertions are behavioural: the
+// parsed progress markup and the running page's progress renderer and
+// cancellation.
+const markup = indexDocument();
+const app = await bootApp();
 
 function request({
   method = 'monte_carlo',
@@ -57,7 +62,14 @@ test('preparation is indeterminate and exposes no fake zero percentage', () => {
     throughputPerSecond: null,
     etaSeconds: null,
   });
-  assert.doesNotMatch(html, /Preparing calculation…[\s\S]{0,180}>0%</);
+  // The idle markup never shows a fake 0% beside "Preparing calculation…".
+  const progressMarkup = markup.getElementById('progress');
+  assert.equal(text(progressMarkup.querySelector('.progress-method')), 'Preparing calculation…');
+  const percent = progressMarkup.querySelector('.progress-percent');
+  assert.equal(percent.hidden, true);
+  assert.equal(text(percent), '');
+  app.call('renderEquityProgress', updates.at(-1) ?? { mode: 'indeterminate', method: 'monte_carlo' });
+  assert.doesNotMatch(text(app.byId('progress')), /\b0%/);
 });
 
 test('Monte Carlo counters drive percentage, real elapsed throughput, and conservative ETA', () => {
@@ -115,7 +127,11 @@ test('exact progress is determinate when measurable and never exposes Monte Carl
   assert.equal(updates.at(-1).percentage, 50);
   assert.equal(updates.at(-1).throughputPerSecond, null);
   assert.equal(updates.at(-1).etaSeconds, null);
-  assert.match(logic, /const unit = isExact \? 'outcomes' : 'trials'/);
+  // Exact progress counts outcomes; Monte Carlo counts trials.
+  app.call('renderEquityProgress', updates.at(-1));
+  assert.match(text(app.$('#progress .progress-status')), /^22 \/ 44 outcomes$/);
+  app.call('renderEquityProgress', { ...updates.at(-1), method: 'monte_carlo' });
+  assert.match(text(app.$('#progress .progress-status')), /^22 \/ 44 trials$/);
 });
 
 test('invalid requests never enter preparation progress', async () => {
@@ -209,9 +225,24 @@ test('manual cancellation hides post-cancel progress without mutating Equity inp
 
   assert.equal((await calculation).error.code, 'aborted');
   assert.equal(updates.length, 1);
-  assert.match(logic, /function cancelEquityCalculation\(\)[\s\S]*equityCalculationGeneration \+= 1/);
-  assert.doesNotMatch(
-    logic.slice(logic.indexOf('function cancelEquityCalculation()'), logic.indexOf('function clearEquityResults(')),
-    /app\.equity\.(?:players|board|dead)\s*=/,
-  );
+  // Cancelling in the page supersedes the running generation and keeps the
+  // entered players, board and dead cards.
+  await app.navigate('equity');
+  const [hero] = app.evaluate('app.equity.players.map(({ id }) => id)');
+  await app.pickCards(`[data-equity-edit-hand="${hero}"]`, ['As', 'Kd']);
+  await app.click('#calculate');
+  const equity = app.window.app.equity;
+  assert.equal(equity.lifecycle, 'running');
+  const inputs = { players: equity.players, board: equity.board, dead: equity.dead };
+  const cards = JSON.stringify(equity.players.map(({ cards: held }) => held));
+  const generation = app.evaluate('equityCalculationGeneration');
+  app.call('cancelEquityCalculation');
+  assert.equal(app.evaluate('equityCalculationGeneration'), generation + 1);
+  assert.equal(equity.players, inputs.players);
+  assert.equal(equity.board, inputs.board);
+  assert.equal(equity.dead, inputs.dead);
+  assert.equal(JSON.stringify(equity.players.map(({ cards: held }) => held)), cards);
+  assert.equal(equity.lifecycle, 'cancelled');
+  await app.settle(3000);
+  assert.equal(equity.lifecycle, 'cancelled', 'a superseded result never lands');
 });

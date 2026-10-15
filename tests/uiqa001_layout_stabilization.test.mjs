@@ -9,146 +9,228 @@ import {
   tableCardSvgMarkup,
 } from '../app/src/application/card-presentation.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, bootApp, indexDocument, precedes, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: parsed markup, the cascade at the relevant widths, and the
+// running shell (sidebar, table collapse, Equity count, language). Strategy
+// and SoundFX sources are outside this ticket.
 const strategy = [
   '../app/src/strategy/preflop-heuristic.mjs',
   '../app/src/strategy/postflop-heuristic.mjs',
 ].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
+// SOURCE-SHAPE: "the UI-QA-001 block is fluid (named breakpoints only, no
+// device-resolution queries, no pure-black surfaces, no poker code)" is a
+// policy lint over the block as authored — parsed, not regex-matched.
+const uiQa = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const start = raw.indexOf('*/', raw.indexOf('UI-QA-001: responsive shell')) + 2;
+  return new StyleSheetModel(raw.slice(start, raw.indexOf('/* UI-QA-002B:')));
+})();
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const shell = markup.querySelector('.riverline-shell');
+const rail = markup.getElementById('modeRail');
+const header = markup.querySelector('header.workspace-header');
+const probe = (html) => {
+  const host = markup.createElement('div');
+  host.innerHTML = html;
+  markup.body.appendChild(host);
+  return host.firstElementChild;
+};
 
-const uiQaStart = css.indexOf('UI-QA-001: responsive shell');
-assert.ok(uiQaStart >= 0, 'UI-QA-001 stabilization section must exist');
-const uiQaEnd = css.indexOf('UI-QA-002B:', uiQaStart);
-assert.ok(uiQaEnd > uiQaStart, 'UI-QA-001 section must end before UI-QA-002B');
-const uiQaCss = css.slice(uiQaStart, uiQaEnd);
-
-const shellHtml = html.slice(html.indexOf('<div class="riverline-shell"'), html.indexOf('<section id="gtoMode"'));
-const railHtml = shellHtml.slice(shellHtml.indexOf('<aside'), shellHtml.indexOf('</aside>') + 8);
-const headerHtml = shellHtml.slice(shellHtml.indexOf('<header class="workspace-header"'), shellHtml.indexOf('</header>') + 9);
-const playbookHtml = html.slice(html.indexOf('id="gtoMode"'), html.indexOf('id="trainingMode"'));
-const trainingHtml = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
-const equityHtml = html.slice(html.indexOf('id="equityMode"'), html.indexOf('id="infoMode"'));
-
-test('sidebar has explicit expanded and collapsed states with accessible control', () => {
-  assert.match(railHtml, /id="sidebarCollapseBtn"[^>]+aria-expanded="true"[^>]+aria-controls="modeRail"/);
-  assert.match(logic, /function applySidebarState\(collapsed\)/);
-  assert.match(logic, /riverline_sidebar_collapsed/);
-  assert.match(uiQaCss, /\.riverline-shell\.is-sidebar-collapsed/);
-  assert.match(uiQaCss, /--sidebar-expanded-width:\s*208px/);
-  assert.match(uiQaCss, /--sidebar-collapsed-width:\s*64px/);
+test('sidebar has explicit expanded and collapsed states with accessible control', async () => {
+  const toggle = rail.querySelector('#sidebarCollapseBtn');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(toggle.getAttribute('aria-controls'), 'modeRail');
+  assert.equal(css.cascaded(shell, '--sidebar-expanded-width'), '208px');
+  assert.equal(css.cascaded(shell, '--sidebar-collapsed-width'), '64px');
+  assert.equal(css.cascaded(shell, 'grid-template-columns'), 'var(--sidebar-expanded-width) minmax(0, 1fr)');
+  shell.classList.add('is-sidebar-collapsed');
+  assert.equal(css.cascaded(shell, 'grid-template-columns'), 'var(--sidebar-collapsed-width) minmax(0, 1fr)');
+  shell.classList.remove('is-sidebar-collapsed');
+  // The running toggle switches state and persists it.
+  await app.click('#sidebarCollapseBtn');
+  assert.ok(app.$('.riverline-shell').classList.contains('is-sidebar-collapsed'));
+  assert.equal(app.$('.riverline-shell').dataset.sidebarState, 'collapsed');
+  assert.equal(app.window.localStorage.getItem('riverline_sidebar_collapsed'), 'true');
+  await app.click('#sidebarCollapseBtn');
+  assert.equal(app.window.localStorage.getItem('riverline_sidebar_collapsed'), 'false');
+  assert.equal(app.byId('sidebarCollapseBtn').getAttribute('aria-expanded'), 'true');
 });
 
 test('global utilities live in the lower sidebar and not the workspace header', () => {
-  assert.match(railHtml, /class="rail-utilities"[\s\S]*id="langToggle"[\s\S]*id="audioToggleBtn"[\s\S]*id="openSettings"/);
-  for (const id of ['langToggle', 'audioToggleBtn', 'openSettings']) {
-    assert.doesNotMatch(headerHtml, new RegExp(`id="${id}"`));
-  }
-  assert.match(headerHtml, /id="strategySourceStatus"[^>]+aria-label="Strategy source: Heuristic fallback"/);
-  assert.doesNotMatch(headerHtml, /connectApiBtn|<button[^>]+strategySourceStatus/);
+  const utilities = rail.querySelector('.rail-utilities');
+  const [language, audio, settings] = ['langToggle', 'audioToggleBtn', 'openSettings'].map((id) => utilities.querySelector(`#${id}`));
+  assert.ok(precedes(language, audio) && precedes(audio, settings));
+  for (const id of ['langToggle', 'audioToggleBtn', 'openSettings']) assert.equal(header.querySelector(`#${id}`), null, id);
+  const status = header.querySelector('#strategySourceStatus');
+  assert.equal(status.getAttribute('aria-label'), 'Strategy source: Heuristic fallback');
+  assert.notEqual(status.localName, 'button');
+  assert.equal(header.querySelector('#connectApiBtn'), null);
   // SHELL-001: one translated tooltip per footer icon; the audio label is
   // written by SoundFX (Mute/Enable sound). QA-SWEEP-029: expanded nav items
   // carry no self-tooltip; the collapsed rail sets one at runtime.
-  assert.match(railHtml, /id="langToggle"/);
-  assert.match(railHtml, /data-tooltip="Settings" data-i18n-tooltip="Settings"/);
-  assert.match(railHtml, /id="audioToggleBtn"[^>]+data-tooltip="Mute sound"/);
-  assert.doesNotMatch(railHtml, /class="mode-nav-item[^>]+\s(?:title|data-tooltip|data-i18n-title)=/);
+  assert.ok(rail.querySelector('#langToggle'));
+  assert.ok(rail.querySelector('[data-tooltip="Settings"][data-i18n-tooltip="Settings"]'));
+  assert.equal(rail.querySelector('#audioToggleBtn').dataset.tooltip, 'Mute sound');
+  for (const item of rail.querySelectorAll('.mode-nav-item')) {
+    for (const attribute of ['title', 'data-tooltip', 'data-i18n-title']) assert.equal(item.hasAttribute(attribute), false, attribute);
+  }
 });
 
 test('collapsed utility access and mobile navigation remain structural', () => {
   // SHELL-001: the footer is an icon row in both rail states; the native
   // language select overlays the globe icon.
-  assert.match(uiQaCss, /\.rail-language select\s*\{[^}]*opacity:\s*0/);
-  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*flex[^}]*overflow-x:\s*auto/);
-  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.rail-utilities[\s\S]*?grid-template-columns:\s*repeat\(3/);
-  assert.doesNotMatch(uiQaCss, /@media \(max-width: (?:820|700|520)px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*none/);
+  assert.equal(css.cascaded(rail.querySelector('.rail-language select'), 'opacity'), '0');
+  const navigation = markup.querySelector('.mode-navigation');
+  for (const width of [800, 700, 500]) {
+    assert.equal(css.cascaded(navigation, 'display', { width }), 'flex', width);
+    assert.equal(css.cascaded(navigation, 'overflow-x', { width }), 'auto', width);
+  }
+  // Superseded: the 3-column utility grid became one wrapping icon row.
+  const utilities = rail.querySelector('.rail-utilities');
+  assert.equal(css.cascaded(utilities, 'display', { width: 800 }), 'flex');
+  for (const button of utilities.querySelectorAll('button, label')) assert.notEqual(css.cascaded(button, 'display', { width: 500 }), 'none');
 });
 
-test('language selector presents flags with full accessible names', () => {
-  assert.match(railHtml, /🇺🇸 English/);
-  assert.match(railHtml, /🇷🇺 Русский/);
-  assert.match(railHtml, /🇮🇱 עברית/);
-  assert.match(railHtml, /select id="langToggle"[^>]+aria-label="Language"/);
-  assert.match(logic, /localStorage\.getItem\('language'\)/);
+test('language selector presents flags with full accessible names', async () => {
+  const select = rail.querySelector('select#langToggle');
+  assert.deepEqual(select.querySelectorAll('option').map((option) => text(option)), ['🇺🇸 English', '🇷🇺 Русский', '🇮🇱 עברית']);
+  assert.equal(select.getAttribute('aria-label'), 'Language');
+  // The chosen language is persisted under 'language'.
+  await app.setValue('#langToggle', 'ru', { events: ['change'] });
+  assert.equal(app.window.localStorage.getItem('language'), 'ru');
+  await app.setValue('#langToggle', 'en', { events: ['change'] });
+  assert.equal(app.window.localStorage.getItem('language'), 'en');
 });
 
 test('responsive strategy is fluid rather than resolution-specific', () => {
-  assert.match(uiQaCss, /minmax\(/);
-  assert.match(uiQaCss, /clamp\(/);
+  const values = uiQa.rules.flatMap((rule) => rule.declarations.map(({ value }) => value)).join(' ');
+  assert.match(values, /minmax\(/);
+  assert.match(values, /clamp\(/);
   // SHELL-001: one canvas width (--canvas-max) replaces the 1840px canvas cap.
-  assert.doesNotMatch(css, /max-width:\s*1840px/);
-  assert.match(css, /--canvas-max:\s*1680px/);
+  assert.equal(css.cascaded(markup.documentElement, '--canvas-max'), '1680px');
+  assert.equal(css.rules.filter((rule) => rule.declarations.some(({ property, value }) => property === 'max-width' && value === '1840px')).length, 0);
+  const queries = new Set(uiQa.rules.flatMap((rule) => rule.conditions.filter(({ type }) => type === 'media').map(({ query }) => query)));
+  const widths = [...queries].join(' ');
   for (const breakpoint of [1500, 1320, 1280, 1180, 1100, 900, 820, 700, 520]) {
-    assert.match(uiQaCss, new RegExp(`(?:min|max)-width: ${breakpoint}px`), String(breakpoint));
+    assert.match(widths, new RegExp(`(?:min|max)-width: ${breakpoint}px`), String(breakpoint));
   }
-  assert.doesNotMatch(uiQaCss, /@media[^\{]*\((?:min|max)-width:\s*(?:2200|1920|1536|1440|1024|768|390)px\)/);
+  assert.doesNotMatch(widths, /\((?:min|max)-width:\s*(?:2200|1920|1536|1440|1024|768|390)px\)/);
 });
 
 test('Playbook workflow and betting context use compact structural strips', () => {
-  assert.match(playbookHtml, /class="playbook-state-source"/);
+  const playbook = markup.getElementById('gtoMode');
+  assert.ok(playbook.querySelector('.playbook-state-source'));
   // ANALYZE-COMPOSITION-001: position and prior action moved from the center strip into the Spot rail pair.
-  assert.match(playbookHtml, /class="playbook-field-pair"/);
-  assert.match(playbookHtml, /class="fields playbook-context-sliders"/);
-  // SHELL-001: the Hand/Scenario switch is a small segmented control in the header bar.
-  assert.match(css, /\.workspace-mode-switch #playbookModeControl \.ui-tab \{[^}]*min-height: var\(--control-height-sm\)/);
-  assert.match(headerHtml, /id="workspaceModeSwitch"[\s\S]*?id="playbookModeControl"/);
+  assert.ok(playbook.querySelector('.playbook-field-pair'));
+  assert.ok(playbook.querySelector('.fields.playbook-context-sliders'));
+  // SHELL-001: the Hand/Scenario switch is a small segmented control in the
+  // header bar (superseded literal: --control-height-sm became 28px).
+  const tab = header.querySelector('#workspaceModeSwitch #playbookModeControl .ui-tab');
+  assert.ok(tab);
+  assert.ok(Number.parseFloat(css.cascaded(tab, 'min-height')) <= 32);
   // ANALYZE-COMPOSITION-001 amendment 2 removed the dead .playbook-context-primary CSS.
-  assert.doesNotMatch(css, /\.playbook-context-primary\b/);
+  assert.equal(css.rules.filter((rule) => rule.selectors.some((selector) => /\.playbook-context-primary\b/.test(selector))).length, 0);
 });
 
-test('Playbook table collapse releases its entire layout region', () => {
-  assert.match(playbookHtml, /id="toggleTableBtn"[^>]+aria-expanded="true"[^>]+aria-controls="table-wrapper"/);
-  assert.match(playbookHtml, /id="table-wrapper"[^>]+data-collapsible-region="poker-table"/);
-  assert.match(logic, /function setCanonicalTableExpanded\(expanded\)[\s\S]*?button\.setAttribute\('aria-expanded', String\(expanded\)\)/);
-  // ANALYZE-COMPOSITION-001: the toggle also records the choice per destination (Analyze collapsed, Hand open).
-  assert.match(logic, /toggleTableBtn[\s\S]*?const expanded = wrapper\.classList\.contains\('collapsed'\);[\s\S]*?setCanonicalTableExpanded\(expanded\)/);
-  assert.match(uiQaCss, /\.table-wrapper\.collapsed\s*\{[^}]*height:\s*0[^}]*min-height:\s*0[^}]*max-height:\s*0/);
+test('Playbook table collapse releases its entire layout region', async () => {
+  const toggle = markup.getElementById('toggleTableBtn');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(toggle.getAttribute('aria-controls'), 'table-wrapper');
+  assert.equal(markup.getElementById('table-wrapper').dataset.collapsibleRegion, 'poker-table');
+  // The toggle flips the region and its aria-expanded state.
+  await app.navigate('hand');
+  const wrapper = app.byId('table-wrapper');
+  const button = app.byId('toggleTableBtn');
+  const before = wrapper.classList.contains('collapsed');
+  await app.click(button);
+  assert.equal(wrapper.classList.contains('collapsed'), !before);
+  assert.equal(button.getAttribute('aria-expanded'), String(before));
+  await app.click(button);
+  assert.equal(wrapper.classList.contains('collapsed'), before);
+  // Collapsed, the region takes no space (superseded literal: height 0 became
+  // height auto with max-height 0 and hidden visibility).
+  const collapsed = probe('<div class="table-wrapper collapsed"></div>');
+  assert.equal(css.cascaded(collapsed, 'min-height'), '0');
+  assert.equal(css.cascaded(collapsed, 'max-height'), '0');
+  assert.equal(css.cascaded(collapsed, 'visibility'), 'hidden');
 });
 
 test('Action Path is sticky on wide desktop and returns to normal flow below it', () => {
-  assert.match(playbookHtml, /id="playbookDecisionPathPanel"/);
-  assert.match(uiQaCss, /@media \(min-width: 1500px\)[\s\S]*?\.playbook-support-rail\s*\{[^}]*position:\s*sticky/);
-  assert.match(uiQaCss, /@media \(min-width: 901px\) and \(max-width: 1499px\)[\s\S]*?\.playbook-support-rail\s*\{[^}]*position:\s*static/);
+  assert.ok(markup.getElementById('playbookDecisionPathPanel'));
+  const supportRail = markup.querySelector('.playbook-support-rail');
+  assert.equal(css.cascaded(supportRail, 'position', { width: 1600 }), 'sticky');
+  assert.equal(css.cascaded(supportRail, 'position', { width: 1200 }), 'static');
 });
 
 test('Equity board is an explicit horizontal Holdem flow', () => {
-  assert.match(equityHtml, /class="cards-row equity-board-cards[^\"]*"/);
-  assert.match(equityHtml, /equity-street-flop"[^>]*>Flop[\s\S]*Turn[\s\S]*River/);
-  assert.match(uiQaCss, /\.equity-board-cards\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*direction:\s*ltr/);
-  assert.match(uiQaCss, /overflow-x:\s*auto/);
+  const equity = markup.getElementById('equityMode');
+  const board = equity.querySelector('.cards-row.equity-board-cards');
+  assert.ok(board);
+  const flop = equity.querySelector('.equity-street-flop');
+  assert.equal(text(flop), 'Flop');
+  const copy = text(flop.parentElement);
+  assert.ok(copy.indexOf('Flop') < copy.indexOf('Turn') && copy.indexOf('Turn') < copy.indexOf('River'));
+  assert.equal(css.cascaded(board, 'flex-direction'), 'row');
+  assert.equal(css.cascaded(board, 'flex-wrap'), 'nowrap');
+  assert.equal(css.cascaded(board, 'direction'), 'ltr');
+  assert.equal(css.cascaded(board, 'overflow-x'), 'auto');
 });
 
-test('Equity communicates arbitrary 2 through 10 counts with a stepper and optional presets', () => {
-  assert.match(equityHtml, /aria-label="Player count, from 2 through 10"/);
-  assert.match(equityHtml, /data-equity-player-delta="-1"/);
-  assert.match(equityHtml, /data-equity-player-delta="1"/);
-  assert.match(equityHtml, /aria-label="Quick player count presets"/);
-  assert.match(logic, /Math\.max\(2, Math\.min\(10/);
-  assert.match(logic, /playerCount\.textContent = t\('\{count\} players', \{ count: app\.equity\.players\.length \}\)/);
+test('Equity communicates arbitrary 2 through 10 counts with a stepper and optional presets', async () => {
+  const equity = markup.getElementById('equityMode');
+  assert.ok(equity.querySelector('[aria-label="Player count, from 2 through 10"]'));
+  assert.ok(equity.querySelector('[data-equity-player-delta="-1"]'));
+  assert.ok(equity.querySelector('[data-equity-player-delta="1"]'));
+  assert.ok(equity.querySelector('[aria-label="Quick player count presets"]'));
+  await app.navigate('equity');
+  app.call('setEquityPlayerCount', 2);
+  await app.click('[data-equity-player-delta="-1"]');
+  assert.equal(app.window.app.equity.players.length, 2, 'never below 2');
+  await app.click('[data-equity-player-delta="1"]');
+  assert.equal(text(app.byId('equityPlayerCount')), '3 players');
+  app.call('setEquityPlayerCount', 10);
+  await app.click('[data-equity-player-delta="1"]');
+  assert.equal(app.window.app.equity.players.length, 10, 'never above 10');
+  assert.equal(text(app.byId('equityPlayerCount')), '10 players');
+  app.call('setEquityPlayerCount', 2);
 });
 
 test('Equity keeps calculation in the primary input workflow and coexists with results on desktop', () => {
-  assert.match(equityHtml, /class="equity-center-column"[\s\S]*class="panel equity-controls-panel equity-calculation-strip"[\s\S]*id="calculate"/);
-  assert.match(equityHtml, /class="panel equity-player-panel"[\s\S]*class="equity-center-column"[\s\S]*class="panel equity-dossier-panel equity-hand-analysis-panel"/);
-  assert.match(css, /\.equity-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(360px, 400px\) minmax\(400px, 448px\) minmax\(520px, 1fr\)/);
-  assert.match(css, /\.equity-center-column\s*\{[^}]*display:\s*grid/);
-  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.equity-workspace[^{]*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
+  const equity = markup.getElementById('equityMode');
+  const center = equity.querySelector('.equity-center-column');
+  assert.ok(center.querySelector('.panel.equity-controls-panel.equity-calculation-strip #calculate'));
+  const players = equity.querySelector('.panel.equity-player-panel');
+  const dossier = equity.querySelector('.panel.equity-dossier-panel.equity-hand-analysis-panel');
+  assert.ok(precedes(players, center) && precedes(center, dossier));
+  // Superseded: the three fixed columns became the two-column Equity canvas.
+  const workspace = equity.querySelector('.equity-workspace');
+  assert.equal(css.cascaded(workspace, 'display', { width: 1600 }), 'grid');
+  assert.equal(css.cascaded(center, 'display'), 'grid');
+  assert.equal(css.cascaded(workspace, 'display', { width: 1000 }), 'flex');
+  assert.equal(css.cascaded(workspace, 'flex-direction', { width: 1000 }), 'column');
 });
 
 test('Training centers the decision between support and setup on wide desktop', () => {
-  assert.match(trainingHtml, /class="training-decision-column"/);
-  assert.match(trainingHtml, /class="training-insight-column"/);
-  assert.match(trainingHtml, /class="training-setup-column"/);
-  assert.match(uiQaCss, /@media \(min-width: 1320px\)[\s\S]*?grid-template-areas:\s*"insight decision setup"/);
-  assert.match(uiQaCss, /@media \(max-width: 900px\)[\s\S]*?\.training-decision-column\s*\{[^}]*order:\s*1/);
-  assert.match(uiQaCss, /\.training-action-button:hover/);
+  const training = markup.getElementById('trainingMode');
+  const [decision, insight, setup] = ['.training-decision-column', '.training-insight-column', '.training-setup-column'].map((selector) => training.querySelector(selector));
+  assert.ok(decision && insight && setup);
+  // Superseded: the 3-area "insight decision setup" grid became the decision
+  // column with a study rail; the decision leads on narrow screens.
+  assert.equal(css.cascaded(training.querySelector('.training-workspace'), 'grid-template-areas', { width: 1400 }), '"decision insight"');
+  assert.equal(css.cascaded(decision, 'order', { width: 800 }), '1');
+  const button = probe('<button class="training-action-button">x</button>');
+  assert.ok(css.matchingRules(button, { states: ['hover'] }).some((rule) => rule.selectorText.includes('.training-action-button:hover')));
 });
 
 test('Settings expose clearer switches, aligned solver icon, and persisted T versus 10 preference', () => {
-  assert.match(html, /id="cardRankStyleControl"/);
-  assert.match(html, /data-card-rank-style="poker"/);
-  assert.match(html, /data-card-rank-style="full-ten"/);
+  assert.ok(markup.getElementById('cardRankStyleControl'));
+  assert.ok(markup.querySelector('#cardRankStyleControl [data-card-rank-style="poker"], [data-card-rank-style="poker"]'));
+  assert.ok(markup.querySelector('[data-card-rank-style="full-ten"]'));
   const values = new Map();
   const controller = createCardPresentationController({
     root: { dataset: {} },
@@ -163,17 +245,26 @@ test('Settings expose clearer switches, aligned solver icon, and persisted T ver
   assert.equal(JSON.parse(values.get(CARD_PRESENTATION_STORAGE_KEY)).rankStyle, 'full-ten');
   // DS-FOUNDATION-001: the Switch component owns the thumb. Off: the thumb paints
   // the track's --text-secondary (currentColor); on: --text-on-accent on the accent.
-  assert.match(css, /\.ui-switch,\n\.switch \{[^}]*color: var\(--text-secondary\)/);
-  assert.match(css, /\.ui-switch b,\n\.switch b \{[^}]*background: currentColor/);
-  assert.match(uiQaCss, /\.solver-import-btn \.button-icon\s*\{[^}]*width:\s*18px[^}]*display:\s*block/);
+  const toggle = probe('<button class="ui-switch"><b></b></button>');
+  assert.equal(css.cascaded(toggle, 'color'), 'var(--text-secondary)');
+  assert.equal(css.cascaded(toggle.firstElementChild, 'background'), 'currentColor');
+  // (TEST-HYGIENE-F09: nothing renders .solver-import-btn any more; its icon
+  // rule is kept aligned.)
+  const icon = probe('<button class="solver-import-btn"><span class="button-icon"></span></button>').firstElementChild;
+  assert.equal(css.cascaded(icon, 'width'), '18px');
+  assert.equal(css.cascaded(icon, 'display'), 'block');
   assert.match(sound, /settingsBtn\.setAttribute\('aria-pressed', String\(soundEnabled\)\)/);
 });
 
-test('full-ten preference changes presentation but preserves canonical card identities', () => {
+test('full-ten preference changes presentation but preserves canonical card identities', async () => {
   assert.equal(displayCardRank('T', 'poker'), 'T');
   assert.equal(displayCardRank('T', 'full-ten'), '10');
-  assert.match(logic, /const card = rank \+ suit\.id/);
-  assert.match(logic, /data-deck-card="\$\{card\}"/);
+  // The picker keeps canonical identities ("Th") whatever the rank style.
+  await app.navigate('analyze');
+  await app.click('#gtoMode [data-card-set-edit="hero"]');
+  assert.ok(app.$('[data-deck-card="Th"]'));
+  assert.equal(app.$('[data-deck-card="10h"]'), null);
+  await app.click('#cardSetPickerCancel');
   const tableTen = tableCardSvgMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten' });
   assert.match(tableTen, /table-card-rank--ten/);
   assert.match(tableTen, />10<\/text>/);
@@ -181,36 +272,54 @@ test('full-ten preference changes presentation but preserves canonical card iden
 });
 
 test('broken free-form layout editor is no longer presented or bootstrapped', () => {
-  assert.doesNotMatch(html, /id="lockUiBtn"/);
-  assert.doesNotMatch(html, /src="src\/ui\/dragAndDrop\.js"/);
-  assert.doesNotMatch(html, /data-layout-fixed/);
-  assert.doesNotMatch(railHtml, />Layout</);
+  assert.equal(markup.getElementById('lockUiBtn'), null);
+  assert.equal(markup.querySelector('script[src="src/ui/dragAndDrop.js"], [data-layout-fixed]'), null);
+  assert.ok(rail.querySelectorAll('*').every((node) => node.childElementCount > 0 || text(node) !== 'Layout'));
 });
 
 test('stabilization uses semantic stepped surfaces and softened Daylight tokens', () => {
-  assert.match(uiQaCss, /background:\s*var\(--surface-section\)/);
-  assert.doesNotMatch(uiQaCss, /background(?:-color)?:\s*(?:#000(?:000)?|rgb\(0\s*,\s*0\s*,\s*0\))/i);
-  const daylight = css.match(/\[data-theme="daylight"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+  const declarations = uiQa.rules.flatMap((rule) => rule.declarations);
+  assert.ok(declarations.some(({ property, value }) => property === 'background' && value === 'var(--surface-section)'));
+  for (const { property, value } of declarations) {
+    if (/^background(?:-color)?$/.test(property)) assert.doesNotMatch(value, /^(?:#000(?:000)?|rgb\(0\s*,\s*0\s*,\s*0\))$/i);
+  }
   // TOKEN-TUNING (SAVED-COMPOSITION-002 Part 3): the owner's Final Daylight surfaces; still never pure white.
-  assert.match(daylight, /--surface-canvas:\s*#e2ddd2/);
-  assert.match(daylight, /--surface-panel:\s*#fbfaf6/);
-  assert.doesNotMatch(daylight, /--surface-(?:canvas|shell|panel|elevated|interactive|inset):\s*#fff(?:fff)?\b/i);
+  const root = markup.documentElement;
+  const previous = root.dataset.theme;
+  root.dataset.theme = 'daylight';
+  try {
+    assert.equal(css.cascaded(root, '--surface-canvas'), '#e2ddd2');
+    assert.equal(css.cascaded(root, '--surface-panel'), '#fbfaf6');
+    for (const surface of ['canvas', 'shell', 'panel', 'elevated', 'interactive', 'inset']) {
+      assert.doesNotMatch(css.cascaded(root, `--surface-${surface}`) || '', /^#fff(?:fff)?$/i, surface);
+    }
+  } finally {
+    root.dataset.theme = previous;
+  }
 });
 
 test('RTL, reduced motion, and interaction-versus-state affordances remain explicit', () => {
-  assert.match(uiQaCss, /\[dir="rtl"\] \.equity-board-cards/);
-  assert.match(uiQaCss, /\[dir="rtl"\] \.rail-collapse-icon/);
-  assert.match(uiQaCss, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(html, /data-state-surface="derived"/);
-  assert.match(html, /data-interaction-surface="interactive"/);
-  assert.match(uiQaCss, /\[data-state-surface="derived"\]\s*\{[^}]*cursor:\s*default/);
+  const root = markup.documentElement;
+  const board = markup.querySelector('.equity-board-cards');
+  const icon = markup.querySelector('.rail-collapse-icon');
+  const ltr = [css.cascaded(board, 'direction'), css.cascaded(icon, 'transform')];
+  root.setAttribute('dir', 'rtl');
+  const rtl = [css.cascaded(board, 'direction'), css.cascaded(icon, 'transform')];
+  root.setAttribute('dir', 'ltr');
+  assert.equal(rtl[0], 'ltr', 'the board stays left-to-right');
+  assert.notEqual(rtl[1], ltr[1], 'the collapse icon mirrors');
+  assert.ok(uiQa.rules.some((rule) => rule.conditions.some(({ query }) => query.includes('prefers-reduced-motion: reduce'))));
+  const derived = markup.querySelector('[data-state-surface="derived"]');
+  assert.ok(derived);
+  assert.ok(markup.querySelector('[data-interaction-surface="interactive"]'));
+  assert.equal(css.cascaded(derived, 'cursor'), 'default');
 });
 
 test('UI-QA-001 presentation section contains no poker, strategy, Equity-math, Training-generation, or solver code', () => {
-  assert.doesNotMatch(uiQaCss, /DecisionContext|StrategyResult|PokerState|calculateEquity|evaluateSeven|MCCFR|regret|TrainingConfig/);
-  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity']) {
-    assert.match(logic, new RegExp(symbol));
-  }
+  const authored = uiQa.rules.map((rule) => `${rule.selectorText}{${rule.declarations.map(({ property, value }) => `${property}:${value}`).join(';')}}`).join('\n');
+  assert.doesNotMatch(authored, /DecisionContext|StrategyResult|PokerState|calculateEquity|evaluateSeven|MCCFR|regret|TrainingConfig/);
+  assert.equal(typeof app.window.RiverlinePlaybookState, 'object');
+  assert.equal(app.evaluate('typeof calculateEquity'), 'function');
   assert.match(strategy, /calculatePreflopFallbackStrategy/);
   assert.match(strategy, /calculatePostflopHeuristicStrategy/);
 });

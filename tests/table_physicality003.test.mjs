@@ -14,7 +14,19 @@ import {
 
 const renderer = readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const primitives = readFileSync(new URL('../app/src/ui/PokerPrimitives.js', import.meta.url), 'utf8');
-const css = readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { appStyleSheet, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: styles.css assertions are resolved through the cascade
+// on table-structure probes (renderer/primitives sources are outside this
+// ticket).
+const css = appStyleSheet();
+const markup = indexDocument();
+function probe(html, parent = markup.body) {
+  const host = markup.createElement('div');
+  host.innerHTML = html;
+  parent.appendChild(host);
+  return host.firstElementChild;
+}
 
 function tablePresence(playerCount) {
   return {
@@ -102,14 +114,31 @@ test('felt, rail, depth, seats, cards, and the center pot render as one layered 
     'table-seat-base', 'table-seat-surface', 'table-hole-cards',
   ]) assert.match(renderer, new RegExp(hook));
   assert.doesNotMatch(renderer, /table-seat-connector|table-card-cradle/);
-  assert.doesNotMatch(css, /\.table-seat-connector|\.table-card-cradle/);
-  assert.match(css, /\.table-base\s*\{[\s\S]*?drop-shadow/);
-  assert.match(css, /\.table-cushion\s*\{[\s\S]*?drop-shadow/);
+  assert.equal(css.rulesMentioning('.table-seat-connector').length + css.rulesMentioning('.table-card-cradle').length, 0);
+  const table = probe('<svg class="riverline-poker-table"><path class="table-base"></path><path class="table-cushion"></path></svg>');
+  assert.match(css.cascaded(table.querySelector('.table-base'), 'filter'), /^drop-shadow\(/);
+  assert.match(css.cascaded(table.querySelector('.table-cushion'), 'filter'), /^drop-shadow\(/);
 });
 
 test('Balanced Hand consumes its allocated table region without a viewport-height cap', () => {
-  assert.match(css, /#gtoMode\[data-product-destination="hand"\] \.table-wrapper\[data-table-projection="play"\] #visual-table-container \{\s*inline-size: min\(100%, var\(--table-inline-max\)\);\s*\}/);
-  assert.match(css, /html\[data-layout-preset\] #gtoMode\[data-product-destination="hand"\] \.table-wrapper\[data-table-projection="play"\] #visual-table-container \{\s*inline-size: min\(100%, var\(--table-inline-max\)\);/);
+  // The Hand play table fills its region with no viewport-height cap, with
+  // or without a layout preset. (Superseded literal: the
+  // min(100%, var(--table-inline-max)) cap became a full-region fill.)
+  const gto = markup.getElementById('gtoMode');
+  gto.dataset.productDestination = 'hand';
+  const wrapper = markup.getElementById('table-wrapper');
+  wrapper.dataset.tableProjection = 'play';
+  const container = markup.getElementById('visual-table-container');
+  const root = markup.documentElement;
+  const preset = root.dataset.layoutPreset;
+  for (const layout of [preset, undefined]) {
+    if (layout === undefined) delete root.dataset.layoutPreset; else root.dataset.layoutPreset = layout;
+    for (const width of [1280, 1920]) {
+      const size = css.cascaded(container, 'inline-size', { width });
+      assert.doesNotMatch(size, /d?vh/, `${layout} ${width}: ${size}`);
+    }
+  }
+  if (preset !== undefined) root.dataset.layoutPreset = preset;
   for (const playerCount of [2, 6, 10]) {
     const presentation = createTablePresentation({
       tablePresence: tablePresence(playerCount),
@@ -167,9 +196,10 @@ test('cards sit naturally in a radial felt lane and contributions use exact anch
   assert.doesNotMatch(renderer, /table-seat-connector|table-card-cradle/);
   assert.match(renderer, /class="table-contribution-lane table-contribution-anchor"/);
   assert.doesNotMatch(renderer, /table-contribution-lane-path/);
-  assert.doesNotMatch(css, /\.table-contribution-lane-path/);
-  assert.match(css, /\.poker-table-amount--contribution \.poker-table-amount-surface\s*\{[\s\S]*?fill:\s*var\(--poker-table-contribution-surface\)/);
-  assert.match(css, /\.poker-table-amount--contribution \.poker-table-amount-surface\s*\{[\s\S]*?filter:\s*none/);
+  assert.equal(css.rulesMentioning('.table-contribution-lane-path').length, 0);
+  const amount = probe('<svg><g class="poker-table-amount poker-table-amount--contribution"><rect class="poker-table-amount-surface"></rect></g></svg>').querySelector('rect');
+  assert.equal(css.cascaded(amount, 'fill'), 'var(--poker-table-contribution-surface)');
+  assert.equal(css.cascaded(amount, 'filter'), 'none');
 });
 
 test('dealer, seat states, contribution lanes, and motion stay semantic and accessible', () => {
@@ -185,20 +215,31 @@ test('dealer, seat states, contribution lanes, and motion stay semantic and acce
   assert.match(renderer, /motion\.kind === 'pot_award'/);
   assert.match(renderer, /motion\.kind === 'fold_retreat'/);
   assert.match(renderer, /--fold-retreat-x/);
-  assert.match(css, /--card-deal-from-x/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.table-chip-flight \{ display: none !important; \}/);
+  // Card deals start from a per-card offset; chip flights vanish under
+  // reduced motion.
+  const deals = [...css.keyframes.values()].flat().flatMap((frame) => frame.declarations).filter(({ value }) => value.includes('--card-deal-from-x'));
+  assert.ok(deals.length >= 1);
+  const flight = probe('<div class="table-chip-flight"></div>');
+  assert.equal(css.cascaded(flight, 'display', { reducedMotion: true }), 'none');
+  assert.notEqual(css.cascaded(flight, 'display'), 'none');
 });
 
 test('themes and RTL change paint and chrome without mirroring poker geometry', () => {
+  // Every theme defines the table paint tokens (themes change paint only).
+  const root = markup.documentElement;
+  const previous = root.dataset.theme;
+  const tokens = ['--poker-table-base-start', '--poker-table-rail-start', '--poker-table-cushion-start', '--poker-table-surface-start'];
   for (const theme of ['midnight', 'daylight', 'graphite']) {
-    assert.match(css, new RegExp(`\\[data-theme="${theme}"\\]`));
+    root.dataset.theme = theme;
+    for (const token of tokens) assert.ok(css.cascaded(root, token), `${theme} ${token}`);
   }
-  for (const token of [
-    '--poker-table-base-start', '--poker-table-rail-start',
-    '--poker-table-cushion-start', '--poker-table-surface-start',
-  ]) assert.match(css, new RegExp(token));
-  assert.match(css, /\[dir="rtl"\] :is\(\.riverline-poker-table[\s\S]*?direction:\s*ltr/);
-  assert.match(css, /\[dir="rtl"\] \.table-seat-stack,[\s\S]*?unicode-bidi:\s*isolate/);
+  root.dataset.theme = previous;
+  // RTL never mirrors table geometry; stacks are isolated.
+  const table = probe('<svg class="riverline-poker-table"><text class="table-seat-stack">100 bb</text></svg>');
+  root.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(table, 'direction'), 'ltr');
+  assert.equal(css.cascaded(table.querySelector('.table-seat-stack'), 'unicode-bidi'), 'isolate');
+  root.setAttribute('dir', 'ltr');
 });
 
 test('physical presentation adds no poker, strategy, or accounting authority', () => {

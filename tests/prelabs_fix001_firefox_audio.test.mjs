@@ -5,6 +5,10 @@ import vm from 'node:vm';
 
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
 const manifest = fs.readFileSync(new URL('../app/src/core/AudioFoleyManifest.js', import.meta.url), 'utf8');
+// SOURCE-SHAPE: "logic.js never calls SoundFX.play* directly" is kept as a
+// call-site lint — SoundFX is a frozen global const read through a lexical
+// binding, so direct calls cannot be intercepted at runtime. The event-owned
+// behaviour itself is checked in the running app below (TEST-HYGIENE-001).
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 
 function deferred() {
@@ -186,11 +190,36 @@ test('disabled audio creates nothing, closes an existing context, and re-enable 
   assert.equal(second.oscillators.length, 1);
 });
 
-test('audio remains event-owned with no hover, slider, Matrix, progress, or tab cues', () => {
+test('audio remains event-owned with no hover, slider, Matrix, progress, or tab cues', async () => {
   assert.equal((logic.match(/SoundFX\.play/g) || []).length, 0);
-  assert.equal((logic.match(/emitTrainingDecisionResultExperience\(/g) || []).length, 2);
-  assert.equal((logic.match(/emitStudyExperience\('reference_comparison_revealed'/g) || []).length, 1);
-  assert.doesNotMatch(logic, /(?:hover|progress|bindSliderPair|sub-tab|matrix)[\s\S]{0,120}SoundFX\.play/i);
+  const { bootApp } = await import('./helpers/app-under-test.mjs');
+  const app = await bootApp();
+  const emitters = ['emitStudyExperience', 'emitTrainingDecisionResultExperience'];
+  const spy = app.spy(emitters);
+  try {
+    // Hover, slider, Matrix and tab interactions emit no experience (cue) events.
+    await app.navigate('analyze');
+    spy.reset();
+    app.dispatch(app.$('.mode-nav-item[data-navigation-id="training"]'), new app.window.MouseEvent('mouseover', { bubbles: true }));
+    await app.setValue('#players', '7');
+    app.call('renderChart');
+    await app.click(app.$('#strategyGrid .hand-cell'));
+    const tab = app.$$('.sub-tabs [role="tab"]').find((node) => node.getAttribute('aria-selected') !== 'true');
+    if (tab) await app.click(tab);
+    assert.equal(spy.total(), 0, JSON.stringify(spy.sequence));
+    // One decision result per Training answer; one comparison event per hint.
+    await app.training.start('focused');
+    spy.reset();
+    await app.training.answer();
+    assert.equal(spy.count('emitTrainingDecisionResultExperience'), 1);
+    await app.training.next();
+    spy.reset();
+    await app.click('#trainingRevealHint');
+    const reveals = spy.calls.emitStudyExperience.filter(([type]) => type === 'reference_comparison_revealed');
+    assert.equal(reveals.length, 1);
+  } finally {
+    spy.restore();
+  }
   assert.doesNotMatch(sound, /window\.addEventListener/);
   assert.doesNotMatch(sound, /electron|BrowserWindow|ipcRenderer/i);
 });
