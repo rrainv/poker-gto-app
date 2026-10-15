@@ -141,27 +141,9 @@ Exact-node intent binds canonical replay/node identity, board/street/history, ex
 
 Existing ?Raise 75%? remains action-family evidence and never becomes ?raise to 2.5bb 75%.? Dominant-only remains unknown frequency. Weighted ranges, conditioning, card removal, trajectories, and summaries are derived and are never added to this evidence collection. Forks create independently identified records with copied-source provenance and remapped correction IDs; the source records remain untouched. Owner adoption changes the existing store/profile owner only, preserving child intent/provenance. The legacy remote transport remains upgrade-required; this migration creates no remote schema or second store.
 
-## Performance evidence
+## Performance budget
 
-The repeatable Node harness covers empty, 169, approximately 1k, approximately 3k, approximately 10k, and revision-heavy fixtures. It measures legacy bytes, estimated record storage, migration, workspace open/load, answer transaction, next-question resolution, current-leaf query, and profile export.
-
-The definitive Firefox 153 audit used 10,140 current leaves:
-
-| Measure | Median | p95 | Worst |
-|---|---:|---:|---:|
-| IndexedDB answer transaction | 13 ms | 30 ms | 33 ms |
-| Total accepted answer to rendered next prompt | 15 ms | 31 ms | 33 ms |
-| Current-leaf query | 1 ms | 5 ms | 9 ms |
-
-Additional measured costs:
-
-- 10,140-leaf Range Calibration activation: approximately 1.0 s;
-- one full approximately 10k-record profile export: approximately 1.84 s / 7.63 MB;
-- 3,042-record legacy migration plus workspace activation: approximately 5.17 s;
-- Firefox origin usage after the approximately 10k stress fixture: approximately 160 MB by `navigator.storage.estimate()` (browser-level estimate; record wrappers plus immutable/current copies dominate);
-- Electron one-answer path: approximately 7.8 ms in the acceptance audit.
-
-The answer path is materially better than whole-store rewriting and meets median below 50 ms / p95 below 100 ms. Migration, full activation, and full-profile export intentionally scale with processed records and are not on every answer.
+The answer path must stay at median below 50 ms and p95 below 100 ms (met in the Firefox audit with ~10k current leaves). Migration, full activation and full-profile export scale with processed records and are not on every answer.
 
 ## Lazy activation and compatibility
 

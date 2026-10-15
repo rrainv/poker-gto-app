@@ -1,6 +1,6 @@
 # Game Rules v1 specification
 
-## Sweep C: local Table presets and position-based Hand draft
+## Local Table presets and position-based Hand draft
 
 `table-presets/v1` is an owner-keyed localStorage convenience collection in
 `app/src/application/table-presets.mjs`, separate from mathematical GameRulesPreset
@@ -20,13 +20,13 @@ Hero selection uses `deriveSeatAssignments` and only valid positions. Dealer cha
 preserve Hero position; a removed position falls back to BTN. HU displays BTN / SB.
 The Dealer moves by native selector or keyboard/click preview seat. No drag-only
 interaction or hand-specific preset data is introduced. This supersedes the earlier
-bounded preset UX deferral. Human browser acceptance remains pending.
+bounded preset UX deferral.
 
 September 6 additive import extension: [Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md)
 defines opt-in Game Rules Definition/Snapshot v2, PokerState v3 and recorded pot
 rake settlement evidence. The v1 contracts and live behavior below remain unchanged.
 
-## September 8 accounting correction (AUD-01)
+## Ante accounting (AUD-01)
 
 Ante enters the pot but never establishes matched-wager or uncalled-refund
 thresholds. Canonical `pot-layers.js` subtracts actual ante ledger funding and
@@ -152,6 +152,11 @@ Creation and validation return deep-frozen normalized copies. `validateGameRules
 - outside the contestable pot, with no rounding and full-payment-or-reject semantics.
 
 Both built-ins and their nested values are immutable. Their default ante and seated-player choices are setup starting points, not a restriction on legal effective legacy inputs.
+
+### Product rules for setup and legality
+
+- Hand setup offers the actual collection choices: none, or the supported fixed 0.1 bb per seated player collected outside the pot (currently 7–10 seats). Presets may group controls but never become rules authority; legacy `gameMode` inputs are compatibility aliases. Table rules v1 (NORTH_STAR §6.1, M2) extends this only through versioned Game Rules, never through presets.
+- Verified canonical no-limit sizing (Core Flow checkpoint, no poker-domain change): 1→3 has minimum 5; 1→7 has minimum 13; 1→3→8 has minimum 13; postflop 5→15 has minimum 25; short and cumulative all-in reopening and stack-bounded all-in behaviour are correct.
 
 ## GameRulesSnapshot v1
 

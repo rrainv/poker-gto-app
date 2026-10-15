@@ -17,7 +17,7 @@ Status: implemented through `SAVED-OBJECTS-002`, `GAME-RULES-001C`, and human-ac
 
 Date: August 30, 2026
 
-## September 8 historical accounting compatibility (AUD-01)
+## Historical accounting compatibility (AUD-01)
 
 `saved-accounting-compatibility/v1` is a pure, deterministic read/materialization
 adapter, not a database migration framework. Affected Saved Hand v1/v2/v3 values
@@ -224,8 +224,6 @@ The human-accepted Saved presentation kept the compact object grid primary; `SAV
 
 ## Saved library query
 
-Status: `SAVED-LIBRARY-001` implemented September 29, 2026; human acceptance pending under `QA-SAVED-LIBRARY-001`.
-
 The Saved destination owns an independent library query; Home Recent keeps its separate six-item query.
 
 - **Retrieval and bound.** One `listRecent({ limit: 200 })` call through the existing Saved application bridge reads active (non-archived) objects for the current lifecycle owner via the existing `ownerStateUpdatedAt` index, most recently updated first. Fewer than 200 results means the category counts are exact library totals. Exactly 200 results shows a localized note — "Showing the 200 most recently updated items. Counts cover shown items only." — and the counts describe only the shown items. There is no cursor or pagination; the next owner for retrieval beyond the bound is recorded in `RET-HOME-001`.
@@ -243,8 +241,6 @@ This presentation checkpoint does not change Saved Hand or Spot reopening, persi
 
 ## Saved Training history view
 
-Status: `SAVED-TRAINING-HISTORY-001` implemented September 30, 2026; human acceptance pending under `QA-SAVED-TRAINING-HISTORY-001`.
-
 Saved shows one two-option toggle, "Saved items" (default) and "Training history" (native radios: one tab stop, arrow keys switch). The Training history view is a read-only **projection** of Training Memory, not Saved authority: it lists the current owner's answered Training decisions through the Training Memory `listRecentAnsweredDecisions` read (see [Training Memory](TRAINING_MEMORY_V1_SPEC.md)), most recently answered first, bounded at 200 with the same disclosure rule as the library. Nothing is copied into Saved by browsing, filtering, or opening detail, and no Training record, stat, planner coverage, review state, or revisit schedule changes.
 
 - **Gate.** The existing `training-memory-presentation-gate/v1` is applied per owning session. Decisions whose gate withholds reveal (an active Full Hand) are excluded entirely, and one note says they appear after that Hand finishes. A Full Hand answer without its owning session is also withheld.
@@ -257,7 +253,7 @@ Implementation: DOM-free `app/src/application/saved-training-history.mjs` (`save
 
 ## Saved composition (list and inspector)
 
-Status: `SAVED-COMPOSITION-002` implemented October 2, 2026; human acceptance pending under `QA-SAVED-COMPOSITION-002`. Visual pattern: [Design system › List and inspector](DESIGN_SYSTEM.md#list-and-inspector-saved-composition-002). It supersedes the grid/expand presentation above and the earlier Training history detail layout; queries, bounds, gates, ownership, invalidation and writes are unchanged.
+Visual pattern: [Design system › List and inspector](DESIGN_SYSTEM.md#list-and-inspector-saved-composition-002). It supersedes the grid/expand presentation above and the earlier Training history detail layout; queries, bounds, gates, ownership, invalidation and writes are unchanged.
 
 - **Toolbar.** Saved items | Training history as underline Tabs on their own row at the top of the toolbar panel (native radios: one tab stop, arrow keys), then one row of the view's own controls. Saved items: search (flexible width; placeholder "Search title, note, or tag"; field captions are kept for assistive technology only), All / Hands / Spots chips with counts, Review state, Tag and Sort selects, "Mistakes only" as a toggle chip (`aria-pressed`), Clear, and "Showing N of M" / "Showing all N" at the end. Training history: mode chips with counts, "Marked Unsure" and "Queued for review or revisit" toggle chips, Clear and the count. The row wraps at narrow widths. The separate "Saved Hands & Spots" and "Library" title panels are removed; the former intro sentence is now part of the empty state.
 - **Column header** above the rows (Saved items: Cards · Title · Review · Updated; Training history: Cards · Decision · Review · Answered), aligned with the row grid.
@@ -381,25 +377,9 @@ A clean database receives ownership/version metadata in one transaction. Records
 
 `SAVED-OBJECTS-001R` corrected the uncommitted `saved-hand-snapshot/v1` payload before release by replacing incomplete Replay compatibility metadata with the canonical source journal. The outer Saved Hand schema and IndexedDB physical version remain v1; there is no released v1 data to migrate and no database-store/index change.
 
-## Performance evidence
+## Performance
 
-One bounded Electron 30 / Chromium native IndexedDB benchmark ran on August 16, 2026 with 3,001 small synthetic objects:
-
-| Operation | Result |
-|---|---:|
-| clean database activation | 96.9 ms |
-| populated activation | 0.6 ms |
-| bulk import of 3,000 objects | 998.3 ms |
-| create one object after seed | 2.3 ms |
-| update one note | 2.6 ms |
-| recent query, limit 20 | 6.7 ms |
-| review query, limit 50 | 6.3 ms |
-| export 3,001 objects | 182.6 ms |
-| deterministic export size | 2,062,029 bytes |
-
-The automated 2,000-object structural performance test additionally proves that recent/review index reads return only their requested 20/25-record windows and a note update writes exactly the object plus repository metadata.
-
-These figures establish comfortable thousands-of-objects behavior; they are not a promise for extreme scale or large future range payloads.
+Recent/review index reads return only their requested windows, and a note update writes exactly the object plus repository metadata. Thousands of objects behave comfortably; this is not a promise for extreme scale or large future range payloads.
 
 ## Deferred UX and platform work
 
@@ -409,4 +389,4 @@ The existing Saved opener loads a Hand, version-validates and reconstructs `payl
 
 ## Device Guest and lifecycle scope
 
-Slice B makes local Saved creation, annotations, archive, reopen, and existing library import/export available to Device Guest without sign-in. Payloads and SavedStudyObject v1 remain unchanged. Saved resolves the lifecycle-owned domain binding; its repository, source-reference preferences, in-flight deduplication, and cache are bound to that generation. Queued stale operations cannot begin, reads cannot adopt after revocation, and in-flight writes abort before commit. Account and Guest libraries stay separate; no Guest sync is permitted. Human browser acceptance remains pending.
+Slice B makes local Saved creation, annotations, archive, reopen, and existing library import/export available to Device Guest without sign-in. Payloads and SavedStudyObject v1 remain unchanged. Saved resolves the lifecycle-owned domain binding; its repository, source-reference preferences, in-flight deduplication, and cache are bound to that generation. Queued stale operations cannot begin, reads cannot adopt after revocation, and in-flight writes abort before commit. Account and Guest libraries stay separate; no Guest sync is permitted.

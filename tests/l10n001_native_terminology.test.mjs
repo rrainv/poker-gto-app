@@ -126,11 +126,12 @@ test('range comparison matrix accessibility labels use the localized catalog', (
   assert.match(translations.he['13 by 13 starting hand matrix'], /ריינג'/u);
 });
 
-test('L10N-001 research and style authorities remain reviewable', () => {
-  const researchPath = path.join(repoRoot, 'docs/project/L10N_001_TERMINOLOGY_RESEARCH.md');
-  const guidePath = path.join(repoRoot, 'docs/project/LOCALIZATION_STYLE_GUIDE.md');
+test('L10N-001 research and terminology authorities remain reviewable', () => {
+  // DOCS-RESET-001: docs/TERMINOLOGY.md supersedes the style guide; the research is archived evidence.
+  const researchPath = path.join(repoRoot, 'docs/archive/2026-10/L10N_001_TERMINOLOGY_RESEARCH.md');
+  const terminologyPath = path.join(repoRoot, 'docs/TERMINOLOGY.md');
   const research = fs.readFileSync(researchPath, 'utf8');
-  const guide = fs.readFileSync(guidePath, 'utf8');
+  const terminology = fs.readFileSync(terminologyPath, 'utf8');
   const termRows = research.split(/\r?\n/).filter((line) =>
     /^\| (?:Action|Strategy|Street|Core|Role|Hand|Draw|Texture) \|/.test(line)
   );
@@ -140,11 +141,10 @@ test('L10N-001 research and style authorities remain reviewable', () => {
     assert.match(research, new RegExp(sourceFamily));
   }
   for (const invariant of ['Riverline', 'Hero', 'AKs', 'bb', 'SPR', 'MDF', 'EV']) {
-    assert.match(guide, new RegExp(`\\b${invariant}\\b`));
+    assert.match(terminology, new RegExp(`\\b${invariant}\\b`));
   }
-  assert.match(guide, /Action contract/);
-  assert.match(guide, /Hebrew punctuation and direction/);
-  assert.match(guide, /Do not call heuristic output solved GTO/);
-  assert.match(guide, /User-approved house style/);
+  assert.match(terminology, /^## Actions$/m);
+  assert.match(terminology, /Hebrew punctuation and direction/);
+  assert.match(terminology, /never call heuristic output solved GTO/i);
   assert.match(research, /L10N-001R product-decision annotations/);
 });

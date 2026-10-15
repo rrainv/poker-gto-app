@@ -1,7 +1,7 @@
 # Deep Review, Decision Delta and Study Inbox v1
 
 September 6, 2026. `DEEP-REVIEW-001` + `STUDY-INBOX-001` +
-`DECISION-DELTA-FOUNDATION`: bounded implementation, human acceptance pending.
+
 `QA-DEEP-STUDY-001` owns acceptance. This explicit ticket does not reorder the
 general delivery queue or accept earlier Review/Import/Opponent QA.
 
@@ -140,47 +140,3 @@ The UI shows count and source samples, limits the claim to the loaded context,
 and makes no skill-deficit claim or ranking uplift. Today the Inbox's encountered
 uncertainty is the wired input; durable cross-Hand Personal-difference synthesis
 requires a later observation owner. No pattern store is created.
-
-## Verification and acceptance
-
-Focused tests cover separate roles, heuristic exclusion, deterministic bounded
-selection, source downgrades, immutable qualitative intent, actual owner reads,
-Training embargo/handoffs, Saved import reload/provenance, resolution, stale-owner
-rejection, safe editor targeting, pattern minimum/context, mounted EN/RU/HE and
-detached callbacks. Existing Review/PERF, Training Memory, Personal, Import,
-Opponent, Truth, NL, Saved and identity suites remain required regressions.
-
-Browser inventory returned no enabled apps/browsers. Mounted DOM tests are
-structural only. Human QA must check completed played/imported/policy Hands,
-exact decision seeking, Review later → Inbox → reload → source decision,
-Saved notes and Situational repeat, current intent mismatch/refine/unresolved,
-due uncertainty/Same/Similar/active-session blocking, policy preparation, partial
-sources, Guest/account switching, keyboard/focus, EN/RU/HE/RTL, 1366×768/narrow
-desktop and Midnight/Daylight. No accepted checkpoint, full-suite gate or solver
-verification is claimed. Nothing staged or committed.
-
-Verification result: **220 distinct focused tests across 24 files passed**. The
-main regression run passed 219/219; the final overlapping targeted pass passed
-48/48 after adding exact-mixture/answer-time coverage. Eighteen changed/new JS/MJS
-files passed syntax checks; `git diff --check` passed. The old tutorial assertion
-requiring probability-gap priority was replaced with the reason-based contract.
-No full repository suite or solver suite was run.
-
-Self-review fixes included whole-Review comparison suppression for ambiguous
-imports, source-owner session embargo, fixed annotation-editor target/owner,
-parent-Hand preservation for played decisions, truthful source-time labels,
-canonical exact-mixture array rendering, stale callbacks and inspection requests,
-disclosure/focus retention, and no current-Hand archive from detached note editing.
-
-## Ticket file inventory
-
-Pre-existing unstaged foundation work was preserved and extended only at the
-named integration points. No protected file, Git index or commit was changed.
-
-| Area | Files (relative to repository) |
-|---|---|
-| New projections / presentation | `app/src/application/decision-delta.mjs`, `study-inbox.mjs`, `study-language.mjs`, `study-workspace.mjs`, `study-workspace-bootstrap.mjs` in the same directory |
-| Review / Saved / Training integration | `app/src/application/hand-review.mjs`, `hand-import-study.mjs`, `training-memory-service.mjs`, `training-memory-bootstrap.mjs`, `opponent-practice-workspace.mjs`, `training-mode-bootstrap.mjs` in the same directory; `app/src/core/logic.js`, `app/index.html`, `app/styles.css` |
-| Tutorial | `app/src/tutorial/current-app-tutorials.mjs`, `app/src/tutorial/home-tutorial.mjs`, `app/src/locales/tutorial-translations.js` |
-| Tests | `tests/deep_review_study_inbox001.test.mjs`, `tests/opponent_practice_workspace001.test.mjs`, `tests/full_hand_review001_integration.test.mjs` |
-| Contracts / state / QA | This spec; `docs/project/ARCHITECTURE_CONTRACT.md`, `INTERACTION_GRAMMAR.md`, `HAND_HISTORY_IMPORT_V1_SPEC.md`, `TRAINING_MEMORY_V1_SPEC.md`, `SAVED_STUDY_OBJECTS_SPEC.md`, `CURRENT_PHASE.md`, `PRODUCT_BACKLOG.md`, `PRODUCT_RETURN_QUEUE.md`, `QA_BACKLOG.md` in the same directory; `docs/project/capabilities/DEEP_HAND_REVIEW.md`; `docs/agent-prompts/AGENT_MASTER_CONTEXT.md` |

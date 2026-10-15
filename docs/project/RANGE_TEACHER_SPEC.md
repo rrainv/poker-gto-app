@@ -61,9 +61,7 @@ Teacher-derived state is not exported or synced. Profiles, modes, immutable evid
 
 EN/RU/HE copy, semantic tabs, keyboard tab switching, live status announcements, canonical hand-class LTR islands, responsive layouts, and a truthful tutorial step are included. Recommendations remain optional through dismiss, direct Matrix/Builder navigation, and Stop for now.
 
-## Performance checkpoint
-
-`node tests/tooling/benchmark_range_teacher001.mjs` measures cold construction, a cache-hit construction, recompute after one answer, and bounded boundary clustering. Representative runs on the implementation machine measured 63–80 ms cold, 5–7 ms cached, 3–4 ms after an evidence change, and 2.9–3.3 ms mean cached boundary analysis. These in-memory measurements are regression evidence, not universal Firefox or IndexedDB latency promises.
+## Performance
 
 Each service request loads one scope projection bundle, reuses its evidence view and cached snapshot, computes one 002C ranking/progress assessment, and runs bounded analysis over 169 classes. It performs no per-cell repository loop, StrategyProvider call, Equity calculation, 1,326-combo expansion, or hidden Matrix render.
 
@@ -75,4 +73,4 @@ Each service request loads one scope projection bundle, reuses its evidence view
 - no combo overrides, postflop propagation, imports/comparisons, or Saved Range workflow;
 - no Training grading/history or StrategyProvider/reference comparison;
 - synthetic deterministic coverage is not real-user uncertainty calibration or poker correctness evidence;
-- human Firefox EN/RU/HE, theme, viewport, keyboard, and visual acceptance remains open in `QA_BACKLOG.md`.
+- human Firefox EN/RU/HE, theme, viewport, keyboard, and visual acceptance remains open in `docs/ISSUE_REGISTER.md`.

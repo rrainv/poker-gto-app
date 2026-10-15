@@ -2,7 +2,7 @@
 
 `HAND-HISTORY-IMPORT-001` implements one local Import → Review → Study slice.
 PokerStars English NLHE cash, recorded-rake contracts and Saved provenance were
-explicitly authorized September 6, 2026. `QA-HAND-HISTORY-IMPORT-001` owns human acceptance.
+explicitly authorized September 6, 2026.
 
 ## Pipeline and boundaries
 
@@ -93,17 +93,6 @@ Training continuation, sessions and opponent consent remain future. The first
 [Study Inbox](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md) now projects Saved import/decision
 references and preserves source provenance; it adds no imported Training authority.
 
-## Verification and acceptance
+## Fixtures
 
-Source-attributed public fixtures live under `tests/fixtures/hand-history/`.
-Spectator originals without Hero remain partial; labelled test derivatives
-supply a Dealt-to line for success coverage, never parser defaults. Focused tests
-cover invariants/side pots/ties, deterministic parsing/fingerprints, exact sizes,
-failure states, Replay privacy, cold Saved/Review, repository persistence and
-deduplication, owner fences, direct intent boundaries, and EN/RU/HE copy.
-
-Browser inventory was empty. Human QA: paste/file → preview → Review → Save →
-reload; gross/rake/net display; exact seeking/Analyze; repeated Review later/
-Situational; malformed/unsupported input; Guest/account transitions; keyboard,
-Escape/focus, EN/RU/HE/RTL, narrow desktop and Midnight/Daylight. Structural tests
-are not visual acceptance; earlier QA owners remain open.
+Source-attributed public fixtures live under `tests/fixtures/hand-history/`. Spectator originals without Hero remain partial; labelled test derivatives supply a Dealt-to line for success coverage, never parser defaults.

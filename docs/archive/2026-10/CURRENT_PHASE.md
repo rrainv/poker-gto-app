@@ -1,5 +1,22 @@
 # Current Riverline phase
 
+October 3 explicit Analyze slice: `ANALYZE-COMPOSITION-001` is implemented with human
+acceptance pending under `QA-ANALYZE-COMPOSITION-001`. Analyze follows `mockup-analyze.html`:
+one Spot rail panel and one Result panel (view tabs, Save spot / View all hands, street stepper),
+a verdict block with the dominance rule (sentence case; close mixes read "3-Bet or Call"), one
+fact table (To call added, §10 facing wording), inline Explain with Facts | Explain depth and a
+Provenance & limitations disclosure, legible Range matrix tints, a collapsed Spot table and a
+read-only Hand context with the existing route back. The mockup type scale is now app-wide (body
+14, small 12.5, label 11, heading 15, title 20, display 40; no product text under 12px except
+overlines). The owner-approved Composition principles live in
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#composition-principles). It closes QA-SHELL-003/-004 for
+Analyze. No strategy, claim-policy, explanation-content, schema or PERF-001 change. Amendment 2
+(fidelity finish, `QA-ANALYZE-COMPOSITION-005`): every Analyze state and tab measured against the
+extracted mockup spec (0 values out of tolerance, exceptions recorded), the fact-cell omission rule,
+rail value fields, a rail that fits 1920×1080, stepper mini cards, one disclosure style, calm loading
+and dead Analyze CSS removed. The owner decided Explain stays collapsed by default
+(`QA-ANALYZE-COMPOSITION-002`). The sequencing below is otherwise unchanged.
+
 October 2 explicit Saved slice: `SAVED-COMPOSITION-002` is implemented with human
 acceptance pending under `QA-SAVED-COMPOSITION-002`. Saved (both views) uses one
 toolbar row, dense rows and a reserved sticky inspector; Up/Down/Enter/Escape keyboard
@@ -13,7 +30,7 @@ schema, persistence, ownership, bound or load-path change. Visual tokens: Midnig
 (amendment 2, superseding the earlier token mix for Midnight; Graphite/Daylight keep their
 surfaces with jade accents). Earlier token tuning: the owner's mix is
 applied globally (B colors, slightly deeper preset accents, radius 10/7, C headings;
-[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#token-tuning-token-tuning-final-october-2-2026)), human acceptance pending. Next per review §F: `ANALYZE-COMPOSITION-003`; the sequencing below is
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#token-tuning-token-tuning-final-october-2-2026)), human acceptance pending. Next per review §F: `ANALYZE-COMPOSITION-001` (referred to as "-003" before October 3); the sequencing below is
 otherwise unchanged.
 
 October 2 explicit shell slice: `SHELL-001` is implemented with human acceptance

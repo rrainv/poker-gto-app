@@ -2,7 +2,7 @@
 
 Status: implementation contract for `TRAINING-INTELLIGENCE-001`, September 5,
 2026. Product decisions are approved in the ticket. Human acceptance of the
-first slice remains pending. This document does not change roadmap sequencing.
+first slice remains pending.
 
 ## Shared truth eligibility
 
@@ -257,16 +257,3 @@ No full-suite checkpoint or broad documentation closeout is implied.
 Browser acceptance: primary flow and reload, pre-answer/feedback DOM, keyboard,
 EN/RU/HE/RTL, active-session entry block, sign-out/owner transition, snooze/dismiss
 and no false success language. Structural tests are not visual acceptance.
-
-## First-slice file map
-
-Paths below are relative to the repository root. Several already contained
-uncommitted identity work; this ticket preserves those changes.
-
-| Area | Files |
-|---|---|
-| New learning contracts/projection | `app/src/training-memory/learning-evidence.mjs`, `app/src/application/training-intelligence.mjs` |
-| Existing Memory owners | `app/src/training-memory/domain.mjs`, `app/src/training-memory/repository.mjs`, `app/src/application/training-memory-service.mjs`, `app/src/application/training-memory-bootstrap.mjs` |
-| UI and language | `app/index.html`, `app/styles.css`, `app/src/core/logic.js`, `app/src/locales/i18n.js`, `app/src/locales/tutorial-translations.js`, `app/src/tutorial/current-app-tutorials.mjs` |
-| Behavioral/race tests and existing harness updates | `tests/training_intelligence001.test.mjs`, `tests/same_spot_coherence001.test.mjs`, `tests/auth_training_memory001.test.mjs`, `tests/identity_lifecycle001b.test.mjs` |
-| Scoped documentation | This spec, `docs/project/TRAINING_MEMORY_V1_SPEC.md`, `docs/project/capabilities/TRAINING_INTELLIGENCE.md`, `docs/project/capabilities/OPPONENT_INTELLIGENCE.md`, `docs/project/QA_BACKLOG.md` |

@@ -1,6 +1,6 @@
 # Opponent Policy v2 and actor information
 
-## Sweep C: per-seat Full Hand setup
+## Per-seat Full Hand setup
 
 The idle Full Hand lineup is the primary configuration surface. Each non-Hero seat
 has independent fictional character and synthetic policy settings. Select a seat
@@ -15,9 +15,9 @@ practice requests retain strict v1 contracts and independent seat-stream derivat
 Study focus refers to the selected opponent's request and stays outside grading.
 Former all/BB controls remain internal compatibility for explicit study requests.
 Configured per-seat policies receive the existing configured high-stack automation
-budget. Human browser acceptance remains pending.
+budget.
 
-September 6, 2026. Actor-safe foundation plus `OPPONENT-INTELLIGENCE-002` / policy-conditioned Training / opponent-review foundation: bounded implementation, human acceptance pending. This is the current contract; [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md) preserves broader intent.
+September 6, 2026. This is the current contract; [Capability guardrails](CAPABILITY_GUARDRAILS.md#opponent-intelligence-and-bots) keep the broader rules.
 
 ## Information and authority
 
@@ -115,30 +115,6 @@ A future statement such as “9 check-raises in 43 comparable observed opportuni
 
 **Bluff/Exploit:** [Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) now consumes explicit policy snapshots through `synthetic-response-facts/v1`, sharing the selector's weight function. It supplies assumption-labelled reasoning and comparisons, with unchanged bot behavior/version. Compatible quantitative response ranges, canonical weighted Equity and optimized exploit recommendations remain future; no normative authority is added.
 
-## Verification and human acceptance
+## Known limits
 
-002 verification: 124/124 tests passed in the main Opponent/Training/Personal/Bluff/tutorial regression group, including complete-hand reconstruction and hidden/future-card counterfactuals. The existing 500bb always-raise test took about 332 seconds (whole group 345 seconds); this remains a known long minimum-raise performance limitation, not interactive acceptance. A 76/76 follow-up group passed updated mounted Personal region navigation/disposal, exact range rejection, Replay visibility/lifecycle, strategy-truth, PERF-001 and tutorial checks. Final copy/seed-label corrections passed the eight-test new-intent/mounted-opponent group. All 16 ticket JavaScript/MJS files passed syntax checks; diff hygiene passed. No full-suite or solver run was performed. Browser inventory was empty; `QA-OPPONENT-POLICY-002` owns hands-on acceptance and previous owners remain open. Nothing staged or committed.
-
-### Implementation map (002)
-
-This continuation adds four application modules and one test file, and extends the existing in-progress foundation files listed below. Earlier working-tree changes are preserved.
-
-| Changed files | Purpose |
-|---|---|
-| `app/src/application/policy-conditioned-training.mjs` (new) | Frozen educational intent and exact request validation. |
-| `app/src/application/opponent-learning-facts.mjs` (new) | Descriptive comparisons, recorded branch facts, read-only Personal node projection. |
-| `app/src/application/opponent-learning-language.mjs` (new), `opponent-learning-workspace.mjs` (new, same directory) | EN/RU/HE questions, comparison columns and Personal region links. |
-| `app/src/application/opponent-practice-workspace.mjs`, `full-hand-training-session-controller.mjs`, `training-mode-bootstrap.mjs` (same directory), `app/src/core/logic.js` | Full Hand controls, intent lifecycle, review and replay wiring. |
-| `app/src/application/personal-strategy-hand-workspace.mjs`, `exploit-teacher-workspace.mjs`, `exploit-training-request.mjs` (same directory) | Personal and Bluff/Exploit connections. |
-| `app/styles.css`, `app/src/tutorial/current-app-tutorials.mjs`, `app/src/locales/tutorial-translations.js` | Responsive columns and current-flow tutorial localization. |
-| `tests/opponent_intelligence002.test.mjs` (new), `tests/opponent_practice_workspace001.test.mjs`, `tests/personal_strategy_hand_workspace.test.mjs` | Authority/determinism, rendered review and stale-region regression coverage. |
-| This spec; `TRAINING_PRACTICE_PLANNER_SPEC.md`, `BLUFF_EXPLOIT_TEACHER_V1_SPEC.md`, `PERSONAL_STRATEGY_COACH_V1_SPEC.md` | Owning cross-surface contracts. |
-| `CURRENT_PHASE.md`, `PRODUCT_BACKLOG.md`, `PRODUCT_RETURN_QUEUE.md`, `QA_BACKLOG.md`, `capabilities/OPPONENT_INTELLIGENCE.md`, `../agent-prompts/AGENT_MASTER_CONTEXT.md` | Current truth, retained future boundaries and pending human acceptance; no sequence change. |
-
-### Actor-safe foundation verification (001)
-
-Counterfactual tests compare captured input, fingerprint, decision seed, cache identity/hit, action, metadata, and localized explanation after changing inaccessible private/dead cards. Separate shuffled deals with the same actor cards/public state prove that future board/other private cards do not affect the first decision. Public board and actor-card changes remain observable. Complete hands across three policies and HU/six-handed tables are replayed; each bot action is regenerated at its reconstructed pre-action state. Mounted controls verify preset/custom requests, locale switching, RTL tokens and reset cleanup. Focused poker, Full Hand, replay, identity/privacy, language, performance and tutorial tests supplement these checks.
-
-Browser inventory on September 6 returned no apps/browsers. Human EN/RU/HE/RTL, keyboard, themes, narrow layout and full-hand playthrough acceptance remain open under `QA-OPPONENT-POLICY-001`. Structural tests are not visual acceptance.
-
-Verification result: the 405-test focused regression group passed; after final edge-case changes, the 39-test opponent/Full Hand group passed, including a three-handed 500bb always-raise sequence after Hero folds. That stress run took about 160 seconds on this machine: very long minimum-raise sequences are a known performance limitation, not interactive performance acceptance. Canonical Hero-fold lifecycle remains unchanged (`RET-FULLHAND-HERO-FOLD-001`). All 14 ticket JavaScript/MJS files passed syntax checks and `git diff --check` passed. No full-suite or solver run was required; nothing was staged or committed.
+Very long minimum-raise sequences (e.g. a 500 bb always-raise stress hand) take minutes to automate; this is a known performance limitation, not interactive acceptance.

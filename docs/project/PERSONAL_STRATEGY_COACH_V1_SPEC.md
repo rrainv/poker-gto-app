@@ -1,6 +1,6 @@
 # Personal Strategy Coach, Range Evolution and Teach through a Hand
 
-## Sweep C: exact correction and teaching continuity
+## Exact correction and teaching continuity
 
 The Teacher candidate list stays prioritized. A separate saved-combo selector
 inspects answered combinations outside that list, materializing a DecisionContext
@@ -13,7 +13,7 @@ an upstream correction. Correcting existing evidence uses its stored node/subjec
 and validated current immutable heads, without teaching new unknown-reach combos.
 Current setup/Approach versions and repository owner fences remain mandatory.
 Original records survive exact-to-preferred and preferred-to-exact corrections.
-No persistence migration is required. Human educational/browser acceptance is pending.
+No persistence migration is required.
 
 September 7 additive [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) consumes a
 fingerprint-validated exact action-conditioned trajectory in the Hand study's
@@ -26,7 +26,7 @@ below describe the prior checkpoint; `QA-ADVANCED-EQUITY-001` owns this addition
 Additive September 6 integration: the [Bluff / Exploit Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) appears for the selected reached combo in Teach-through-a-Hand. Policy/size exploration and mapping questions preserve current Approach/node/trajectory identity and never save intent. The original node Coach's unavailable source-node Training handoffs remain unavailable; the new separate concept contract can prepare only an explicitly requested new policy-conditioned Full Hand.
 
 Ticket: `PERSONAL-STRATEGY-COACH-001` + `RANGE-EVOLUTION-001A`, September 5, 2026.
-Status: implementation complete for the bounded slice; human acceptance pending. The user explicitly authorized exact-node persistence migration after preflight. This specification does not accept a checkpoint or activate bots, weighted Equity, production reference coverage, normative range assessment or universal postflop coverage. The current full-street bounded extension is described below.
+The user explicitly authorized exact-node persistence migration after preflight. This specification does not accept a checkpoint or activate bots, weighted Equity, production reference coverage, normative range assessment or universal postflop coverage. The current full-street bounded extension is described below.
 
 ## Product and authority
 
@@ -147,40 +147,6 @@ The UI makes explicit application calls only after Start, save, branch navigatio
 
 OPPONENT-ACTOR-INFORMATION-001 remains binding. No bot adapter is added. Shared range nodes reject known private information; selected hypothetical Hero combos belong only to their own question contexts. They are not accepted opponent-policy inputs.
 
-## September 5 foundation verification (historical)
+## Supported adapter limits
 
-Focused suites cover migration and reload, corruption and interrupted upgrade, export/import/fork preservation, owner/lifecycle fences, correction lineage, exact size distinctions, old precision retention, unknown × zero, correct multiplication, physical removal, context/history/size rejection, repeated-edge rejection, deterministic fingerprints, multi-street provenance, known-positive-only selection, representative evidence limits, intent-without-grades, structured sparse language, handoff abstention, EN/RU/HE/RTL, and real application/DOM save-reload flow.
-
-Verification completed: the related 32-file Personal Strategy/Range Core/Analysis/PERF/identity regression selection passed; the final affected evolution/UI/Coach subset passed 26/26 after self-fixes for repeated action conditioning, operand lineage and normalization availability. These runs overlap. All 29 changed/new JavaScript files passed syntax checks, with the final changed application module checked again. Diff hygiene passed. No full repository or solver release gate was run.
-
-Browser inventory on September 5 returned no enabled apps/browsers. Visual acceptance is **UNVERIFIED**. QA-PERSONAL-COACH-001 retains human review: selected Approach → explicit opening intention → surviving flop combos → preferred/exact answer → summary → teaching route; reload and corrections; keyboard/focus; EN/RU/HE/RTL; normal/narrow desktop; Midnight/Daylight. Existing QA/Return issue owners remain unchanged.
-
-Ticket files span the exact-node domain/repository, Range Core multiplication, Personal Hand Study application/UI, Coach modules, translations/tutorials, focused tests and owning documentation. Pre-existing protected config and user/helper artifacts were not edited. Nothing is staged or committed.
-
-## Continuation file inventory
-
-| Area | Added or extended paths |
-|---|---|
-| Exact intent and persistence | `app/src/personal-strategy/exact-node-intent.mjs`, `repository.mjs`, `indexeddb-storage.mjs`, `index.mjs` |
-| Canonical multiplication | `shared/poker-domain/holdem-range-action.js`, `shared/poker-domain/index.js` |
-| Application and UI | `app/src/application/personal-hand-study.mjs`, `personal-strategy-hand-workspace.mjs`, `personal-strategy-understanding-workspace.mjs`, `range-calibration-service.mjs`; `app/index.html`, `app/styles.css` |
-| Node Coach | `app/src/personal-strategy/node-coach.mjs` |
-| Localization/tutorial | `app/src/locales/range-calibration-translations.js`, `tutorial-translations.js`; `app/src/tutorial/current-app-tutorials.mjs` |
-| New behavioral tests | `tests/personal_strategy_exact_node_persistence.test.mjs`, `personal_strategy_hand_evolution.test.mjs`, `personal_strategy_hand_workspace.test.mjs`, `personal_strategy_node_coach.test.mjs` |
-| Migration regression updates | `tests/personal_strategy_intelligence_persistence.test.mjs`, `tests/range_cal000_personal_strategy_persistence.test.mjs` |
-| Owning contracts | This spec; Personal Strategy Intelligence/Foundation specs; persistence ADR; Range Core/Unified Range Intelligence specs |
-| Live scope and acceptance | Agent Master Context, Current Phase, Roadmap, Product Backlog, Return Queue, QA Backlog, Personal Strategy/Range Evolution capability dossiers |
-
-This continuation builds on pre-existing unstaged preflop Coach, language, range-family adapter and unavailable-continuation changes. `.codex/config.toml`, the audit DOCX and helper scripts/output remain pre-existing changes outside the ticket.
-
-## CONTINUATION-001C verification and ticket inventory
-
-Final focused verification: **71/71 tests passed across nine suites** (full-street, evolution, mounted Hand UI, node Coach, exact-node persistence, exploit facts/Training, mounted exploit UI, PERF-001 and tutorial coverage). All 11 ticket JavaScript/MJS files passed `node --check`. `git diff --check` and whitespace checks for untracked ticket files passed. The index is empty. No full repository or solver suite was run for this bounded implementation.
-
-The extension adds behavioral coverage for flop?turn?river exact products and canonical histories; explicit turn/river bet/call sizes; unknown/preferred/blocked propagation; missed versus completed turn draws; dormant downstream intent after upstream correction; deterministic reload without trajectory storage; exact decimal parsing; and unavailable Training requests. Mounted real-application EN/RU/HE tests exercise the full UI flow, custom sizing, context notes, concept focus, policy/Approach exploration without persistence, and river reload. These are structural checks, not browser or human acceptance.
-
-Self-audit corrected canonical stack/terminal adapters, floating-point decimal conversion, stale flop-only context use, exact custom-size retention, missing downstream-intent uncertainty, and the existing overlong calibration tutorial. The visible seed remains the existing bounded BTN/BB line; multiway generation, arbitrary Hand import and exact semantic Training drills remain outside the supported adapter. Range facts substitute for a new postflop editing Matrix; preflop Matrix remains unchanged.
-
-Ticket source files: `app/src/application/personal-hand-study.mjs`, `personal-strategy-hand-workspace.mjs`, new `personal-hand-continuation-language.mjs`, `range-calibration-service.mjs`, `exploit-teacher-workspace.mjs`; `app/src/personal-strategy/node-coach.mjs`; tutorial definitions/translations; `app/styles.css`. Tests: new `personal_strategy_full_street.test.mjs`, extended `personal_strategy_hand_workspace.test.mjs` and `personal_strategy_node_coach.test.mjs`. Owning documentation: this specification, Bluff/Exploit Teacher specification, Current Phase, Roadmap, Product Backlog, Return Queue, QA Backlog, Agent Master Context and Personal Strategy capability dossier.
-
-All other pre-existing unstaged/untracked foundation changes and protected/helper artifacts remain outside this ticket. Nothing staged or committed. Browser inventory returned no enabled surfaces on September 6; `QA-PERSONAL-COACH-001` retains the human keyboard, compactness, theme, viewport and language/RTL matrix.
+The visible seed remains the bounded BTN/BB line; multiway generation, arbitrary Hand import and exact semantic Training drills remain outside the supported adapter. Range facts substitute for a postflop editing Matrix; the preflop Matrix is unchanged.

@@ -263,7 +263,7 @@ The current account platform still does not implement:
 
 ## Device Guest learning durability - Slice B
 
-Implementation awaiting human acceptance. Device Guest owns durable local Saved, Personal Strategy, and Training Memory across reload/restart and Account A -> Guest -> Account B -> Guest. Home reads only the current owner's bounded Saved and Personal Strategy projections; its unsupported Training/Analysis history seams remain unsupported. Home Game remains runtime-only for Guest.
+Device Guest owns durable local Saved, Personal Strategy, and Training Memory across reload/restart and Account A -> Guest -> Account B -> Guest. Home reads only the current owner's bounded Saved and Personal Strategy projections; its unsupported Training/Analysis history seams remain unsupported. Home Game remains runtime-only for Guest.
 
 The account database is version 4 (`riverline-account-indexeddb/v4`). The existing complete v3 registry is validated before a single account-registry transaction adds one Training Memory binding per identity and advances backend metadata. Missing or conflicting prior bindings fail closed without changing stored records. V2 legacy registry migration validates the original Saved/Personal Strategy graph before adding Training bindings. No domain data database or historical evidence record is rewritten.
 

@@ -7,7 +7,7 @@ const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.ur
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
 const randomSpot = fs.readFileSync(
-  new URL('../docs/project/capabilities/RANDOM_SPOT_GENERATOR.md', import.meta.url),
+  new URL('../docs/archive/2026-10/capabilities/RANDOM_SPOT_GENERATOR.md', import.meta.url),
   'utf8',
 );
 const training = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('<!-- Equity workspace -->'));

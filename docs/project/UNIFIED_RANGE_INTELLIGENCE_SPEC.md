@@ -43,25 +43,6 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 
 ## 2. Current implementation checkpoint
 
-### 2.1 Accepted tickets and behavior
-
-| Ticket | Current result |
-|---|---|
-| `RANGE-CAL-000` | Versioned Personal Strategy domain: profiles, exactly three user-named modes, objective RFI context, direct observations, Training observations, resumable sessions, repository, validation, and portable export/import. |
-| `RANGE-CAL-001A` | Lazy Range Calibration workspace, profile/mode selection and editing, and objective preflop RFI context builder. |
-| `RANGE-CAL-001B` | Durable keyboard-first question loop over the canonical 169 hand-class order, one-click dominant Fold/Raise answers, optional exact Fold/Raise mix, undo/retraction, pause, and resume. |
-| `RANGE-CAL-001BR` | Truthful exact-mix handling: normalization, exact ties with `dominantAction = null`, and no fabricated winner. |
-| `RANGE-CAL-001C-A` | IndexedDB v2 repository with atomic answer/session transactions, immutable history, current-leaf indexes, recovery-safe legacy migration, and measured Firefox/Electron performance. |
-| `RANGE-CAL-UI-001R` | Accepted Range Calibration product/interaction refinement. The full 169-question order remains fallback and test infrastructure. |
-| `RANGE-CAL-002A` | Isolated deterministic sparse RFI Fold/Raise inference, explicit abstention, direct-evidence precedence, contradictory-head abstention, evidence references, and synthetic holdout evaluation. |
-| `RANGE-CAL-002B` | Unified read-only evidence projection, explicit correction/compatible-head/conflict semantics, `PersonalStrategyEstimate v1`, 169-estimate snapshot, ordinal high/medium/uncertain/conflicting/unknown states, conservative local-graph inference, scope cache/application API, and eight-fixture deterministic validation. |
-| `RANGE-CAL-002C` | Deterministic adaptive question-value ranking, structurally diverse cold start, boundary/sparsity/uncertainty targeting, repetition and skip control, category progress, explicit automatic stop reasons, resumable Quick/Standard/Deep intents, exhaustive fallback, and equal-budget comparative validation. |
-| `RANGE-CAL-002D` | Snapshot-derived 169-cell Personal Strategy Matrix, separate action/provenance encoding, evidence/support inspector, dominant-only confirmation, exact-mix correction lineage, scope isolation, adaptive-question integration, and bounded accessible EN/RU/HE presentation. |
-| `RANGE-BUILDER-001` | Same-Matrix class-level multi-selection/painting, dominant/pure/exact bulk edits, explicit Builder provenance/action groups, one atomic repository transaction/invalidation/recompute, conflict skip, semantic group undo, and immediate Calibration reranking. |
-| `RANGE-TEACHER-001` | Derived Personal Strategy summary, deterministic boundary/sparse/conflict/exact-mix recommendations, focused 002C selection intents, and routing through existing Calibration, Matrix, and Builder actions without new durable truth. |
-| `ACCOUNT-002B-B` | Opt-in Personal Strategy sync that preserves stable IDs, immutable direct and Training evidence, divergent offline heads, profile/mode metadata conflicts, and resumable sessions; inferred output is deliberately excluded. |
-| `HOME-002A` | Lightweight Personal Strategy summary: profile count, direct-evidence count, answered hand classes, contradictory heads, and resumable calibration state. Home performs no inference or range math. |
-
 ### 2.2 Current code authorities
 
 - `app/src/personal-strategy/domain.mjs` owns the implemented v1 profile, mode, RFI context, direct observation, Training observation, and calibration-session contracts.
@@ -538,7 +519,7 @@ Until that contract lands, 002B may detect conflicts and 002C may prioritize the
 
 ## 11. `RANGE-CAL-002B` — inference and uncertainty
 
-Implementation checkpoint: the current authority is `deterministic-rfi-regional-graph/v2`, with exact semantics and focused quick-profile fixture results in `RANGE_INFERENCE_SPEC.md`. `RANGE_CAL_002B_VALIDATION_REPORT.md` remains the historical v1 local-graph baseline. Sections 11.1–11.5 remain the normative design constraints.
+Implementation checkpoint: the current authority is `deterministic-rfi-regional-graph/v2`, with exact semantics and focused quick-profile fixture results in `RANGE_INFERENCE_SPEC.md`. `docs/archive/2026-10/RANGE_CAL_002B_VALIDATION_REPORT.md` remains the historical v1 local-graph baseline. Sections 11.1–11.5 remain the normative design constraints.
 
 ### 11.1 Scope
 
@@ -1194,7 +1175,7 @@ Implemented checkpoint:
 - additive backward-compatible cursor facts only; no ranking or inferred snapshot is persisted or synced;
 - bounded EN/RU/HE workspace/tutorial updates with truthful category progress and “Why this hand?” reasons;
 - equal-budget adaptive-versus-sequential validation over all eight 002B fixtures, with structured boundary/coverage gains, honest irregular abstention, and high-band safety;
-- `ADAPTIVE_RANGE_CALIBRATION_SPEC.md` and `RANGE_CAL_002C_VALIDATION_REPORT.md` own implementation detail and measured results.
+- `ADAPTIVE_RANGE_CALIBRATION_SPEC.md` and `docs/archive/2026-10/RANGE_CAL_002C_VALIDATION_REPORT.md` own implementation detail and measured results.
 
 Not owned:
 
@@ -1234,7 +1215,7 @@ Implementation checkpoint:
 - Confirm/Change/Edit mix append canonical direct `RangeObservation v1` records through one application seam, supersede the selected head, invalidate the scope, and sync only source evidence;
 - conflicts remain visible and are not averaged; writable multi-head resolution is deferred because 002D owns no schema migration;
 - the Calibration surface reuses an active session projection, follows or selects questions explicitly, and records Matrix preparation/selection/correction/scope timing;
-- focused deterministic, i18n, architecture, and accessibility-structure coverage is present; human Firefox visual acceptance remains in `QA_BACKLOG.md`.
+- focused deterministic, i18n, architecture, and accessibility-structure coverage is present; human Firefox visual acceptance remains in `docs/ISSUE_REGISTER.md`.
 
 The detailed consumer contract and `RANGE-BUILDER-001` reuse seams are in `PERSONAL_STRATEGY_MATRIX_SPEC.md`.
 
@@ -1293,7 +1274,7 @@ Implementation checkpoint:
 - ambiguous/conflicting heads skip by default; Builder does not claim multi-head resolution;
 - semantic undo appends canonical corrections/retractions and cannot touch a later or unrelated Calibration/Matrix/remote head;
 - the existing Personal Strategy Matrix supplies multi-selection, structural helpers, rectangular/paint gestures, exact-mix presets, keyboard operation, session history, feedback, EN/RU/HE, and RTL/LTR structure;
-- deterministic application/architecture/performance coverage is implemented; requested human Firefox visual acceptance remains in `QA_BACKLOG.md`.
+- deterministic application/architecture/performance coverage is implemented; requested human Firefox visual acceptance remains in `docs/ISSUE_REGISTER.md`.
 
 Detailed contracts and reusable Teacher seams are in `RANGE_BUILDER_SPEC.md`.
 
@@ -1328,7 +1309,7 @@ Implemented checkpoint:
 - Quick profile, Boundaries, Unknown regions, Conflicts, and Exact-mix refinement map to the existing Calibration session with a versioned deterministic 002C selection-intent bias;
 - inspect/edit/question actions route to the existing Matrix, Builder, and Calibration application APIs; recommendation dismissal remains same-session UI state;
 - compact EN/RU/HE UI, semantic tab/keyboard/live-region structure, tutorial coverage, deterministic architecture tests, and performance benchmark are implemented;
-- requested human Firefox viewport/theme/language acceptance remains tracked in `QA_BACKLOG.md`.
+- requested human Firefox viewport/theme/language acceptance remains tracked in `docs/ISSUE_REGISTER.md`.
 
 Detailed contracts are in `RANGE_TEACHER_SPEC.md`.
 

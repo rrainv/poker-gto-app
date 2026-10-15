@@ -14,7 +14,7 @@ Protect poker correctness, architecture contracts, performance, and user-facing 
 - pot/stack/contribution accounting
 - legal actions and street transitions
 - dead/duplicate/impossible cards
-- Home and ClubGG deductions
+- Home and ClubGG deductions (Table rules v1 in M2 extends accounting only through versioned Game Rules, never presets)
 
 ### Strategy/application
 
@@ -101,7 +101,7 @@ For visual tickets, record:
 
 No browser means no claim of visual closure. Source-pattern or detached-DOM tests do not close mounted lifecycle, focus, modal, inactive-workspace, identity-switch, generation-cancellation, or disposal findings.
 
-The current minimum supported desktop viewport is 1366×768. A 1024×768 finding remains compact/mobile-responsive future evidence unless a later product decision expands current support.
+Acceptance configurations and tiers: [DESIGN_SYSTEM.md › Mockups and acceptance](DESIGN_SYSTEM.md#mockups-and-acceptance) and [AGENTS.md › Verification tiers](../../AGENTS.md#verification-tiers). The current minimum supported desktop viewport is 1366×768. A 1024×768 finding remains compact/mobile-responsive future evidence unless a later product decision expands current support.
 
 ## 5. Agent rule
 

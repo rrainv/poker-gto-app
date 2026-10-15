@@ -1,86 +1,86 @@
-# Riverline Agent Instructions
+# Riverline agent rules
 
-Riverline is a browser-first Texas Hold'em analysis and training application with a thin Electron host.
+Riverline is a local-first, browser-first No-Limit Hold'em learning workstation with a thin Electron host. These rules keep work consistent; they are a guide, not an ultimatum. **The owner's judgement is final.** If a rule or document seems wrong or blocks a better outcome, raise it in your report instead of silently working around it.
 
-This file is the agent entry point. Keep it short. Detailed workflow and project state live in the linked documents.
+## Roles
 
-## Read order
+- **Manager:** the owner's persistent Claude Project chat. Priorities, decisions, tickets, report review, continuity. No repository edits.
+- **Work:** one Claude Code session per ticket. Inspect, implement, verify at the ticket's tier, report, stop. Corrections and interruptions of the same ticket continue in the **same session** (resume from the files; never start a duplicate session for one ticket). A new ticket gets a new session.
+- **Review:** an independent read-only session when risk justifies it (maths, money, identity, persistence, migrations, source authority). Not by default.
+- Claude Code is the only writer on the repo, never concurrently with another tool. External reviewers (e.g. Gemini) give read-only second opinions.
 
-Before significant work, read:
+## What to read
 
-1. `docs/agent-prompts/AGENT_MASTER_CONTEXT.md`
-2. `docs/agent-prompts/CODEX_WORKFLOW.md`
-3. `docs/project/CURRENT_PHASE.md`
-4. the relevant project specification
-5. `docs/project/QA_BACKLOG.md` for UI, UX, accessibility, i18n, or product work
-6. `docs/project/PRODUCT_BACKLOG.md` when a ticket affects future extensibility
-7. `docs/project/PRODUCT_RETURN_QUEUE.md` for checkpointed debt or incomplete acceptance
-8. `docs/project/DOCUMENTATION_GOVERNANCE.md` for documentation ownership and coordinated-update rules
+- **Minimum read set:** this file plus the files the ticket names. Tickets carry their own context.
+- Direction: [docs/NORTH_STAR.md](docs/NORTH_STAR.md). Live status and queue: [docs/STATE.md](docs/STATE.md). Issues: [docs/ISSUE_REGISTER.md](docs/ISSUE_REGISTER.md). Visual contract: [docs/project/DESIGN_SYSTEM.md](docs/project/DESIGN_SYSTEM.md). Terms: [docs/TERMINOLOGY.md](docs/TERMINOLOGY.md). Reference specs in `docs/project/` only when a ticket names them. `docs/archive/` is history, never required reading.
+- **Never read giant files whole** (`app/src/core/logic.js`, `app/styles.css`, `docs/ISSUE_REGISTER.md`, large specs): search by ID, function or heading and read the relevant range.
+- Don't re-read unchanged files during same-session corrections.
 
-Use `docs/agent-prompts/README.md` to choose the correct prompt or subsystem document.
-
-## Current canonical architecture
+## Architecture in one screen
 
 ```text
-Scenario input OR canonical PokerState
-                ↓
- DecisionContext v1 / additive v1.1
-                ↓
-        StrategyProvider v1
-                ↓
-         StrategyResult v1
-                ↓
- Playbook / Training / Matrix / Analysis
+Scenario input or canonical PokerState
+  -> DecisionContext v1/v1.1 -> StrategyProvider v1 -> StrategyResult v1 -> StrategyClaimPolicy v1
+  -> Analyze / Training / Review / Personal Strategy / Saved (consumers only)
 ```
 
-Canonical authorities:
+- Poker rules, state, legality, accounting, evaluator, Equity, combos and ranges: `shared/poker-domain/` only. UI never does poker maths.
+- Current strategy is a deterministic heuristic baseline (`app/src/strategy/`); no production reference pack, no solver/model runtime, no remote strategy API in the app. Never call heuristic output GTO, solved, Nash, CFR, exact EV or "correct".
+- Scenario is lossy; Hand is canonical legal history. Unknown is never zero, fold or excluded.
+- One canonical owner per concept; never create a duplicate poker, Equity, Training, strategy, Saved or state authority.
+- Preserve versioned contracts and PERF-001 (one strategy resolution per decision update, coalesced input, no hidden Matrix/Equity work, dirty/visible invalidation). Schema or persistence migrations need explicit approval.
+- Solver, model and data experiments stay under `solver/`, isolated from production.
 
-- mathematical rules: `GameRulesDefinition v1` / `GameRulesSnapshot v1` under `shared/poker-domain/`; provenance never selects accounting
-- poker state (including snapshot-authoritative v2), actions, evaluator, and Equity: `shared/poker-domain/`
-- Scenario/Hand state selection: Playbook application controllers
-- strategy entry point: `StrategyProvider v1`
-- current production strategy: deterministic heuristic fallback under `app/src/strategy/`
-- Training structural targets: `TrainingPracticePlanner` / intent / request; legal generation and grading: canonical Training application modules
-- durable Training evidence/review: `training-memory/v1` under `app/src/training-memory/`, separate from Saved intent and Personal Strategy
-- explanations: `AnalysisExplanation v1`; renderers are consumers only
-- presentation/review: ephemeral `table-presentation/v1` and `hand-review/v1`
-- experience consequences: `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1`; never poker/strategy authority
-- performance scheduling/invalidation: `product-performance/v1`
-- desktop: `app/main.js`, a thin Electron host
-- bounded solver research: `solver/`, isolated from production runtime
+Details: `docs/project/ARCHITECTURE_CONTRACT.md` and NORTH_STAR §5.
 
-Deliberately absent:
+## Tickets
 
-- no production ONNX/model runtime
-- no remote strategy API
-- no arbitrary solver-tree upload authority
-- no synthetic legacy Training pipeline
-- no second production Equity engine
+- One bounded outcome per ticket. No unrelated cleanup or features. Use issue IDs from the register; don't silently close, forget or absorb other IDs.
+- Every ticket states an **execution class** (Mechanical Fast · Product Contract First · Correctness/Architecture · Heavy Future Design), a **verification tier** and a suggested model/effort.
+- Redesigns need an approved mockup before building. Mockup numbers are illustrative; real numbers come from the engine.
+- If a user-facing behaviour has several reasonable readings and the ticket doesn't settle it, ask one to four focused questions before building.
+- A newly found issue joins the ticket only if the ticket caused it or it blocks acceptance; otherwise add a register row and continue.
+- **Stop and report** if the work needs an unapproved schema migration, an architecture rewrite, a poker-rule interpretation, paid/cloud resources, or substantial scope growth; or if canonical implementations conflict.
+- After about two corrections rejected for the same reason, stop patching and rethink the approach with the owner.
 
-## Non-negotiable rules
+## Verification tiers
 
-1. Inspect before editing and identify the canonical implementation.
-2. One ticket owns one bounded outcome. Do not add unrelated cleanup or features.
-3. Do not create duplicate poker, Equity, Training, strategy, or state authorities.
-4. UI code must not implement poker mathematics.
-5. Poker-math changes require invariant-focused tests.
-6. Heuristic output is not solved GTO, CFR, Nash, or exploitability evidence.
-7. Keep solver/model/data-generation experiments isolated from production runtime.
-8. Preserve versioned contracts unless the ticket explicitly owns a migration.
-9. Preserve PERF-001 invocation-count and invalidation guarantees in UI work.
-10. Use the QA backlog. Do not silently forget, close, or absorb unrelated issue IDs.
-11. Report missing browser/manual verification honestly; structural tests are not visual acceptance.
-12. Do not stage or commit unless the ticket explicitly says otherwise. Normal agent work remains unstaged and uncommitted for human review.
-13. Do not touch `.codex/config.toml`, `repo_dump.py`, or `repo_dump.txt` unless the ticket explicitly owns them.
-14. Stop and report if the requested change requires an unapproved schema migration, architecture rewrite, or substantial scope expansion.
-15. A tiny patch with no product-state change does not require Roadmap churn. An accepted checkpoint or reprioritization updates every affected live planning document in the same ticket.
+| Tier | For | Tests | Browser | Full suite | Beta smoke |
+|---|---|---|---|---|---|
+| T0 | docs, mechanical, read-only | touched only | none | no | no |
+| T1 | fixes, small features | focused | 1 config (1920 EN Midnight); HE if layout/direction affected | only if shared modules changed | no |
+| T2 | redesigns, big features | focused | mockup comparison: 1920+1366 EN, 1920 HE, one Daylight shot | once, at the end | no |
+| T3 | milestones only | all | full matrix | yes | yes |
 
-## Ticket lifecycle
+Commands: focused `node --test <files>`; syntax `node --check <changed .js/.mjs>`; hygiene `git diff --check`; full suite `node --test tests/*.test.js tests/*.test.mjs`; solver suite (only when domain/solver/strategy changed), PowerShell: `$env:PYTHONPATH='solver;.'; python -B -m unittest discover -s tests/solver -p 'test_*.py'`. Poker-maths changes need invariant/property tests. Structural tests are not visual acceptance: without a real browser check, report visual status as `UNVERIFIED`, `PARTIAL` or `STRUCTURAL ONLY`. Human acceptance is the owner's; tests and commit titles cannot create it.
 
-- New ticket: new Codex chat.
-- Regression caused by the current ticket: same chat.
-- Independent reviewer or new subsystem ticket: new chat.
-- Agent: inspect, implement, test, report, stop.
-- Human: review, run manual acceptance where needed, stage only ticket files, commit.
+Visible features also own their tutorial, EN/RU/HE + RTL, accessibility, reduced motion and responsive behaviour (minimum desktop 1366×768).
 
-See `docs/agent-prompts/CODEX_WORKFLOW.md` for the full process.
+## Git and file safety
+
+- Never stage, commit, push, reset, clean, stash, rebase or switch branches unless the ticket explicitly authorizes it. Never broad-stage (`git add .`, `-A`, `--all`). The owner commits accepted work with exact file lists.
+- Protected unless the ticket owns them: `.codex/config.toml`, `.gitignore`, `repo_dump.py`, `repo_dump.txt`, local auth config (`app/auth-config.js` and similar), helper/backup artifacts. Never print secrets or copy local auth config.
+- Don't revert or reformat changes you didn't make; report pre-existing dirty files separately.
+- **LF only** (`.gitattributes`: `* text=auto eol=lf`; `core.autocrlf=false`). Never convert line endings. Check `git diff --stat`: a small edit showing every line changed is line-ending churn; fix it before reporting (`git ls-files --eol <file>`).
+- Windows / Git Bash: write files with the file-write/edit tools, not shell heredocs or PowerShell here-strings (they pick the shell's line endings and quoting). Use forward slashes and `/dev/null` in Bash.
+- Node engines ≥22, `.nvmrc` 24 (CI Node 24). Dev server: `node tools/dev-web-server.mjs` in its own terminal (app at `http://127.0.0.1:3000`; dev-only component sheet at `/__dev/component-sheet.html`).
+- Cloud sessions and paid compute only with explicit authorization, a pushed base, a separate branch and an approved max spend, runtime, artifacts and stop criteria.
+
+## Docs you may touch
+
+- Update the register rows your ticket owns (status in place, evidence, new rows for found issues).
+- Update a reference spec only when your ticket changes the truth it describes.
+- `docs/STATE.md` and `docs/NORTH_STAR.md` are the Manager's; edit them only when the ticket says so.
+- Never create a second roadmap, backlog, status file or architecture authority.
+
+## Report (every ticket, then STOP)
+
+1. **Outcome:** what is now true, in plain words.
+2. **Root causes / key design choices**, when relevant.
+3. **Files:** changed by this ticket vs pre-existing dirty files (listed separately).
+4. **Verification:** exact commands and results, including failures, reruns and anything skipped and why; browser checks with viewport/theme/language, or the honest `UNVERIFIED` status.
+5. **Limitations and debt:** what is not done, with register IDs (new rows added).
+6. **Disagreements or doc conflicts** you found (raise, don't silently resolve).
+7. **Git status:** `git status --short` summary and confirmation that nothing was staged or committed.
+
+Then stop. Do not start the next ticket.

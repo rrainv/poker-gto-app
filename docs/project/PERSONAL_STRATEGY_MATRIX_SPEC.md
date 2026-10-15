@@ -4,7 +4,7 @@ Sweep C removes silent 8/12-record truncation from selected-cell direct evidence
 and correction history. What I've taught provides searchable, paginated access
 across the active Approach, independently of Teacher's candidate subset. Existing
 Matrix correction and immutable lineage remain authoritative, including preserved
-conflict branches. Human browser acceptance remains pending.
+conflict branches.
 
 Status: implementation authority for `RANGE-CAL-002D`
 
@@ -92,4 +92,4 @@ Builder reuses the versioned 169-cell projection, action/mix presentation, scope
 - no writable multi-head conflict resolution; Builder skips ambiguous/conflicting heads;
 - combo overrides are indicator/readiness data only;
 - synthetic inference validation is not poker correctness evidence;
-- automated structure and browser checks do not replace outstanding human Firefox visual acceptance tracked in `QA_BACKLOG.md`.
+- automated structure and browser checks do not replace outstanding human Firefox visual acceptance tracked in `docs/ISSUE_REGISTER.md`.

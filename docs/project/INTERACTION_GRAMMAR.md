@@ -1,21 +1,5 @@
 # Riverline interaction grammar
 
-[Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) uses an optional disclosure,
-explicit calculation, dominant result and secondary runout inspection. Unknown
-combo weights and explicitly excluded combos are different input choices;
-known-only output says conditional Equity. Hypothetical card focus/hover/click
-uses identical facts and shows all cards with the canonical best five emphasized.
-Category improvement and Equity delta remain separate; estimated deltas disclose
-sampling noise. Source/candidate changes clear old output, and analysis never
-rewrites a live Hand or Personal intent.
-
-Review/Study continuity uses explicit reasons, separate evidence roles and existing
-owner destinations. Review later and Situational annotate Saved; current Personal
-intent inspection never records observed play as intention. Study Inbox ranks only
-its disclosed loaded sources, preserves due facts, and never reveals active Full
-Hand answers. Unsupported exact/concept routes explain their limits. See the
-[Deep Review / Study Inbox contract](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md).
-
 This document defines durable cross-surface interaction integrity. It is a semantic product contract, not poker, strategy, Equity, range, Training, persistence, implementation-status, or execution-priority authority.
 
 ## Strategy comparison and assessment language
@@ -23,24 +7,6 @@ This document defines durable cross-surface interaction integrity. It is a seman
 Use the shared `strategy-truth/v1` presentation across Analyze, Training, Review and Explain. Heuristic baseline qualification belongs beside the primary action; heuristic and accepted-reference comparisons use neutral feedback, borders, badges and audio. Positive/corrective consequences require a permitted normative outcome from an explicitly accepted assessment policy. Session metrics show populated authority groups, without universal Alignment/Accuracy. Historical source labels remain explicit in Same Spot. Saved/Home mistake annotations read "Marked as a mistake" and remain user attribution. See [Strategy Source Authority](STRATEGY_SOURCE_AUTHORITY_SPEC.md).
 
 ## Core rule
-
-Presentation refinement (`BETA-REPAIR-SWEEP-B`): Home's next-action, Review and
-Recent sections use independent main-column flow (Destinations removed in `SHELL-001`). Review's
-explanation and context columns have stable grid ownership. Replay selection
-scrolls only its own bounded history list; opening disclosures and selecting
-events never seek or scroll the outer document as an incidental render effect.
-Equity player tiles retain the same header, cards, mode/edit and result order
-for known and unknown inputs, including keyboard order. Explain uses logical
-inner padding in EN/RU/HE.
-
-Shell (`SHELL-001`, human acceptance pending): the header bar's Help control opens
-a non-modal panel with the workspace description and its tutorials; focus moves into
-the panel, Escape or the Help control closes it and focus returns to Help
-(`aria-expanded` reflects the state). Header Tab order: mode switch (Hand/Analyze),
-Learn Riverline, Help, Account; the source badge is a non-interactive note. Sidebar
-footer Tab order: Language (native select), Audio, Settings, each with a translated
-tooltip on hover and keyboard focus. Expanded navigation items show no tooltip; the
-collapsed rail names items on hover/focus. See [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#shell-shell-001).
 
 Natural product copy uses Riverline / Риверлайн / ריברליין in EN/RU/HE. Product
 sentences use commas, colons, parentheses, periods or hyphens instead of em/en
@@ -83,6 +49,15 @@ Desktop acceptance uses browser zoom at 100%, not zoom reduction as a layout wor
 Entering Replay, answering a Training decision, completing a Home Game session, expanding explanation, or producing an Equity result should preserve orientation and coherent geometry wherever the user job has not changed. A state change must make its effect visible through the resulting state, guarded confirmation, status, error, toast, or summary as appropriate.
 
 Functionally correct state mutation is product-incomplete when the user cannot understand what changed, loses the primary object or controls, or experiences an unnecessary workspace recomposition.
+
+Layout ownership: home's next-action, Review and
+Recent sections use independent main-column flow (Destinations removed in `SHELL-001`). Review's
+explanation and context columns have stable grid ownership. Replay selection
+scrolls only its own bounded history list; opening disclosures and selecting
+events never seek or scroll the outer document as an incidental render effect.
+Equity player tiles retain the same header, cards, mode/edit and result order
+for known and unknown inputs, including keyboard order. Explain uses logical
+inner padding in EN/RU/HE.
 
 ### User-facing language
 
@@ -206,6 +181,76 @@ Actor and Dealer labels come only from the current projection, with no inferred
 dealer or invented turn. Selection repaints names and accessible descriptions
 without rerendering private cards or invoking domain services.
 
+### Equity analysis and study continuity
+
+Equity analysis ([Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md)) uses an optional disclosure,
+explicit calculation, dominant result and secondary runout inspection. Unknown
+combo weights and explicitly excluded combos are different input choices;
+known-only output says conditional Equity. Hypothetical card focus/hover/click
+uses identical facts and shows all cards with the canonical best five emphasized.
+Category improvement and Equity delta remain separate; estimated deltas disclose
+sampling noise. Source/candidate changes clear old output, and analysis never
+rewrites a live Hand or Personal intent. NORTH_STAR §7.4 supersedes "explicit calculation" with: automatic when cheap, on click when heavy.
+
+Review/Study continuity uses explicit reasons, separate evidence roles and existing
+owner destinations. Review later and Situational annotate Saved; current Personal
+intent inspection never records observed play as intention. Study Inbox ranks only
+its disclosed loaded sources, preserves due facts, and never reveals active Full
+Hand answers. Unsupported exact/concept routes explain their limits. See the
+[Deep Review / Study Inbox contract](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md).
+
+## Workspace behaviour invariants
+
+Accepted behaviours that redesigns must keep unless a ticket explicitly changes them.
+
+### Hand
+
+- Before a canonical Hand exists, a valid draft projects a labelled `setup_preview`: player count, Hero/button seats and starting stacks only; no cards, actor, pot history, forced contributions or actions. Changes project immediately. **Start** is the canonical creation boundary; a live or Saved Hand ignores setup drafts.
+- Stable 2–10 seat footprint with Hero at the bottom; no fake empty seat reserved in heads-up or sparse tables.
+- Chance actions use pending drafts and explicit Deal/Reveal. Public-card randomization follows the legal pending chance state regardless of Hero participation and edits only the draft; Deal commits it. A committed street is never re-randomized; committed history and opponent private cards are never randomized. At showdown, required unknown private hands support draft-only randomization; Reveal commits.
+- Private-card entry continues from the first to the second card for every seat; the first Escape closes only the picker and keeps the expanded opponent disclosure, the chosen first card, focus and duplicate exclusion.
+- The canonical available-card query excludes the current board, known hole cards, dead cards and pending selections; stale consumed drafts are removed before a chance picker opens. Explicit Turn → River → Showdown remains; Replay and live terminal states agree; runout events occur exactly once.
+- Ante Hands show posted blinds and antes from the canonical ledger, with voluntary payments labelled separately.
+- A folded Hero can still enter board and showdown. Clear rules: Hero clear ≠ board clear; Flop clear removes later streets (see Transactional card-set editing).
+- Abort appears only in Current Hand for a live canonical Hand. A completed Hand offers Review and Start new hand as the two primary actions; Replay, Analysis and Save are secondary. Only non-terminal canonical Hands are resumable.
+- Choosing Bet/Raise opens sizing and never submits a size silently; commit is explicit. The renderer never manufactures legal actions. Table chip stacks are decorative and never imply denominations. Strategically important facts are never hidden for visual cleanliness.
+
+### Replay and Review
+
+- Replay is read-only, uses exact frame seeking and Return to live / Return to completed hand; its facts come from the frame (domain legal-action selector), never live values. Opening disclosures or selecting events never seeks or scrolls the outer page as a side effect.
+- Review is ephemeral presentation over a canonical Hand. Analyze handoff uses the exact pre-action decision. Leaving Review (handoff, workspace exit, unavailable model) runs the shared teardown: clear Review selection/model, restore History to the Hand rail, remove Review state and preserve the canonical Hand; returning restores the normal live/completed presentation without a hybrid mode.
+- Review foregrounds the observed action, current Personal intent and the actually available comparison role; heuristic fallback never gains a reference label.
+
+### Analyze
+
+- An incomplete Scenario shows its readiness reason and an input action, not disabled recommendation graphics. Only centrally validated coherent Scenarios reach StrategyProvider (`scenario_not_ready` otherwise); clearing later streets keeps only still-valid earlier state; Scenario never invents actor-relative economics.
+- A Hand handed off to Analyze shows read-only exact facts with a route back; any Scenario edit turns it into a lossy Scenario.
+- Board: five board cards stay one horizontal row on supported desktop layouts.
+- Sizing shows human poker precision; stored amounts stay exact.
+
+### Training
+
+- No answer leaks before submission. One primary Start Training action owns starting the selected configuration.
+- Varied and Focused give immediate feedback after the answer; feedback moves before retained context, and focus moves from the hidden answer controls to the feedback.
+- Full Hand records live Hero answers neutrally and defers every verdict, source, fact and explanation to the shared terminal Review. Hero fold pauses at `hero_complete` with a summary and optional Watch Rest. Abort keeps already-recorded Memory evidence (as abandoned) and never fabricates completion.
+- "Replay this decision" remounts the exact canonical exercise and does not change headline counters or planner progress. Same Spot is a standalone idle-only historical re-drill (blocked during active Training, stat- and planner-neutral); Similar Spot names what changed. Unsure and 24 h Revisit exist; repeats never inflate statistics.
+- Training hints are relevant to the actual street and state.
+
+### Equity
+
+- Inputs per player: Cards / Range / Unknown (unknown = every available card); Random is a separate generator action that deals specific cards and never means Unknown. **[superseded: "Equity never calculates automatically"]** NORTH_STAR §7.4: calculate automatically when cheap (e.g. exact heads-up), on click when heavy; stale-result cancellation and no hidden heavy work still hold.
+- Random re-deals preserve roster, order, names, input modes, board and dead cards unless asked; player count and dead cards are never randomized.
+- Merely opening a disclosure, changing a cast identity or repainting cards never calculates Equity, resolves strategy, saves intent or grades a decision. Closing Ranges & runouts cancels its calculation and fences stale output.
+
+### Home, Saved, Settings, tutorials
+
+- Home is the recurring start destination. Continue is offered only for a live canonical Hand or an active/paused Personal Strategy; otherwise Home offers Start. Home never invents recency, recommendations, mastery, streaks, sync claims or cross-workspace history. Optional Welcome is separate from routing, suppresses only itself and selects no sidebar destination.
+- Save uses one accessible bookmark affordance with a saved state that is not colour-only. Saved archives (never deletes) and keeps user titles over fact-only auto-titles.
+- Every actual preference appears in exactly one Settings category; previews/tests and system-derived status are not shown as stored preferences.
+- A completed or skipped tutorial version does not nag again unless restarted or intentionally versioned; every tour step lands on a visible correct target; overlays handle focus, isolation, Escape and teardown.
+- Card picker defaults are readable at 1080p without browser zoom.
+- Every meaningful feature defines default, loading, empty/incomplete, blocked/invalid, unavailable-source, error/cancelled and result states as applicable; controls reflect actual state visually and accessibly.
+
 ## Cross-surface applicability
 
 | Shared concept | Hand / Replay | Analyze | Training | Equity | Personal Strategy | Saved / Home | Home Game |
@@ -213,7 +258,7 @@ without rerendering private cards or invoking domain services.
 | Hover/focus/inspect equivalence | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW |
 | Hypothetical-state language | DEFERRED — Deep Hand Review | APPLICABLE NOW for explicit Scenario assumptions; deeper card outcomes deferred | DEFERRED — post-answer analysis | DEFERRED — Equity and Hand Analysis | NOT APPLICABLE to ordinary Matrix editing; explicit comparison previews may define their own owner | DEFERRED — approved study preview | NOT APPLICABLE to exact ledger edits |
 | Shared Save/bookmark | APPLICABLE NOW for supported Hand/Spot payloads | APPLICABLE NOW for supported Spot payloads | DEFERRED — Saved Drill/Session payload owners | NOT APPLICABLE until an approved Equity-study payload exists | DEFERRED — Saved Range/Profile payload owner | APPLICABLE NOW for supported objects | NOT APPLICABLE; Home Game has its own session lifecycle |
-| Randomize/Keep | APPLICABLE NOW only to the pending uncommitted chance draft; never committed Hand history or opponent private cards | APPLICABLE NOW through the owning lossy Scenario adapter and readiness gate | NOT APPLICABLE to the canonical Training generator's private curriculum contract | APPLICABLE NOW through the owning Equity-input adapter; no automatic calculation | NOT APPLICABLE to ordinary evidence editing | NOT APPLICABLE to passive inspection | NOT APPLICABLE to money/session records |
+| Randomize/Keep | APPLICABLE NOW only to the pending uncommitted chance draft; never committed Hand history or opponent private cards | APPLICABLE NOW through the owning lossy Scenario adapter and readiness gate | NOT APPLICABLE to the canonical Training generator's private curriculum contract | APPLICABLE NOW through the owning Equity-input adapter; calculation automatic only when cheap (NORTH_STAR §7.4) | NOT APPLICABLE to ordinary evidence editing | NOT APPLICABLE to passive inspection | NOT APPLICABLE to money/session records |
 | Card identity | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW when exact combos/cards appear | APPLICABLE NOW for supported previews | NOT APPLICABLE to the ledger; deferred to any approved linked-Hand preview |
 | Transactional card-set editing | APPLICABLE NOW for supported Hand setup/reveal inputs | APPLICABLE NOW for exact Scenario inputs | NOT APPLICABLE to canonical generated Training state | APPLICABLE NOW | NOT APPLICABLE to ordinary evidence editing | NOT APPLICABLE to passive inspection | NOT APPLICABLE to money/session records |
 | Facts / Explain / Coach | DEFERRED — Deep Hand Review | APPLICABLE NOW at factual/explanation foundation; richer synthesis deferred | DEFERRED — Training Intelligence summaries | DEFERRED — Equity and Hand Analysis | DEFERRED — Personal Strategy Intelligence | DEFERRED — Saved synthesis | APPLICABLE NOW for exact accounting explanation only; poker coaching is not applicable |
@@ -269,4 +314,4 @@ Before adding a reusable interaction to another surface:
 6. update the owning tutorial when the visible interaction is meaningful;
 7. add cross-surface contract tests and perform real-browser/human acceptance where presentation judgment matters.
 
-Related intent is preserved in the [capability index](capabilities/README.md). Current status and sequencing remain in the [Product Backlog](PRODUCT_BACKLOG.md), [Current Phase](CURRENT_PHASE.md), and [Roadmap](ROADMAP.md).
+Guardrails for future capabilities live in [Capability guardrails](CAPABILITY_GUARDRAILS.md); current status and sequencing live in [STATE](../STATE.md).

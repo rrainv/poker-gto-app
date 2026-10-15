@@ -189,17 +189,9 @@ The remote Hand document contains a complete validated `saved-hand-snapshot/v1` 
 
 Local browser storage is not encryption at rest. Cloud sync is user-selected transfer/storage, not end-to-end encryption.
 
-## Payload measurements
+## Payload size
 
-`node tests/tooling/account002b_payload_sizes.mjs` measures UTF-8 bytes of the versioned remote JSON before transport compression:
-
-| Representative object | Bytes |
-|---|---:|
-| typical Saved Spot | 1,734 |
-| typical canonical Saved Hand | 3,405 |
-| larger Saved Hand with a 20.8 KB long-form note and 24 tags | 26,124 |
-
-These sizes are comfortable for one Postgres JSONB row. Premature replay/blob splitting is not justified by current representative data. A later measured payload problem must preserve the same application and replay contracts.
+Representative Saved objects fit comfortably in one Postgres JSONB row; premature replay/blob splitting is not justified. A later measured payload problem must preserve the same application and replay contracts.
 
 ## Performance boundary
 

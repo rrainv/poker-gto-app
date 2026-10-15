@@ -22,7 +22,7 @@ For pricing, `facingSizeBb` is the nominal wager-to context. The trusted increme
 
 ## Current direction
 
-The one-time capability-documentation recovery, table physicality checkpoint, and bounded Home Game management continuation are complete. Settings information architecture is active next, followed by premium closeout. Trusted reference strategy and learning-intelligence work then resume without changing their preserved order. [Current phase](docs/project/CURRENT_PHASE.md) owns exact execution order; the [capability dossiers](docs/project/capabilities/README.md) preserve detailed long-term intent without setting priority.
+Milestone M1 is design-first: a full Style v4 design refresh plus honesty and usability fixes before the bigger M2/M3 feature work. [docs/STATE.md](docs/STATE.md) owns the live status and ordered queue; [docs/NORTH_STAR.md](docs/NORTH_STAR.md) owns product direction.
 
 ## Run Riverline
 
@@ -59,7 +59,8 @@ py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'
 ## Documentation
 
 - [Documentation index](docs/README.md)
-- [Project charter](docs/project/PROJECT_CHARTER.md)
+- [Agent rules](AGENTS.md)
+- [North Star](docs/NORTH_STAR.md)
+- [State](docs/STATE.md)
 - [Architecture contract](docs/project/ARCHITECTURE_CONTRACT.md)
-- [Current phase](docs/project/CURRENT_PHASE.md)
 - [Contributing](CONTRIBUTING.md)

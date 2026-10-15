@@ -1,19 +1,5 @@
 # Riverline Architecture Contract
 
-[Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) adds a canonical weighted
-realization path under `shared/poker-domain/` over unchanged Range Core and
-shared Equity RNG/enumeration/winner primitives. Runout/application consumers
-remain factual and ephemeral; UI does no poker math, source metadata grants no
-trust, and partial results are explicitly conditional on known positive mass.
-
-[Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md) adds an application adapter
-and source-neutral recorded-settlement rules/state/Replay versions in the canonical
-domain. Saved Hand v3 retains structured provenance without raw text. Imported
-decisions reuse the lifecycle journal and shared Review; no poker, strategy,
-opponent, reviewer or Training authority is duplicated.
-
-The additive [Bluff / Exploit Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) consumes canonical DecisionContext/RangeAnalysis/BluffAnalysis and policy-owned response weights. Its facts supply assumption-labelled teaching, never strategy, Equity, assessment or persistence authority. Supplied semantic regions remain explicit model hypotheses; Training requests defer to the existing generator/planner/grader and Full Hand configuration owner.
-
 This document is authoritative for implementation decisions unless an approved ticket explicitly supersedes it.
 
 ## 1. Dependency direction
@@ -33,7 +19,7 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 ## 2. Canonical production authorities
 
 - `GameRulesDefinition v1` / `GameRulesSnapshot v1`: mathematical game-rules authority under `shared/poker-domain/`; brand/operator/preset provenance never selects accounting semantics
-- PokerState v1/v2, Action, legality, accounting, evaluator, canonical Equity, canonical Hold'em combos, and weighted range math: `shared/poker-domain/`
+- PokerState v1/v2/v3 (new live Hands v2; v3 is the recorded-settlement import state), Game Rules v1/v2, Action, legality, accounting, evaluator, canonical Equity, canonical Hold'em combos, and weighted range math: `shared/poker-domain/`
 - Scenario/Hand selection and projection: Playbook application layer
 - Decision strategy entry point: `StrategyProvider v1`
 - Strategy result/provenance: `StrategyResult v1`
@@ -56,6 +42,12 @@ A consumer must not bypass these authorities to compute its own alternative answ
 Home/Dashboard, Hand/Replay, Training review, Matrix, and future Range tools are consumers of the Saved Study application/repository boundary. They must not define parallel bookmark, note, review, or saved-object persistence models. `saved-study-preview-facts/v1` is the DOM-free bounded presentation projection for currently interpreted Hand/Spot objects; it never becomes a stored Saved schema, repository query authority, PokerState reconstruction, or reopen path. Saved Hand payloads preserve canonical observer-level PokerState facts plus a versioned canonical transition source that replays only through `shared/poker-domain`; they never persist Replay presentation frames. Saved Scenario spots remain explicitly lossy and cannot claim canonical history. Unknown future kinds remain unsupported/unavailable until an approved payload interpreter exists.
 
 New live Hands use the snapshot-authoritative `poker-state/v2` path. Versioned `playbook-scenario/v2`, `training-config/v2`, `canonical-hand-replay-source/v2`, `saved-hand-snapshot/v2`, and `saved-spot-snapshot/v2` carry or preserve the exact immutable rules snapshot where their specifications require it. Historical v1 readers remain strict and are not silently rewritten. See `GAME_RULES_V1_SPEC.md` and `SAVED_STUDY_OBJECTS_SPEC.md`.
+
+Hand-history import ([Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md)) adds an application adapter
+and source-neutral recorded-settlement rules/state/Replay versions in the canonical
+domain. Saved Hand v3 retains structured provenance without raw text. Imported
+decisions reuse the lifecycle journal and shared Review; no poker, strategy,
+opponent, reviewer or Training authority is duplicated.
 
 ## 3. UI boundary
 
@@ -225,6 +217,12 @@ Heuristic conditional samples inside strategy are not canonical Equity and must 
 
 `equity-hand-analysis/v1` is an immutable application projection over canonical evaluator results plus `RangeAnalysisFacts v1`. Its `exact-entered-hand-outcomes/v1` facts compare every entered exact hand against every legal next card and keep current standing, strict-ahead cards, tie cards, and structural improvements that still leave the player behind as separate outcome families. It is unavailable when an opponent is unknown. A structural completion is not a clean out, guaranteed winner, or Equity claim, and UI renderers may not collapse it into a card that puts the player ahead.
 
+Weighted Equity ([Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md)) adds a canonical weighted
+realization path under `shared/poker-domain/` over unchanged Range Core and
+shared Equity RNG/enumeration/winner primitives. Runout/application consumers
+remain factual and ephemeral; UI does no poker math, source metadata grants no
+trust, and partial results are explicitly conditional on known positive mass.
+
 ## 8. Hold'em range core
 
 `shared/poker-domain/holdem-combos.js` is the one production authority for the 52-card deck's 1,326 unordered Hold'em hole-card combos and their mapping to the existing 169 hand classes. `shared/poker-domain/holdem-range.js` owns `HoldemWeightedRange v1`, explicit known-versus-unknown combo weights, combo mass, provenance, blocker conditioning, complete-range normalization, deterministic serialization, and DOM-free Matrix projection.
@@ -267,6 +265,8 @@ trusted cards / DecisionContext / optional HoldemWeightedRange v1
 
 `RangeAnalysisFacts v1` reuses the canonical evaluator and range core. It may classify exact hands, draws, board structure, raw exact-card removal, and the conditioned composition of explicitly supplied ranges. It must not select actions, call StrategyProvider or Equity, infer a missing range, claim range/nut advantage, or label a blocker as strategically good or bad. `range-comparison-facts/v1` is the DOM-free representative-class comparison projection: it consumes canonical Range Core card-removal output, delegates category/draw facts to `RangeAnalysisFacts v1`, preserves fully removed versus not-in-sample truth, and supplies independent Hero/opponent shares on one shared 0–100% scale. One canonical surviving representative per eligible sampled class does not characterize every combo in that class. Renderers consume these structured facts only. `AnalysisExplanation v1` consumes trusted facts; it does not recompute them. See `ANALYSIS_RANGE_SPEC.md`.
 
+The [Bluff / Exploit Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) consumes canonical DecisionContext/RangeAnalysis/BluffAnalysis and policy-owned response weights. Its facts supply assumption-labelled teaching, never strategy, Equity, assessment or persistence authority. Supplied semantic regions remain explicit model hypotheses; Training requests defer to the existing generator/planner/grader and Full Hand configuration owner.
+
 ### 10.1 Natural-language projection boundary
 
 Natural-language consumers are presentation and synthesis only. They never become poker, legality, accounting, strategy, Equity, range, opponent-model, Personal Strategy, or Training-grading authority.
@@ -304,10 +304,18 @@ Preserve PERF-001 guarantees:
 - `decision-delta/v1` keeps observed, current Personal, accepted reference, heuristic, opponent, exploit and normative roles separate; `study-inbox/v1` projects existing Saved/Training/Personal owners with deterministic reasons and lifecycle fencing. Neither owns evidence storage, grading or generation. See [Deep Review / Study Inbox v1](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md).
 - `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` translate completed canonical transitions or explicit study actions into presentation consequences.
 
-These contracts may format, project, animate, or sound already-established facts. They never become poker state, Game Rules, legality, accounting, strategy, grading, Replay history, Saved, or persistence authority. Direct seek, hydration, initial render, and review selection must not recreate historical poker-world consequences. See `TABLE_PRESENCE_COMPETITIVE_REFERENCE.md` and `AUDIO_MOTION_001_SPEC.md`.
+These contracts may format, project, animate, or sound already-established facts. They never become poker state, Game Rules, legality, accounting, strategy, grading, Replay history, Saved, or persistence authority. Direct seek, hydration, initial render, and review selection must not recreate historical poker-world consequences. The application layer, not the renderer, decides projection and visual state; presentation objects never enter Saved payloads or canonical Replay; the renderer never manufactures legal actions. Canonical state updates first: motion never owns or delays poker truth, transient presentation states never become artificial waits, and muting sound never removes a visual state change. See `AUDIO_MOTION_001_SPEC.md` (the original table-presence brief is archived under `docs/archive/2026-10/`).
 
 ## 12. Research isolation and legacy policy
 
 The bounded solver remains under `solver/` and is not a production dependency.
 
 Obsolete prototypes are removed. Do not create a new generic `legacy/` runtime. Historical documentation must be marked historical.
+
+### Research, data and model rules
+
+- **Maths workflow:** define semantics and invariants → characterize current behaviour → targeted/property tests → implement → compare before/after → verify provenance and unsupported claims. Never tune strategy percentages from intuition when reference data is absent.
+- **Data:** trace every target to a documented source (converged solver output, curated licensed data, deterministic poker feature, or heuristic label). Random or heuristic targets are never called CFR/equilibrium data. A dataset generator provides legal canonical states and histories, unique cards and correct streets, exact pot/stack/contribution semantics, coverage metadata, reproducible seeds and sample IDs, source/provenance and convergence metadata, and diagnostics for invalid states. Don't train until data validity and reference quality are shown.
+- **Models:** only after a validated, versioned dataset exists and a ticket authorizes it; production entry only through a validated StrategyProvider branch; no revival of retired loaders; reproducible train/validation/test split; held-out calibration and worst-case metrics; coverage/uncertainty behaviour; versioned model and schema metadata; browser size/memory/cold-load measurements; exported-runtime agreement if exported. Never call a model GTO without matching evidence.
+- **Solver extensions:** read `solver/riverline_solver/`, `tests/solver/` and the parity fixtures first. Document the exact game and abstraction, chance/private-card representation, betting tree and amount semantics, information sets, utilities and leaf values, algorithm, RNG/reproducibility, convergence/exploitability metric, memory/compute estimate, validation fixtures and artifact schema/provenance. Never extrapolate bounded heads-up results to multiway, other stacks or full Hold'em without evidence. No AGPL code inside the app (offline use for data is fine).
+- **Paid compute:** explicit approval; state workload and commit, local baseline, hardware, max wall time, max spend, artifact path, success and stop criteria; short identical workloads; never a long, unbounded or auto-scaling run.

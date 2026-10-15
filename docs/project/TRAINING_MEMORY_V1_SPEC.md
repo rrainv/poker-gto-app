@@ -1,6 +1,6 @@
 # Training Memory v1 specification
 
-## Sweep C: Hero participation ends at fold
+## Hero participation ends at fold
 
 Full Hand status `hero_complete` is a learner boundary, distinct from canonical
 terminal. Multiway Hero fold records/evaluates the decision and pauses the existing
@@ -118,7 +118,6 @@ Training Memory retains its own IndexedDB database, `riverline-training-memory`,
 
 Owner indexes are storage invariants, not authorization. The bridge preserves the accepted authentication/owner generation model and adds current lifecycle-scope validation. Account access requires the matching authenticated profile; Device Guest receives only its own durable local Memory. Bootstrap ordering remains recoverable. Auth/identity transitions synchronously clear owner-sensitive Memory presentation and invalidate stale reads, lazy decisions, Same Spot, Similar Spot, review actions, mixed panel reads, and queued intents. In-flight writes carry an abort signal; IndexedDB aborts and deterministic memory storage discards staged writes. Existing bytes survive denial and are available only to the same current owner. No remote work, sync, export UI, or new Home history projection is added.
 
-
 Stores and important indexes:
 
 - `metadata`: database and record versions plus monotonic revision;
@@ -138,7 +137,7 @@ hide previous answers/hints, and keep ordinary stats/planner progress unchanged.
 Only a persisted linked answer resolves a still-matching request, without any
 retention, correctness, or transfer claim. Record-version metadata advances
 atomically to v1.1 on the first extended write; no database/store/index migration
-or historical rewrite occurs. Human browser acceptance remains pending.
+or historical rewrite occurs.
 
 The queue is derived from frozen truth and explicit study intent:
 

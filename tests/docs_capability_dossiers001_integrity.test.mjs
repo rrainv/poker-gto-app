@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
-const capabilitiesDirectory = path.join(repositoryRoot, 'docs', 'project', 'capabilities');
+// DOCS-RESET-001: dossiers are archived history; their guardrails live in docs/project/CAPABILITY_GUARDRAILS.md.
+const capabilitiesDirectory = path.join(repositoryRoot, 'docs', 'archive', '2026-10', 'capabilities');
 
 const requiredDossiers = [
   'LEARNING_EVIDENCE_FOUNDATION.md',
@@ -90,37 +91,32 @@ test('required capability dossiers exist, are indexed, and disclaim execution au
     assert.ok(dossierNames.includes(required), `Missing required dossier ${required}`);
   }
 
-  const index = await readRepositoryFile('docs/project/capabilities/README.md');
+  const index = await readRepositoryFile('docs/archive/2026-10/capabilities/README.md');
   for (const dossierName of dossierNames) {
     assert.match(index, new RegExp(dossierName.replaceAll('.', '\\.')));
-    const dossier = await readRepositoryFile(`docs/project/capabilities/${dossierName}`);
+    const dossier = await readRepositoryFile(`docs/archive/2026-10/capabilities/${dossierName}`);
     const opening = dossier.split(/\r?\n/).slice(0, 12).join('\n');
     assert.match(opening, new RegExp(authorityDisclaimer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
 });
 
-test('capability, interaction, legacy, Roadmap, and Backlog relative links resolve', async () => {
-  const entries = await readdir(capabilitiesDirectory, { withFileTypes: true });
-  const capabilityDocuments = entries
+test('live documentation relative links resolve', async () => {
+  const projectEntries = await readdir(path.join(repositoryRoot, 'docs', 'project'), { withFileTypes: true });
+  const projectDocuments = projectEntries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
-    .map((entry) => `docs/project/capabilities/${entry.name}`);
+    .map((entry) => `docs/project/${entry.name}`);
 
   for (const relativePath of [
-    ...capabilityDocuments,
+    'AGENTS.md',
     'README.md',
     'docs/README.md',
-    'docs/agent-prompts/README.md',
-    'docs/project/INTERACTION_GRAMMAR.md',
-    'docs/project/PROJECT_CHARTER.md',
-    'docs/project/PRODUCT_SPEC.md',
-    'docs/project/ARCHITECTURE_CONTRACT.md',
-    'docs/project/DEFINITION_OF_DONE.md',
-    'docs/project/DOCUMENTATION_GOVERNANCE.md',
-    'docs/project/CURRENT_PHASE.md',
-    'docs/project/ROADMAP.md',
-    'docs/project/PRODUCT_BACKLOG.md',
-    'docs/project/PRODUCT_RETURN_QUEUE.md',
-    'docs/project/QA_BACKLOG.md',
+    'docs/NORTH_STAR.md',
+    'docs/STATE.md',
+    'docs/ISSUE_REGISTER.md',
+    'docs/TERMINOLOGY.md',
+    'docs/IDEA_BANK.md',
+    'docs/archive/README.md',
+    ...projectDocuments,
   ]) {
     await assertLocalLinksResolve(relativePath);
   }
@@ -129,13 +125,13 @@ test('capability, interaction, legacy, Roadmap, and Backlog relative links resol
 test('documentation index exposes capability and interaction navigation', async () => {
   const [documentationIndex, capabilityIndex] = await Promise.all([
     readRepositoryFile('docs/README.md'),
-    readRepositoryFile('docs/project/capabilities/README.md'),
+    readRepositoryFile('docs/archive/2026-10/capabilities/README.md'),
   ]);
 
   for (const requiredLink of [
-    'capabilities/README.md',
-    'capabilities/LEGACY_ID_INDEX.md',
-    'INTERACTION_GRAMMAR.md',
+    'project/CAPABILITY_GUARDRAILS.md',
+    'project/INTERACTION_GRAMMAR.md',
+    'archive/README.md',
   ]) {
     assert.match(documentationIndex, new RegExp(requiredLink.replaceAll('.', '\\.')));
   }
@@ -145,7 +141,7 @@ test('documentation index exposes capability and interaction navigation', async 
 
 test('legacy index keeps every recovered historical PROD identifier searchable', async () => {
   const legacyIndex = await readRepositoryFile(
-    'docs/project/capabilities/LEGACY_ID_INDEX.md',
+    'docs/archive/2026-10/capabilities/LEGACY_ID_INDEX.md',
   );
 
   for (const historicalId of recoveredProdIds) {

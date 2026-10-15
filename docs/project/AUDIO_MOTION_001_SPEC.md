@@ -3,7 +3,7 @@
 Status: **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT** on August 24, 2026. Human QA accepts the overall system, materially improved physical poker foley, routing architecture, and ordinary-Training Study/UI versus visible physical poker-world semantics as sufficient to move on. This checkpoint does not claim subjective sound-design perfection; Study/UI and optional Check refinement remain tracked polish debt.
 
 September 10, 2026: `BETA-REPAIR-SWEEP-B` refines the existing renderer and Full
-Hand pacing. Automated/browser evidence is recorded in `QA_BACKLOG.md`;
+Hand pacing. Evidence is in the archived QA backlog (`docs/archive/2026-10/`);
 subjective listening, fatigue and presentation acceptance remain pending.
 
 ## Outcome
@@ -110,17 +110,6 @@ is 280 ms. These comprehension pauses also apply under reduced motion; only
 travel/emphasis animation is suppressed. Cancellation and invalidation fence
 late callbacks before another canonical step advances.
 
-## Competitive reference decision
+## Rejected directions
 
-The in-app browser had no available browser instance during this ticket, so no new live competitor interaction was claimed. The bounded decision used the accepted `TABLE_PRESENCE_COMPETITIVE_REFERENCE.md` evidence:
-
-- **ADOPT:** immediate event consequence and clear distinction between card, passive action, aggression, and pot movement;
-- **ADAPT:** compress dry recorded foley into low-fatigue, bounded playback and low-hundreds-of-milliseconds motion suitable for repeated study;
-- **DIFFERENTIATE:** keep study feedback authority-safe, calm, and non-celebratory while allowing the canonical presentation's aligned/close/corrective distinction;
-- **REJECT:** casino ambience, reward loops, copied/proprietary samples, dense replay cacophony, fake 3D spectacle, and unsupported strategy meaning.
-
-## Verification boundary
-
-Automated coverage owns event determinism/immutability, surface-metaphor routing, authority-safe ordinary-Training study meaning, one-cue submission behavior, physical Full Hand/Hand/Replay routing, Calibration/Matrix non-routing, origin suppression, direct seek versus playback, reduced motion, audio lifecycle/preferences/categories, live volume changes, production-preview parity, the sample manifest/schema, CC0 provenance records, asset byte hashes, production membership, per-asset trims/windows, deterministic bounded variation, buffer/negative caching, graceful silence, hidden/unavailable behavior, cooldown, polyphony, and duplicate/stale rejection.
-
-Automated checks are not subjective listening or visual sign-off. Human QA accepted this implementation checkpoint without claiming subjective perfection. Further Study/UI refinement, Check refinement if still desired, fatigue review, and unperformed Firefox visual/audio acceptance remain in `QA-AUDIO-MOTION-001` and `RET-AUDIO-001`; they no longer block the next ticket.
+Keep study feedback authority-safe, calm and non-celebratory; compress recorded foley into low-fatigue, bounded playback. Rejected: casino ambience, reward loops, copied/proprietary samples, dense replay cacophony, fake 3D spectacle and unsupported strategy meaning.

@@ -229,7 +229,7 @@ The comparison reuses all eight accepted 002B synthetic fixtures, fixed seed lab
 
 The interpretable boundary metric is the fraction of target hand classes on a matrix-adjacency action boundary that were directly asked. The efficiency proxy is unique initially-unresolved hands that become inferred high/medium plus twice the number of directly discovered truth-boundary hands, divided by questions. It is not Shannon information gain.
 
-Full results and limitations are in `RANGE_CAL_002C_VALIDATION_REPORT.md`. Reproduce them with:
+Full results and limitations are in `docs/archive/2026-10/RANGE_CAL_002C_VALIDATION_REPORT.md`. Reproduce them with:
 
 ```powershell
 node tests/tooling/evaluate_range_cal002c.mjs

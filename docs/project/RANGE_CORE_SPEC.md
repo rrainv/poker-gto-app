@@ -325,18 +325,9 @@ Validation fails closed on unsupported schema/game values, noncanonical order, m
 
 Serialization recursively sorts object keys while retaining canonical array order. Deserialization validates the complete value before returning a deeply frozen clone. Constructors and derived operations return new deeply frozen values; there is no global range state.
 
-## 18. Performance evidence
+## 18. Performance
 
-The focused Node acceptance run on August 16, 2026 measured one 1,326-combo operation at approximately:
-
-| Operation | Time |
-|---|---:|
-| complete construction | 1.9 ms |
-| five-card blocker conditioning | 3.1 ms |
-| 169-cell Matrix projection | 4.0 ms |
-| three-card normalized distribution | 4.7 ms |
-
-These are bounded development-machine measurements, not universal latency promises. The exhaustive per-card blocker property test also completes in the focused suite. No worker or speculative optimization is justified at this scale.
+Single 1,326-combo operations run in single-digit milliseconds on a development machine; no worker or speculative optimization is justified at this scale.
 
 ## 19. Explicit non-goals
 

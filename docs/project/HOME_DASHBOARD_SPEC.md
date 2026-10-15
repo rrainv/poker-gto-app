@@ -97,4 +97,3 @@ The minimum supported desktop is 1366×768, with representative larger desktops 
 - durable recent Analysis history;
 - configurable card order, visibility, density, and beginner/expert composition;
 - study goals and approved gamification only after a separate product decision.
-

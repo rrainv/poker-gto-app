@@ -1,55 +1,26 @@
 # Riverline documentation
 
-Executable code and passing tests are final implementation truth. Documentation authority and update rules are defined in [Documentation governance](project/DOCUMENTATION_GOVERNANCE.md).
+Executable code and passing tests are final implementation truth. If code contradicts a documented invariant, report it as a likely defect. Agents start at [AGENTS.md](../AGENTS.md) (minimum read set: that file plus the files a ticket names).
 
-## Current planning
+## Live set
 
-- [Current phase and execution order](project/CURRENT_PHASE.md)
-- [Directional roadmap](project/ROADMAP.md)
-- [Product and feature backlog](project/PRODUCT_BACKLOG.md)
-- [Checkpoint return queue](project/PRODUCT_RETURN_QUEUE.md)
-- [Persistent QA backlog](project/QA_BACKLOG.md)
-- [Documentation governance](project/DOCUMENTATION_GOVERNANCE.md)
+- [North Star](NORTH_STAR.md): product direction, decisions, principles, milestones, workflow.
+- [State](STATE.md): the one live status file (milestone, gates, ordered queue, recent work, open decisions).
+- [Issue register](ISSUE_REGISTER.md): bugs, debt, pending acceptance and small wants (search by ID).
+- [Terminology](TERMINOLOGY.md): EN/RU/HE terms, the i18n source of truth.
+- [Idea bank](IDEA_BANK.md): ideas, not commitments; never required reading.
 
-## Stable contracts
+## Reference specs (read when a ticket names them)
 
-- [Project charter](project/PROJECT_CHARTER.md)
-- [Product and UI specification](project/PRODUCT_SPEC.md)
-- [Architecture contract](project/ARCHITECTURE_CONTRACT.md)
-- [Reference Pack v1 specification](project/REFERENCE_PACK_V1_SPEC.md)
-- [Definition of done](project/DEFINITION_OF_DONE.md)
-- [Git workflow](project/GIT_WORKFLOW.md)
-- [Cross-surface interaction grammar](project/INTERACTION_GRAMMAR.md)
+- [Design system](project/DESIGN_SYSTEM.md): Style v4, tokens, components, composition, stability and acceptance.
+- [Architecture contract](project/ARCHITECTURE_CONTRACT.md): canonical authorities and dependency direction.
+- [Interaction grammar](project/INTERACTION_GRAMMAR.md): cross-surface interaction semantics and workspace behaviour invariants.
+- [Capability guardrails](project/CAPABILITY_GUARDRAILS.md): authority rules and non-goals for future capabilities.
+- [QA and regression](project/QA_AND_REGRESSION_SPEC.md): required test categories and smoke flow.
+- Subsystem contracts in [project/](project/): Game Rules, DecisionContext, strategy source authority, Reference Pack and sources, Range Core and analysis, bluff/exploit, Equity, Training (planner, memory, intelligence), Review/Study Inbox, hand-history import, opponent policy, Saved and sync, accounts and authentication, Personal Strategy and ranges, Home, Home Game, audio/motion, tutorials.
 
-## Long-term capability intent
+## History
 
-- [Capability dossier index](project/capabilities/README.md)
-- [Legacy and recovered capability ID index](project/capabilities/LEGACY_ID_INDEX.md)
-
-Capability dossiers preserve detailed long-term intent and recovered microfeatures. They do not own capability status, execution sequence, current implementation truth, QA, or checkpoint debt.
-
-## Dated repository evidence
-
-- [Current repository audit](project/CURRENT_REPO_AUDIT.md) — refreshed evidence snapshot, not a planning authority or stable contract
-
-## Agent execution context
-
-- [Root agent instructions](../AGENTS.md)
-- [Agent-documentation index](agent-prompts/README.md)
-- [Current architecture context](agent-prompts/AGENT_MASTER_CONTEXT.md)
-- [Codex workflow](agent-prompts/CODEX_WORKFLOW.md)
-- [Model and chat guide](agent-prompts/MODEL_AND_CHAT_GUIDE.md)
-- [Ticket template](agent-prompts/TICKET_TEMPLATE.md)
-- [Reviewer prompt](agent-prompts/REVIEW_PROMPT.md)
-
-## Subsystem specifications
-
-Current specs under `project/` own versioned rules and subsystem semantics. Start with the relevant architecture route, including Game Rules, DecisionContext, strategy-source authority, Training Practice Planner, Table Presence, audio/motion, Saved Study Objects, Personal Strategy/ranges, tutorials, accounts/sync, or Home Game Organizer.
-
-Files under `agent-prompts/` for solver, data, cloud, models, i18n, and UI are task templates. Their existence does not authorize a phase or prove that a subsystem exists.
-
-## Historical and rationale material
-
-[Riverline Master Product Strategy Plan](project/RIVERLINE_MASTER_PRODUCT_STRATEGY_PLAN.md), dated audits, old validation reports, retired blueprints, and historical ticket/report material preserve rationale only. They must be labelled historical and cannot override current planning or stable contracts.
+- [Archive](archive/README.md): superseded planning, agent prompts, capability dossiers, reports and research; never required reading. `archive/2026-10/INVARIANT_LEDGER.md` maps every archived rule to its current home.
 
 Claims of GTO, equilibrium, CFR provenance, model accuracy, or exploitability require reproducible evidence and an authorized source capability.

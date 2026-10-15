@@ -48,6 +48,8 @@ net      = totalOut - totalIn
 
 A correction points to one earlier non-correction entry and exactly matches its session, player, and amount. It contributes the inverse of the original fact. A transaction may be corrected once; corrections cannot correct corrections. Changing an amount is a reversal followed by a replacement entry, preserving the incorrect fact for audit. The correction and optional replacement now commit in one repository transaction, and `home-game-ledger-history/v1` projects the original, reversal, and linked replacement without rewriting ledger facts.
 
+Correct entries is offered over every eligible buy-in, rebuy, add-on and cash-out; the reason is optional (absence persists as `null`); reversal-only and atomic replacement both preserve the original fact (Core Flow checkpoint). Open product items: corrections that can be corrected again (owner want HG-003, which changes the "corrected once" rule above and needs its own ticket) and a correctable typed 0 cash-out (decided option B: an append-only final-state correction record; HG-002, not yet built; persisted-format change needs approval).
+
 Physical storage adds repository-only ledger sequence so equal timestamps reload in append order. It is not portable domain data. External adjustments, rake, house expenses, and silently edited totals are unsupported.
 
 ## Balance, lifecycle, and settlement

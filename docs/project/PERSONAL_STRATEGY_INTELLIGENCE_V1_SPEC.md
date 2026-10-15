@@ -1,6 +1,6 @@
 # Personal Strategy Intelligence v1
 
-## Beta coherence: teaching from a decision
+## Teaching from a decision
 
 Analyze, answered single-decision Training and shared completed Hand Review expose
 **Teach from this decision**. The existing Personal workspace owns one ephemeral
@@ -22,8 +22,7 @@ An unconfirmed incoming example is session-local and can be explicitly assigned
 to a different Approach. The existing exact **Teach through a hand** path remains
 separate and now has a direct entry above the compact Understanding map.
 
-
-## Sweep C: learning loop and complete answer access
+## Learning loop and complete answer access
 
 After quick, exact or Not sure answers, Teacher pauses on What Riverline learned.
 It describes precision, direct-answer count and the next question's existing reason
@@ -41,11 +40,11 @@ repositories. Exact conflicts are disclosed before explicitly superseding curren
 heads for that subject/node. History survives. Scope switches clear ephemeral
 learning/review state. Browser persistence/focus acceptance remains pending.
 
-Implementation ticket: `PERSONAL-STRATEGY-INTELLIGENCE-001` plus the shared natural-language foundation. The user explicitly authorized this versioned migration and product redesign. Implementation and focused integration verification are complete; human acceptance remains pending. This specification does not declare an accepted checkpoint or change roadmap sequencing. QA ownership remains in [QA_BACKLOG.md](QA_BACKLOG.md).
+Implementation ticket: `PERSONAL-STRATEGY-INTELLIGENCE-001` plus the shared natural-language foundation. The user explicitly authorized this versioned migration and product redesign. This specification does not declare an accepted checkpoint or change roadmap sequencing. Acceptance is tracked in [ISSUE_REGISTER.md](../ISSUE_REGISTER.md).
 
 ## Product and authority
 
-The explicitly authorized `PERSONAL-STRATEGY-COACH-001` + `RANGE-EVOLUTION-001A` continuation adds [Coach and Teach-through-a-Hand](PERSONAL_STRATEGY_COACH_V1_SPEC.md): exact-node intended evidence in the existing repository, exact-size action conditioning, canonical public-card removal, first reached-flop physical-combo teaching, structured summaries and concept dependencies. Its approved additive store/export v3 and backend/database v4 migration preserves all legacy precision. Full turn/river UI, weighted Equity, opponent policies and unsupported Training generation remain unavailable; human acceptance is pending.
+The explicitly authorized `PERSONAL-STRATEGY-COACH-001` + `RANGE-EVOLUTION-001A` continuation adds [Coach and Teach-through-a-Hand](PERSONAL_STRATEGY_COACH_V1_SPEC.md): exact-node intended evidence in the existing repository, exact-size action conditioning, canonical public-card removal, first reached-flop physical-combo teaching, structured summaries and concept dependencies. Its approved additive store/export v3 and backend/database v4 migration preserves all legacy precision.
 
 The primary object is **What Riverline understands**, an editable projection of intended strategy. Conversation, quick dominant-action answers, structured teaching, exact mixes, and secondary Matrix Edit feed the same owned evidence. Conversation history is not a strategy database.
 
@@ -110,7 +109,7 @@ The onboarding/range-mapping product correction replaces the five-question targe
 
 `structural-range-mapping.mjs` projects deterministic overlapping hand-family coverage and boundary probe facts over canonical hand semantics. The existing `rfi-question-selection.mjs` owns ranking: explicit focus, unmapped families, unresolved boundaries, conflicts, nearby probes and coverage gaps, with repetition avoidance. `getRangeMappingProjection` and mapping sessions use that same ranking. `choosePersonalTeachingNext` only presents its first candidate, without a second ranking policy. Provisional wording can steer the next hand; only explicit user-selected focus persists as a session preference. Natural reasons name poker families/boundaries and make no optimal-information-gain claim. Initial sampling is not permission for complete-region frequency language.
 
-Creation foregrounds name, table size and stack; optional descriptions, format, notes and Approach naming sit behind More setup options. Add context is a secondary disclosure, and notes referring to the current question preserve its canonical hand class in stated scope. Range language now reports supported preferred-action consistency, adjacent transitions, unresolved gaps, tied mixes, and regional added/removed/preserved continues. The recorded GTO Wizard/DTO product review in `TABLE_PRESENCE_COMPETITIVE_REFERENCE.md` informed the decision-first hierarchy and explicit transition to detailed inspection; no competitor interface or normative authority was imported.
+Creation foregrounds name, table size and stack; optional descriptions, format, notes and Approach naming sit behind More setup options. Add context is a secondary disclosure, and notes referring to the current question preserve its canonical hand class in stated scope. Range language now reports supported preferred-action consistency, adjacent transitions, unresolved gaps, tied mixes, and regional added/removed/preserved continues. The recorded GTO Wizard/DTO product review in the archived table-presence brief informed the decision-first hierarchy and explicit transition to detailed inspection; no competitor interface or normative authority was imported.
 
 ## Deterministic range language and comparison
 
@@ -136,29 +135,3 @@ The application source adapter runs only on an explicit visible comparison reque
 Interpretive claims require a named criterion. Intent inference requires provisional basis/wording. Strategic claims require explicit comparative permission with `normative: false`. No caller flag can authorize "too tight," "too loose," "mistake," or other normative region language in v1. A future accepted domain assessment contract must own that extension.
 
 This is reusable infrastructure for Analyze, Deep Review, Training, Saved/Home/Study Inbox, Equity/Range/Hand Analysis, Import, Reference Strategy, and Opponent Intelligence. Those surfaces are not migrated by this ticket. Existing domain command/evidence owners retain authority. Personal Strategy is not automatically an OpponentPolicy or bot policy; `OPPONENT-ACTOR-INFORMATION-001` remains binding.
-
-## Verification and acceptance
-
-Onboarding/range-mapping correction: 323/323 focused Personal Strategy, range, language, identity and performance tests pass; ten changed runtime modules pass syntax checks and diff checks are clean. Browser inventory again returned no enabled browsers. This is bounded correction verification, not a checkpoint/docs closeout. New correction coverage is in `tests/personal_strategy_structural_mapping.test.mjs` and `tests/personal_strategy_mapping_ui.test.mjs`, with extended language, application and DOM tests.
-
-The focused integration run passed **305/305 tests** across Personal Strategy action contracts, preflop UI, intelligence, range calibration/inference/selection, Matrix/Builder/Teacher, identity lifecycle, sync, performance and i18n. After the final fixes, a targeted run passed **104/104 tests** across intelligence application/workspace/localization/persistence/sync, domain/storage/recovery, workspace composition and identity lifecycle. These are overlapping runs, not 409 distinct tests. The final persistence/domain subset passes 38 tests; the event/DOM understanding harness passes 12; the Personal EN/RU/HE and tutorial-anchor suite passes 3. Twenty changed runtime modules passed `node --check`; `git diff --check -- app shared tests docs` passed.
-
-Behavioral evidence includes six Approaches, five structurally varied dominant answers, no qualitative frequency conversion, real heuristic comparisons, complete/sparse region permission gates, stale preview/load/confirmation results, owner invalidation, grouped correction/reload/restore, independent frozen duplication, immutable metadata histories, real legacy v1 fixtures, interrupted IndexedDB upgrades, and portable ownership adoption. Final fixes preserve unrelated Approach versions when setup metadata changes, rebind copied scope/exception references while preserving the source interpretation, retain newer typed text during an earlier confirmation, discard older same-scope loads, apply setup defaults on switching, and remove a duplicate description DOM ID that misrouted the setup editor.
-
-The separate `tutorial002_current_app_coverage.test.mjs` run is **6 passed / 2 failed** for pre-existing unrelated changes: the Home Guest data sentence is missing from the tutorial locale catalog, and the Training feedback assertion still expects the old universal-optimality sentence. Personal tutorial v2 and its EN/RU/HE keys/anchors pass dedicated checks. Existing i18n/Training tutorial owners retain these failures; they are not silently closed or absorbed into this ticket. The full repository checkpoint gate was not run.
-
-Browser automation inventory was unavailable (no enabled apps or browsers at inspection); no browser/visual acceptance is claimed. Human QA must exercise arbitrary setup creation, four or more Approaches, adaptive family/boundary mapping and early stop, qualitative preview/confirm/correct/narrow/exception, understanding, exact/mixed edits, personal/source comparisons and sparse abstention, reload/history/fork independence, owner transitions, and EN/RU/HE keyboard/RTL at supported desktop sizes. Check that custom format/notes remain user assumptions and the exact canonical context/rules are visible before comparing. `QA-PERSONAL-INTELLIGENCE-001` remains **PARTIAL / HUMAN ACCEPTANCE PENDING**. Nothing is staged or committed.
-
-## Ticket file inventory
-
-Paths below are relative to the repository. Some already contained uncommitted identity/truth/Training work when this ticket began; only the Personal Strategy changes belong to this ticket.
-
-| Area | Ticket files |
-|---|---|
-| Understanding and teaching | `app/src/application/personal-strategy-understanding-workspace.mjs`, `personal-strategy-intelligence.mjs`, `range-calibration-service.mjs`, `range-calibration-workspace.mjs`; `app/index.html`, `app/styles.css` |
-| Evidence, language and storage | `app/src/personal-strategy/domain.mjs`, `qualitative-evidence.mjs`, `intent-interpretation.mjs`, `range-language-facts.mjs`, `repository.mjs`, `indexeddb-storage.mjs`; `app/src/application/natural-language-envelope.mjs` |
-| Schema compatibility | `app/src/application/personal-strategy-sync-port.mjs`, `saved-study-sync-bootstrap.mjs`; `app/src/sync/personal-strategy-domain-adapters.mjs`, `coordinator.mjs` |
-| Localization and tutorial | `app/src/locales/range-calibration-translations.js`, `account-translations.js`, `product-translations.js`, `tutorial-translations.js`; `app/src/tutorial/current-app-tutorials.mjs` |
-| New verification | `tests/personal_strategy_intelligence_application.test.mjs`, `personal_strategy_intelligence_workspace.test.mjs`, `personal_strategy_intelligence_language.test.mjs`, `personal_strategy_intelligence_localization.test.mjs`, `personal_strategy_intelligence_persistence.test.mjs`, `personal_strategy_intelligence_sync.test.mjs` |
-| Updated regression fixtures | `tests/range_cal000_personal_strategy_domain.test.mjs`, `range_cal000_personal_strategy_persistence.test.mjs`, `range_cal001c_persistence_recovery.test.mjs`, `range_cal001a_workspace.test.mjs`, `range_cal001b_workspace.test.mjs`, `range_teacher001_personal_strategy.test.mjs`, `account002bb_personal_strategy_sync.test.mjs`, `identity_lifecycle001b.test.mjs`, `tutorial002_current_app_coverage.test.mjs` |
-| Live contract documentation | This specification, `PERSONAL_STRATEGY_FOUNDATION_SPEC.md`, `QA_BACKLOG.md`, `capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md`, `capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md` under `docs/project/` |

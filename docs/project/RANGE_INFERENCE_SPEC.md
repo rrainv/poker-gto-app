@@ -224,7 +224,7 @@ Cloud sync continues to serialize source profiles, modes, direct observations, o
 
 The historical 002B harness uses three fixed seeds and answer budgets 10, 20, 30, 40, 50, and 75 over eight synthetic mechanics fixtures: smooth tight/loose, reproducible irregular, islands/gaps, suited/offsuit anomaly, pair anomaly, contradictory direct heads, and sparse exact-frequency boundary. Its checked-in validation report records the v1 local-graph baseline.
 
-Hidden labels are used only after estimates are produced. Tests verify a held-out label change cannot change source observations or output. Metrics include direct/attempted coverage, attempted/high/medium accuracy, abstention, false-high errors, boundary localization mismatch, stability under nested additional evidence, reasons, and runtime. Full results are in `RANGE_CAL_002B_VALIDATION_REPORT.md` and reproducible with:
+Hidden labels are used only after estimates are produced. Tests verify a held-out label change cannot change source observations or output. Metrics include direct/attempted coverage, attempted/high/medium accuracy, abstention, false-high errors, boundary localization mismatch, stability under nested additional evidence, reasons, and runtime. Full results are in `docs/archive/2026-10/RANGE_CAL_002B_VALIDATION_REPORT.md` and reproducible with:
 
 ```powershell
 node tests/tooling/evaluate_range_cal002b.mjs

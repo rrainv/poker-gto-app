@@ -194,30 +194,6 @@ durable storage. “I own this file” is neither redistribution permission nor
 independent validation. No cloud upload is the default; any future sharing needs
 separate rights and user intent.
 
-## Verification and human acceptance
+## Guardrail
 
-September 6 final focused run: **157/157 tests passed** across
-`reference_strategy002`, `reference_pack001_foundation`,
-`reference_authority001_claim_policy`, `strategy_truth001`,
-`perf001_product_performance`, `analysis001_explanation_service`,
-`analysis001_app_integration`, `personal_strategy_intelligence_language`,
-`training_memory001_foundation`, and `deep_review_study_inbox001` test files.
-Syntax checks cover all 13 ticket JavaScript/test files; `git diff --check`
-passes. No full-suite or solver run is claimed.
-
-Focused tests cover identities and mutation, SHA-256 against Node crypto, exact
-versus near-miss coverage, self-grant rejection, explicit claim ceilings, private
-file limits/no fetch/activation refusal, immutable health history, provider
-invocation counts, frozen Training evidence and EN/RU/HE catalog/RTL facts.
-
-Browser discovery on September 6 returned no apps or browsers. Visual acceptance
-is unverified. Human QA: open Analyze Limits & caveats in EN/RU/HE, both themes,
-keyboard and narrow desktop; confirm no accepted-reference wording for the
-ordinary heuristic; use synthetic development-only injection to check exact
-accepted, exact-unaccepted, stack/size/rake mismatch and missing-context copy.
-Review import API diagnostics separately: no Sources UI or durable import exists.
-Never approve synthetic frequencies as production strategy evidence.
-
-The [source decision and research](REFERENCE_SOURCE_ACQUISITION_2026_09.md) own
-the recommendation and its licensing evidence. `RET-REFERENCE-PACK-001` remains
-open for actual source acquisition and independent acceptance.
+Never approve synthetic frequencies as production strategy evidence. Actual source acquisition and independent acceptance remain open (ISSUE_REGISTER RET-REFERENCE-PACK-001); the 2026-09 acquisition research is archived under `docs/archive/2026-10/`.

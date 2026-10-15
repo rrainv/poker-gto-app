@@ -413,6 +413,8 @@ Future incomplete features remain isolated by:
 - storing source observations rather than unbounded derived caches;
 - permitting removal of a failed Lab surface without changing the canonical Personal Strategy store.
 
+Locked smoothness rules (from the archived master plan §15.1): services are not initialized by unrelated workspaces; an answer saves and advances perceptually instantly; persistence never blocks the interaction thread noticeably; heavy inference is incremental, on demand or isolated; no full-range recompute runs on unrelated UI interactions; caches are keyed, bounded and invalidated deliberately; migrations are deterministic and recoverable.
+
 PERF-001 remains unchanged: persistence does not resolve strategy, render Matrix cells, alter invalidation, or add a hidden surface. The accepted-answer budget is median below 50 ms and p95 below 100 ms for realistic libraries.
 
 ## 17. Integration gates for future tickets
@@ -465,4 +467,4 @@ The following are release-blocking for this subsystem:
 
 ## Device Guest and lifecycle scope
 
-Slice B permits durable on-device Personal Strategy for Device Guest through the existing domain binding and repository. Profiles, modes, immutable evidence, contradictions, sessions, and scoped preferences retain their contracts. Each owner generation mounts a fresh workspace/repository/listener set and validates cached application projections. Revocation disposes presentation synchronously and aborts in-flight storage operations; stale responses and queued intents cannot seed another owner's work. Guest has no remote sync. Historical evidence is not rewritten; human browser acceptance remains pending.
+Slice B permits durable on-device Personal Strategy for Device Guest through the existing domain binding and repository. Profiles, modes, immutable evidence, contradictions, sessions, and scoped preferences retain their contracts. Each owner generation mounts a fresh workspace/repository/listener set and validates cached application projections. Revocation disposes presentation synchronously and aborts in-flight storage operations; stale responses and queued intents cannot seed another owner's work. Guest has no remote sync.

@@ -1,9 +1,9 @@
 # Advanced Equity v1
 
 September 7, 2026 — implementation for `ADVANCED-EQUITY-001` +
-`WEIGHTED-RANGE-EQUITY-001` + `RUNOUT-EXPLORER-001`; human acceptance pending.
+
 This is the first bounded slice, not completion of every capability in the
-[Equity dossier](capabilities/EQUITY_HAND_ANALYSIS.md).
+[Equity dossier](CAPABILITY_GUARDRAILS.md#equity-and-hand-analysis).
 
 ## Authority and supported product flow
 
@@ -172,30 +172,8 @@ ranges with model/version/evidence references. Numbers are assumption-labelled
 showdown Equity. No bluff/value partition, call recommendation, role verdict,
 fold response, action EV, optimization or automatic Personal rewrite is added.
 
-## Verification and remaining acceptance
+## Limits and computation bounds
 
-Focused invariant tests cover collision-weight examples, MC convergence and
-seed replay, totals/splits, partial/zero/unknown distinctions, blockers,
-validation, runout legality/categories/removal, dispatch/cancel/stale behavior
-and Personal/Exploit boundaries. Existing Equity, Range Core, Personal Range
-Evolution, Exploit and language regressions remain required.
+One top-level runout recipe owns range/provenance content; per-card results omit repeated full ranges to bound worker serialization. Bounded fixture timings are not general latency guarantees.
 
-`QA-ADVANCED-EQUITY-001` owns visual/manual acceptance. Browser inventory was
-empty on September 7; automated/mounted tests are not visual acceptance.
-Human matrix: Equity exact/range-vs-range/partial/zero inputs; cancel and edit
-during scan; all-next and selected turn→river paths; focus/hover/tap best-five
-preview; source details; Personal trajectory changes; Exploit size/policy changes;
-EN/RU/HE, RTL, narrow desktop and Midnight/Daylight.
-
-Development-machine profile (`tests/tooling/benchmark_advanced_equity001.mjs`):
-two full weighted ranges, 2,000 Monte Carlo samples: 314 ms / 2,205 attempts;
-exact Hero versus QQ/AKs on the turn, all 46 candidate rivers: 578 ms.
-These bounded fixture measurements are not general latency guarantees. One
-top-level runout recipe owns range/provenance content; per-card results omit
-repeated full ranges to bound worker serialization. The measured all-river
-result serialized to approximately 338 KB.
-
-Deferred facts remain explicit null/unavailable: rigorous clean/dirty taxonomy,
-draw/redraw enumeration beyond calculated category transitions, percentile,
-universal nuts/locks, range/nut advantage, response-mixture inference, production
-reference selection and broader cross-surface/durable runout continuity.
+Deferred facts remain explicit null/unavailable: rigorous clean/dirty taxonomy, draw/redraw enumeration beyond calculated category transitions, percentile, universal nuts/locks, range/nut advantage, response-mixture inference, production reference selection and broader cross-surface/durable runout continuity.

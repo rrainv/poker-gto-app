@@ -142,19 +142,6 @@ The Builder toolbar, selection helpers, apply group, exact-mix inputs, Undo, sel
 
 Static and dynamic copy is supplied in EN/RU/HE. The Matrix and poker class tokens remain LTR islands; toolbar and explanatory prose follow document RTL. Responsive layout wraps the compact toolbar and moves the existing inspector below the Matrix at narrower desktop widths.
 
-## Performance evidence
-
-`node tests/tooling/benchmark_range_builder001.mjs` measured the in-memory deterministic backend on the implementation machine:
-
-| Hands | End-to-end command | Evidence rows | Groups | Notifications | Invalidations | Snapshot recomputes |
-|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 68.92 ms | 1 | 1 | 1 | 1 | 1 |
-| 10 | 27.11 ms | 10 | 1 | 1 | 1 | 1 |
-| 50 | 78.58 ms | 50 | 1 | 1 | 1 | 1 |
-| 169 | 205.28 ms | 169 | 1 | 1 | 1 | 1 |
-
-These are regression measurements, not universal browser latency promises. Real Firefox IndexedDB and visual responsiveness remain part of manual acceptance.
-
 ## Range Teacher integration checkpoint
 
 `RANGE-TEACHER-001` now reuses, without a new data authority:

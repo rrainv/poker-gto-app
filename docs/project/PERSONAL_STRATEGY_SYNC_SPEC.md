@@ -155,19 +155,10 @@ Immutable evidence IDs normally enqueue once. Repeated local session/profile edi
 
 The account/header status aggregates Saved and Personal Strategy pending/conflict/error counts with priority `Conflict > Error/Auth > Offline > Syncing > Saved locally > Synced`. Evidence contradictions are not counted as metadata conflicts; they remain domain facts.
 
-## Performance measurements
+## Performance
 
-`node tests/tooling/account002bb_payload_sizes.mjs` measures UTF-8 remote JSON before compression on the current Node runtime:
+Ordinary sync work is change-driven and coalesces mutable entities; it does not repeatedly upload the full library. Sync invokes no StrategyProvider, Equity, solver, Training generator, or hidden Matrix render. Inference artifacts are not payload.
 
-| Fixture | Operations | Total JSON | Largest operation | Serialization |
-|---|---:|---:|---:|---:|
-| 3 profiles, 3 modes/profile, 100 observations, 1 active session | 104 | 106,782 bytes | 1,346 bytes | about 4–5 ms observed |
-| 3 profiles, 3 modes/profile, 500 observations, 1 active session | 504 | 515,052 bytes | 1,346 bytes | about 13–18 ms observed |
+## Live acceptance
 
-These are first-sync operation counts. Ordinary work is change-driven and coalesces mutable entities; it does not repeatedly upload the full library. Sync invokes no StrategyProvider, Equity, solver, Training generator, or hidden Matrix render. Inference artifacts are not payload cost.
-
-## Verification boundary
-
-Deterministic fake-adapter tests cover opt-in, local-first upload/pull, cold reconstruction, evidence dedupe/contradictions, inference abstention, profile/mode conflicts, cross-device session resume, tombstone non-resurrection, import/export, Guest/account isolation, and aggregated status. The existing Saved sync suite remains unchanged and passing.
-
-Applying migration 003 and real two-account/two-profile Firefox QA are external acceptance steps. Until completed, RLS behavior and rendered EN/HE 1024/1366 lifecycle remain `PARTIAL`, not visually/live accepted.
+Applying the remote migration and real two-account/two-profile Firefox QA have not been done; RLS behaviour stays unaccepted until they are (ISSUE_REGISTER RET-ACCOUNT-003).
