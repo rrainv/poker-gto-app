@@ -41,6 +41,7 @@ import {
   createPreAccountPersonalStrategyFixture,
   createPreAccountSavedStudyFixture,
 } from './fixtures/account001_legacy.mjs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 
 const AUTH_T1 = '2026-08-17T09:00:00.000Z';
 const AUTH_T2 = '2026-08-17T09:01:00.000Z';
@@ -462,8 +463,7 @@ test('Supabase failures map to stable privacy-safe auth notice codes', async () 
 });
 
 test('auth mappings and credentials never enter study exports; UI owns accessible explicit linking and remount seams', async () => {
-  const [html, bootstrap, translations, accountSpec, rangeBootstrap, rangeLifecycle, rangeWorkspace, preload, exampleConfig] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
+  const [bootstrap, translations, accountSpec, rangeBootstrap, rangeLifecycle, rangeWorkspace, preload, exampleConfig] = await Promise.all([
     readFile(new URL('../app/src/application/authentication-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/account-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../docs/project/ACCOUNT_IDENTITY_SPEC.md', import.meta.url), 'utf8'),
@@ -473,11 +473,17 @@ test('auth mappings and credentials never enter study exports; UI owns accessibl
     readFile(new URL('../app/preload.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/auth-config.example.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /role="dialog"[^>]+aria-modal="true"[^>]+aria-labelledby="accountLinkModalTitle"/);
-  assert.match(html, /Move local work to account/);
-  assert.match(html, /Keep separate/);
-  assert.match(html, /Cloud sync is not enabled/);
-  assert.match(html, /accountSignInEmail[^>]+dir="ltr"/);
+  // TEST-HYGIENE-001: account markup is checked on the parsed document.
+  const markup = indexDocument();
+  const linkModal = markup.getElementById('accountLinkModalTemplate').content;
+  const dialog = linkModal.querySelector('[aria-labelledby="accountLinkModalTitle"]');
+  assert.equal(dialog.getAttribute('role'), 'dialog');
+  assert.equal(dialog.getAttribute('aria-modal'), 'true');
+  const copy = `${markup.body.textContent} ${linkModal.textContent}`;
+  assert.match(copy, /Move local work to account/);
+  assert.match(copy, /Keep separate/);
+  assert.match(copy, /Cloud sync is not enabled/);
+  assert.equal(markup.getElementById('accountSignInEmail').getAttribute('dir'), 'ltr');
   assert.match(bootstrap, /event\.key === 'Escape'/);
   assert.match(bootstrap, /event\.key === 'Tab'/);
   assert.match(bootstrap, /button:not\(:disabled\)/);

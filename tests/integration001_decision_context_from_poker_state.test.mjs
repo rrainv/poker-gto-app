@@ -529,7 +529,7 @@ test('adapter rejects unsupported or non-decision projections clearly', () => {
   );
 });
 
-test('adapter is pure, copies card arrays, and has no browser/global dependency', () => {
+test('adapter is pure, copies card arrays, and has no browser/global dependency', async () => {
   const state = createDealtState();
   const before = structuredClone(state);
   const projected = context(state);
@@ -544,12 +544,21 @@ test('adapter is pure, copies card arrays, and has no browser/global dependency'
   );
   assert.doesNotMatch(adapterSource, /\b(?:document|window|globalThis)\b|app\.gto|querySelector/);
 
+  // TEST-HYGIENE-001: the page defines no DecisionContext derivation of its
+  // own (checked in the booted app's global scope).
+  const { bootApp } = await import('./helpers/app-under-test.mjs');
+  const app = await bootApp();
+  for (const name of ['deriveDecisionContext', 'deriveDecisionContextFromPokerState']) {
+    assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  }
+  // SOURCE-SHAPE: "logic.js never loads the PokerState adapter module" is an
+  // architecture lint (absence of a module reference); a classic script's
+  // dynamic import leaves no global observable to check instead.
   const productionLogic = fs.readFileSync(
     new URL('../app/src/core/logic.js', import.meta.url),
     'utf8',
   );
   assert.doesNotMatch(productionLogic, /decision-context-from-poker-state/);
-  assert.doesNotMatch(productionLogic, /function deriveDecisionContext|deriveDecisionContext\(readPlaybookInputSnapshot\(\)\)/);
 
   const domainFiles = fs.readdirSync(new URL('../shared/poker-domain/', import.meta.url));
   for (const file of domainFiles.filter((name) => name.endsWith('.js'))) {

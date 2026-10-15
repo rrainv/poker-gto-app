@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { mountPersonalStrategyUnderstanding } from '../app/src/application/personal-strategy-understanding-workspace.mjs';
 import { createPersonalDecisionExample } from '../app/src/application/personal-decision-teaching.mjs';
 import { createRangeCalibrationApplication, createContextFromSelection } from '../app/src/application/range-calibration-service.mjs';
 import { createMemoryPersonalStrategyDatabase } from '../app/src/personal-strategy/indexeddb-storage.mjs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 
 // Behavioral DOM adapter, deliberately without layout/browser claims. It keeps
 // event propagation, select options, focus, text nodes and listener cancellation
@@ -33,17 +33,21 @@ class Element {
 }
 const fakeDocument = { activeElement: null, createElement: (tag) => new Element(tag), createDocumentFragment: () => new Element('fragment') };
 function dom() {
-  const source = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+  // TEST-HYGIENE-001: ids, tags, hidden and type come from the parsed
+  // index.html (page and templates), not from a regex over its source.
+  const markup = indexDocument();
   const ids = new Map();
-  for (const match of source.matchAll(/<([a-z0-9-]+)\b([^>]*\bid="([^"]+)"[^>]*)>/gi)) {
-    const node = new Element(match[1]); node.id = match[3]; node.hidden = /\shidden(?:\s|=|$)/.test(match[2]);
-    node.type = match[2].match(/\btype="([^"]+)"/)?.[1] ?? '';
+  const parsed = [...markup.querySelectorAll('[id]'), ...markup.querySelectorAll('template').flatMap((template) => template.content.querySelectorAll('[id]'))];
+  for (const element of parsed) {
+    if (ids.has(element.id)) continue;
+    const node = new Element(element.localName); node.id = element.id; node.hidden = element.hasAttribute('hidden');
+    node.type = element.getAttribute('type') ?? '';
     ids.set(node.id, node);
   }
   const root = { querySelector: (selector) => ids.get(selector.slice(1)) ?? null };
   const get = (id) => { assert.ok(ids.has(id), `Real HTML contains ${id}`); return ids.get(id); };
   get('personalIntentScope').value = 'decision'; get('personalTeachTopic').value = '';
-  return { root, get, source };
+  return { root, get };
 }
 const selection = { environment: 'custom', tableSize: 6, heroPosition: 'BTN', effectiveStackBb: 100,
   decisionFamily: 'preflop_rfi', actionAware: true, collectionBb: 0, anteType: 'none', anteBb: 0 };

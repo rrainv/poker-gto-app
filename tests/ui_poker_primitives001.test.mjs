@@ -3,13 +3,34 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
+import { appStyleSheet, freshIndexDocument, precedes } from './helpers/app-under-test.mjs';
+
 const primitiveSource = fs.readFileSync(
   new URL('../app/src/ui/PokerPrimitives.js', import.meta.url),
   'utf8',
 );
 const renderer = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: styles.css / index.html assertions are behavioural: the
+// primitives' own markup is mounted in the parsed table container and read
+// through the cascade (per theme, direction and reduced motion), and script
+// order comes from the parsed document.
+const css = appStyleSheet();
+const markupDocument = freshIndexDocument();
+const tableHost = markupDocument.getElementById('visual-table-container');
+function mounted(svgMarkup) {
+  const host = markupDocument.createElement('div');
+  host.innerHTML = `<svg>${svgMarkup}</svg>`;
+  tableHost.appendChild(host);
+  return host;
+}
+function withRoot(attributes, callback) {
+  const root = markupDocument.documentElement;
+  const previous = Object.fromEntries(Object.keys(attributes).map((name) => [name, root.getAttribute(name)]));
+  for (const [name, value] of Object.entries(attributes)) root.setAttribute(name, value);
+  try { return callback(); } finally {
+    for (const [name, value] of Object.entries(previous)) value === null ? root.removeAttribute(name) : root.setAttribute(name, value);
+  }
+}
 const translations = fs.readFileSync(
   new URL('../app/src/locales/analysis-translations.js', import.meta.url),
   'utf8',
@@ -31,8 +52,10 @@ test('one scalable chip visual authority serves inline glyphs and physical table
   assert.ok(primitives);
   assert.equal(Object.isFrozen(primitives), true);
   assert.deepEqual([...Object.keys(primitives.sizes)], ['small', 'normal']);
-  assert.ok(html.indexOf('src/ui/PokerPrimitives.js') < html.indexOf('src/ui/TableRenderer.js'));
-  assert.equal((html.match(/src\/ui\/PokerPrimitives\.js/g) || []).length, 1);
+  const scripts = markupDocument.querySelectorAll('script[src]');
+  const primitivesScripts = scripts.filter((script) => script.getAttribute('src').split('?')[0] === 'src/ui/PokerPrimitives.js');
+  assert.equal(primitivesScripts.length, 1);
+  assert.ok(precedes(primitivesScripts[0], scripts.find((script) => script.getAttribute('src').split('?')[0] === 'src/ui/TableRenderer.js')));
 
   const visual = primitives.pokerChipVisualSvg({ transform: 'scale(2)' });
   const sharedVisual = primitives.pokerChipVisualSvg().trim();
@@ -130,20 +153,34 @@ test('Hebrew keeps each amount as an LTR poker-data island', () => {
   assert.ok(markup.indexOf('poker-chip') < markup.indexOf('קופה'));
   assert.ok(markup.indexOf('קופה') < markup.indexOf('100'));
   assert.ok(markup.indexOf('100') < markup.indexOf(' bb'));
-  assert.match(css, /\.poker-amount\s*\{[\s\S]*?direction:\s*ltr;[\s\S]*?unicode-bidi:\s*isolate/);
-  assert.match(css, /\.poker-amount-prefix,[\s\S]*?\.poker-amount-unit \{ unicode-bidi: isolate; \}/);
-  assert.match(css, /\.poker-amount-value,[\s\S]*?\.poker-amount-unit \{ direction: ltr; \}/);
-  assert.match(css, /\[dir="rtl"\] \.poker-amount/);
+  const host = mounted(markup);
+  for (const dir of ['ltr', 'rtl']) {
+    withRoot({ dir }, () => {
+      const amount = host.querySelector('.poker-amount');
+      assert.equal(css.cascaded(amount, 'direction'), 'ltr', dir);
+      assert.equal(css.cascaded(amount, 'unicode-bidi'), 'isolate', dir);
+      for (const part of ['.poker-amount-prefix', '.poker-amount-unit']) assert.equal(css.cascaded(host.querySelector(part), 'unicode-bidi'), 'isolate', `${dir} ${part}`);
+      for (const part of ['.poker-amount-value', '.poker-amount-unit']) assert.equal(css.cascaded(host.querySelector(part), 'direction'), 'ltr', `${dir} ${part}`);
+    });
+  }
+  host.remove();
 });
 
 test('chip color and amount typography are token-driven in Midnight and Daylight', () => {
-  assert.match(css, /\.poker-chip-glyph,[\s\S]*?\.poker-table-amount\s*\{[\s\S]*?color:\s*var\(--accent-primary\)/);
-  assert.match(css, /\.poker-chip-body\s*\{[\s\S]*?currentColor/);
-  assert.match(css, /\.poker-chip-edge-inserts\s*\{[\s\S]*?var\(--surface-overlay\)/);
-  assert.match(css, /\.poker-amount-text\s*\{[\s\S]*?fill:\s*var\(--text-primary\)/);
-  assert.match(css, /font-variant-numeric:\s*tabular-nums/);
-  assert.match(css, /\[data-theme="midnight"\]/);
-  assert.match(css, /\[data-theme="daylight"\]/);
+  const host = mounted(primitives.pokerAmountSvg({ prefix: 'Pot', value: '100', unit: 'bb' }) + primitives.pokerTableAmountSvg({ value: '12' }));
+  const at = (selector) => host.querySelector(selector);
+  assert.ok(at('.poker-table-amount'));
+  for (const selector of ['.poker-chip-glyph', '.poker-table-amount']) assert.equal(css.cascaded(at(selector), 'color'), 'var(--accent-primary)', selector);
+  assert.match(css.cascaded(at('.poker-chip-body'), 'fill'), /currentColor/);
+  assert.match(css.cascaded(at('.poker-chip-edge-inserts'), 'fill'), /var\(--surface-overlay\)/);
+  assert.equal(css.cascaded(at('.poker-amount-text'), 'fill'), 'var(--text-primary)');
+  assert.equal(css.cascaded(at('.poker-amount-text'), 'font-variant-numeric'), 'tabular-nums');
+  // The same tokens resolve to theme-specific colours in Midnight and Daylight.
+  const accent = (theme) => withRoot({ 'data-theme': theme }, () => css.resolved(at('.poker-chip-glyph'), 'color'));
+  assert.ok(accent('midnight'));
+  assert.ok(accent('daylight'));
+  assert.notEqual(accent('midnight'), accent('daylight'));
+  host.remove();
   assert.doesNotMatch(primitiveSource, /#[0-9a-f]{3,8}/i);
 });
 
@@ -300,9 +337,25 @@ test('Replay emphasis continues to animate complete amount regions for all table
   assert.match(renderer, /motion\.transitionKind === 'action'[\s\S]*?state\.showStreetContributions === false[\s\S]*?state\.status === 'awaiting_board'/);
   assert.doesNotMatch(renderer, /change\.contribution\.previousMilliBb > 0[\s\S]*?change\.contribution\.nextMilliBb === 0/);
   assert.match(renderer, /querySelector\('#table-pot'\)\?\.classList\.add\('is-replay-pot-motion'\)/);
-  assert.match(css, /\.is-replay-value-motion/);
-  assert.match(css, /\.table-pot\.is-replay-pot-motion/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#visual-table-container \.is-replay-value-motion/);
+  // Replay emphasis animates in both motion cycles and is removed under
+  // reduced motion.
+  const value = markupDocument.createElement('div');
+  value.className = 'table-seat-stack is-replay-value-motion';
+  const pot = markupDocument.createElement('div');
+  pot.className = 'table-pot is-replay-pot-motion';
+  tableHost.append(value, pot);
+  try {
+    for (const cycle of ['a', 'b']) {
+      tableHost.dataset.replayMotionCycle = cycle;
+      assert.match(css.cascaded(value, 'animation'), new RegExp(`replay-value-settle-${cycle}`));
+      assert.match(css.cascaded(pot, 'animation'), new RegExp(`replay-pot-settle-${cycle}`));
+      for (const element of [value, pot]) assert.match(css.cascaded(element, 'animation', { reducedMotion: true }), /^none/);
+    }
+  } finally {
+    value.remove();
+    pot.remove();
+    delete tableHost.dataset.replayMotionCycle;
+  }
   assert.match(renderer, /for \(let i = 0; i < activePlayers; i\+\+\)/);
   assert.doesNotMatch(renderer, /activePlayers\s*===?\s*(?:2|6|10)/);
 });

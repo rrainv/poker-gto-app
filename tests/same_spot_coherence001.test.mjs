@@ -1,22 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 import {
   createTrainingSameSpotLifecycle,
 } from '../app/src/application/training-same-spot-lifecycle.mjs';
+import { bootApp, indexDocument, strategyProviderProbe, text } from './helpers/app-under-test.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const sameSpotFlow = logic.slice(
-  logic.indexOf('async function openTrainingMemorySameSpot('),
-  logic.indexOf('async function openTrainingMemoryRedrill('),
-);
-const answerFlow = logic.slice(
-  logic.indexOf('function handleTrainingGuess('),
-  logic.indexOf('function replayTrainingExercise('),
-);
+// TEST-HYGIENE-001: the Same Spot flow runs in the booted app with real
+// Training Memory (fake IndexedDB); page functions are observed through spies
+// and the strategy provider through a probe, instead of regex-matching and
+// vm-evaluating slices of logic.js. Markup is checked on the parsed document.
+const markup = indexDocument();
+const probe = strategyProviderProbe();
+const app = await bootApp({ beforeScripts: probe.beforeScripts });
+const training = () => app.window.app.training;
+const pageFunctions = (names) => names.filter((name) => app.evaluate(`typeof ${name}`) === 'function');
+
+/** Answer one Focused decision, return to idle, and return its Memory record. */
+async function historicalRecord() {
+  await app.training.start('focused');
+  await app.training.answer();
+  await app.settle(500);
+  const record = await training().memoryCurrentRecordPromise;
+  assert.equal(record?.status, 'answered');
+  app.call('clearTrainingSessionState');
+  await app.settle(500);
+  assert.equal(app.call('trainingSessionIsActive'), false);
+  return record;
+}
+
+async function leaveSameSpot() {
+  if (app.call('trainingSameSpotIsActive')) await app.call('exitTrainingSameSpot');
+  await app.settle(300);
+}
 
 test('standalone Same Spot is explicit and separate from ordinary session state', () => {
   const lifecycle = createTrainingSameSpotLifecycle();
@@ -30,267 +46,241 @@ test('standalone Same Spot is explicit and separate from ordinary session state'
   assert.equal(lifecycle.getState().active, false);
 });
 
-test('Same Spot presentation is read-only and never impersonates Focused Drill', () => {
-  assert.match(html, /id="trainingSameSpotSetup"[^>]+hidden/);
-  assert.match(html, /Re-drill from Training Memory/);
-  assert.match(html, /id="trainingSameSpotStreet"/);
-  assert.match(html, /id="trainingSameSpotPosition"/);
-  assert.match(html, /id="trainingSameSpotTable"/);
-  assert.match(html, /id="trainingSameSpotStack"/);
-  assert.match(html, /id="trainingSameSpotFacing"/);
-  assert.match(html, /id="trainingSameSpotExit"/);
-  assert.match(html, /data-i18n="Back to Training"/);
-  assert.doesNotMatch(html, /Return to session/);
-  assert.doesNotMatch(sameSpotFlow, /setTrainingSessionMode\('focused'/);
-  assert.doesNotMatch(sameSpotFlow, /TrainingPracticePlanner|generatePlanned|strategyProvider/);
-  assert.match(sameSpotFlow, /startTemporaryTrainingMemoryReviewSession\(\{/);
-  assert.match(sameSpotFlow, /mode: 'review'/);
-  assert.match(sameSpotFlow, /attemptKind: 'redrill'/);
-});
-
-test('Same Spot answer is linked, completes review evidence, and stays headline-neutral', () => {
-  assert.match(sameSpotFlow, /parentDecisionRecordId: recordId,[\s\S]*redrillKind: 'same_spot'/);
-  assert.match(answerFlow, /currentAttemptKind !== 'replay'[\s\S]*currentAttemptKind !== 'redrill'/);
-  assert.match(answerFlow, /markSameSpotAnswered/);
-  assert.match(answerFlow, /finishTrainingMemorySession\('completed'\)/);
-  assert.doesNotMatch(answerFlow, /markReviewed|reviewAgain|updateStudyMetadata/);
-});
-
-test('standalone Same Spot exit drains its review, returns idle, and refreshes Memory', () => {
-  const exitFlow = logic.slice(
-    logic.indexOf('function exitTrainingSameSpot('),
-    logic.indexOf('function recordTrainingExerciseShown('),
-  );
-  assert.match(exitFlow, /released\.answered \? 'completed' : 'abandoned'/);
-  const orderedSteps = [
-    'await Promise.resolve(cleanup)',
-    'discardSameSpotMemoryRuntime()',
-    'returnSameSpotToIdleTraining()',
-    'await refreshTrainingMemoryPanel()',
-  ];
-  orderedSteps.reduce((priorIndex, step) => {
-    const index = exitFlow.indexOf(step);
-    assert.ok(index > priorIndex, `${step} must follow the prior lifecycle step`);
-    return index;
-  }, -1);
-  assert.doesNotMatch(logic, /captureSuspendedTrainingState|restoreSuspendedTraining|reacquireSuspendedTrainingMemory|captureSessionState|restoreSessionState/);
-});
-
-test('owner invalidation releases Same Spot and restores only ordinary idle presentation', () => {
-  const ownerCleanup = extractFunction(logic, 'clearTrainingMemoryOwnerPresentation');
-  assert.match(ownerCleanup, /sameSpotWasActive/);
-  assert.match(ownerCleanup, /releaseSameSpot/);
-  assert.match(ownerCleanup, /clearTrainingSessionState\(\)/);
-  assert.match(ownerCleanup, /showOrdinaryTrainingSetupAfterSameSpot\(\)/);
-  assert.doesNotMatch(ownerCleanup, /beginSameSpot|startTemporaryTrainingMemoryReviewSession/);
-});
-
-test('frozen earlier evidence and this try remain separately labelled', () => {
-  assert.match(html, /data-i18n="Earlier answer"/);
-  assert.match(html, /data-i18n="This try"/);
-  assert.match(logic, /sameSpotSourceRole[\s\S]*'Historical heuristic baseline'[\s\S]*'Historical selected reference'/);
-  assert.match(sameSpotFlow, /callTrainingMemoryBridge\('createSameSpot', recordId, \{ handoff \}\)/);
-  assert.match(sameSpotFlow, /callTrainingMemoryBridge\('getDecision', recordId\)/);
-  assert.doesNotMatch(sameSpotFlow, /generateSimilarSpot|resolve\(/);
-});
-
-function extractFunction(source, name) {
-  let start = source.indexOf(`function ${name}(`);
-  assert.notEqual(start, -1, `${name} must exist`);
-  if (source.slice(start - 6, start) === 'async ') start -= 6;
-  const open = source.indexOf('{', start);
-  let depth = 0;
-  for (let index = open; index < source.length; index += 1) {
-    if (source[index] === '{') depth += 1;
-    if (source[index] === '}') depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
+test('Same Spot presentation is read-only and never impersonates Focused Drill', async () => {
+  const setup = markup.getElementById('trainingSameSpotSetup');
+  assert.equal(setup.hidden, true);
+  assert.match(text(markup.body), /Re-drill from Training Memory/);
+  for (const id of ['trainingSameSpotStreet', 'trainingSameSpotPosition', 'trainingSameSpotTable', 'trainingSameSpotStack', 'trainingSameSpotFacing', 'trainingSameSpotExit']) {
+    assert.ok(markup.getElementById(id), id);
   }
-  throw new Error(`Could not extract ${name}`);
-}
+  assert.ok(markup.querySelector('[data-i18n="Back to Training"]'));
+  assert.doesNotMatch(text(markup.body), /Return to session/);
+  const record = await historicalRecord();
+  const spy = app.spy(pageFunctions([
+    'setTrainingSessionMode', 'startPracticeSession', 'startTemporaryTrainingMemoryReviewSession', 'renderCanonicalTrainingExercise',
+  ]));
+  try {
+    const resolves = await probe.count(async () => {
+      await app.call('openTrainingMemorySameSpot', record.id);
+      await app.settle(500);
+    });
+    assert.equal(resolves.length, 0, 'no strategy is resolved for a Same Spot');
+    assert.equal(spy.count('setTrainingSessionMode'), 0);
+    if (spy.calls.startPracticeSession) assert.equal(spy.count('startPracticeSession'), 0);
+    assert.equal(spy.count('startTemporaryTrainingMemoryReviewSession'), 1);
+    assert.equal(spy.calls.startTemporaryTrainingMemoryReviewSession[0][0].mode, 'review');
+    assert.equal(spy.calls.renderCanonicalTrainingExercise[0][1].attemptKind, 'redrill');
+  } finally {
+    spy.restore();
+    await leaveSameSpot();
+  }
+});
+
+test('Same Spot answer is linked, completes review evidence, and stays headline-neutral', async () => {
+  const record = await historicalRecord();
+  const shown = app.spy(['callTrainingMemoryBridge']);
+  try {
+    await app.call('openTrainingMemorySameSpot', record.id);
+    await app.settle(500);
+  } finally {
+    shown.restore();
+  }
+  // The shown re-drill is linked to the historical decision.
+  const [, link] = shown.calls.callTrainingMemoryBridge.find(([name]) => name === 'recordExerciseShown');
+  assert.equal(link.parentDecisionRecordId, record.id);
+  assert.equal(link.redrillKind, 'same_spot');
+  const stats = { ...training().stats };
+  const spy = app.spy(['callTrainingServiceBridge', 'callTrainingMemoryBridge', 'finishTrainingMemorySession']);
+  try {
+    await app.training.answer();
+    await app.settle(500);
+    assert.deepEqual(spy.calls.callTrainingServiceBridge.map(([name]) => name).filter((name) => name === 'markSameSpotAnswered'), ['markSameSpotAnswered']);
+    assert.deepEqual(spy.calls.finishTrainingMemorySession, [['completed']]);
+    const memoryCalls = spy.calls.callTrainingMemoryBridge.map(([name]) => name);
+    assert.ok(memoryCalls.includes('recordExerciseAnswered'));
+    for (const name of ['markReviewed', 'reviewAgain', 'updateStudyMetadata']) assert.ok(!memoryCalls.includes(name), name);
+    assert.deepEqual({ ...training().stats }, stats, 'a re-drill does not count toward the session headline');
+  } finally {
+    spy.restore();
+    await leaveSameSpot();
+  }
+});
+
+test('standalone Same Spot exit drains its review, returns idle, and refreshes Memory', async () => {
+  for (const answered of [true, false]) {
+    const record = await historicalRecord();
+    await app.call('openTrainingMemorySameSpot', record.id);
+    await app.settle(500);
+    if (answered) await app.training.answer();
+    const spy = app.spy(['finishTrainingMemorySession', 'discardSameSpotMemoryRuntime', 'returnSameSpotToIdleTraining', 'refreshTrainingMemoryPanel']);
+    try {
+      if (!answered) training().memorySessionPromise ||= Promise.resolve(null);
+      assert.equal(await app.call('exitTrainingSameSpot'), true);
+      await app.settle(300);
+      if (!answered) assert.deepEqual(spy.calls.finishTrainingMemorySession, [['abandoned']]);
+      else assert.ok(spy.calls.finishTrainingMemorySession.every(([status]) => status === 'completed'));
+      const order = ['discardSameSpotMemoryRuntime', 'returnSameSpotToIdleTraining', 'refreshTrainingMemoryPanel'].map((name) => spy.sequence.indexOf(name));
+      assert.ok(order.every((index, position) => index >= 0 && (position === 0 || index > order[position - 1])), JSON.stringify(spy.sequence));
+      assert.equal(app.call('trainingSameSpotIsActive'), false);
+      assert.equal(app.$('.training-workspace').dataset.trainingState, 'idle');
+    } finally {
+      spy.restore();
+    }
+  }
+  for (const name of ['captureSuspendedTrainingState', 'restoreSuspendedTraining', 'reacquireSuspendedTrainingMemory', 'captureSessionState', 'restoreSessionState']) {
+    assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  }
+});
+
+test('owner invalidation releases Same Spot and restores only ordinary idle presentation', async () => {
+  const record = await historicalRecord();
+  await app.call('openTrainingMemorySameSpot', record.id);
+  await app.settle(500);
+  assert.equal(app.call('trainingSameSpotIsActive'), true);
+  const spy = app.spy(['clearTrainingSessionState', 'showOrdinaryTrainingSetupAfterSameSpot', 'callTrainingServiceBridge', 'startTemporaryTrainingMemoryReviewSession']);
+  try {
+    app.call('clearTrainingMemoryOwnerPresentation');
+    await app.settle(300);
+    assert.equal(app.call('trainingSameSpotIsActive'), false);
+    assert.equal(spy.count('clearTrainingSessionState'), 1);
+    assert.equal(spy.count('showOrdinaryTrainingSetupAfterSameSpot'), 1);
+    assert.ok(!spy.calls.callTrainingServiceBridge.some(([name]) => name === 'beginSameSpot'));
+    assert.equal(spy.count('startTemporaryTrainingMemoryReviewSession'), 0);
+  } finally {
+    spy.restore();
+    await leaveSameSpot();
+  }
+});
+
+test('frozen earlier evidence and this try remain separately labelled', async () => {
+  assert.ok(markup.querySelector('[data-i18n="Earlier answer"]'));
+  assert.ok(markup.querySelector('[data-i18n="This try"]'));
+  const bridge = app.window.requireStrategyProviderBridge;
+  try {
+    for (const [state, label] of [
+      ['heuristic_comparison', 'Historical heuristic baseline'],
+      ['accepted_reference_comparison', 'Historical selected reference'],
+      ['normative_assessment', 'Historical selected reference'],
+    ]) {
+      app.window.requireStrategyProviderBridge = () => ({ ...bridge(), historicalTruth: () => ({ state }) });
+      assert.equal(app.call('sameSpotSourceRole', { strategyEvidence: {} }), label);
+    }
+  } finally {
+    app.window.requireStrategyProviderBridge = bridge;
+  }
+  const record = await historicalRecord();
+  const spy = app.spy(['callTrainingMemoryBridge']);
+  try {
+    const resolves = await probe.count(async () => {
+      await app.call('openTrainingMemorySameSpot', record.id);
+      await app.settle(500);
+    });
+    assert.equal(resolves.length, 0);
+    const calls = spy.calls.callTrainingMemoryBridge;
+    assert.deepEqual(calls.find(([name]) => name === 'createSameSpot'), ['createSameSpot', record.id, { handoff: null }]);
+    assert.deepEqual(calls.find(([name]) => name === 'getDecision'), ['getDecision', record.id]);
+  } finally {
+    spy.restore();
+    await leaveSameSpot();
+  }
+  assert.equal(app.evaluate('typeof generateSimilarSpot'), 'undefined');
+});
 
 for (const mode of ['varied', 'focused', 'full_hand']) {
   test(`active ${mode} blocks Same Spot before any session or planner mutation`, async () => {
-    const openSameSpot = extractFunction(logic, 'openTrainingMemorySameSpot');
-    const calls = [];
-    const sandbox = {
-      trainingSessionIsActive: () => true,
-      setTrainingMemoryStatus: (message) => calls.push(['status', message]),
-      callTrainingMemoryBridge: (...args) => calls.push(['memory', ...args]),
-      callTrainingServiceBridge: (...args) => calls.push(['training', ...args]),
-    };
-    vm.runInNewContext(`${openSameSpot}; this.result = openTrainingMemorySameSpot('record');`, sandbox);
-    assert.equal(await sandbox.result, null);
-    assert.deepEqual(calls, [[
-      'status',
-      'Finish or leave your current session before re-drilling this spot.',
-    ]]);
+    await app.training.start(mode);
+    assert.equal(app.call('trainingSessionIsActive'), true);
+    const spy = app.spy(['setTrainingMemoryStatus', 'callTrainingMemoryBridge', 'callTrainingServiceBridge']);
+    try {
+      assert.equal(await app.call('openTrainingMemorySameSpot', 'record'), null);
+      assert.deepEqual(spy.sequence, ['setTrainingMemoryStatus']);
+      assert.deepEqual(spy.calls.setTrainingMemoryStatus, [['Finish or leave your current session before re-drilling this spot.']]);
+    } finally {
+      spy.restore();
+      app.call('clearTrainingSessionState');
+      await app.settle(300);
+    }
   });
 }
 
-test('Same Spot never changes or starts a planner mode', () => {
-  assert.doesNotMatch(sameSpotFlow, /startPracticeSession|generatePlanned|setTrainingSessionMode/);
-  assert.ok(
-    sameSpotFlow.indexOf('trainingSessionIsActive()')
-      < sameSpotFlow.indexOf("callTrainingMemoryBridge('createSameSpot'"),
-  );
+test('Same Spot never changes or starts a planner mode', async () => {
+  const record = await historicalRecord();
+  const spy = app.spy(pageFunctions(['trainingSessionIsActive', 'callTrainingMemoryBridge', 'setTrainingSessionMode', 'startPracticeSession']));
+  try {
+    await app.call('openTrainingMemorySameSpot', record.id);
+    await app.settle(500);
+    assert.equal(spy.count('setTrainingSessionMode'), 0);
+    if (spy.calls.startPracticeSession) assert.equal(spy.count('startPracticeSession'), 0);
+    // The session gate runs before the Memory handoff is created.
+    const createIndex = spy.sequence.findIndex((name, index) => name === 'callTrainingMemoryBridge' && spy.calls.callTrainingMemoryBridge[spy.sequence.slice(0, index).filter((entry) => entry === 'callTrainingMemoryBridge').length][0] === 'createSameSpot');
+    assert.ok(spy.sequence.indexOf('trainingSessionIsActive') >= 0 && spy.sequence.indexOf('trainingSessionIsActive') < createIndex);
+  } finally {
+    spy.restore();
+    await leaveSameSpot();
+  }
 });
 
-test('a settled Memory persistence handle cannot block idle Same Spot', () => {
-  const isActive = extractFunction(logic, 'trainingSessionIsActive');
-  const sandbox = {
-    app: { training: {
-      memorySessionPromise: Promise.resolve({ id: 'settled-session' }),
-      practiceSession: null,
-    } },
-    document: {
-      querySelector: () => ({ dataset: { trainingState: 'idle' } }),
-    },
-  };
-  vm.runInNewContext(`${isActive}; this.result = trainingSessionIsActive();`, sandbox);
-  assert.equal(sandbox.result, false);
+test('a settled Memory persistence handle cannot block idle Same Spot', async () => {
+  const previous = training().memorySessionPromise;
+  training().memorySessionPromise = Promise.resolve({ id: 'settled-session' });
+  try {
+    assert.equal(app.$('.training-workspace').dataset.trainingState, 'idle');
+    assert.equal(app.call('trainingSessionIsActive'), false);
+  } finally {
+    training().memorySessionPromise = previous;
+  }
 });
 
 test('canonical ordinary Training states still block Same Spot without relying on Memory writes', () => {
-  const isActive = extractFunction(logic, 'trainingSessionIsActive');
-  for (const trainingState of ['generating', 'automating', 'ready', 'grading', 'feedback']) {
-    const sandbox = {
-      app: { training: { memorySessionPromise: null, practiceSession: null } },
-      document: {
-        querySelector: () => ({ dataset: { trainingState } }),
-      },
-    };
-    vm.runInNewContext(`${isActive}; this.result = trainingSessionIsActive();`, sandbox);
-    assert.equal(sandbox.result, true, trainingState);
+  const workspace = app.$('.training-workspace');
+  const previous = [workspace.dataset.trainingState, training().memorySessionPromise, training().practiceSession];
+  training().memorySessionPromise = null;
+  training().practiceSession = null;
+  try {
+    for (const trainingState of ['generating', 'automating', 'ready', 'grading', 'feedback']) {
+      workspace.dataset.trainingState = trainingState;
+      assert.equal(app.call('trainingSessionIsActive'), true, trainingState);
+    }
+  } finally {
+    [workspace.dataset.trainingState, training().memorySessionPromise, training().practiceSession] = previous;
   }
 });
 
-class FakeElement {
-  constructor(tagName) {
-    this.tagName = tagName.toUpperCase();
-    this.children = [];
-    this.dataset = {};
-    this.listeners = new Map();
-    this.textContent = '';
-  }
-
-  append(...children) { this.children.push(...children); }
-  appendChild(child) { this.children.push(child); return child; }
-  addEventListener(type, listener) {
-    if (!this.listeners.has(type)) this.listeners.set(type, []);
-    this.listeners.get(type).push(listener);
-  }
-  click() { this.listeners.get('click')?.forEach((listener) => listener({ currentTarget: this })); }
-}
-
-function renderedSameSpotButton(openRedrill) {
-  const memoryButton = extractFunction(logic, 'trainingMemoryButton');
-  const renderDecision = logic.slice(
-    logic.indexOf('function renderTrainingMemoryDecisionItem('),
-    logic.indexOf('async function populateTrainingMemorySessionDecisions('),
-  );
-  const sandbox = {
-    document: { createElement: (tagName) => new FakeElement(tagName) },
-    app: { training: { memoryGeneration: 0 } },
-    t: (value) => value,
-    trainingMemoryButton: undefined,
-    trainingMemoryDecisionSummary: () => new FakeElement('div'),
-    trainingMemoryPresentationGate: () => ({ feedbackEmbargoed: false }),
-    truthPresentation: () => ({ title: 'Not assessed' }),
-    requireStrategyProviderBridge: () => ({ historicalTruth: () => null }),
-    trainingMemoryComparisonLabel: (value) => value,
-    trainingActionLabel: (value) => value,
-    openTrainingMemoryRedrill: openRedrill,
-    queueTrainingMemoryWrite: async () => null,
-    callTrainingMemoryBridge: () => null,
-    refreshTrainingMemoryPanel() {},
-    TRAINING_MEMORY_REASON_LABELS: {},
-  };
-  const record = {
-    id: 'decision-record-1',
-    status: 'answered',
-    decisionContext: {},
-    userResponse: { action: { type: 'check' } },
-    strategyEvidence: null,
-    studyMetadata: { review: false },
-    reviewState: { state: 'pending' },
-  };
-  const context = { ...sandbox, record };
-  vm.runInNewContext(
-    `${memoryButton}; ${renderDecision}; this.item = renderTrainingMemoryDecisionItem(this.record);`,
-    context,
-  );
-  const find = (element) => element.textContent === 'Same Spot'
-    ? element
-    : element.children.map(find).find(Boolean);
-  return find(context.item);
-}
-
 test('rendered and rerendered Recent-session Same Spot actions resolve the live launch path once', async () => {
+  const record = await historicalRecord();
+  const find = (element) => element.localName === 'button' && text(element) === 'Same Spot'
+    ? element
+    : [...element.children].map(find).find(Boolean);
+  const first = find(app.call('renderTrainingMemoryDecisionItem', record));
+  const rerendered = find(app.call('renderTrainingMemoryDecisionItem', record));
+  assert.ok(first && rerendered);
+  // The handler resolves the launch path when clicked, not when rendered.
+  const live = app.window.openTrainingMemoryRedrill;
   const calls = [];
-  let bridgeReady = false;
-  const openRedrill = (recordId, kind) => {
-    calls.push({ recordId, kind, bridgeReady });
-  };
-  const first = renderedSameSpotButton(openRedrill);
-  const rerendered = renderedSameSpotButton(openRedrill);
-  bridgeReady = true;
-  rerendered.click();
-  await Promise.resolve();
-  assert.deepEqual(calls, [{
-    recordId: 'decision-record-1',
-    kind: 'same_spot',
-    bridgeReady: true,
-  }]);
-  assert.ok(first);
+  app.window.openTrainingMemoryRedrill = (recordId, kind) => { calls.push({ recordId, kind }); };
+  try {
+    rerendered.click();
+    await app.settle(50);
+  } finally {
+    app.window.openTrainingMemoryRedrill = live;
+  }
+  assert.deepEqual(calls, [{ recordId: record.id, kind: 'same_spot' }]);
 });
 
 test('idle Same Spot calls createSameSpot once and opens the standalone lifecycle', async () => {
-  const openSameSpot = extractFunction(logic, 'openTrainingMemorySameSpot');
-  const lifecycle = createTrainingSameSpotLifecycle();
-  const calls = [];
-  const exercise = { id: 'same-spot-exercise', seed: 17 };
-  const historical = { id: 'decision-record-1' };
-  const app = { training: {
-    memoryGeneration: 4,
-    memoryWritePromise: Promise.resolve(),
-    memoryPendingOrigin: null,
-    memoryRedrillNote: '',
-    sameSpotHistoricalRecord: null,
-  } };
-  const sandbox = {
-    app,
-    trainingSessionIsActive: () => false,
-    setTrainingMemoryStatus: (value) => calls.push(['status', value]),
-    async callTrainingMemoryBridge(method, recordId) {
-      calls.push(['memory', method, recordId]);
-      if (method === 'createSameSpot') return { exercise };
-      if (method === 'getDecision') return historical;
-      return null;
-    },
-    callTrainingServiceBridge(method, input) {
-      calls.push(['training', method]);
-      if (method === 'beginSameSpot') return lifecycle.begin(input);
-      if (method === 'loadExercise') return { ok: true, exercise: input };
-      return null;
-    },
-    setTrainingWorkspaceState() {},
-    setFullHandTrainingPhase() {},
-    clearTrainingExercisePresentation() {},
-    startTemporaryTrainingMemoryReviewSession() {},
-    renderCanonicalTrainingExercise() {},
-    renderSameSpotSetup() {},
-    renderSameSpotComparison() {},
-    trainingSameSpotIsActive: () => lifecycle.getState().active,
-    exitTrainingSameSpot: async () => null,
-    $: () => null,
-    window: { matchMedia: () => ({ matches: true }) },
-  };
-  vm.runInNewContext(
-    `${openSameSpot}; this.result = openTrainingMemorySameSpot('decision-record-1');`,
-    sandbox,
-  );
-  assert.equal((await sandbox.result).exercise, exercise);
-  assert.equal(calls.filter((entry) => entry[1] === 'createSameSpot').length, 1);
-  assert.equal(lifecycle.getState().active, true);
-  assert.equal(lifecycle.getState().sourceDecisionRecordId, 'decision-record-1');
+  const record = await historicalRecord();
+  const spy = app.spy(['callTrainingMemoryBridge']);
+  let result;
+  try {
+    result = await app.call('openTrainingMemorySameSpot', record.id);
+    await app.settle(500);
+    assert.equal(spy.calls.callTrainingMemoryBridge.filter(([name]) => name === 'createSameSpot').length, 1);
+  } finally {
+    spy.restore();
+  }
+  assert.ok(result.exercise);
+  const state = app.window.RiverlineTraining.getSameSpotState();
+  assert.equal(state.active, true);
+  assert.equal(state.sourceDecisionRecordId, record.id);
+  await leaveSameSpot();
 });

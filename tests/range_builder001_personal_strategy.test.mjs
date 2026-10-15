@@ -19,6 +19,7 @@ import {
   fromRemotePersonalStrategyEntity,
   toRemotePersonalStrategyEntity,
 } from '../app/src/sync/personal-strategy-domain-adapters.mjs';
+import { appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
 
 const T0 = Date.parse('2026-08-18T20:00:00.000Z');
 
@@ -287,12 +288,10 @@ test('Builder evidence survives reload, stays mode-scoped, and round-trips throu
 });
 
 test('Builder architecture and UI preserve boundaries, grouped writes, keyboard selection, and non-color state', async () => {
-  const [builderSource, workspaceSource, repositorySource, html, css] = await Promise.all([
+  const [builderSource, workspaceSource, repositorySource] = await Promise.all([
     readFile(new URL('../app/src/application/range-builder-service.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/personal-strategy/repository.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   ]);
   assert.doesNotMatch(builderSource, /StrategyProvider|Equity|HoldemWeightedRange|rangeWeight/);
   assert.doesNotMatch(builderSource, /saveRangeObservation\(/);
@@ -303,11 +302,30 @@ test('Builder architecture and UI preserve boundaries, grouped writes, keyboard 
   assert.match(workspaceSource, /pointerdown[\s\S]*pointerover[\s\S]*pointerup/);
   assert.match(workspaceSource, /event\.key === ' '/);
   assert.match(workspaceSource, /event\.key\.toLowerCase\(\) === 'z'/);
-  assert.match(html, /id="calibrationBuilderToolbar"[\s\S]*role="toolbar"/);
-  assert.match(html, /data-builder-operation="dominant_fold"/);
-  assert.match(html, /data-builder-operation="pure_fold"/);
-  assert.match(html, /data-builder-operation="exact_mix"/);
-  assert.match(html, /aria-live="polite"/);
-  assert.match(css, /\.calibration-matrix-cell\[aria-selected="true"\][\s\S]*box-shadow/);
-  assert.match(css, /data-builder-touched/);
+  // TEST-HYGIENE-001: markup is checked on the parsed Range Calibration
+  // template (instantiated in context) and styles through the cascade.
+  const markup = freshIndexDocument();
+  const css = appStyleSheet();
+  const host = markup.createElement('div');
+  host.appendChild(markup.getElementById('rangeCalibrationTemplate').content.cloneNode(true));
+  markup.getElementById('calibrationMode').appendChild(host);
+  const toolbar = host.querySelector('#calibrationBuilderToolbar');
+  assert.ok(toolbar.querySelector('[role="toolbar"]'), 'the Builder section holds a toolbar');
+  for (const operation of ['dominant_fold', 'pure_fold', 'exact_mix']) {
+    assert.ok(host.querySelector(`[data-builder-operation="${operation}"]`), operation);
+  }
+  assert.ok(host.querySelector('[aria-live="polite"]'));
+  // Selection and touched state are visible without colour alone: a ring
+  // for selection and a dashed marker for touched cells.
+  const grid = host.querySelector('.calibration-matrix-grid');
+  const cell = markup.createElement('button');
+  cell.className = 'calibration-matrix-cell';
+  grid.appendChild(cell);
+  const unselected = css.cascaded(cell, 'box-shadow');
+  cell.setAttribute('aria-selected', 'true');
+  assert.match(css.cascaded(cell, 'box-shadow'), /0 0 0 2px/);
+  assert.notEqual(css.cascaded(cell, 'box-shadow'), unselected);
+  assert.equal(css.cascaded(cell, 'border-style', { pseudoElement: 'after' }), undefined);
+  cell.dataset.builderTouched = 'true';
+  assert.match(css.cascaded(cell, 'border', { pseudoElement: 'after' }), /dashed/);
 });

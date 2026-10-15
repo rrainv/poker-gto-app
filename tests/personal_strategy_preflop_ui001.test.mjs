@@ -16,6 +16,7 @@ import {
 } from '../app/src/application/range-calibration-workspace.mjs';
 import { createPersonalStrategyScopeLifecycle } from '../app/src/application/personal-strategy-scope-lifecycle.mjs';
 import { rangeCal002bFixtureById } from './fixtures/range_cal002b_synthetic_truth.mjs';
+import { appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
 
 function memoryStorage() {
   const values = new Map();
@@ -314,30 +315,40 @@ test('legacy Fold/Raise RFI remains on its compatibility path', async () => {
 });
 
 test('workspace exposes family selection, a balanced responsive action row, and contextual EN/RU/HE copy', async () => {
-  const [html, workspace, translations, styles] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
+  const [workspace, translations] = await Promise.all([
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/range-calibration-translations.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   ]);
-  for (const family of PREFLOP_CALIBRATION_DECISION_FAMILIES) {
-    assert.match(html, new RegExp(`value="${family}"`));
+  // TEST-HYGIENE-001: markup is read from the parsed document and its
+  // templates (instantiated in context); the action grid through the cascade.
+  const markup = freshIndexDocument();
+  const css = appStyleSheet();
+  const host = markup.createElement('div');
+  host.appendChild(markup.getElementById('rangeCalibrationTemplate').content.cloneNode(true));
+  markup.getElementById('calibrationMode').appendChild(host);
+  const values = new Set([
+    ...markup.querySelectorAll('[value]'),
+    ...markup.querySelectorAll('template').flatMap((template) => template.content.querySelectorAll('[value]')),
+  ].map((element) => element.getAttribute('value')));
+  for (const family of PREFLOP_CALIBRATION_DECISION_FAMILIES) assert.ok(values.has(family), family);
+  for (const id of ['calibrationContextChanged', 'calibrationContextFacts', 'calibrationQuestionContextFacts',
+    'calibrationActionGrid', 'calibrationMatrixActionLegend', 'calibrationMultiMix']) {
+    assert.ok(host.querySelector(`#${id}`), id);
   }
-  assert.match(html, /id="calibrationContextChanged"/);
-  assert.match(html, /id="calibrationContextFacts"/);
-  assert.match(html, /id="calibrationQuestionContextFacts"/);
-  assert.match(html, /id="calibrationActionGrid"/);
-  assert.match(html, /id="calibrationMatrixActionLegend"/);
-  assert.match(html, /id="calibrationMultiMix"/);
   assert.match(workspace, /actionType === 'call'[\s\S]*PREFLOP_RFI[\s\S]*'Limp'/);
   assert.match(workspace, /heroPosition === 'SB' \? 'Complete' : 'Limp'/);
   assert.match(workspace, /setMultiMixValue/);
   assert.match(workspace, /application\.switchCalibrationContext/);
   assert.match(workspace, /--calibration-action-count/);
-  assert.match(styles, /grid-template-columns: repeat\(var\(--calibration-action-count, 2\), minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@container calibration-question \(max-width: 520px\)[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@container calibration-question \(max-width: 330px\)[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);
-  assert.doesNotMatch(styles, /\.calibration-action-grid[^}]*auto-fit/);
+  // One balanced row sized by the action count; two columns, then one, as
+  // the question container narrows; never an auto-fit grid.
+  const grid = host.querySelector('#calibrationActionGrid');
+  const columns = (width) => css.cascaded(grid, 'grid-template-columns', width ? { containers: { 'calibration-question': width } } : {});
+  assert.equal(columns(), 'repeat(var(--calibration-action-count, 2), minmax(0, 1fr))');
+  assert.equal(columns(800), columns());
+  assert.equal(columns(520), 'repeat(2, minmax(0, 1fr))');
+  assert.equal(columns(330), 'minmax(0, 1fr)');
+  for (const width of [undefined, 1200, 800, 520, 400, 330, 250]) assert.doesNotMatch(columns(width), /auto-fit/);
   for (const key of [
     'First in / Unopened pot', 'Facing open', 'Facing 3-bet', 'Facing 4-bet',
     'BB option', 'Limp', 'Complete', 'Context changed',

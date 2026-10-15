@@ -37,6 +37,7 @@ import {
   createPreAccountPersonalStrategyFixture,
   createPreAccountSavedStudyFixture,
 } from './fixtures/account001_legacy.mjs';
+import { appStyleSheet, indexDocument } from './helpers/app-under-test.mjs';
 
 class MemoryStorage {
   constructor(entries = {}) {
@@ -360,27 +361,35 @@ test('Home receives the truthful account seam while Saved/Review/Mistake consume
 });
 
 test('account initialization remains local while the ACCOUNT-002A surface distinguishes auth from sync', async () => {
-  const [domain, repository, service, bootstrap, html, css, translations, specification] = await Promise.all([
+  const [domain, repository, service, bootstrap, translations, specification] = await Promise.all([
     readFile(new URL('../app/src/account-identity/domain.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/account-identity/repository.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/account-identity-service.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/account-identity-bootstrap.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/account-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../docs/project/ACCOUNT_IDENTITY_SPEC.md', import.meta.url), 'utf8'),
   ]);
   const accountSource = [domain, repository, service, bootstrap].join('\n');
   assert.doesNotMatch(accountSource, /\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|OAuth|password|token/i);
-  assert.match(html, /id="settingsAccountProfile"/);
-  assert.match(html, /id="accountDisplayName"[^>]+maxlength="80"[^>]+dir="auto"/);
-  assert.match(html, /Stored on this device/);
-  assert.match(html, /Cloud sync is not enabled/);
-  assert.match(html, /id="accountSignIn"[^>]*data-i18n="Sign in"/);
-  assert.match(html, /Signing in does not create a cloud backup/);
-  assert.match(css, /\.settings-layout\s*\{[\s\S]*grid-template-columns: minmax\(190px, \.38fr\) minmax\(0, 1fr\)/);
-  assert.match(html, /id="settingsAccountProfile"[^>]+role="tabpanel"[^>]+data-settings-panel="account"/);
-  assert.match(css, /account-display-name-form/);
+  // TEST-HYGIENE-001: Settings account markup is parsed and styles are read
+  // through the cascade.
+  const markup = indexDocument();
+  const css = appStyleSheet();
+  const profile = markup.getElementById('settingsAccountProfile');
+  assert.equal(profile.getAttribute('role'), 'tabpanel');
+  assert.equal(profile.dataset.settingsPanel, 'account');
+  const name = markup.getElementById('accountDisplayName');
+  assert.equal(name.getAttribute('maxlength'), '80');
+  assert.equal(name.getAttribute('dir'), 'auto');
+  const copy = markup.body.textContent;
+  assert.match(copy, /Stored on this device/);
+  assert.match(copy, /Cloud sync is not enabled/);
+  assert.match(copy, /Signing in does not create a cloud backup/);
+  assert.equal(markup.getElementById('accountSignIn').dataset.i18n, 'Sign in');
+  assert.equal(css.cascaded(markup.querySelector('.settings-layout'), 'grid-template-columns', { width: 1440 }), 'minmax(190px, .38fr) minmax(0, 1fr)');
+  const form = markup.querySelector('.account-display-name-form');
+  assert.ok(form);
+  assert.ok(css.matchingRules(form).length > 0, 'the display-name form is styled');
   assert.match(specification, /Saved Hand \/ Spot objects[\s\S]*?\| user\/identity \|/);
   assert.match(specification, /Personal Strategy profiles[\s\S]*?\| user\/identity \|/);
   assert.match(specification, /Range Calibration selected profile[\s\S]*?\| user\/identity \|/);

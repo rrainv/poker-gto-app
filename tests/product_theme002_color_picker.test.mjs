@@ -8,8 +8,20 @@ import {
   hsvToHex,
 } from '../app/src/application/riverline-color-picker.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { StyleSheetModel, appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css assertions are behavioural
+// (parsed markup; the picker's gradients through the cascade in LTR and RTL).
+const markup = freshIndexDocument();
+const css = appStyleSheet();
+// SOURCE-SHAPE: "the colour-picker block uses no physical margin/padding/
+// left/right" is a policy lint over the block as authored (parsed, not
+// regex-matched); the cascade cannot tell a symmetric physical property from a
+// logical one.
+const pickerSheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  return new StyleSheetModel(raw.slice(raw.indexOf('.riverline-color-picker'), raw.indexOf('/* Tooltips, toasts')));
+})();
 const bootstrap = fs.readFileSync(new URL('../app/src/application/presentation-density-bootstrap.mjs', import.meta.url), 'utf8');
 const translations = fs.readFileSync(new URL('../app/src/locales/analysis-translations.js', import.meta.url), 'utf8');
 
@@ -348,13 +360,19 @@ test('keyboard controls preview safely and focus remains trapped', () => {
 });
 
 test('Settings picker structure, exact-color copy, localization, and RTL gradients stay authoritative', () => {
-  assert.doesNotMatch(html, /type="color"/);
-  assert.match(html, /id="themeColorSaturationValue"[^>]+role="slider"[^>]+tabindex="0"/);
-  assert.match(html, /id="themeColorHue"[^>]+type="range"[^>]+max="360"[^>]+step="0\.1"/);
-  assert.match(html, /id="themeColorHex"[^>]+type="text"/);
-  assert.doesNotMatch(html, /themeColorGuardrailStatus|Safety adjustment/);
-  assert.match(html, /id="themeColorApply"/);
-  assert.match(html, /id="themeColorCancel"/);
+  assert.equal(markup.querySelector('input[type="color"]'), null);
+  const saturation = markup.getElementById('themeColorSaturationValue');
+  assert.equal(saturation.getAttribute('role'), 'slider');
+  assert.equal(saturation.getAttribute('tabindex'), '0');
+  const hue = markup.getElementById('themeColorHue');
+  assert.equal(hue.getAttribute('type'), 'range');
+  assert.equal(hue.getAttribute('max'), '360');
+  assert.equal(hue.getAttribute('step'), '0.1');
+  assert.equal(markup.getElementById('themeColorHex').getAttribute('type'), 'text');
+  assert.equal(markup.getElementById('themeColorGuardrailStatus'), null);
+  assert.doesNotMatch(markup.body.textContent, /Safety adjustment/);
+  assert.ok(markup.getElementById('themeColorApply'));
+  assert.ok(markup.getElementById('themeColorCancel'));
   assert.match(bootstrap, /onPreview:[\s\S]*themeController\.preview/);
   assert.match(bootstrap, /onApply:[\s\S]*themeController\.customize/);
   assert.match(bootstrap, /onCancel:[\s\S]*themeController\.cancelPreview/);
@@ -366,11 +384,22 @@ test('Settings picker structure, exact-color copy, localization, and RTL gradien
     'Custom colors are preserved exactly. Foreground, focus, and borders adapt for readability; poker suits and action meanings do not change.',
     'Save as new', 'Reset theme to base',
   ]) assert.match(translations, new RegExp(`'${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`));
-  const pickerCss = css.slice(css.indexOf('.riverline-color-picker'), css.indexOf('/* Tooltips, toasts'));
-  assert.match(pickerCss, /linear-gradient\(to right, #fff, transparent\)/);
-  assert.match(pickerCss, /linear-gradient\(to left, #fff, transparent\)/);
-  assert.match(pickerCss, /linear-gradient\(to right, #f00 0%, #ff0 16\.667%, #0f0 33\.333%, #0ff 50%, #00f 66\.667%, #f0f 83\.333%, #f00 100%\)/);
-  assert.match(pickerCss, /::-moz-range-track/);
-  assert.match(pickerCss, /inset-inline-start/);
-  assert.doesNotMatch(pickerCss, /margin-left|margin-right|padding-left|padding-right|\bleft\s*:|\bright\s*:/);
+  // Saturation runs toward the inline end and the hue spectrum follows the
+  // reading direction, in both LTR and RTL.
+  const sv = markup.querySelector('.theme-color-sv');
+  const spectrum = '#f00 0%, #ff0 16.667%, #0f0 33.333%, #0ff 50%, #00f 66.667%, #f0f 83.333%, #f00 100%';
+  for (const [dir, side] of [['ltr', 'right'], ['rtl', 'left']]) {
+    markup.documentElement.setAttribute('dir', dir);
+    try {
+      assert.ok(css.cascaded(sv, 'background').includes(`linear-gradient(to ${side}, #fff, transparent)`), dir);
+      assert.ok(css.cascaded(hue, 'background').includes(`linear-gradient(to ${side}, ${spectrum})`), dir);
+    } finally {
+      markup.documentElement.removeAttribute('dir');
+    }
+  }
+  assert.equal(css.cascaded(hue, 'background', { pseudoElement: '-moz-range-track' }), 'transparent');
+  assert.equal(css.cascaded(markup.querySelector('.theme-color-sv-handle'), 'inset-inline-start'), 'var(--picker-saturation, 0%)');
+  for (const rule of pickerSheet.rules) {
+    for (const { property } of rule.declarations) assert.doesNotMatch(property, /^(?:margin-left|margin-right|padding-left|padding-right|left|right)$/, rule.selectors.join(', '));
+  }
 });

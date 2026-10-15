@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import { createRangeCalibrationLifecycle } from '../app/src/application/range-calibration-lifecycle.mjs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 
 function eventWithDetail(type, detail = {}) {
   const event = new Event(type);
@@ -272,18 +273,26 @@ test('repeated lifecycle start does not duplicate subscriptions and account data
 });
 
 test('production shell declares every non-blank state and keeps authenticated storage identity-scoped', async () => {
-  const [html, css, bootstrap, workspace, translations] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
+  const [bootstrap, workspace, translations] = await Promise.all([
     readFile(new URL('../app/src/application/range-calibration-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/range-calibration-translations.js', import.meta.url), 'utf8'),
   ]);
+  // TEST-HYGIENE-001: the shell states are checked on the parsed Range
+  // Calibration template and through the cascade.
+  const template = indexDocument().getElementById('rangeCalibrationTemplate').content;
   for (const id of [
     'calibrationLoadingState', 'calibrationGuestState', 'calibrationErrorState',
     'calibrationEmptyState', 'calibrationConfiguredState',
-  ]) assert.match(html, new RegExp(`id="${id}"`));
-  assert.match(css, /\.calibration-account-required-state/);
+  ]) assert.ok(template.querySelector(`#${id}`), id);
+  // Superseded (TEST-HYGIENE-F10): the guest state is no longer an
+  // "account required" wall (.calibration-account-required-state is dead CSS
+  // since the guest-first checkpoint); it is a non-blank status panel.
+  const guest = template.querySelector('#calibrationGuestState');
+  assert.ok(guest.classList.contains('panel'));
+  assert.equal(guest.getAttribute('role'), 'status');
+  assert.ok(guest.textContent.trim());
+  assert.equal(guest.classList.contains('calibration-account-required-state'), false);
   assert.match(bootstrap, /import '\.\/authentication-bootstrap\.mjs'/);
   assert.match(bootstrap, /createRangeCalibrationLifecycle/);
   assert.match(workspace, /createIdentityScopedRangeCalibrationApplication\(scope.domainOwnerBinding, \{ lifecycleScope: scope \}\)/);
