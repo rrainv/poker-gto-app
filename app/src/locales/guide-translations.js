@@ -58,7 +58,7 @@
     'Settings and access': 'Настройки и доступ',
     'Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.': 'Настраивайте внешний вид, звук и движение, язык и данные аккаунта. Руководство доступно гостям; сам вход не гарантирует облачную синхронизацию или резервную копию.',
     'Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.': 'История тренировок в сохранённом показывает решения, которые вы приняли в тренировках на этом устройстве. Откройте решение как тот же или похожий спот либо сохраните его как спот. История тренировок не синхронизируется.',
-    'Open Analyze': 'Открыть анализ', 'Open Saved': 'Открыть сохранённое', 'Open Home Game': 'Открыть домашнюю игру',
+    'Open Analyze': 'Открыть анализ', 'Open Saved': 'Открыть сохранённое', 'Open Home Game': 'Открыть покерный вечер',
   };
 
   const he = {
@@ -91,7 +91,7 @@
     'Compare Equity, Win, and Tie results with the method shown.': 'השוו תוצאות אקוויטי, ניצחון ותיקו יחד עם השיטה המוצגת.',
     'Teach Personal Strategy': 'למדו אסטרטגיה אישית',
     'Use a Riverline profile to record how you intend to play.': 'השתמשו בפרופיל Riverline כדי לתעד כיצד בכוונתכם לשחק.',
-    'Answer calibration prompts or edit supported ranges.': 'ענו על שאלות כיול או ערכו טווחים נתמכים.',
+    'Answer calibration prompts or edit supported ranges.': 'ענו על שאלות כיול או ערכו ריינג\'ים נתמכים.',
     'Treat the result as personal intent, not the correct answer.': 'התייחסו לתוצאה ככוונה אישית, לא כתשובה הנכונה.',
     'Know the boundaries': 'הכירו את הגבולות',
     'Distinctions that keep study truthful': 'הבחנות ששומרות על לימוד אמין',
@@ -118,7 +118,7 @@
     'Settings and access': 'הגדרות וגישה',
     'Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.': 'התאימו מראה, שמע ותנועה, שפה ונתוני חשבון. המדריך זמין לאורחים; התחברות לבדה אינה מבטיחה סנכרון ענן או גיבוי.',
     'Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.': 'היסטוריית האימונים בשמורים מציגה החלטות שעניתם עליהן באימונים במכשיר הזה. פתחו החלטה כאותו ספוט או כספוט דומה, או שמרו אותה כספוט. היסטוריית האימונים אינה מסונכרנת.',
-    'Open Analyze': 'פתיחת ניתוח', 'Open Saved': 'פתיחת שמורים', 'Open Home Game': 'פתיחת משחק ביתי',
+    'Open Analyze': 'פתיחת ניתוח', 'Open Saved': 'פתיחת שמורים', 'Open Home Game': 'פתח ערב פוקר',
   };
 
   Object.assign(ru, {
@@ -163,7 +163,7 @@
     'Keep a decision worth returning to': 'שמרו החלטה שכדאי לחזור אליה',
     'See how the matchup plays out': 'גלו כיצד הידיים מתמודדות',
     "Set known hands, board and dead cards. Calculate to compare each player's Equity, wins and ties.": 'הגדירו ידיים ידועות, לוח וקלפים מתים. חשבו כדי להשוות אקוויטי, ניצחונות ותיקו של כל שחקן.',
-    'Unknown opponents use all available hands. Ranges and runouts are below.': 'ידיים לא ידועות כוללות את כל הצירופים הזמינים. טווחים וקלפי המשך נמצאים למטה.',
+    'Unknown opponents use all available hands. Ranges and runouts are below.': 'ידיים לא ידועות כוללות את כל הצירופים הזמינים. ריינג\'ים וקלפי המשך נמצאים למטה.',
     'How Riverline knows things': 'איך ריברליין יודע',
     'Observed': 'נצפה',
     'What happened in the Hand.': 'מה קרה ביד.',
@@ -181,7 +181,9 @@
   });
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineGuideTranslations = {
-    en: Object.fromEntries([...keys].map((key) => [key, key])),
+    en: Object.fromEntries([...keys].map((key) => [key, {
+      'Open Home Game': 'Open Game night',
+    }[key] || key])),
     ru,
     he,
   };

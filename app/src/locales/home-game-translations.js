@@ -1,8 +1,8 @@
 (function installHomeGameTranslations(global) {
   const ru = {
-    'Home Game': 'Домашняя игра',
+    'Home Game': 'Покерный вечер',
     'Run a real poker night with exact buy-ins, cash-outs, and settlement.': 'Проводите покерный вечер с точным учётом бай-инов, выплат и расчётов.',
-    'Opening Home Game': 'Открываем домашнюю игру',
+    'Opening Home Game': 'Открываем покерный вечер',
     'New Session': 'Новая сессия',
     'Create players, assign seats, and start accounting.': 'Добавьте игроков, назначьте места и начните учёт.',
     'Session name': 'Название сессии', 'Friday Game': 'Пятничная игра', 'Currency': 'Валюта', 'Players': 'Игроки',
@@ -11,10 +11,10 @@
     'Initial buy-in per player': 'Начальный бай-ин каждого игрока',
     'Save Group': 'Сохранить группу', 'Group name': 'Название группы', 'Start session': 'Начать сессию',
     'Saved Groups': 'Сохранённые группы', 'Reusable ordered player rosters.': 'Повторно используемые списки игроков с сохранённым порядком.',
-    'Recent Sessions': 'Недавние сессии', 'Current Home Game session': 'Текущая сессия домашней игры',
+    'Recent Sessions': 'Недавние сессии', 'Current Home Game session': 'Текущая сессия покерного вечера',
     'Guest · in-memory only': 'Гость · только в памяти', 'Account · saved on this device': 'Аккаунт · сохранено на этом устройстве',
     'Guest sessions are not kept after reload. Sign in before starting a game you want to keep.': 'Гостевые сессии не сохраняются после перезагрузки страницы. Войдите до начала игры, которую хотите сохранить.',
-    'Home Game data is private and stored locally for this account. Cloud sync is not enabled yet.': 'Данные домашней игры приватны и хранятся локально для этого аккаунта. Облачная синхронизация пока не включена.',
+    'Home Game data is private and stored locally for this account. Cloud sync is not enabled yet.': 'Данные покерного вечера приватны и хранятся локально для этого аккаунта. Облачная синхронизация пока не включена.',
     'Sign in to save reusable player groups.': 'Войдите, чтобы сохранять группы игроков.',
     'No saved groups yet.': 'Сохранённых групп пока нет.', 'No sessions yet.': 'Сессий пока нет.',
     '{count} players': 'Игроков: {count}', 'Active session': 'Активная сессия', 'Draft session': 'Черновик сессии', 'Session complete': 'Сессия завершена',
@@ -30,10 +30,10 @@
     'Enter an amount.': 'Введите сумму.', 'Enter an amount greater than zero.': 'Введите сумму больше нуля.',
     'Enter an amount greater than zero, or leave it empty to only reverse the entry.': 'Введите сумму больше нуля или оставьте поле пустым, чтобы только отменить запись.',
     'Enter a buy-in greater than zero, or leave it empty.': 'Введите бай-ин больше нуля или оставьте поле пустым.',
-    'Home Game action failed.': 'Не удалось выполнить действие домашней игры.',
-    'Running a Home Game': 'Проведение домашней игры',
+    'Home Game action failed.': 'Не удалось выполнить действие покерного вечера.',
+    'Running a Home Game': 'Проведение покерного вечера',
     'Track real cash-game money truthfully and finish with a clear settlement.': 'Честно учитывайте деньги в кэш-игре и завершайте её понятными расчётами.',
-    'Home Game is separate from poker analysis': 'Домашняя игра отделена от покерного анализа',
+    'Home Game is separate from poker analysis': 'Покерный вечер отделён от покерного анализа',
     'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'Этот раздел помогает провести реальный покерный вечер. Игроки, денежный журнал, снимки стеков и расчёты не меняют PokerState или стратегию Riverline.',
     'Start with the real roster and currency': 'Начните с реального состава и валюты',
     'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'Введите игроков в порядке мест и при необходимости начальный бай-ин. Гостевая сессия остаётся в памяти; войдите до начала игры, которую нужно сохранить.',
@@ -43,18 +43,18 @@
     'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.': 'Записывайте ребаи, аддоны, кэшауты и при необходимости фишки. Деньги и фишки разделены; завершение и расчёты заблокированы, пока точный денежный баланс не равен нулю.',
   };
   const he = {
-    'Home Game': 'משחק ביתי',
+    'Home Game': 'ערב פוקר',
     'Run a real poker night with exact buy-ins, cash-outs, and settlement.': 'נהלו ערב פוקר אמיתי עם רישום מדויק של כניסות, פדיונות והתחשבנות.',
-    'Opening Home Game': 'פותחים את המשחק הביתי', 'New Session': 'סשן חדש',
+    'Opening Home Game': 'פותחים את ערב הפוקר', 'New Session': 'סשן חדש',
     'Create players, assign seats, and start accounting.': 'הוסיפו שחקנים, הקצו מושבים והתחילו את הרישום.',
     'Session name': 'שם הסשן', 'Friday Game': 'משחק יום שישי', 'Currency': 'מטבע', 'Players': 'שחקנים', 'One player per line': 'שחקן אחד בכל שורה',
     'One player per line; seats follow this order.': 'שחקן אחד בכל שורה; המושבים נקבעים לפי הסדר.',
     'Initial buy-in per player': 'כניסה התחלתית לכל שחקן', 'Save Group': 'שמירת קבוצה', 'Group name': 'שם הקבוצה', 'Start session': 'התחלת הסשן',
     'Saved Groups': 'קבוצות שמורות', 'Reusable ordered player rosters.': 'רשימות שחקנים מסודרות לשימוש חוזר.',
-    'Recent Sessions': 'סשנים אחרונים', 'Current Home Game session': 'סשן המשחק הביתי הנוכחי',
+    'Recent Sessions': 'סשנים אחרונים', 'Current Home Game session': 'סשן ערב הפוקר הנוכחי',
     'Guest · in-memory only': 'אורח · בזיכרון בלבד', 'Account · saved on this device': 'חשבון · נשמר במכשיר הזה',
     'Guest sessions are not kept after reload. Sign in before starting a game you want to keep.': 'סשן אורח אינו נשמר לאחר טעינה מחדש של הדף. התחברו לפני משחק שתרצו לשמור.',
-    'Home Game data is private and stored locally for this account. Cloud sync is not enabled yet.': 'נתוני המשחק הביתי פרטיים ונשמרים מקומית עבור החשבון הזה. סנכרון לענן עדיין אינו פעיל.',
+    'Home Game data is private and stored locally for this account. Cloud sync is not enabled yet.': 'נתוני ערב הפוקר פרטיים ונשמרים מקומית עבור החשבון הזה. סנכרון לענן עדיין אינו פעיל.',
     'Sign in to save reusable player groups.': 'התחברו כדי לשמור קבוצות שחקנים לשימוש חוזר.',
     'No saved groups yet.': 'עדיין אין קבוצות שמורות.', 'No sessions yet.': 'עדיין אין סשנים.',
     '{count} players': '{count} שחקנים', 'Active session': 'סשן פעיל', 'Draft session': 'טיוטת סשן', 'Session complete': 'הסשן הושלם',
@@ -70,10 +70,10 @@
     'Enter an amount.': 'הזינו סכום.', 'Enter an amount greater than zero.': 'הזינו סכום גדול מאפס.',
     'Enter an amount greater than zero, or leave it empty to only reverse the entry.': 'הזינו סכום גדול מאפס, או השאירו את השדה ריק כדי רק לבטל את הרשומה.',
     'Enter a buy-in greater than zero, or leave it empty.': 'הזינו סכום כניסה גדול מאפס, או השאירו את השדה ריק.',
-    'Home Game action failed.': 'פעולת המשחק הביתי נכשלה.',
-    'Running a Home Game': 'ניהול משחק ביתי',
+    'Home Game action failed.': 'פעולת ערב הפוקר נכשלה.',
+    'Running a Home Game': 'ניהול ערב פוקר',
     'Track real cash-game money truthfully and finish with a clear settlement.': 'נהלו רישום כספי אמין של משחק קאש וסיימו בהתחשבנות ברורה.',
-    'Home Game is separate from poker analysis': 'המשחק הביתי נפרד מניתוח פוקר',
+    'Home Game is separate from poker analysis': 'ערב הפוקר נפרד מניתוח פוקר',
     'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'המרחב הזה מנהל ערב פוקר אמיתי. השחקנים, יומן הכספים, ספירות הצ׳יפים וההתחשבנות אינם משנים את PokerState או את אסטרטגיית Riverline.',
     'Start with the real roster and currency': 'התחילו עם ההרכב והמטבע האמיתיים',
     'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'הזינו שחקנים לפי סדר המושבים וכניסה התחלתית לפי הצורך. סשן אורח נשאר בזיכרון; התחברו לפני משחק שצריך לשמור.',
@@ -129,14 +129,14 @@
     'Export JSON': 'ייצוא JSON', 'Archive session': 'העברת הסשן לארכיון',
   });
   Object.assign(ru, {
-    'Completed Home Game session': 'Завершённая сессия домашней игры',
+    'Completed Home Game session': 'Завершённая сессия покерного вечера',
     'Session completed': 'Сессия завершена',
     'This session is now read-only and remains in Recent Sessions. Review settlement and histories below, export it, or reopen it deliberately to make a correction.': 'Сессия теперь доступна только для чтения и остаётся в разделе «Недавние сессии». Проверьте расчёты и историю ниже, экспортируйте сессию или намеренно откройте её снова для исправления.',
     'Session completed. It is read-only and remains available in Recent Sessions.': 'Сессия завершена. Она доступна только для чтения и остаётся в разделе «Недавние сессии».',
     'Session reopened. Ledger and lifecycle history remain intact.': 'Сессия открыта снова. Журнал и история жизненного цикла сохранены.',
   });
   Object.assign(he, {
-    'Completed Home Game session': 'סשן משחק ביתי שהושלם',
+    'Completed Home Game session': 'סשן ערב פוקר שהושלם',
     'Session completed': 'הסשן הושלם',
     'This session is now read-only and remains in Recent Sessions. Review settlement and histories below, export it, or reopen it deliberately to make a correction.': 'הסשן כעת לקריאה בלבד ונשאר ברשימת הסשנים האחרונים. אפשר לבדוק למטה את ההתחשבנות וההיסטוריה, לייצא אותו או לפתוח אותו מחדש במפורש לצורך תיקון.',
     'Session completed. It is read-only and remains available in Recent Sessions.': 'הסשן הושלם. הוא לקריאה בלבד ונשאר זמין ברשימת הסשנים האחרונים.',
@@ -144,5 +144,18 @@
   });
 
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
-  global.riverlineHomeGameTranslations = { en: Object.fromEntries([...keys].map((key) => [key, key])), ru, he };
+  global.riverlineHomeGameTranslations = {
+    en: Object.fromEntries([...keys].map((key) => [key, {
+      'Home Game': 'Game night',
+      'Opening Home Game': 'Opening Game night',
+      'Current Home Game session': 'Current Game night session',
+      'Home Game data is private and stored locally for this account. Cloud sync is not enabled yet.': 'Game night data is private and stored locally for this account. Cloud sync is not enabled yet.',
+      'Home Game action failed.': 'Game night action failed.',
+      'Running a Home Game': 'Running a Game night',
+      'Home Game is separate from poker analysis': 'Game night is separate from poker analysis',
+      'Completed Home Game session': 'Completed Game night session',
+    }[key] || key])),
+    ru,
+    he,
+  };
 }(window));

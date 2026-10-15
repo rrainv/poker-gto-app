@@ -189,7 +189,7 @@ test('corrected table, history, Review, localization, bidi, and Daylight contrac
   assert.match(CSS, /is-hand-review-open[\s\S]*?grid-template-columns: minmax\(190px, 220px\) minmax\(0, 1fr\) minmax\(250px, 280px\)/);
   assert.match(HTML, /id="handReviewReplayRailMount"/);
   assert.match(TRANSLATIONS, /'Hero': 'Игрок'/);
-  assert.match(TRANSLATIONS, /'Hero': 'שחקן'/);
+  assert.match(TRANSLATIONS, /'Hero': 'הירו'/);
   assert.match(LOGIC, /document\.documentElement\.dir === 'rtl' \? `\\u2066\$\{amount\}\\u2069`/);
   assert.match(CSS, /\[data-theme="daylight"\] #gtoMode\[data-product-destination="hand"\]/);
 });

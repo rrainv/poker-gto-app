@@ -48,12 +48,12 @@
     'Build a focused review habit': 'Разбирайте отмеченное без лишнего поиска',
     'Review groups the hands and spots you marked to revisit or as mistakes, turning saved material into a focused study queue.': '«Разбор» собирает раздачи и споты, отмеченные для повторного просмотра или как ошибки, и превращает сохранённое в понятную учебную очередь.',
     'Move into the right tool': 'Переходите сразу к нужному инструменту',
-    "Quick Start opens Riverline's main workspaces. Use it when you know whether you want to analyze, practise, calculate Equity, or build a personal range.": '«Быстрый старт» открывает основные разделы Riverline. Используйте его, когда уже знаете, хотите ли разобрать спот, потренироваться, рассчитать эквити или собрать личный рендж.',
+    "Quick Start opens Riverline's main workspaces. Use it when you know whether you want to analyze, practise, calculate Equity, or build a personal range.": '«Быстрый старт» открывает основные разделы Riverline. Используйте его, когда уже знаете, хотите ли разобрать спот, потренироваться, рассчитать эквити или собрать личный диапазон.',
   };
 
   const he = {
-    'Inspect ranges and hypothetical cards': 'בדקו טווחים וקלפים היפותטיים',
-    'Open Ranges & runouts to enter explicit weights or keep exact hands. Unknown combinations remain unknown; allow known-only Equity explicitly for a partial range. Inspect next cards or selected turn and river sequences, then focus a card to see the best five. Hand improvement and Equity improvement are separate facts.': 'פתחו טווחים וקלפי המשך כדי להזין משקלים מפורשים או לשמור ידיים מדויקות. צירופים לא ידועים נשארים לא ידועים; אשרו במפורש חישוב לפי החלק הידוע לטווח חלקי. בדקו קלף הבא או רצפי טרן וריבר נבחרים, והתמקדו בקלף כדי לראות את חמשת הטובים. שיפור היד ושיפור האקוויטי הם עובדות נפרדות.',
+    'Inspect ranges and hypothetical cards': 'בדקו ריינג\'ים וקלפים היפותטיים',
+    'Open Ranges & runouts to enter explicit weights or keep exact hands. Unknown combinations remain unknown; allow known-only Equity explicitly for a partial range. Inspect next cards or selected turn and river sequences, then focus a card to see the best five. Hand improvement and Equity improvement are separate facts.': 'פתחו ריינג\'ים וקלפי המשך כדי להזין משקלים מפורשים או לשמור ידיים מדויקות. צירופים לא ידועים נשארים לא ידועים; אשרו במפורש חישוב לפי החלק הידוע לריינג\' חלקי. בדקו קלף הבא או רצפי טרן וריבר נבחרים, והתמקדו בקלף כדי לראות את חמשת הטובים. שיפור היד ושיפור האקוויטי הם עובדות נפרדות.',
     'Tutorial': 'הדרכה',
     'Restart tutorial': 'הפעלת ההדרכה מחדש',
     'Guided tour available': 'זמינה הדרכה קצרה',
@@ -214,10 +214,10 @@
 
   const expansionRu = [
     'Не преувеличивайте возможности личной стратегии',
-    '«Личная стратегия» суммирует ваши прямые ответы в калибровке. Riverline хранит их, но экспериментальный разреженный вывод не выдаётся за готовую уверенность или рабочий источник ренджа.',
+    '«Личная стратегия» суммирует ваши прямые ответы в калибровке. Riverline хранит их, но экспериментальный разреженный вывод не выдаётся за готовую уверенность или рабочий источник диапазона.',
     'Основы режима «Сценарий»',
     'Быстро соберите решение «что, если», не заявляя о восстановленной истории раздачи.',
-    'Выберите подходящий режим Playbook',
+    'Выберите подходящий режим Анализа',
     '«Сценарий» — быстрый, неполный снимок для вопросов «что, если». Если важны легальная история действий и канонический PokerState, используйте режим раздачи.',
     'Укажите известные карты',
     'Выберите карты Героя, борд и известные мёртвые карты. Они описывают снимок, но не восстанавливают путь раздачи к нему.',
@@ -257,18 +257,18 @@
     'Возврат в live восстанавливает текущее решение, а в сохранённом просмотре — сохранённую конечную точку. История не переписывается.',
     'Анализ остаётся привязан к живому решению',
     'При показе раннего кадра Strategy и Analysis относятся к живой или сохранённой конечной точке, а не к каждому кадру истории.',
-    'Как понимать анализ Playbook',
+    'Как понимать результаты Анализа',
     'Корректно трактуйте рекомендацию, матрицу и грубое сравнение категорий.',
     'Выберите свой вопрос',
     '«Решение» объясняет спот, матрица добавляет префлоп-контекст, а сравнение категорий описывает фиксированные эвристические выборки на борде.',
     'Начните с точного решения',
     'Читайте микс вместе с фактами, объяснением, предупреждениями и происхождением источника. Анализ не доказывает всеобщую оптимальность или эксплойтабельность.',
-    'Посмотрите окружающий префлоп-рендж',
+    'Посмотрите окружающий префлоп-диапазон',
     'Матрица 13×13 размещает пары, одномастные и разномастные руки. Оттенок показывает главное действие, полоса — весь микс; независимое solver-решение ячеек не заявляется.',
     'Изучите один класс рук',
-    'Выберите ячейку для точных частот. Полный постфлоп-рендж недоступен, если текущий источник его не предоставляет.',
+    'Выберите ячейку для точных частот. Полный постфлоп-диапазон недоступен, если текущий источник его не предоставляет.',
     'Сравните грубые категории рук',
-    'Вид сравнивает фиксированные эвристические префлоп-выборки по готовым рукам и дро. Это не взвешенный анализ рендж против ренджа.',
+    'Вид сравнивает фиксированные эвристические префлоп-выборки по готовым рукам и дро. Это не взвешенный анализ диапазон против диапазона.',
     'Основы калькулятора эквити',
     'Укажите известные и неизвестные карты, рассчитайте и прочитайте долю исходов.',
     'Опишите игроков',
@@ -316,11 +316,11 @@
     'Настройка Range Calibration',
     'Определите реальную среду, три именованных режима и объективный контекст RFI.',
     'Обучайте прямым ответам, а не мнимой уверенности',
-    'Range Calibration хранит ваши ответы для конкретных RFI-рук. Экспериментальный разреженный вывод не показан как готовый рендж или система уверенности.',
+    'Range Calibration хранит ваши ответы для конкретных RFI-рук. Экспериментальный разреженный вывод не показан как готовый диапазон или система уверенности.',
     'Назовите реальную покерную среду',
     'Профиль — узнаваемая игра или пул. В нём ровно три дискретных режима с вашими названиями, а не точки числового слайдера.',
     'Выберите объективные факты RFI',
-    'Задайте среду, стол, позицию Героя, эффективный стек и учёт для неоткрытого префлоп-ренджа. Они определяют калибруемый прямой рендж.',
+    'Задайте среду, стол, позицию Героя, эффективный стек и учёт для неоткрытого префлоп-диапазона. Они определяют калибруемый прямой диапазон.',
     'Начните ограниченную сессию прямых ответов',
     'Отвечайте столько, сколько полезно, и ставьте на паузу. Цикл из 169 рук — резервный прямой процесс, а не идеальная учебная модель.',
     'Ответы и точные миксы',
@@ -332,7 +332,7 @@
     'Указывайте точный микс только когда знаете его',
     '«Задать частоты» хранит явный микс Fold/Raise отдельно от быстрого ответа. Точная ничья допустима и не имеет доминирующего действия.',
     'Прогресс считает прямые наблюдения',
-    'Ответ сохраняется до следующей руки. Прогресс считает прямые ответы для этого ренджа, а не выведенное покрытие или уверенность.',
+    'Ответ сохраняется до следующей руки. Прогресс считает прямые ответы для этого диапазона, а не выведенное покрытие или уверенность.',
     'Безопасно ставьте на паузу, продолжайте и отменяйте',
     'Пауза возвращает к контексту без потери ответов, а Undo удаляет последнее прямое наблюдение, если оно есть.',
     'Основные настройки',
@@ -349,13 +349,13 @@
 
   const expansionHe = [
     'שמרו על טענות מדויקות לגבי אסטרטגיה אישית',
-    'האסטרטגיה האישית מסכמת תשובות ישירות מכיול הטווח. Riverline שומרת אותן, אך ההסקה הדלילה הניסיונית אינה מוצגת כביטחון מוגמר או כמקור טווח פעיל.',
+    'האסטרטגיה האישית מסכמת תשובות ישירות מכיול הריינג\'. Riverline שומרת אותן, אך ההסקה הדלילה הניסיונית אינה מוצגת כביטחון מוגמר או כמקור ריינג\' פעיל.',
     'יסודות מצב תרחיש',
     'בנו במהירות החלטת “מה אם” בלי לטעון ששוחזרה היסטוריית יד.',
-    'בחרו את תהליך העבודה המתאים ב-Playbook',
+    'בחרו את תהליך העבודה המתאים בניתוח',
     'תרחיש הוא תמונת לימוד מהירה וחלקית לשאלות “מה אם”. כשחשובים רצף חוקי ו-PokerState קנוני, השתמשו במצב יד.',
     'הגדירו את הקלפים הידועים',
-    'בחרו קלפי Hero, לוח וקלפים מתים ידועים. הקלט מתאר תמונת מצב ואינו משחזר כיצד היד הגיעה אליה.',
+    'בחרו קלפי הירו, לוח וקלפים מתים ידועים. הקלט מתאר תמונת מצב ואינו משחזר כיצד היד הגיעה אליה.',
     'תארו את הספוט העובדתי',
     'הגדירו שולחן, ערימה, עמדה, פעולה קודמת, קופה וגודל שמולכם. אלה עובדות שהוזנו, לא היסטוריית תשלומים מהימנה.',
     'קראו את ההמלצה יחד עם המקור',
@@ -371,7 +371,7 @@
     'מצב יד אחראי להתקדמות החוקית',
     'מצב יד מקדם PokerState קנוני דרך קלפים ופעולות חוקיות. הערימות, התרומות, הקופה, השחקן וההיסטוריה באים מהמצב האמיתי.',
     'התחילו את היד הקנונית',
-    'בחרו מושבים, ערימות, כפתור, Hero ותשלומי חובה. Riverline יוצרת את המצב ההתחלתי לפני שבקרי החלטה זמינים.',
+    'בחרו מושבים, ערימות, כפתור, הירו ותשלומי חובה. Riverline יוצרת את המצב ההתחלתי לפני שבקרי החלטה זמינים.',
     'עקבו אחר עובדות שולחן מהימנות',
     'הרחוב, השחקן הנוכחי, הקופה, הערימות והתרומות הם הקרנה של המצב הקנוני ומראים מי מחליט כחוק כעת.',
     'חלקו קלפים ובצעו פעולות חוקיות',
@@ -392,18 +392,18 @@
     'Return to live מחזיר להחלטה החיה; בצופה שמור הוא מחזיר לקצה השמור. אף נתיב אינו משכתב היסטוריה.',
     'הניתוח נשאר קשור להחלטה החיה',
     'בעת הצגת מסגרת מוקדמת, Strategy ו-Analysis שייכים לנקודת ההחלטה החיה או השמורה, לא לכל מסגרת היסטורית.',
-    'הבנת הניתוח ב-Playbook',
+    'הבנת התוצאות בניתוח',
     'פרשו נכון את ההמלצה, המטריצה והשוואת הקטגוריות הגסה.',
     'בחרו איזו שאלה אתם שואלים',
     'Decision מסביר את הספוט, Matrix מוסיף הקשר פרה-פלופ, והשוואת קטגוריות מתארת דגימות היוריסטיות קבועות על לוח.',
     'התחילו בהחלטה המדויקת',
     'קראו את התמהיל עם העובדות, ההסבר, האזהרות ומקור הספק. Analysis מסביר תוצאה נוכחית ואינו מוכיח אופטימליות או exploitability כללית.',
-    'ראו את טווח הפרה-פלופ הסובב',
+    'ראו את ריינג\' הפרה-פלופ הסובב',
     'מטריצת 13×13 מסדרת זוגות, ידיים suited ו-offsuited. הגוון מציג פעולה דומיננטית והפס את התמהיל המלא; אין טענה שכל תא נפתר עצמאית.',
     'בדקו מחלקת יד אחת',
-    'בחרו תא כדי לקרוא תדירויות מדויקות. הרחבת טווח מלאה בפוסט-פלופ אינה זמינה כשהמקור אינו מספק אותה.',
+    'בחרו תא כדי לקרוא תדירויות מדויקות. הרחבת ריינג\' מלאה בפוסט-פלופ אינה זמינה כשהמקור אינו מספק אותה.',
     'השוו קטגוריות יד גסות',
-    'התצוגה משווה דגימות פרה-פלופ היוריסטיות קבועות לפי יד מוכנה ודרו. זה אינו ניתוח משוקלל טווח מול טווח.',
+    'התצוגה משווה דגימות פרה-פלופ היוריסטיות קבועות לפי יד מוכנה ודרו. זה אינו ניתוח משוקלל ריינג\' מול ריינג\'.',
     'יסודות מחשבון האקוויטי',
     'הזינו קלפים ידועים ולא ידועים, חשבו ופרשו את חלק התוצאות.',
     'תארו את השחקנים',
@@ -431,7 +431,7 @@
     'בחרו תרגול ממוקד',
     'בחרו משפחת החלטות, רחוב, עמדה ורמת סיוע, ואז צרו ספוט חוקי ובר-השגה. המסננים אינם משנים את חוקי הפוקר.',
     'קראו את הספוט לפני המענה',
-    'קלפי Hero, הלוח, הקופה, הערימה, העמדה והפעולה שמולכם באים ממסלול קנוני. גבשו תשובה לפני חשיפת המקור.',
+    'קלפי הירו, הלוח, הקופה, הערימה, העמדה והפעולה שמולכם באים ממסלול קנוני. גבשו תשובה לפני חשיפת המקור.',
     'בחרו פעולה חוקית אחת',
     'מוצגות רק פעולות חוקיות. התשובה מושווית פעם אחת ל-StrategyResult הנוכחי לפי חוזה Training.',
     'השתמשו ברמזים כשאלות מכוונות',
@@ -451,11 +451,11 @@
     'הגדרת Range Calibration',
     'הגדירו סביבה אמיתית, שלושה מצבים בעלי שם והקשר RFI עובדתי.',
     'למדו תצפיות ישירות, לא ביטחון מוסק',
-    'Range Calibration שומר כיצד אמרתם שאתם משחקים ידיים מסוימות ב-RFI. המחקר הדליל אינו מוצג כטווח מוגמר או כמערכת ביטחון.',
+    'Range Calibration שומר כיצד אמרתם שאתם משחקים ידיים מסוימות ב-RFI. המחקר הדליל אינו מוצג כריינג\' מוגמר או כמערכת ביטחון.',
     'תנו שם לסביבת פוקר אמיתית',
     'Profile מייצג משחק או מאגר שחקנים מזוהה. בכל Profile בדיוק שלושה Modes נפרדים בשמות שלכם, לא נקודות על מחוון מספרי.',
     'בחרו עובדות RFI אובייקטיביות',
-    'הגדירו סביבה, גודל שולחן, עמדת Hero, ערימה אפקטיבית וחשבונאות לטווח פרה-פלופ שלא נפתח. אלה מזהים את הטווח הישיר.',
+    'הגדירו סביבה, גודל שולחן, עמדת הירו, ערימה אפקטיבית וחשבונאות לריינג\' פרה-פלופ שלא נפתח. אלה מזהים את הריינג\' הישיר.',
     'התחילו הפעלת תשובות ישירות תחומה',
     'ענו רק ככל שמועיל ועצרו כשצריך. לולאת 169 הידיים היא תהליך ישיר חלופי, לא טענה למסע לימוד אידאלי.',
     'מענה ותמהילים מדויקים',
@@ -467,7 +467,7 @@
     'השתמשו בתמהיל מדויק רק כשאתם יודעים אותו',
     'Set Frequencies שומר תמהיל Fold/Raise מפורש בנפרד מתשובה מהירה. תיקו מדויק תקין ואין לו פעולה דומיננטית.',
     'ההתקדמות סופרת תצפיות ישירות',
-    'כל תשובה נשמרת לפני היד הבאה. ההתקדמות סופרת תשובות ישירות לטווח זה, לא כיסוי מוסק או ביטחון.',
+    'כל תשובה נשמרת לפני היד הבאה. ההתקדמות סופרת תשובות ישירות לריינג\' זה, לא כיסוי מוסק או ביטחון.',
     'עצרו, חדשו או בטלו בבטחה',
     'Pause מחזיר להקשר בלי למחוק תשובות, ו-Undo מסיר את התצפית הישירה הקודמת כשהיא זמינה.',
     'יסודות ההגדרות',
@@ -572,7 +572,7 @@
       'Inspect and correct Riverline': 'בדקו ותקנו את Riverline',
       'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'בחרו תא במטריצה כדי לראות היסטוריה ישירה, שכנים תורמים ועובדות גבול. אישור הסקה מתעד רק פעולה דומיננטית; תמהילים מדויקים נשארים מפורשים.',
       'Build the same strategy directly': 'בנו את אותה אסטרטגיה ישירות',
-      'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.': 'בונה הטווחים בוחר או צובע ידיים רבות במטריצה בבת אחת. עריכות הופכות לראיות ישירות, מיקסים מדויקים נשארים מפורשים, ביטול שומר היסטוריה והכיול משתמש מיד במודל המעודכן.',
+      'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.': 'בונה הריינג\'ים בוחר או צובע ידיים רבות במטריצה בבת אחת. עריכות הופכות לראיות ישירות, מיקסים מדויקים נשארים מפורשים, ביטול שומר היסטוריה והכיול משתמש מיד במודל המעודכן.',
     },
   };
   Object.assign(en, personalStrategyMatrixTutorial.en);
@@ -595,18 +595,18 @@
       'Exact cards, board facts, a supplied range, StrategyResult, and any canonical Equity result retain separate provenance. Composition does not prove range advantage, nut advantage, solver frequency, or EV.': 'Exact cards, board facts, a supplied range, StrategyResult, and any canonical Equity result retain separate provenance. Composition does not prove range advantage, nut advantage, solver frequency, or EV.'
     },
     ru: {
-      'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Читайте факты о точной руке, дро, блокерах, рендже, стратегии и источниках без преувеличения возможностей Riverline.',
+      'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Читайте факты о точной руке, дро, блокерах, диапазоне, стратегии и источниках без преувеличения возможностей Riverline.',
       'Decision explains one selected spot. Range Matrix remains provider-backed preflop context, while Range Category Comparison remains a separate coarse heuristic sample view.': '«Решение» объясняет один выбранный спот. Матрица остаётся префлоп-контекстом от текущего провайдера, а сравнение категорий — отдельным грубым эвристическим представлением выборок.',
       'Separate hand facts from strategy': 'Отделяйте факты о руке от стратегии',
       'Open “What goes into this decision?” to see the exact made hand, pair relationship, overlapping flop or turn draws, and board structure. These facts come from the known cards and canonical evaluator, not from the recommendation.': 'Откройте «Что влияет на это решение?», чтобы увидеть точную готовую руку, тип пары, пересекающиеся дро на флопе или тёрне и структуру борда. Эти факты получены из известных карт и канонического оценщика, а не из рекомендации.',
       'Open “What goes into this decision?” to see the exact made hand, pair relationship, overlapping flop or turn draws, their structural completion cards, and board structure. Shared completion cards are shown once in the unique total. These facts come from the known cards and canonical evaluator, not from the recommendation.': 'Откройте «Что влияет на это решение?», чтобы увидеть точную готовую руку, тип пары, пересекающиеся дро на флопе или тёрне, структурные карты их завершения и структуру борда. Общие карты завершения учитываются один раз в уникальном итоге. Эти факты получены из известных карт и канонического оценщика, а не из рекомендации.',
       'Read blocker effects structurally': 'Читайте блокеры как структурные факты',
-      'Hero-card blockers report exact card removal. If an opponent range is explicitly supplied, Analysis also reports the known combo mass removed; it does not call a blocker good or bad for bluffing.': 'Блокеры Hero показывают точный кард-ремувал. Если явно задан рендж оппонента, анализ также покажет исключённую известную массу комбо, но не назовёт блокер хорошим или плохим для блефа.',
-      'Ranges appear only when supplied': 'Рендж появляется только из явного источника',
-      'Without an explicit canonical weighted range, the Range section stays unavailable instead of estimating one from heuristic samples or Matrix hands. Partial ranges keep unknown combos unknown and show coverage without whole-range percentages.': 'Без явного канонического взвешенного ренджа раздел остаётся недоступным и не строит оценку из эвристических выборок или рук Матрицы. В частичном рендже неизвестные комбо остаются неизвестными, а покрытие показывается без процентов от всего ренджа.',
-      'Without an explicit canonical weighted range, the Range section stays unavailable instead of estimating one from heuristic samples or Matrix hands. Partial ranges keep unknown combos unknown and show coverage without whole-range percentages. Exact cards, board, range, StrategyResult, and Equity sources remain separate.': 'Без явного канонического взвешенного ренджа раздел остаётся недоступным и не строит оценку из эвристических выборок или рук Матрицы. В частичном рендже неизвестные комбо остаются неизвестными, а покрытие показывается без процентов от всего ренджа. Источники точных карт, борда, ренджа, StrategyResult и Equity остаются раздельными.',
+      'Hero-card blockers report exact card removal. If an opponent range is explicitly supplied, Analysis also reports the known combo mass removed; it does not call a blocker good or bad for bluffing.': 'Блокеры Hero показывают точный кард-ремувал. Если явно задан диапазон оппонента, анализ также покажет исключённую известную массу комбо, но не назовёт блокер хорошим или плохим для блефа.',
+      'Ranges appear only when supplied': 'Диапазон появляется только из явного источника',
+      'Without an explicit canonical weighted range, the Range section stays unavailable instead of estimating one from heuristic samples or Matrix hands. Partial ranges keep unknown combos unknown and show coverage without whole-range percentages.': 'Без явного канонического взвешенного диапазона раздел остаётся недоступным и не строит оценку из эвристических выборок или рук Матрицы. В частичном диапазоне неизвестные комбо остаются неизвестными, а покрытие показывается без процентов от всего диапазона.',
+      'Without an explicit canonical weighted range, the Range section stays unavailable instead of estimating one from heuristic samples or Matrix hands. Partial ranges keep unknown combos unknown and show coverage without whole-range percentages. Exact cards, board, range, StrategyResult, and Equity sources remain separate.': 'Без явного канонического взвешенного диапазона раздел остаётся недоступным и не строит оценку из эвристических выборок или рук Матрицы. В частичном диапазоне неизвестные комбо остаются неизвестными, а покрытие показывается без процентов от всего диапазона. Источники точных карт, борда, диапазона, StrategyResult и Equity остаются раздельными.',
       'Keep each source and limitation attached': 'Сохраняйте источник и ограничения каждого факта',
-      'Exact cards, board facts, a supplied range, StrategyResult, and any canonical Equity result retain separate provenance. Composition does not prove range advantage, nut advantage, solver frequency, or EV.': 'Точные карты, факты борда, заданный рендж, StrategyResult и канонический результат Equity сохраняют отдельные источники. Состав не доказывает преимущество ренджа или натсов, частоты солвера либо EV.'
+      'Exact cards, board facts, a supplied range, StrategyResult, and any canonical Equity result retain separate provenance. Composition does not prove range advantage, nut advantage, solver frequency, or EV.': 'Точные карты, факты борда, заданный диапазон, StrategyResult и канонический результат Equity сохраняют отдельные источники. Состав не доказывает преимущество диапазона или натсов, частоты солвера либо EV.'
     },
     he: {
       'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': "קראו עובדות על היד המדויקת, דרואים, בלוקרים, ריינג', אסטרטגיה ומקורות בלי להפריז במה ש־Riverline יודע.",
@@ -615,7 +615,7 @@
       'Open “What goes into this decision?” to see the exact made hand, pair relationship, overlapping flop or turn draws, and board structure. These facts come from the known cards and canonical evaluator, not from the recommendation.': 'פתחו „מה משפיע על ההחלטה?” כדי לראות את היד המוכנה המדויקת, סוג הזוג, דרואים חופפים בפלופ או בטרן ומבנה הבורד. העובדות מגיעות מהקלפים הידועים ומהמעריך הקנוני, לא מההמלצה.',
       'Open “What goes into this decision?” to see the exact made hand, pair relationship, overlapping flop or turn draws, their structural completion cards, and board structure. Shared completion cards are shown once in the unique total. These facts come from the known cards and canonical evaluator, not from the recommendation.': 'פתחו „מה משפיע על ההחלטה?” כדי לראות את היד המוכנה המדויקת, סוג הזוג, דרואים חופפים בפלופ או בטרן, קלפי ההשלמה המבניים שלהם ומבנה הבורד. קלף השלמה משותף נספר פעם אחת בסיכום הייחודי. העובדות מגיעות מהקלפים הידועים ומהמעריך הקנוני, לא מההמלצה.',
       'Read blocker effects structurally': 'קראו את השפעת הבלוקרים כעובדה מבנית',
-      'Hero-card blockers report exact card removal. If an opponent range is explicitly supplied, Analysis also reports the known combo mass removed; it does not call a blocker good or bad for bluffing.': "הבלוקרים של Hero מדווחים על הסרת קלפים מדויקת. אם סופק במפורש ריינג' יריב, הניתוח מציג גם את מסת הקומבואים הידועה שהוסרה; הוא אינו קובע שבלוקר טוב או רע לבלוף.",
+      'Hero-card blockers report exact card removal. If an opponent range is explicitly supplied, Analysis also reports the known combo mass removed; it does not call a blocker good or bad for bluffing.': "הבלוקרים של הירו מדווחים על הסרת קלפים מדויקת. אם סופק במפורש ריינג' יריב, הניתוח מציג גם את מסת הקומבואים הידועה שהוסרה; הוא אינו קובע שבלוקר טוב או רע לבלוף.",
       'Ranges appear only when supplied': "ריינג' מופיע רק כשמספקים אותו",
       'Without an explicit canonical weighted range, the Range section stays unavailable instead of estimating one from heuristic samples or Matrix hands. Partial ranges keep unknown combos unknown and show coverage without whole-range percentages.': "בלי ריינג' קנוני ומשוקלל שסופק במפורש, מדור הריינג' נשאר לא זמין ואינו מעריך ריינג' מדגימות היוריסטיות או מידי המטריצה. בריינג' חלקי, קומבואים לא ידועים נשארים לא ידועים והכיסוי מוצג בלי אחוזים מכל הריינג'.",
       'Without an explicit canonical weighted range, the Range section stays unavailable instead of estimating one from heuristic samples or Matrix hands. Partial ranges keep unknown combos unknown and show coverage without whole-range percentages. Exact cards, board, range, StrategyResult, and Equity sources remain separate.': "בלי ריינג' קנוני ומשוקלל שסופק במפורש, מדור הריינג' נשאר לא זמין ואינו מעריך ריינג' מדגימות היוריסטיות או מידי המטריצה. בריינג' חלקי, קומבואים לא ידועים נשארים לא ידועים והכיסוי מוצג בלי אחוזים מכל הריינג'. מקורות הקלפים המדויקים, הבורד, הריינג', StrategyResult ו־Equity נשארים נפרדים.",
@@ -636,18 +636,18 @@
       'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': 'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.',
     },
     ru: {
-      'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Читайте математику давления, факты о точной руке, дро, блокерах, рендже, стратегии и источниках без преувеличения возможностей Riverline.',
+      'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Читайте математику давления, факты о точной руке, дро, блокерах, диапазоне, стратегии и источниках без преувеличения возможностей Riverline.',
       'Read bluff pressure as a requirement': 'Читайте давление блефа как требование',
-      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': 'Раздел «Блеф и давление» выводит порог фолдов из достоверного дополнительного риска Hero и банка до действия, а структуру полублефа отделяет от рекомендации. Требуемые 33% фолдов не означают, что Villain сделает фолд в 33% случаев: у Riverline нет модели частоты фолдов оппонента.',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': 'Раздел «Блеф и давление» выводит порог пасов из достоверного дополнительного риска Hero и банка до действия, а структуру полублефа отделяет от рекомендации. Требуемые 33% пасов не означают, что Villain спасует в 33% случаев: у Riverline нет модели частоты пасов оппонента.',
       'Read bluff pressure and blockers structurally': 'Читайте давление блефа и блокеры как структурные факты',
-      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': 'Раздел «Блеф и давление» выводит порог фолдов из достоверного дополнительного риска Hero и банка до действия, а структуру полублефа отделяет от рекомендации. Требуемые 33% фолдов не означают, что Villain сделает фолд в 33% случаев: у Riverline нет модели частоты фолдов оппонента. Блокеры Hero остаются нейтральными фактами кард-ремувала без явного стратегического разделения ренджа.',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': 'Раздел «Блеф и давление» выводит порог пасов из достоверного дополнительного риска Hero и банка до действия, а структуру полублефа отделяет от рекомендации. Требуемые 33% пасов не означают, что Villain спасует в 33% случаев: у Riverline нет модели частоты пасов оппонента. Блокеры Hero остаются нейтральными фактами кард-ремувала без явного стратегического разделения диапазона.',
     },
     he: {
       'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'קראו את מתמטיקת הלחץ, עובדות היד המדויקת, דרואים, בלוקרים, ריינג׳, אסטרטגיה ומקורות בלי להפריז במה ש־Riverline יודע.',
       'Read bluff pressure as a requirement': 'קראו את לחץ הבלוף כדרישה',
-      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': '„בלוף ולחץ” גוזר את דרישת הפולד מהסיכון הנוסף והמהימן של Hero ומהקופה הזמינה לפני הפעולה, ומפריד את מבנה הסמי־בלוף מההמלצה. דרישה ל־33% פולדים אינה אומרת ש־Villain עושה פולד ב־33%; ל־Riverline אין מודל לתדירות הפולד של היריב.',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': '„בלוף ולחץ” גוזר את דרישת הפולד מהסיכון הנוסף והמהימן של הירו ומהקופה הזמינה לפני הפעולה, ומפריד את מבנה הסמי־בלוף מההמלצה. דרישה ל־33% פולדים אינה אומרת ש־Villain עושה פולד ב־33%; ל־Riverline אין מודל לתדירות הפולד של היריב.',
       'Read bluff pressure and blockers structurally': 'קראו את לחץ הבלוף ואת הבלוקרים כעובדות מבניות',
-      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': '„בלוף ולחץ” גוזר את דרישת הפולד מהסיכון הנוסף והמהימן של Hero ומהקופה הזמינה לפני הפעולה, ומפריד את מבנה הסמי־בלוף מההמלצה. דרישה ל־33% פולדים אינה אומרת ש־Villain עושה פולד ב־33%; ל־Riverline אין מודל לתדירות הפולד של היריב. הבלוקרים של Hero נשארים עובדות ניטרליות של הסרת קלפים בלי חלוקת ריינג׳ אסטרטגית מפורשת.',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': '„בלוף ולחץ” גוזר את דרישת הפולד מהסיכון הנוסף והמהימן של הירו ומהקופה הזמינה לפני הפעולה, ומפריד את מבנה הסמי־בלוף מההמלצה. דרישה ל־33% פולדים אינה אומרת ש־Villain עושה פולד ב־33%; ל־Riverline אין מודל לתדירות הפולד של היריב. הבלוקרים של הירו נשארים עובדות ניטרליות של הסרת קלפים בלי חלוקת ריינג׳ אסטרטגית מפורשת.',
     },
   };
   Object.assign(en, bluffAnalysisTutorial.en);
@@ -665,7 +665,7 @@
     },
     he: {
       'Saved Study sync is always opt-in': 'סנכרון נתוני לימוד שמורים מופעל רק בבחירה מפורשת',
-      'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.': 'הכניסה אינה מעלה נתוני לימוד. בחשבון / פרופיל יש לבחור בנפרד ידיים ומצבים שמורים ואסטרטגיה אישית / כיול טווחים; כל תחום נשאר מקומי תחילה.',
+      'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.': 'הכניסה אינה מעלה נתוני לימוד. בחשבון / פרופיל יש לבחור בנפרד ידיים ומצבים שמורים ואסטרטגיה אישית / כיול ריינג\'ים; כל תחום נשאר מקומי תחילה.',
     },
   };
   Object.assign(en, savedSyncTutorial.en);
@@ -674,9 +674,9 @@
 
   const homeGameTutorial = {
     en: {
-      'Running a Home Game': 'Running a Home Game',
+      'Running a Home Game': 'Running a Game night',
       'Track real cash-game money truthfully and finish with a clear settlement.': 'Track real cash-game money truthfully and finish with a clear settlement.',
-      'Home Game is separate from poker analysis': 'Home Game is separate from poker analysis',
+      'Home Game is separate from poker analysis': 'Game night is separate from poker analysis',
       'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.',
       'Start with the real roster and currency': 'Start with the real roster and currency',
       'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.',
@@ -686,9 +686,9 @@
       'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.': 'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.',
     },
     ru: {
-      'Running a Home Game': 'Проведение домашней игры',
+      'Running a Home Game': 'Проведение покерного вечера',
       'Track real cash-game money truthfully and finish with a clear settlement.': 'Честно учитывайте деньги в кэш-игре и завершайте её понятными расчётами.',
-      'Home Game is separate from poker analysis': 'Домашняя игра отделена от покерного анализа',
+      'Home Game is separate from poker analysis': 'Покерный вечер отделён от покерного анализа',
       'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'Этот раздел помогает провести реальный покерный вечер. Игроки, денежный журнал, снимки стеков и расчёты не меняют PokerState или стратегию Riverline.',
       'Start with the real roster and currency': 'Начните с реального состава и валюты',
       'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'Введите игроков в порядке мест и при необходимости начальный бай-ин. Гостевая сессия остаётся в памяти; войдите до начала игры, которую нужно сохранить.',
@@ -698,9 +698,9 @@
       'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.': 'Записывайте ребаи, аддоны, кэшауты и при необходимости фишки. Деньги и фишки разделены; завершение и расчёты заблокированы, пока точный денежный баланс не равен нулю.',
     },
     he: {
-      'Running a Home Game': 'ניהול משחק ביתי',
+      'Running a Home Game': 'ניהול ערב פוקר',
       'Track real cash-game money truthfully and finish with a clear settlement.': 'נהלו רישום כספי אמין של משחק קאש וסיימו בהתחשבנות ברורה.',
-      'Home Game is separate from poker analysis': 'המשחק הביתי נפרד מניתוח פוקר',
+      'Home Game is separate from poker analysis': 'ערב הפוקר נפרד מניתוח פוקר',
       'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'המרחב הזה מנהל ערב פוקר אמיתי. השחקנים, יומן הכספים, ספירות הצ׳יפים וההתחשבנות אינם משנים את PokerState או את אסטרטגיית Riverline.',
       'Start with the real roster and currency': 'התחילו עם ההרכב והמטבע האמיתיים',
       'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'הזינו שחקנים לפי סדר המושבים וכניסה התחלתית לפי הצורך. סשן אורח נשאר בזיכרון; התחברו לפני משחק שצריך לשמור.',
@@ -725,7 +725,7 @@
     },
     he: {
       'Learn from your own strategy': 'למדו מהאסטרטגיה שלכם',
-      'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.': 'מורה הטווחים מסביר גבולות, סתירות, אזורים לא ידועים והעברות איכותניות מהקשרי RFI סמוכים ותואמים בראיות האסטרטגיה האישית שלכם. ההעברות נשארות נגזרות, וההמלצות לעולם אינן מדרגות אתכם מול GTO או אסטרטגיית ייחוס.',
+      'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.': 'מורה הריינג\'ים מסביר גבולות, סתירות, אזורים לא ידועים והעברות איכותניות מהקשרי RFI סמוכים ותואמים בראיות האסטרטגיה האישית שלכם. ההעברות נשארות נגזרות, וההמלצות לעולם אינן מדרגות אתכם מול GTO או אסטרטגיית ייחוס.',
     },
   };
   Object.assign(en, rangeTeacherTutorial.en);
@@ -817,8 +817,8 @@
       'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.': 'После завершения разбор сохраняет канонический результат и повтор, сравнивая каждое записанное действие Hero с показанным источником. Ограничения источника остаются видимыми, а приоритет означает расхождение вероятностей, а не потерю EV.',
     },
     he: {
-      'Review every Hero decision after the Hand': 'סקרו כל החלטה של Hero לאחר היד',
-      'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.': 'לאחר השלמת היד, הסקירה שומרת על התוצאה הקנונית ועל החזרה ומשווה כל פעולה מתועדת של Hero למקור המוצג. מגבלות המקור נשארות גלויות, ועדיפות הסקירה היא פער הסתברויות ולא הפסד EV.',
+      'Review every Hero decision after the Hand': 'סקרו כל החלטה של הירו לאחר היד',
+      'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.': 'לאחר השלמת היד, הסקירה שומרת על התוצאה הקנונית ועל החזרה ומשווה כל פעולה מתועדת של הירו למקור המוצג. מגבלות המקור נשארות גלויות, ועדיפות הסקירה היא פער הסתברויות ולא הפסד EV.',
     },
   };
   Object.assign(en, handReviewTutorial.en);
@@ -883,7 +883,7 @@
   he[uncertaintyRevisitKey] = 'אפשר לסמן חוסר ודאות לפני שליחת התשובה. לאחר התשובה ניתן לבקש חזרה על אותו מצב בעוד 24 שעות. מחוץ לאימון, פתח את זיכרון האימונים כדי לתרגל, לדחות או להפסיק תזכורות. עצם החזרה אינה מוכיחה שימור מיומנות.';
 
   const truthTutorialCopy = [
-    ['Hero cards, board, pot, stack, position, and facing action come from the generated canonical trajectory. Form your answer before Riverline reveals the source comparison.', 'Карты Hero, борд, банк, стек, позиция и действие соперника берутся из сгенерированной канонической раздачи. Выберите ответ до показа сравнения с источником.', 'קלפי Hero, הלוח, הקופה, הערימה, העמדה והפעולה שמולך מגיעים מהמהלך הקנוני שנוצר. בחר תשובה לפני הצגת ההשוואה למקור.'],
+    ['Hero cards, board, pot, stack, position, and facing action come from the generated canonical trajectory. Form your answer before Riverline reveals the source comparison.', 'Карты Hero, борд, банк, стек, позиция и действие соперника берутся из сгенерированной канонической раздачи. Выберите ответ до показа сравнения с источником.', 'קלפי הירו, הלוח, הקופה, הערימה, העמדה והפעולה שמולך מגיעים מהמהלך הקנוני שנוצר. בחר תשובה לפני הצגת ההשוואה למקור.'],
     ['Optional hints reveal one prompt at a time without exposing the full source distribution before your answer.', 'Подсказки открываются по одной, не раскрывая полное распределение источника до ответа.', 'הרמזים האופציונליים נחשפים אחד בכל פעם בלי להציג את התפלגות המקור המלאה לפני התשובה.'],
     ['Read the source comparison, explanation, and next action after answering.', 'После ответа изучите сравнение с источником, объяснение и следующий шаг.', 'לאחר התשובה, קרא את ההשוואה למקור, ההסבר והצעד הבא.'],
     ['Understand the comparison', 'Разберитесь в сравнении', 'הבן את ההשוואה'],
@@ -899,7 +899,7 @@
     ['Start with one Game Setup and one Approach', 'Начните с одних игровых условий и одного подхода', 'התחילו ממערך משחק אחד וגישה אחת'],
     ['Name a game you recognize and one intended way of playing there. Add independent Approaches whenever useful. Game names do not select poker mathematics; inspect the actual decision context and accounting.', 'Назовите знакомую игру и один задуманный способ игры в ней. Добавляйте независимые подходы при необходимости. Названия игр не выбирают покерную математику: проверяйте фактический контекст решения и расчёт взносов.', 'תנו שם למשחק מוכר ולדרך אחת שבה תרצו לשחק בו. הוסיפו גישות עצמאיות לפי הצורך. שמות המשחקים אינם קובעים את מתמטיקת הפוקר; בדקו את הקשר ההחלטה ואת חישוב הכספים בפועל.'],
     ['Inspect what Riverline understands', 'Проверьте, что понимает Riverline', 'בדקו מה Riverline מבינה'],
-    ['Confirmed tendencies, exact answers, estimates, unknowns, and conflicts remain distinct. Expand evidence when needed; a qualitative tendency never becomes an exact range or frequency.', 'Подтверждённые тенденции, точные ответы, оценки, неизвестные области и противоречия остаются раздельными. Раскрывайте данные при необходимости: качественная тенденция не превращается в точный диапазон или частоту.', 'נטיות מאושרות, תשובות מדויקות, הערכות, אזורים לא ידועים וסתירות נשארים נפרדים. פתחו את הראיות לפי הצורך; נטייה איכותנית אינה הופכת לטווח מדויק או לתדירות.'],
+    ['Confirmed tendencies, exact answers, estimates, unknowns, and conflicts remain distinct. Expand evidence when needed; a qualitative tendency never becomes an exact range or frequency.', 'Подтверждённые тенденции, точные ответы, оценки, неизвестные области и противоречия остаются раздельными. Раскрывайте данные при необходимости: качественная тенденция не превращается в точный диапазон или частоту.', 'נטיות מאושרות, תשובות מדויקות, הערכות, אזורים לא ידועים וסתירות נשארים נפרדים. פתחו את הראיות לפי הצורך; נטייה איכותנית אינה הופכת לריינג\' מדויק או לתדירות.'],
     ['Confirm the meaning before saving', 'Подтвердите смысл перед сохранением', 'אשרו את המשמעות לפני השמירה'],
     ['Use your own words and preview the interpretation. Confirm intended meaning, correct a misunderstanding, narrow its scope, or add an exception. Unconfirmed wording can guide a clarification but does not change saved intent.', 'Пишите своими словами и просматривайте интерпретацию. Подтвердите смысл, исправьте недопонимание, сузьте область действия или добавьте исключение. Неподтверждённый текст может направлять уточнение, но не меняет сохранённое намерение.', 'כתבו במילים שלכם והציגו את הפרשנות. אשרו את המשמעות הרצויה, תקנו אי־הבנה, צמצמו את התחולה או הוסיפו חריגה. ניסוח שטרם אושר יכול לכוון שאלת הבהרה, אך אינו משנה כוונה שנשמרה.'],
     ['Use Matrix Edit for precise examples', 'Используйте редактор матрицы для точных примеров', 'השתמשו בעריכת מטריצה לדוגמאות מדויקות'],
@@ -913,11 +913,11 @@
     ['Name a game and check the table size and effective stack. Extra setup options are secondary. Add independent Approaches whenever useful. Game names do not select poker mathematics; the decision context preserves the actual accounting.', 'Назовите игру и проверьте размер стола и эффективный стек. Дополнительные настройки вторичны. Добавляйте независимые подходы при необходимости. Названия игр не выбирают покерную математику: контекст решения сохраняет фактический расчёт взносов.', 'תנו שם למשחק ובדקו את מספר השחקנים ואת הערימה האפקטיבית. אפשרויות ההגדרה הנוספות משניות. הוסיפו גישות עצמאיות לפי הצורך. שמות המשחקים אינם קובעים את מתמטיקת הפוקר; הקשר ההחלטה שומר את חישוב הכספים בפועל.'],
     ['Answer concrete poker questions to map hand families and boundaries, then refine what remains uncertain.', 'Отвечайте на конкретные покерные вопросы, чтобы исследовать семейства рук и их границы, а затем уточняйте оставшиеся неопределённости.', 'ענו על שאלות פוקר קונקרטיות כדי למפות משפחות ידיים וגבולות, ואז דייקו את מה שנותר לא ודאי.'],
     ['Map how you intend to play', 'Исследуйте, как вы хотите играть', 'מפו איך אתם רוצים לשחק'],
-    ['Start with a concrete hand and choose what you would usually do. Riverline uses your answers to build a structural range map. Intended play stays separate from observed behavior and strategy sources.', 'Начните с конкретной руки и выберите, как вы обычно сыграли бы. Riverline использует ответы для построения структурной карты диапазона. Задуманная игра остаётся отдельной от наблюдаемого поведения и источников стратегии.', 'התחילו מיד מסוימת ובחרו מה הייתם עושים בדרך כלל. Riverline משתמשת בתשובות כדי לבנות מפה של מבנה הטווח. המשחק הרצוי נשאר נפרד מההתנהגות שנצפתה וממקורות האסטרטגיה.'],
+    ['Start with a concrete hand and choose what you would usually do. Riverline uses your answers to build a structural range map. Intended play stays separate from observed behavior and strategy sources.', 'Начните с конкретной руки и выберите, как вы обычно сыграли бы. Riverline использует ответы для построения структурной карты диапазона. Задуманная игра остаётся отдельной от наблюдаемого поведения и источников стратегии.', 'התחילו מיד מסוימת ובחרו מה הייתם עושים בדרך כלל. Riverline משתמשת בתשובות כדי לבנות מפה של מבנה הריינג\'. המשחק הרצוי נשאר נפרד מההתנהגות שנצפתה וממקורות האסטרטגיה.'],
     ['Explore families and their boundaries', 'Исследуйте семейства и их границы', 'בדקו משפחות ידיים וגבולות'],
     ['Questions adapt to your answers, exploring hand families and nearby action boundaries. One example does not establish a region. There is no fixed question quota; stop whenever you want and return to refine the map.', 'Вопросы подстраиваются под ответы и исследуют семейства рук и соседние границы действий. Одного примера недостаточно, чтобы описать область. Фиксированной нормы вопросов нет: остановитесь в любой момент и вернитесь для уточнения карты.', 'השאלות מסתגלות לתשובות שלכם ובודקות משפחות ידיים וגבולות פעולה סמוכים. דוגמה אחת אינה מגדירה אזור. אין מכסת שאלות קבועה; אפשר לעצור בכל רגע ולחזור כדי לדייק את המפה.'],
     ['Read coverage, not a completion score', 'Оценивайте охват, а не балл завершения', 'קראו כיסוי, ולא ציון השלמה'],
-    ['Coverage shows which families have an initial map, remain partly mapped, or are not explored. A sampled region is not a complete range. Exact answers, estimates, unknowns, and conflicts stay distinct.', 'Охват показывает, какие семейства уже получили начальную карту, исследованы частично или ещё не изучены. Проверенные примеры не означают полного диапазона. Точные ответы, оценки, неизвестные области и противоречия остаются раздельными.', 'הכיסוי מראה אילו משפחות מופו לראשונה, אילו מופו חלקית ואילו טרם נבדקו. אזור שנבדקו בו דוגמאות אינו טווח מלא. תשובות מדויקות, הערכות, אזורים לא ידועים וסתירות נשארים נפרדים.'],
+    ['Coverage shows which families have an initial map, remain partly mapped, or are not explored. A sampled region is not a complete range. Exact answers, estimates, unknowns, and conflicts stay distinct.', 'Охват показывает, какие семейства уже получили начальную карту, исследованы частично или ещё не изучены. Проверенные примеры не означают полного диапазона. Точные ответы, оценки, неизвестные области и противоречия остаются раздельными.', 'הכיסוי מראה אילו משפחות מופו לראשונה, אילו מופו חלקית ואילו טרם נבדקו. אזור שנבדקו בו דוגמאות אינו ריינג\' מלא. תשובות מדויקות, הערכות, אזורים לא ידועים וסתירות נשארים נפרדים.'],
     ['Add context only when it helps', 'Добавляйте контекст, когда он полезен', 'הוסיפו הקשר רק כשזה עוזר'],
     ['Concrete answers lead. Add context, an exception, or a correction when needed, then preview and confirm the meaning. Unconfirmed wording can guide a clarification but does not change saved intent.', 'Главное — конкретные ответы. При необходимости добавьте контекст, исключение или исправление, затем просмотрите и подтвердите смысл. Неподтверждённый текст может направлять уточнение, но не меняет сохранённое намерение.', 'תשובות קונקרטיות מובילות. הוסיפו הקשר, חריגה או תיקון לפי הצורך, ואז הציגו ואשרו את המשמעות. ניסוח שטרם אושר יכול לכוון שאלת הבהרה, אך אינו משנה כוונה שנשמרה.'],
     ['Follow family coverage and boundaries', 'Следите за охватом семейств и границами', 'עקבו אחר כיסוי המשפחות והגבולות'],
@@ -949,7 +949,7 @@
   const exploitTutorial = [
     ['Explore why an action might work', 'Разберите, почему действие может сработать', 'בדקו למה פעולה עשויה לעבוד'],
     ['Explore an action and size in Why might this action work? Compare how synthetic policies change value, bluff and raise-response questions. In Teach through a hand, inspect candidates or keep your strategy. Practice this node explains unsupported targets. Completed Full Hand Review keeps opponent assumptions separate from the observed action and reference.',
-      'Разберите действие и размер в «Почему это действие может сработать?». Сравните, как синтетические политики меняют вопросы о вэлью, блефах и ответах на рейз. В обучении через раздачу изучите кандидатов или оставьте свою стратегию. «Тренировать этот узел» объясняет неподдерживаемые цели. Review завершённой полной раздачи разделяет предположения об оппоненте, наблюдаемое действие и референс.',
+      'Разберите действие и размер в «Почему это действие может сработать?». Сравните, как синтетические политики меняют вопросы о валью, блефах и ответах на рейз. В обучении через раздачу изучите кандидатов или оставьте свою стратегию. «Тренировать этот узел» объясняет неподдерживаемые цели. Review завершённой полной раздачи разделяет предположения об оппоненте, наблюдаемое действие и референс.',
       'בדקו פעולה וגודל ב«למה הפעולה הזאת עשויה לעבוד?». השוו כיצד מדיניות סינתטית משנה שאלות על ערך, בלופים ותגובה להעלאה. בלימוד דרך יד, בדקו מועמדות או שמרו על האסטרטגיה שלכם. «תרגול הצומת הזה» מסביר מטרות שאינן נתמכות. סקירת יד מלאה שהסתיימה מפרידה בין הנחות על היריב, הפעולה שנצפתה והייחוס.'],
   ];
   exploitTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
@@ -1127,7 +1127,7 @@
   [
     "This history does not identify Hero and two Hero cards.",
     "История не указывает Hero и две его карты.",
-    "ההיסטוריה אינה מזהה את Hero ושני קלפיו."
+    "ההיסטוריה אינה מזהה את הירו ושני קלפיו."
   ],
   [
     "The history must state the total pot and rake explicitly.",
@@ -1199,7 +1199,7 @@
   [
     "Imported hand. Choose a recorded Hero decision to study.",
     "Импортированная раздача. Выберите записанное решение Hero для изучения.",
-    "יד מיובאת. בחרו החלטת Hero מתועדת ללימוד."
+    "יד מיובאת. בחרו החלטת הירו מתועדת ללימוד."
   ],
   [
     "Study this decision",
@@ -1297,7 +1297,7 @@
     ['Gross payouts before recorded rake', 'Выплаты до учёта рейка из истории', 'תשלומים ברוטו לפני הרייק המתועד'],
     ['Choose seats, stacks, button, Hero and forced contributions to start a legal hand. Or use Import hand history to paste a PokerStars English cash hand, preview its reconstruction and open the same Review.',
       'Выберите места, стеки, баттон, Hero и обязательные взносы для легальной раздачи. Или импортируйте историю кеш-раздачи PokerStars на английском, проверьте восстановление и откройте тот же разбор.',
-      'בחרו מושבים, ערימות, כפתור, Hero ותשלומי חובה כדי להתחיל יד חוקית. או ייבאו היסטוריית יד קאש מ־PokerStars באנגלית, בדקו את השחזור ופתחו את אותה סקירה.']
+      'בחרו מושבים, ערימות, כפתור, הירו ותשלומי חובה כדי להתחיל יד חוקית. או ייבאו היסטוריית יד קאש מ־PokerStars באנגלית, בדקו את השחזור ופתחו את אותה סקירה.']
   );
   handImportCopy.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
   const deepStudyTutorial = [
@@ -1312,7 +1312,7 @@
   const refreshTutorial = [
     ['Ranges & runouts has its own workspace below the matchup. Set exact hands or explicit weights, then calculate. Unknown combinations stay unknown; partial Equity requires permission. Expand Runout Explorer and focus a card to inspect its best five. Cards are hypothetical; hand improvement and Equity improvement remain separate.',
       '«Диапазоны и ранауты» теперь находятся в отдельной области под сравнением рук. Задайте точные руки или веса и рассчитайте. Неизвестные комбинации остаются неизвестными; частичный расчёт требует разрешения. Раскройте исследование ранаутов и перейдите к карте, чтобы увидеть лучшие пять. Карты гипотетические; улучшение руки и рост Equity — разные факты.',
-      'לטווחים וקלפי המשך יש אזור משלהם מתחת להשוואה. הגדירו ידיים מדויקות או משקלים מפורשים וחשבו. צירופים לא ידועים נשארים לא ידועים; אקוויטי חלקי דורש אישור. פתחו את סייר קלפי ההמשך והתמקדו בקלף כדי לבדוק את חמשת הטובים. הקלפים היפותטיים; שיפור היד ושיפור האקוויטי נשארים נפרדים.'],
+      'לריינג\'ים וקלפי המשך יש אזור משלהם מתחת להשוואה. הגדירו ידיים מדויקות או משקלים מפורשים וחשבו. צירופים לא ידועים נשארים לא ידועים; אקוויטי חלקי דורש אישור. פתחו את סייר קלפי ההמשך והתמקדו בקלף כדי לבדוק את חמשת הטובים. הקלפים היפותטיים; שיפור היד ושיפור האקוויטי נשארים נפרדים.'],
     ['Choose a behavior preset and study question for a new Full Hand. During play, open Table cast below the table to choose a fictional identity for each opponent. Appearance does not change behavior or grading. Questions do not guarantee a situation. After the hand, inspect the frozen policy, actor inputs and decisions.',
       'Выберите поведение соперника и вопрос для новой полной раздачи. Во время игры откройте «Участники стола» под столом и выберите вымышленный образ для каждого соперника. Образ не меняет поведение или оценивание. Вопросы не гарантируют конкретную ситуацию. После раздачи изучите зафиксированную политику, доступные сопернику данные и решения.',
       'בחרו הגדרת התנהגות ושאלת לימוד ליד מלאה חדשה. במהלך המשחק פתחו את הדמויות בשולחן מתחת לשולחן ובחרו דמות בדיונית לכל יריב. המראה אינו משנה התנהגות או הערכה. שאלות אינן מבטיחות מצב מסוים. לאחר היד, בדקו את המדיניות שנשמרה, את הקלט לשחקן ואת החלטותיו.'],
@@ -1321,8 +1321,8 @@
     'Выберите раздел для игры, анализа, тренировки или сохранённых материалов.',
     'בחרו סביבה למשחק, לניתוח, לתרגול או לחזרה לחומר שמור.']);
   refreshTutorial.push(
-    ['Save your usual rules and stack as a Table preset. Loading updates the draft only. Choose Hero by poker position and move the Dealer with the selector or a preview seat. Start hand commits the setup.', 'Сохраните привычные правила и стек как шаблон стола. Загрузка меняет только черновик. Выберите покерную позицию Hero и переместите баттон через список или место на столе. Начать раздачу применяет настройки.', 'שמרו את הכללים והערימה הרגילים כתבנית שולחן. טעינה מעדכנת רק את הטיוטה. בחרו עמדת פוקר ל־Hero והזיזו את הדילר דרך הבורר או מושב בתצוגה. התחלת יד מחילה את ההגדרות.'],
-    ['Select each opponent in the lineup. Character and behavior are separate choices. Study focus asks a question about the selected opponent without guaranteeing a situation. After Hero folds, review your decisions immediately or choose Watch rest of hand.', 'Выберите каждого соперника в составе. Персонаж и поведение настраиваются отдельно. Тема изучения задаёт вопрос о выбранном сопернике, но не гарантирует ситуацию. После фолда Hero сразу разберите решения или досмотрите раздачу.', 'בחרו כל יריב בהרכב. דמות והתנהגות הן בחירות נפרדות. מיקוד הלימוד שואל על היריב שנבחר בלי להבטיח מצב מסוים. לאחר פרישת Hero סקרו מיד את ההחלטות או צפו בהמשך היד.'],
+    ['Save your usual rules and stack as a Table preset. Loading updates the draft only. Choose Hero by poker position and move the Dealer with the selector or a preview seat. Start hand commits the setup.', 'Сохраните привычные правила и стек как шаблон стола. Загрузка меняет только черновик. Выберите покерную позицию Hero и переместите баттон через список или место на столе. Начать раздачу применяет настройки.', 'שמרו את הכללים והערימה הרגילים כתבנית שולחן. טעינה מעדכנת רק את הטיוטה. בחרו עמדת פוקר להירו והזיזו את הדילר דרך הבורר או מושב בתצוגה. התחלת יד מחילה את ההגדרות.'],
+    ['Select each opponent in the lineup. Character and behavior are separate choices. Study focus asks a question about the selected opponent without guaranteeing a situation. After Hero folds, review your decisions immediately or choose Watch rest of hand.', 'Выберите каждого соперника в составе. Персонаж и поведение настраиваются отдельно. Тема изучения задаёт вопрос о выбранном сопернике, но не гарантирует ситуацию. После паса Hero сразу разберите решения или досмотрите раздачу.', 'בחרו כל יריב בהרכב. דמות והתנהגות הן בחירות נפרדות. מיקוד הלימוד שואל על היריב שנבחר בלי להבטיח מצב מסוים. לאחר פרישת הירו סקרו מיד את ההחלטות או צפו בהמשך היד.'],
     ["Answer with your preferred action or an optional exact mix. A preferred action never means the action is played at a pure 100% frequency. Read what Riverline learned, then Continue. What I've taught keeps saved answers available for inspection and correction with history preserved, even when Teacher asks about other hands.", 'Укажите предпочтительное действие или точные частоты. Предпочтительное действие не означает частоту 100%. Прочитайте, что узнал Riverline, и продолжите. Раздел «Мои ответы» позволяет просматривать и исправлять ответы с сохранением истории, даже когда Учитель спрашивает о других руках.', 'ענו בפעולה המועדפת או בתמהיל מדויק. פעולה מועדפת אינה תדירות של 100%. קראו מה Riverline למד והמשיכו. מה לימדתי שומר את התשובות זמינות לבדיקה ולתיקון עם היסטוריה שמורה, גם כשהמורה שואל על ידיים אחרות.']
   );
   refreshTutorial.push(['The map stays beside your question. Select a known hand to inspect or correct it, or an unknown hand to teach it. Use arrow keys to explore. Coverage counts evidence, not strategy completion.',
@@ -1331,7 +1331,7 @@
   refreshTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
   en["Bring a decision from Analyze, Training or Review, or add context here. Choose your Approach, describe your intended play, then preview and confirm before saving. Decision examples stay qualitative; they do not fill ranges or copy observed actions."] = "Bring a decision from Analyze, Training or Review, or add context here. Choose your Approach, describe your intended play, then preview and confirm before saving. Decision examples stay qualitative; they do not fill ranges or copy observed actions.";
   ru["Bring a decision from Analyze, Training or Review, or add context here. Choose your Approach, describe your intended play, then preview and confirm before saving. Decision examples stay qualitative; they do not fill ranges or copy observed actions."] = "Перенесите решение из Анализа, Тренировки или Разбора либо добавьте контекст здесь. Выберите подход, опишите задуманную игру, затем проверьте и подтвердите смысл перед сохранением. Примеры решений остаются качественными: они не заполняют диапазоны и не копируют сыгранные действия.";
-  he["Bring a decision from Analyze, Training or Review, or add context here. Choose your Approach, describe your intended play, then preview and confirm before saving. Decision examples stay qualitative; they do not fill ranges or copy observed actions."] = "הביאו החלטה מניתוח, אימון או סקירה, או הוסיפו כאן הקשר. בחרו גישה, תארו את המשחק הרצוי, ואז בדקו ואשרו לפני השמירה. דוגמאות החלטה נשארות איכותניות; הן אינן ממלאות טווחים ואינן מעתיקות פעולות שנצפו.";
+  he["Bring a decision from Analyze, Training or Review, or add context here. Choose your Approach, describe your intended play, then preview and confirm before saving. Decision examples stay qualitative; they do not fill ranges or copy observed actions."] = "הביאו החלטה מניתוח, אימון או סקירה, או הוסיפו כאן הקשר. בחרו גישה, תארו את המשחק הרצוי, ואז בדקו ואשרו לפני השמירה. דוגמאות החלטה נשארות איכותניות; הן אינן ממלאות ריינג'ים ואינן מעתיקות פעולות שנצפו.";
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

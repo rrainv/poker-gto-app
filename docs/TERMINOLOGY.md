@@ -131,13 +131,12 @@ Good and bad literal copy (examples from the old guide; adjust terms to this she
 
 Checked 2026-10-15 by search in `app/src/locales/`; the code follows the older style guide in places. These are i18n work for a ticket, not permission to change terms ad hoc:
 
-| Term | This sheet | Current code / old guide | Note |
+I18N-TERMS-001 (2026-10-15) applied the sheet in `app/src/locales/` for: RU fold → пас, range → диапазон, велью → валью, контбет → си-бет; HE range → ריינג' (poker sense only), Hero → הירו (owner decision D-19; RU keeps Latin "Hero"); Analyze RU «Анализ» / HE «ניתוח»; Game night EN/RU/HE; the Home table-rules preset as Частный стол / שולחן פרטי. Still different (register row I18N-TERMS-RESIDUE):
+
+| Term | This sheet | Current code | Note |
 |---|---|---|---|
-| RU fold | пас | Фолд | old guide's action contract |
-| RU range | диапазон | рендж (≈100 uses) and диапазон (≈135 uses) mixed | old guide chose рендж; `tests/l10n001_native_terminology.test.mjs` accepts /рендж\|стартов/ for the matrix label |
-| RU value | валью | велью | |
-| RU C-bet | си-бет | контбет | |
-| HE Hero | הירו (owner decision D-19, closed 2026-10-15); RU keeps Latin "Hero" | `Hero` kept Latin as an invariant token | the sheet wins; string changes in I18N-TERMS-001 |
-| Analyze workspace | RU «Анализ», HE «ניתוח» (owner decision D-19, 2026-10-15) | RU «Разбор», HE «ניתוח» (old house style) | RU label to change in code; HE already matches |
+| RU fold / HE range in code modules | пас / ריינג' | Фолд / טווח in `app/src/application/*-language.mjs` and `app/src/personal-strategy/*.mjs` | outside the locale catalogs; some are input parsing, not display |
+| RU fold equity, push/fold | (not in sheet) | фолд-эквити, пуш/фолд | kept as fixed compound terms |
+| HE «טווח» as an ordinary word | טווח | number/amount ranges in `product-translations.js` | correct as is, not a poker range |
 
 The M1 bar is "complete and natural enough"; native-level polish comes later (NORTH_STAR §7.17).

@@ -14,7 +14,7 @@ const html = fs.readFileSync(path.join(repoRoot, 'app/index.html'), 'utf8');
 test('Russian and Hebrew use one resolved action terminology contract', () => {
   const translations = loadTranslations();
   const contract = [
-    ['Fold', 'Фолд', 'פולד'],
+    ['Fold', 'Пас', 'פולד'],
     ['Check', 'Чек', "צ'ק"],
     ['Call', 'Колл', 'קול'],
     ['Bet', 'Бет', 'בט'],
@@ -50,7 +50,7 @@ test('dynamic Training, Equity, and Guide copy has localized derived labels', ()
 test('hands, draws, board textures, and analytical terms follow the house contract', () => {
   const translations = loadTranslations();
   const contract = [
-    ['Range', 'Рендж', "ריינג'"],
+    ['Range', 'Диапазон', "ריינג'"],
     ['Equity', 'Эквити', 'אקוויטי'],
     ['Pot Odds', 'Шансы банка', 'סיכויי קופה'],
     ['Board', 'Борд', 'בורד'],
@@ -79,12 +79,12 @@ test('user-approved RU and HE range and workspace names are consistent', () => {
   ];
 
   for (const key of rangeKeys) {
-    assert.match(translations.ru[key], /рендж/iu, `Russian ${key}`);
-    assert.doesNotMatch(translations.ru[key], /диапазон/iu, `Russian ${key}`);
+    assert.match(translations.ru[key], /диапазон/iu, `Russian ${key}`);
+    assert.doesNotMatch(translations.ru[key], /рендж/iu, `Russian ${key}`);
     assert.match(translations.he[key], /ריינג'/u, `Hebrew ${key}`);
     assert.doesNotMatch(translations.he[key], /טווח/u, `Hebrew ${key}`);
   }
-  assert.equal(translations.ru.Playbook, 'Разбор');
+  assert.equal(translations.ru.Playbook, 'Анализ');
   assert.equal(translations.he.Playbook, 'ניתוח');
   for (const key of ['Getting started and Playbook', 'Playbook workflow', 'Playbook context and configuration']) {
     assert.doesNotMatch(translations.ru[key], /Playbook|Плейбук/iu, `Russian ${key}`);
@@ -122,7 +122,7 @@ test('range comparison matrix accessibility labels use the localized catalog', (
   const translations = loadTranslations();
   assert.match(html, /id="heroRangeGrid"[^>]*data-i18n-aria-label="13 by 13 starting hand matrix"/);
   assert.match(html, /id="villainRangeGrid"[^>]*data-i18n-aria-label="13 by 13 starting hand matrix"/);
-  assert.match(translations.ru['13 by 13 starting hand matrix'], /рендж|стартов/iu);
+  assert.match(translations.ru['13 by 13 starting hand matrix'], /диапазон|стартов/iu);
   assert.match(translations.he['13 by 13 starting hand matrix'], /ריינג'/u);
 });
 

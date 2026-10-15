@@ -131,7 +131,7 @@ test('the voluntary contribution Action caption is localized in all product cata
 test('Russian Clear is semantically distinct from Fold and Equity uses the canonical Clear key', () => {
   const audit = buildAudit();
   assert.equal(audit.semantic.russianClear, 'Очистить');
-  assert.equal(audit.semantic.russianFold, 'Фолд');
+  assert.equal(audit.semantic.russianFold, 'Пас');
   assert.equal(audit.semantic.russianClearDistinctFromFold, true);
   assert.match(html, /data-card-clear-command="clear_board"[^>]*data-i18n="Clear"/);
   assert.match(html, /data-card-clear-command="clear_dead_set"[^>]*data-i18n="Clear"/);
