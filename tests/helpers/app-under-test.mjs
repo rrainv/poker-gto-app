@@ -94,9 +94,12 @@ export function assertCascaded(node, property, expected, options = {}, sheet = a
  */
 export function strategyProviderProbe() {
   const resolves = [];
+  // Options each page provider was created with (in creation order).
+  const providerOptions = [];
   let counting = false;
   return {
     resolves,
+    providerOptions,
     beforeScripts(window) {
       const define = Object.defineProperty;
       Object.defineProperty = function instrumented(target, property, descriptor) {
@@ -106,6 +109,7 @@ export function strategyProviderProbe() {
           const wrapped = Object.freeze({
             ...bridge,
             createProvider(options) {
+              providerOptions.push(options);
               const provider = bridge.createProvider(options);
               return Object.freeze({
                 ...provider,

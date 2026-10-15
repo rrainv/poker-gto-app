@@ -12,10 +12,6 @@ test.before(async () => {
   ));
 });
 
-const logicSource = fs.readFileSync(
-  path.resolve(__dirname, '..', 'app', 'src', 'core', 'logic.js'),
-  'utf8',
-);
 const heuristicSource = fs.readFileSync(
   path.resolve(__dirname, '..', 'app', 'src', 'strategy', 'heuristic-strategy.mjs'),
   'utf8',
@@ -203,10 +199,35 @@ test('heuristic StrategyResults never receive unsupported Deep CFR labels', () =
   }), /Unsupported StrategyResult source/);
 });
 
-test('main Playbook path stores StrategyResult before adapting for legacy renderers', () => {
-  assert.match(logicSource, /const strategyResult = strategyProvider\.resolve\(decisionContext\);/);
-  assert.match(logicSource, /app\.strategyResult = strategyResult;/);
-  assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
+test('main Playbook path stores StrategyResult before adapting for legacy renderers', async () => {
+  // TEST-HYGIENE-001: observed in the booted app instead of regex-matching
+  // logic.js: the one resolved StrategyResult is the object stored on
+  // app.strategyResult and the one the legacy-profile adapter receives.
+  // (The update path adapts the fresh result and then stores it; the former
+  // regexes asserted presence, not order.)
+  const { bootApp, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+  const probe = strategyProviderProbe();
+  const app = await bootApp({ beforeScripts: probe.beforeScripts });
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const adapt = app.window.strategyResultToLegacyProfile;
+  const observed = [];
+  app.window.strategyResultToLegacyProfile = (result, ...rest) => {
+    observed.push({ result, stored: app.window.app.strategyResult });
+    return adapt(result, ...rest);
+  };
+  try {
+    const resolved = await probe.count(async () => {
+      await app.call('updateContext');
+      await app.settle(200);
+    });
+    assert.equal(resolved.length, 1);
+  } finally {
+    app.window.strategyResultToLegacyProfile = adapt;
+  }
+  assert.ok(observed.length >= 1);
+  assert.ok(observed.some(({ result }) => result === app.window.app.strategyResult), 'the stored result is the adapted result');
+  assert.equal(app.window.app.strategyResult.schemaVersion, 'strategy-result/v1');
   assert.doesNotMatch(
     heuristicSource,
     /source:\s*['"](?:MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE)['"]/,

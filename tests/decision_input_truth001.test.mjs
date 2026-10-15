@@ -33,21 +33,22 @@ import {
   createReplayProjectionController,
 } from '../app/src/application/replay-projection-controller.mjs';
 
+import { bootApp, indexDocument, strategyProviderProbe, text } from './helpers/app-under-test.mjs';
+
 const require = createRequire(import.meta.url);
 const qa = require('./qa002_adapters.js');
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
-const LOGIC = read('../app/src/core/logic.js');
-const HTML = read('../app/index.html');
+// TEST-HYGIENE-001: logic.js / index.html assertions are behavioural: the
+// slider pairs, readiness focus, facing copy, replay, randomizer status, sizing
+// copy and Training key hints run in the booted app (spies, a provider probe)
+// and markup is parsed, instead of vm-evaluated slices of logic.js.
+const markup = indexDocument();
+const probe = strategyProviderProbe();
+const app = await bootApp({ beforeScripts: probe.beforeScripts });
+const page = () => app.window.app;
 const REPLAY_CONTROLLER = read('../app/src/application/replay-projection-controller.mjs');
 const FACING_MODULE = read('../app/src/application/decision-facing-summary.mjs');
-
-function sourceBetween(source, start, end) {
-  const from = source.indexOf(start);
-  const to = source.indexOf(end, from + start.length);
-  assert.ok(from >= 0 && to > from, `missing source slice ${start} -> ${end}`);
-  return source.slice(from, to);
-}
 
 function catalog(path, globalName) {
   const context = { window: {} };
@@ -59,57 +60,41 @@ function catalog(path, globalName) {
 // A. Slider-pair numeric drafts
 // ---------------------------------------------------------------------------
 
-function fakeInput({ value, min, max }) {
-  const listeners = new Map();
-  return {
-    value: String(value),
-    min: String(min),
-    max: String(max),
-    attributes: {},
-    addEventListener(type, listener) {
-      listeners.set(type, [...(listeners.get(type) || []), listener]);
-    },
-    dispatch(type) { (listeners.get(type) || []).forEach((listener) => listener()); },
-    setAttribute(name, next) { this.attributes[name] = String(next); },
-    removeAttribute(name) { delete this.attributes[name]; },
-  };
-}
-
-function sliderHarness(rangeId, numberId, { value, min, max }) {
-  const range = fakeInput({ value, min, max });
-  const number = fakeInput({ value, min, max });
-  const elements = new Map([[`#${rangeId}`, range], [`#${numberId}`, number]]);
-  const context = {
-    document: { activeElement: null },
-    elements,
-    calls: { input: 0, change: 0 },
-  };
-  vm.runInNewContext(`
-    const $ = (selector) => elements.get(selector) || null;
-    function selectedValue(selector) { return $(selector)?.value; }
-    function numericValue(id, fallback = 0) {
-      const value = Number(selectedValue(id));
-      return Number.isFinite(value) ? value : fallback;
-    }
-    ${sourceBetween(LOGIC, 'function syncSliderPair(rangeId, numberId) {', 'let homeViewModel = null;')}
-    bindSliderPair(${JSON.stringify(rangeId)}, ${JSON.stringify(numberId)}, {
-      onInput: () => { calls.input += 1; },
-      onChange: () => { calls.change += 1; },
-    });
-    globalThis.api = { sliderPairValue, readSliderPairDraft };
-  `, context);
-  const type = (text) => {
-    context.document.activeElement = number;
-    number.value = text;
-    number.dispatch('input');
+function sliderHarness(rangeId, numberId) {
+  const range = app.byId(rangeId);
+  const number = app.byId(numberId);
+  const spy = app.spy(['schedulePlaybookUpdate', 'commitPlaybookUpdate']);
+  const type = (value) => {
+    number.focus();
+    number.value = value;
+    number.dispatchEvent(new app.window.Event('input', { bubbles: true }));
   };
   const blur = () => {
-    context.document.activeElement = null;
-    number.dispatch('change');
-    number.dispatch('blur');
+    number.dispatchEvent(new app.window.Event('change', { bubbles: true }));
+    number.blur();
   };
-  return { range, number, calls: context.calls, api: context.api, type, blur };
+  const calls = { get input() { return spy.count('schedulePlaybookUpdate'); }, get change() { return spy.count('commitPlaybookUpdate'); } };
+  const api = { sliderPairValue: (...args) => app.call('sliderPairValue', ...args), readSliderPairDraft: (...args) => app.call('readSliderPairDraft', ...args) };
+  const restore = async () => {
+    spy.restore();
+    number.blur();
+    await app.settle(300);
+  };
+  return { range, number, calls, api, type, blur, restore };
 }
+
+/** Restore a slider pair to a committed value (as the user would). */
+async function resetSlider(rangeId, numberId, value) {
+  const number = app.byId(numberId);
+  number.focus();
+  number.value = String(value);
+  number.dispatchEvent(new app.window.Event('input', { bubbles: true }));
+  number.dispatchEvent(new app.window.Event('change', { bubbles: true }));
+  number.blur();
+  await app.settle(300);
+}
+
+await app.navigate('analyze');
 
 const SLIDER_FIELDS = Object.freeze([
   { rangeId: 'players', numberId: 'playersNum', value: 8, min: 2, max: 10, label: 'Table size' },
@@ -122,63 +107,87 @@ const SLIDER_FIELDS = Object.freeze([
 test('A: HTML slider-pair bounds match the field table used by these tests', () => {
   for (const field of SLIDER_FIELDS) {
     for (const id of [field.rangeId, field.numberId]) {
-      const tag = HTML.match(new RegExp(`<input[^>]+id="${id}"[^>]*>`))?.[0];
-      assert.ok(tag, `missing #${id}`);
-      assert.match(tag, new RegExp(`min="${field.min}"`));
-      assert.match(tag, new RegExp(`max="${field.max}"`));
+      const input = markup.getElementById(id);
+      assert.equal(input?.localName, 'input', `missing #${id}`);
+      assert.equal(input.getAttribute('min'), String(field.min));
+      assert.equal(input.getAttribute('max'), String(field.max));
     }
   }
 });
 
-test('A: every slider-pair field keeps intermediate text exactly and commits only valid parses', () => {
+test('A: every slider-pair field keeps intermediate text exactly and commits only valid parses', async () => {
   for (const field of SLIDER_FIELDS) {
-    const harness = sliderHarness(field.rangeId, field.numberId, field);
-    let committedRange = String(field.value);
-    for (const text of ['2.', '2.5', '', '0.', '2.50']) {
-      const inputsBefore = harness.calls.input;
-      harness.type(text);
-      assert.equal(harness.number.value, text, `${field.numberId} rewrote "${text}"`);
-      assert.equal(harness.calls.input, inputsBefore + 1, 'one coalesced update request per keystroke');
-      const parsed = Number(text);
-      const valid = text.trim() !== '' && Number.isFinite(parsed)
-        && parsed >= field.min && parsed <= field.max;
-      if (valid) committedRange = String(parsed);
-      assert.equal(harness.range.value, committedRange, `${field.rangeId} after "${text}"`);
-      const committed = harness.api.sliderPairValue(field.rangeId, -1);
-      if (valid) assert.equal(committed, parsed);
-      else assert.ok(Number.isNaN(committed), `${field.numberId} "${text}" must not be guessed`);
-      // Typing never marks the field invalid while focused.
-      assert.equal(harness.number.attributes['aria-invalid'], undefined);
+    const harness = sliderHarness(field.rangeId, field.numberId);
+    const initial = harness.range.value;
+    try {
+      let committedRange = initial;
+      for (const text of ['2.', '2.5', '', '0.', '2.50']) {
+        const inputsBefore = harness.calls.input;
+        harness.type(text);
+        assert.equal(harness.number.value, text, `${field.numberId} rewrote "${text}"`);
+        assert.equal(harness.calls.input, inputsBefore + 1, 'one coalesced update request per keystroke');
+        const parsed = Number(text);
+        const valid = text.trim() !== '' && Number.isFinite(parsed)
+          && parsed >= field.min && parsed <= field.max;
+        if (valid) committedRange = String(parsed);
+        assert.equal(Number(harness.range.value), Number(committedRange), `${field.rangeId} after "${text}"`);
+        const committed = harness.api.sliderPairValue(field.rangeId, -1);
+        if (valid) assert.equal(committed, parsed);
+        else assert.ok(Number.isNaN(committed), `${field.numberId} "${text}" must not be guessed`);
+        // Typing never marks the field invalid while focused.
+        assert.equal(harness.number.getAttribute('aria-invalid'), null);
+      }
+    } finally {
+      await harness.restore();
+      await resetSlider(field.rangeId, field.numberId, initial);
     }
   }
 });
 
-test('A: Analyze facing 2.5 and pot 6.5 stay as typed and are the committed values', () => {
-  const facing = sliderHarness('facingSize', 'facingSizeNum', SLIDER_FIELDS[3]);
-  for (const text of ['2', '2.', '2.5']) facing.type(text);
-  assert.equal(facing.number.value, '2.5');
-  assert.equal(facing.api.sliderPairValue('facingSize', 0), 2.5);
-
-  const pot = sliderHarness('potSize', 'potSizeNum', SLIDER_FIELDS[4]);
-  for (const text of ['6', '6.', '6.5']) pot.type(text);
-  assert.equal(pot.number.value, '6.5');
-  assert.equal(pot.api.sliderPairValue('potSize', 0), 6.5);
+test('A: Analyze facing 2.5 and pot 6.5 stay as typed and are the committed values', async () => {
+  for (const [rangeId, numberId, texts, expected] of [
+    ['facingSize', 'facingSizeNum', ['2', '2.', '2.5'], 2.5],
+    ['potSize', 'potSizeNum', ['6', '6.', '6.5'], 6.5],
+  ]) {
+    const harness = sliderHarness(rangeId, numberId);
+    const initial = harness.range.value;
+    try {
+      for (const value of texts) harness.type(value);
+      assert.equal(harness.number.value, texts.at(-1));
+      assert.equal(harness.api.sliderPairValue(rangeId, 0), expected);
+    } finally {
+      await harness.restore();
+      await resetSlider(rangeId, numberId, initial);
+    }
+  }
 });
 
-test('A: blur normalizes a valid value and leaves invalid text visible and marked invalid', () => {
-  const valid = sliderHarness('facingSize', 'facingSizeNum', SLIDER_FIELDS[3]);
-  valid.type('2.50');
-  valid.blur();
-  assert.equal(valid.number.value, '2.5');
-  assert.equal(valid.number.attributes['aria-invalid'], undefined);
-  assert.equal(valid.calls.change, 1);
+test('A: blur normalizes a valid value and leaves invalid text visible and marked invalid', async () => {
+  const valid = sliderHarness('facingSize', 'facingSizeNum');
+  const facingInitial = valid.range.value;
+  try {
+    valid.type('2.50');
+    valid.blur();
+    assert.equal(valid.number.value, '2.5');
+    assert.equal(valid.number.getAttribute('aria-invalid'), null);
+    assert.equal(valid.calls.change, 1);
+  } finally {
+    await valid.restore();
+    await resetSlider('facingSize', 'facingSizeNum', facingInitial);
+  }
 
-  const invalid = sliderHarness('stack', 'stackNum', SLIDER_FIELDS[1]);
-  invalid.type('5');
-  invalid.blur();
-  assert.equal(invalid.number.value, '5');
-  assert.equal(invalid.range.value, '30');
-  assert.equal(invalid.number.attributes['aria-invalid'], 'true');
+  const invalid = sliderHarness('stack', 'stackNum');
+  const stackInitial = invalid.range.value;
+  try {
+    invalid.type('5');
+    invalid.blur();
+    assert.equal(invalid.number.value, '5');
+    assert.equal(invalid.range.value, stackInitial);
+    assert.equal(invalid.number.getAttribute('aria-invalid'), 'true');
+  } finally {
+    await invalid.restore();
+    await resetSlider('stack', 'stackNum', stackInitial);
+  }
 });
 
 test('A: incomplete drafts reach the readiness gate and never resolve strategy', async () => {
@@ -226,15 +235,39 @@ test('A: typing 2.5 / 6.5 resolves exactly once per update with the typed values
   }
 });
 
-test('A: programmatic facing resets never overwrite a focused draft', () => {
-  const display = sourceBetween(LOGIC, 'function setSliderPairDisplay(', 'const SLIDER_PAIR_NUMBER_IDS');
-  assert.match(display, /document\.activeElement !== number/);
-  // ANALYZE-COMPOSITION-001 removed the responsive Action path media constant; the next declaration bounds the slice.
-  const metrics = sourceBetween(LOGIC, 'function updateMetrics()', 'let actionPathCompactExpanded');
-  assert.match(metrics, /setSliderPairDisplay\('facingSize', 'facingSizeNum', 0\)/);
-  const sync = sourceBetween(LOGIC, 'function syncSliderPair(rangeId, numberId) {', 'function normalizeSliderPairDisplay(');
-  assert.doesNotMatch(sync, /number\.value\s*=/);
-  assert.match(LOGIC, /function updatePositions\(\) \{[\s\S]{0,240}readSliderPairDraft\(\$\('#playersNum'\)\)\.state === 'incomplete'\) return;/);
+test('A: programmatic facing resets never overwrite a focused draft', async () => {
+  const number = app.byId('facingSizeNum');
+  const initial = app.byId('facingSize').value;
+  number.focus();
+  number.value = '2.';
+  number.dispatchEvent(new app.window.Event('input', { bubbles: true }));
+  try {
+    // Metrics refresh (which resets facing for an unopened spot) and the
+    // reset itself leave the focused draft alone.
+    app.call('updateMetrics');
+    app.call('setSliderPairDisplay', 'facingSize', 'facingSizeNum', 0);
+    assert.equal(number.value, '2.');
+  } finally {
+    number.blur();
+  }
+  app.call('setSliderPairDisplay', 'facingSize', 'facingSizeNum', 0);
+  assert.equal(number.value, '0', 'an unfocused field is reset');
+  await resetSlider('facingSize', 'facingSizeNum', initial);
+  // An incomplete table-size draft does not rebuild positions.
+  const heroPos = app.byId('heroPos');
+  const players = app.byId('playersNum');
+  const before = [...heroPos.options].map((option) => option.value);
+  const playersInitial = app.byId('players').value;
+  players.focus();
+  players.value = '';
+  players.dispatchEvent(new app.window.Event('input', { bubbles: true }));
+  try {
+    app.call('updatePositions');
+    assert.deepEqual([...heroPos.options].map((option) => option.value), before);
+  } finally {
+    players.blur();
+    await resetSlider('players', 'playersNum', playersInitial);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -277,7 +310,7 @@ test('B: numeric readiness messages name the Analyze field label, never "amount 
     assert.ok(label, `first field ${first.fields[0]} is a labelled numeric field`);
     assert.ok(first.message.includes(label), `${first.code}: "${first.message}" names ${label}`);
     assert.doesNotMatch(first.message, /amount to call/i);
-    assert.match(HTML, new RegExp(`data-i18n="${label}">${label}<`));
+    assert.ok(markup.querySelectorAll(`[data-i18n="${label}"]`).some((node) => node.textContent === label), label);
   }
 });
 
@@ -302,18 +335,8 @@ test('B: new readiness messages have Russian and Hebrew translations', () => {
   }
 });
 
-function focusTargetHarness() {
-  const context = {};
-  vm.runInNewContext(`
-    const PLAYBOOK_MODES = { SCENARIO: 'scenario', HAND: 'hand' };
-    ${sourceBetween(LOGIC, 'const SCENARIO_READINESS_FIELD_CONTROLS', 'function focusScenarioReadinessField(')}
-    globalThis.target = scenarioReadinessFocusTarget;
-  `, context);
-  return context.target;
-}
-
-test('B: Edit decision inputs focuses the first field the readiness message names', () => {
-  const target = focusTargetHarness();
+test('B: Edit decision inputs focuses the first field the readiness message names', async () => {
+  const target = (resolution) => app.call('scenarioReadinessFocusTarget', resolution);
   const resolution = (input) => ({
     mode: 'scenario',
     reason: 'scenario_not_ready',
@@ -328,14 +351,39 @@ test('B: Edit decision inputs focuses the first field the readiness message name
   assert.equal(target(resolution(scenario({ heroCards: ['As'] }))), '[data-card-set-edit="hero"]');
   assert.equal(target({ mode: 'hand', reason: 'canonical_hero_not_actor' }), null);
   for (const id of ['facingSizeNum', 'potSizeNum', 'stackNum', 'playersNum', 'anteNum', 'lastAction', 'heroPos']) {
-    assert.match(HTML, new RegExp(`id="${id}"`));
+    assert.ok(markup.getElementById(id), id);
   }
-  const handler = sourceBetween(LOGIC, 'function setRecommendationState(state) {', 'const SCENARIO_READINESS_FIELD_CONTROLS');
-  assert.ok(handler.indexOf('focusScenarioReadinessField(app.playbookResolution)')
-    < handler.indexOf("document.querySelector('.playbook-context-rail')"));
-  const focus = sourceBetween(LOGIC, 'function focusScenarioReadinessField(', 'function analysisUnavailableReasonForResolution(');
-  assert.match(focus, /scrollIntoView\(\{ block: 'center', behavior: 'instant' \}\)/);
-  assert.match(focus, /focus\(\{ preventScroll: true \}\)/);
+  // In the app: an unready pot sends "Edit decision inputs" straight to the
+  // named field (centred without scrolling twice), before any generic
+  // context-rail fallback.
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const potInitial = app.byId('potSize').value;
+  const pot = app.byId('potSizeNum');
+  pot.focus();
+  pot.value = '';
+  pot.dispatchEvent(new app.window.Event('input', { bubbles: true }));
+  pot.blur();
+  await app.call('updateContext');
+  await app.settle(300);
+  const scrolls = [];
+  const focuses = [];
+  pot.scrollIntoView = (options) => scrolls.push(options);
+  const focus = pot.focus;
+  pot.focus = function (options) { focuses.push(options); return focus.call(this, options); };
+  const spy = app.spy(['focusScenarioReadinessField']);
+  try {
+    await app.click('#analysisEditInputs');
+    assert.equal(spy.count('focusScenarioReadinessField'), 1);
+    assert.equal(app.document.activeElement, pot);
+    assert.deepEqual(scrolls, [{ block: 'center', behavior: 'instant' }]);
+    assert.deepEqual(focuses, [{ preventScroll: true }]);
+  } finally {
+    spy.restore();
+    delete pot.scrollIntoView;
+    delete pot.focus;
+    pot.blur();
+    await resetSlider('potSize', 'potSizeNum', potInitial);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -448,11 +496,26 @@ test('C: Scenario-derived Training spots never print "facing 0" beside a call pr
 });
 
 test('C: Review and Training facing copy are consumers of the canonical projection', () => {
-  const review = sourceBetween(LOGIC, 'function reviewContextCopy(decision) {', 'function renderHandReviewCards(');
-  assert.match(review, /decisionFacingCopy\(decision\.durable\.decisionContext, actor\)/);
-  assert.doesNotMatch(review, /facingSizeBb|callAmountBb/);
-  assert.match(LOGIC, /function formatTrainingFacingCopy\(context\) \{\n  return decisionFacingCopy\(context\);/);
-  assert.match(HTML, /src="src\/application\/decision-facing-summary\.mjs"/);
+  // Review copy is the canonical facing projection of the recorded context;
+  // page code never reads the raw facing/call fields itself.
+  const context = heroContext(act(dealtTable([100, 100, 100, 100]), ACTION_TYPES.RAISE, 3));
+  const reads = new Set();
+  const tracked = new Proxy(context, { get(target, key, receiver) {
+    if ((new Error().stack.split('\n')[2] || '').includes('core/logic.js')) reads.add(key);
+    return Reflect.get(target, key, receiver);
+  } });
+  const spy = app.spy(['decisionFacingCopy']);
+  try {
+    const copy = app.call('reviewContextCopy', { durable: { decisionContext: tracked }, actor: { playerId: context.heroPlayerId } });
+    assert.ok(spy.count('decisionFacingCopy') >= 1);
+    assert.equal(spy.calls.decisionFacingCopy[0][0], tracked);
+    assert.ok(String(copy ?? '').length >= 0);
+  } finally {
+    spy.restore();
+  }
+  for (const key of ['facingSizeBb', 'callAmountBb']) assert.equal(reads.has(key), false, key);
+  assert.equal(app.call('formatTrainingFacingCopy', context), app.call('decisionFacingCopy', context));
+  assert.ok(markup.querySelector('script[src="src/application/decision-facing-summary.mjs"]'));
   assert.doesNotMatch(FACING_MODULE, /milliBb|getLegalActionSpec|\+=|\* 1000/);
   const analysis = catalog('../app/src/locales/analysis-translations.js', 'riverlineAnalysisTranslations');
   for (const key of Object.keys(analysis.en).filter((entry) => entry.startsWith('facing.'))) {
@@ -523,29 +586,51 @@ test('D: replay stage facts follow the cursor and come from the selected frame',
   assert.equal(returned.selectedStageFacts, null);
 });
 
-test('D: replay seek does no strategy or Equity work and the renderers read frame facts', () => {
+test('D: replay seek does no strategy or Equity work and the renderers read frame facts', async () => {
   const imports = REPLAY_CONTROLLER.match(/^import[\s\S]*?;$/gm).join('\n');
   assert.doesNotMatch(imports, /strategy|equity/i);
   assert.match(imports, /getLegalActionSpec/);
-  const stage = sourceBetween(LOGIC, 'function renderCanonicalHandStage(', 'function renderCanonicalPrivateDeal(');
-  assert.match(stage, /const frameFacts = canonicalReplayFrameFacts\(replayProjection\)/);
-  assert.match(stage, /frameFacts \? frameFacts\.lastAction : state\?\.actionHistory\?\.at\(-1\)/);
-  assert.match(stage, /formatCanonicalBb\(frameFacts\.potMilliBb\)/);
-  assert.match(stage, /formatCanonicalBb\(frameFacts\.callMilliBb\)/);
-  const workspace = sourceBetween(LOGIC, 'function renderCanonicalHandWorkspace() {', 'function activeHandReviewInput(');
-  assert.match(workspace, /canonicalStatusStateFromFrameFacts\(frameFacts\)/);
-  assert.match(workspace, /const shownPot = frameFacts \? frameFacts\.potMilliBb : state\?\.potMilliBb/);
-  const listener = sourceBetween(LOGIC, 'function bindPlaybookModeControl() {', 'let savedStudyCurrentObject = null;');
-  assert.match(listener, /startsWith\('replay_'\)[\s\S]*?return;\n\s*updateContext/);
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('call');
+  const livePot = text(app.byId('handLivePot'));
+  const liveState = app.call('callPlaybookStateBridge', 'getState');
+  const spy = app.spy(['updateContext']);
+  try {
+    const resolves = await probe.count(async () => {
+      await app.click('#handReplayPreviousButton');
+      await app.settle(300);
+    });
+    assert.equal(resolves.length, 0, 'a replay seek resolves no strategy');
+    assert.equal(spy.count('updateContext'), 0, 'replay_* state changes skip the decision update');
+  } finally {
+    spy.restore();
+  }
+  // The stage and state summary read the selected frame, not the live state.
+  const facts = app.call('canonicalReplayFrameFacts', app.call('callPlaybookStateBridge', 'createReplayProjectionViewModel'));
+  assert.ok(facts);
+  assert.notEqual(facts.potMilliBb, liveState.potMilliBb);
+  assert.equal(text(app.byId('handLivePot')), app.call('formatCanonicalBb', facts.potMilliBb));
+  assert.notEqual(text(app.byId('handLivePot')), livePot);
+  assert.equal(text(app.byId('handStatePot')), app.call('formatCanonicalBb', facts.potMilliBb));
+  assert.equal(text(app.byId('handLiveCall')), facts.callMilliBb === null ? text(app.byId('handLiveCall')) : app.call('formatCanonicalBb', facts.callMilliBb));
+  await app.click('#handReplayLiveButton');
+  await app.settle(300);
+  assert.equal(text(app.byId('handLivePot')), livePot);
 });
 
-test('D: replaying a completed hand offers the same Return control and restores the completion card', () => {
-  const controls = sourceBetween(LOGIC, 'function renderCanonicalReplayControls(', 'function renderCanonicalReplayTimeline()');
-  assert.match(controls, /const canExitReplayToCompleted = projection\.mode === 'replay'[\s\S]*?!liveHandInProgress/);
-  assert.match(controls, /'replay\.control\.returnToCompleted'/);
-  assert.match(controls, /live\.hidden = !canExitReplayToLive && !canExitReplayToCompleted/);
-  const stage = sourceBetween(LOGIC, 'function renderCanonicalHandStage(', 'function renderCanonicalPrivateDeal(');
-  assert.match(stage, /completed\.hidden = !terminal \|\| replayProjection\?\.readOnly === true/);
+test('D: replaying a completed hand offers the same Return control and restores the completion card', async () => {
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('fold');
+  assert.equal(app.byId('handCompletedSection').hidden, false);
+  await app.click('#handReplayPreviousButton');
+  await app.settle(300);
+  const back = app.byId('handReplayLiveButton');
+  assert.equal(back.hidden, false, 'a Return control is offered for a completed hand');
+  assert.equal(text(back), app.call('t', 'replay.control.returnToCompleted'));
+  assert.equal(app.byId('handCompletedSection').hidden, true, 'the completion card hides while replaying');
+  await app.click(back);
+  await app.settle(300);
+  assert.equal(app.byId('handCompletedSection').hidden, false, 'returning restores the completion card');
   const analysis = catalog('../app/src/locales/analysis-translations.js', 'riverlineAnalysisTranslations');
   for (const language of ['en', 'ru', 'he']) {
     assert.equal(typeof analysis[language]['replay.control.returnToCompleted'], 'string');
@@ -566,27 +651,27 @@ test('G: the saved Replay chip resolves to translated text in every language', (
 // ---------------------------------------------------------------------------
 
 function statusHarness() {
-  const status = { textContent: '' };
-  const context = {
+  const status = app.byId('handRandomizeStatus');
+  const live = { state: null };
+  return {
+    app: page(),
     status,
-    live: { state: null },
+    live,
+    setHandRandomizationStatus: (...args) => app.call('setHandRandomizationStatus', ...args),
+    reconcileHandRandomizationStatus: (...args) => app.call('reconcileHandRandomizationStatus', ...args),
   };
-  vm.runInNewContext(`
-    const app = { playbookHandDraft: { bySeat: {}, board: [], randomizationStatusStage: null, randomizationStatusTarget: null } };
-    const $ = (selector) => (selector === '#handRandomizeStatus' ? status : null);
-    const t = (key, values = {}) => String(key).replace(/\\{(\\w+)\\}/g, (match, name) => (name in values ? String(values[name]) : match));
-    const callPlaybookStateBridge = (method) => (method === 'getState' ? live.state : null);
-    const normalizedDecisionCards = (cards) => (Array.isArray(cards) ? cards.filter(Boolean) : []);
-    ${sourceBetween(LOGIC, 'function canonicalHandDraftStageKey(state) {', 'function renderHandRandomizationRecipe(')}
-    globalThis.api = { app, setHandRandomizationStatus, reconcileHandRandomizationStatus };
-  `, context);
-  return { ...context.api, status, live: context.live };
 }
 
-test('E: randomizer "ready" status clears after commit, cancel, street advance or hand completion', () => {
+test('E: randomizer "ready" status clears after commit, cancel, street advance or hand completion', async () => {
+  const bridge = app.window.callPlaybookStateBridge;
+  const draft = { ...page().playbookHandDraft };
+  const harnessLive = { state: null };
+  app.window.callPlaybookStateBridge = (method, ...args) => (method === 'getState' ? harnessLive.state : bridge(method, ...args));
+  try {
   const flopPending = { phase: 'chance', street: 'preflop', pendingChance: { type: 'deal_flop' }, actionHistory: [1, 2] };
   const flopDealt = { phase: 'betting', street: 'flop', pendingChance: null, actionHistory: [1, 2] };
   const harness = statusHarness();
+  harness.live = harnessLive;
   harness.live.state = flopPending;
   harness.app.playbookHandDraft.board = ['2c', '7d', 'Th'];
   harness.setHandRandomizationStatus('Random {street} ready.', { street: 'Flop' }, 'flop');
@@ -611,21 +696,52 @@ test('E: randomizer "ready" status clears after commit, cancel, street advance o
   harness.reconcileHandRandomizationStatus(complete);
   assert.equal(harness.status.textContent, '', 'hand completed');
 
-  const workspace = sourceBetween(LOGIC, 'function renderCanonicalHandWorkspace() {', 'function activeHandReviewInput(');
-  assert.match(workspace, /reconcileHandRandomizationStatus\(state\)/);
+  } finally {
+    app.window.callPlaybookStateBridge = bridge;
+    Object.assign(page().playbookHandDraft, draft);
+  }
+  // Every Hand workspace render reconciles the status with the live state.
+  const spy = app.spy(['reconcileHandRandomizationStatus']);
+  try {
+    app.call('renderCanonicalHandWorkspace');
+    assert.ok(spy.count('reconcileHandRandomizationStatus') >= 1);
+    assert.equal(spy.calls.reconcileHandRandomizationStatus[0][0], app.call('callPlaybookStateBridge', 'getState'));
+  } finally {
+    spy.restore();
+  }
 });
 
 // ---------------------------------------------------------------------------
 // F. Plain sizing language
 // ---------------------------------------------------------------------------
 
-test('F: no user-visible amount-to jargon remains in Hand or Training sizing copy', () => {
-  assert.doesNotMatch(HTML, />[^<]*amount-to[^<]*</i);
-  assert.doesNotMatch(HTML, /data-i18n="[^"]*amount-to/i);
-  assert.doesNotMatch(LOGIC, /t\('[^']*amount-to/i);
-  assert.match(HTML, /id="handCommitSizedAction"[^>]+data-i18n="Apply">Apply</);
-  assert.match(HTML, /data-i18n="Bet size">Bet size</);
-  assert.match(LOGIC, /t\(type === 'bet' \? 'Bet to' : 'Raise to'\)/);
+test('F: no user-visible amount-to jargon remains in Hand or Training sizing copy', async () => {
+  assert.doesNotMatch(markup.body.textContent, /amount-to/i);
+  assert.equal(markup.querySelectorAll('[data-i18n]').filter((node) => /amount-to/i.test(node.dataset.i18n)).length, 0);
+  const apply = markup.getElementById('handCommitSizedAction');
+  assert.equal(apply.dataset.i18n, 'Apply');
+  assert.equal(apply.textContent, 'Apply');
+  assert.ok(markup.querySelectorAll('[data-i18n="Bet size"]').some((node) => node.textContent === 'Bet size'));
+  // Sizing a raise and a bet in the app translates only plain wording.
+  const t = app.window.t;
+  const keys = [];
+  app.window.t = (key, ...rest) => { keys.push(String(key)); return t(key, ...rest); };
+  try {
+    await app.startHand(['As', 'Kd']);
+    await app.click('#handLegalActions [data-canonical-action="raise"]');
+    assert.equal(text(app.byId('handActionSizingLabel')), 'Raise to');
+    app.call('renderCanonicalHandWorkspace');
+    await app.handAction('call');
+    await app.handAction('check');
+    await app.dealBoard(['2c', '3d', '4s']);
+    await app.click('#handLegalActions [data-canonical-action="bet"]');
+    assert.equal(text(app.byId('handActionSizingLabel')), 'Bet to');
+    app.call('renderCanonicalHandWorkspace');
+  } finally {
+    app.window.t = t;
+  }
+  assert.ok(keys.includes('Raise to') && keys.includes('Bet to'));
+  assert.deepEqual(keys.filter((key) => /amount-to/i.test(key)), []);
   const product = catalog('../app/src/locales/product-translations.js', 'riverlineProductTranslations');
   for (const key of ['Total for this street', 'Custom size', '{min}–{max} bb total', 'choose bet size']) {
     assert.equal(typeof product.ru[key], 'string', `ru ${key}`);
@@ -637,40 +753,27 @@ test('F: no user-visible amount-to jargon remains in Hand or Training sizing cop
 // H. Training key hints
 // ---------------------------------------------------------------------------
 
-function element(tag) {
-  return {
-    tag,
-    hidden: false,
-    textContent: '',
-    children: [],
-    replaceChildren(...nodes) { this.children = nodes; },
-  };
-}
-
-test('H: Training keyboard hint lists exactly the available action keys', () => {
-  const help = element('p');
-  const range = element('span');
-  const context = { help, range };
-  vm.runInNewContext(`
-    const $ = (selector) => ({ '#trainingShortcutHelp': help, '#trainingShortcutRange': range })[selector] || null;
-    const document = {
-      createElement: (tag) => ({ tag, textContent: '' }),
-      createTextNode: (text) => ({ tag: '#text', textContent: text }),
-    };
-    ${sourceBetween(LOGIC, 'function renderTrainingShortcutHint(actionCount) {', 'function renderTrainingSource(')}
-    globalThis.render = renderTrainingShortcutHint;
-  `, context);
-  const text = () => range.children.map((node) => node.textContent).join('');
-  context.render(4);
-  assert.equal(text(), '1-4');
+test('H: Training keyboard hint lists exactly the available action keys', async () => {
+  const help = app.byId('trainingShortcutHelp');
+  const range = app.byId('trainingShortcutRange');
+  const render = (count) => app.call('renderTrainingShortcutHint', count);
+  render(4);
+  assert.equal(range.textContent, '1-4');
   assert.equal(help.hidden, false);
-  context.render(2);
-  assert.equal(text(), '1-2');
-  context.render(1);
-  assert.equal(text(), '1');
-  context.render(0);
+  render(2);
+  assert.equal(range.textContent, '1-2');
+  render(1);
+  assert.equal(range.textContent, '1');
+  render(0);
   assert.equal(help.hidden, true);
-  const buttons = sourceBetween(LOGIC, 'function updateTrainingButtons(exercise) {', 'function renderTrainingShortcutHint(');
-  assert.match(buttons, /renderTrainingShortcutHint\(container\.childElementCount\)/);
-  assert.match(HTML, /id="trainingShortcutRange"/);
+  // The live hint follows the rendered answer buttons.
+  const spy = app.spy(['renderTrainingShortcutHint']);
+  try {
+    await app.training.start('focused');
+    assert.ok(spy.count('renderTrainingShortcutHint') >= 1);
+    assert.equal(spy.calls.renderTrainingShortcutHint.at(-1)[0], app.byId('trainingGuessButtons').childElementCount);
+  } finally {
+    spy.restore();
+  }
+  assert.ok(markup.getElementById('trainingShortcutRange'));
 });

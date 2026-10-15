@@ -14,8 +14,13 @@ import { createBluffAnalysisFacts } from '../app/src/application/bluff-analysis.
 import { createRangeAnalysisFacts } from '../app/src/application/range-analysis.mjs';
 import { PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION } from '../app/src/tutorial/current-app-tutorials.mjs';
 import * as RiverlineCardPresentation from '../app/src/application/card-presentation.mjs';
+import { bootApp, indexDocument, strategyProviderProbe } from './helpers/app-under-test.mjs';
 
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: the logic.js range-analysis seam is observed in the
+// booted app (spies, a provider probe, the real Analysis toggle) and markup is
+// parsed, instead of regex-matching logic.js / index.html.
+const probe = strategyProviderProbe();
+const page = await bootApp({ beforeScripts: probe.beforeScripts });
 const EXPLANATION = fs.readFileSync(
   new URL('../app/src/application/analysis-explanation.mjs', import.meta.url),
   'utf8',
@@ -29,7 +34,6 @@ const BLUFF_ANALYSIS = fs.readFileSync(
   'utf8',
 );
 const RENDERER = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
-const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const ANALYSIS_TRANSLATIONS = fs.readFileSync(
   new URL('../app/src/locales/analysis-translations.js', import.meta.url),
   'utf8',
@@ -247,14 +251,6 @@ function completeManualRange() {
 function fact(result, sectionKey, factKey) {
   return result.sections.find((section) => section.key === sectionKey)
     ?.facts.find((entry) => entry.key === factKey);
-}
-
-function sourceBetween(source, start, end) {
-  const from = source.indexOf(start);
-  const to = source.indexOf(end, from);
-  assert.ok(from >= 0, start);
-  assert.ok(to > from, end);
-  return source.slice(from, to);
 }
 
 test('AnalysisExplanation consumes RangeAnalysisFacts as its trusted exact-hand and board input', () => {
@@ -717,29 +713,44 @@ test('Explanation remains the only copy layer and does not evaluate or condition
   assert.doesNotMatch(BLUFF_ANALYSIS, /evaluateFive|evaluateSeven|conditionHoldemRange|calculateEquity|document\.|querySelector/);
 });
 
-test('range analysis is invoked only inside the visible Analysis render path and never calls StrategyProvider', () => {
-  const seam = sourceBetween(
-    LOGIC,
-    'function rangeAnalysisFactsForDecision(',
-    'function renderDecisionAnalysis(',
-  );
-  const render = sourceBetween(
-    LOGIC,
-    'function renderDecisionAnalysis(',
-    'function renderPlaybookDecisionAnalysis(',
-  );
-  assert.match(render, /rangeAnalysisFactsForDecision\(decisionContext, authority, rangeInputs\)/);
-  assert.match(render, /rangeAnalysisFacts,/);
-  assert.doesNotMatch(seam, /strategyProvider|\.resolve\(|calculateEquity/);
-  assert.equal((LOGIC.match(/rangeAnalysisFactsForDecision\(/g) || []).length, 2);
-  assert.match(LOGIC, /surface === 'analysis'[\s\S]*playbookSurfaceIsVisible\('analysis'\)/);
-  assert.match(seam, /rangeAnalysisMemo\.decisionContext === decisionContext/);
-  const playbook = sourceBetween(
-    LOGIC,
-    'function renderPlaybookDecisionAnalysis(',
-    'function renderPlaybookTableProjection(',
-  );
-  assert.doesNotMatch(playbook, /strategyProvider\.resolve\(/);
+test('range analysis is invoked only inside the visible Analysis render path and never calls StrategyProvider', async () => {
+  await page.navigate('analyze');
+  await page.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  await page.pickCards('#gtoMode [data-card-set-edit="board"]', ['Qh', 'Jh', '2c']);
+  const teacher = page.byId('teacherContent');
+  if (teacher.style.display === 'block') await page.click('#toggleTeacher');
+  assert.notEqual(teacher.style.display, 'block');
+  const spy = page.spy(['rangeAnalysisFactsForDecision', 'renderDecisionAnalysis']);
+  try {
+    // Hidden Analysis: no range analysis work on a decision update.
+    await page.call('updateContext');
+    await page.settle(300);
+    assert.equal(spy.count('rangeAnalysisFactsForDecision'), 0);
+    // Visible Analysis: the render path computes it for the current decision.
+    await page.click('#toggleTeacher');
+    await page.settle(300);
+    assert.equal(teacher.style.display, 'block');
+    assert.ok(spy.count('renderDecisionAnalysis') >= 1);
+    assert.ok(spy.count('rangeAnalysisFactsForDecision') >= 1);
+    const [decisionContext] = spy.calls.rangeAnalysisFactsForDecision.at(-1);
+    assert.equal(decisionContext, page.window.app.decisionContext);
+    assert.ok(spy.sequence.indexOf('renderDecisionAnalysis') < spy.sequence.indexOf('rangeAnalysisFactsForDecision'), 'computed inside the Analysis render');
+    // The seam is memoized per DecisionContext and never resolves strategy.
+    const args = spy.calls.rangeAnalysisFactsForDecision.at(-1);
+    let first;
+    let second;
+    const resolves = await probe.count(() => {
+      first = page.call('rangeAnalysisFactsForDecision', ...args);
+      second = page.call('rangeAnalysisFactsForDecision', ...args);
+      page.call('renderPlaybookDerivedSurface', 'analysis');
+    });
+    assert.equal(resolves.length, 0);
+    assert.ok(first);
+    assert.equal(second, first, 'memoized for the same DecisionContext');
+  } finally {
+    spy.restore();
+    await page.click('#toggleTeacher');
+  }
 });
 
 test('renderer exposes compact blocker/range sections, readable partial coverage, and separate fact sources', () => {
@@ -774,7 +785,7 @@ test('Analysis tutorial teaches accepted study integrations without changing the
   assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /opponent assumptions separate from the observed action and reference/);
   assert.match(tutorial.steps.find((step) => step.id === 'range').bodyKey, /unknown combos unknown/);
   assert.match(tutorial.steps.find((step) => step.id === 'range').bodyKey, /sources remain separate/);
-  assert.match(HTML, /data-tutorial-anchor="playbook-analysis-explanation"/);
+  assert.ok(indexDocument().querySelector('[data-tutorial-anchor="playbook-analysis-explanation"]'));
 });
 
 test('new Analysis labels and tutorial copy are complete in EN, RU, and HE', () => {

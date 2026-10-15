@@ -12,10 +12,6 @@ test.before(async () => {
   ));
 });
 
-const logicSource = fs.readFileSync(
-  path.resolve(__dirname, '..', 'app', 'src', 'core', 'logic.js'),
-  'utf8',
-);
 const heuristicSource = [
   'heuristic-strategy.mjs',
   'preflop-heuristic.mjs',
@@ -47,14 +43,6 @@ function decisionContext(overrides = {}) {
     input.totalForcedContributionBb = input.tableSize * 0.1;
   }
   return deriveDecisionContextFromPlaybookScenario(input);
-}
-
-function functionSource(start, end) {
-  const startIndex = logicSource.indexOf(start);
-  const endIndex = logicSource.indexOf(end, startIndex + start.length);
-  assert.notEqual(startIndex, -1, `missing ${start}`);
-  assert.notEqual(endIndex, -1, `missing ${end}`);
-  return logicSource.slice(startIndex, endIndex);
 }
 
 test('extracted fallback preserves established DecisionContext inputs', () => {
@@ -154,11 +142,30 @@ test('postflop strategy entry uses DecisionContext on flop, turn, and river', ()
   }
 });
 
-test('strategy-facing consumers contain no independent poker-state control reads', () => {
+test('strategy-facing consumers contain no independent poker-state control reads', async () => {
   assert.doesNotMatch(heuristicSource, /\b(?:document|window|querySelector|selectedValue|numericValue)\b/);
   assert.doesNotMatch(heuristicSource, /\bapp\.settings\b|\bwindow\.app\b/);
-  const providerSeam = functionSource('function readHeuristicOptions(', 'function setFrequency(');
-  assert.match(providerSeam, /heuristicOptionsResolver: readHeuristicOptions/);
-  assert.match(logicSource, /const strategyResult = strategyProvider\.resolve\(decisionContext\);/);
-  assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
+  // TEST-HYGIENE-001: the page's provider seam is observed in the booted app
+  // instead of regex-matching logic.js.
+  const { bootApp, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+  const probe = strategyProviderProbe();
+  const app = await bootApp({ beforeScripts: probe.beforeScripts });
+  // Heuristic options come only from the page's readHeuristicOptions seam.
+  assert.ok(probe.providerOptions.some((options) => options?.heuristicOptionsResolver === app.window.readHeuristicOptions
+    || String(options?.heuristicOptionsResolver?.name) === 'readHeuristicOptions'));
+  // A decision update resolves the canonical DecisionContext once and the
+  // legacy profile is a projection of that StrategyResult.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const spy = app.spy(['strategyResultToLegacyProfile']);
+  try {
+    const resolved = await probe.count(async () => {
+      await app.call('updateContext');
+      await app.settle(200);
+    });
+    assert.deepEqual(resolved, [app.window.app.decisionContext]);
+    assert.ok(spy.calls.strategyResultToLegacyProfile.some(([result]) => result === app.window.app.strategyResult));
+  } finally {
+    spy.restore();
+  }
 });

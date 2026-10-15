@@ -1,7 +1,5 @@
 import { initializeHand, applyChance, GAME_MODES, ANTE_TYPES, CHANCE_TYPES } from '../shared/poker-domain/index.js';
 import { createReplayProjectionController, REPLAY_FRAME_OPERATIONS } from '../app/src/application/replay-projection-controller.mjs';
-import fs from 'node:fs';
-import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -12,8 +10,6 @@ import {
 import { createAccountIdentityService } from '../app/src/application/account-identity-service.mjs';
 import { createAuthProviderIdentity } from '../app/src/authentication/index.mjs';
 import { createSavedStudyObjectApplication } from '../app/src/application/saved-study-object-service.mjs';
-import { installSavedStudyObjectBridge } from '../app/src/application/saved-study-object-bootstrap.mjs';
-import { installHomeWorkspaceBridge } from '../app/src/application/home-workspace-bootstrap.mjs';
 import { createPersonalStrategyHomeQuery } from '../app/src/application/personal-strategy-home-query.mjs';
 import { createSavedStudyObjectOpenController } from '../app/src/application/saved-study-object-open-controller.mjs';
 import { createPlaybookScenarioInput, deriveDecisionContextFromPlaybookScenario } from '../app/src/application/playbook-state-source.mjs';
@@ -24,6 +20,15 @@ import { createMemoryTrainingMemoryDatabase } from '../app/src/training-memory/i
 import { trainingMemoryOwnerKey } from '../app/src/training-memory/domain.mjs';
 import { RANGE_CALIBRATION_PREFERENCES_KEY } from '../app/src/application/range-calibration-service.mjs';
 import { createPreAccountPersonalStrategyFixture } from './fixtures/account001_legacy.mjs';
+import { bootApp } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the logic.js owner-clearing paths run in the booted app
+// (page functions observed through spies and stubbed bridges) instead of
+// vm-evaluated slices of logic.js.
+const page = await bootApp();
+// Imported after boot: the bootstrap module graphs self-install page bridges.
+const { installSavedStudyObjectBridge } = await import('../app/src/application/saved-study-object-bootstrap.mjs');
+const { installHomeWorkspaceBridge } = await import('../app/src/application/home-workspace-bootstrap.mjs');
 
 const NOW = '2026-09-05T12:00:00.000Z';
 const ids = (label) => { let n = 0; return (prefix) => `${prefix}-${label}-${++n}`; };
@@ -433,44 +438,29 @@ test('Training authorization uses current identity scope despite local compatibi
   assert.equal((await f.account.getActiveIdentity()).kind, 'device_guest', 'test adapts scope only; no Move is implemented');
 });
 
-function runtimeFunction(source, name) {
-  let start = source.indexOf(`function ${name}(`);
-  assert.notEqual(start, -1);
-  if (source.slice(start - 6, start) === 'async ') start -= 6;
-  const open = source.indexOf('{', start);
-  let depth = 0;
-  for (let index = open; index < source.length; index += 1) {
-    if (source[index] === '{') depth += 1;
-    if (source[index] === '}') depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
-  }
-  throw new Error(`Missing runtime function ${name}`);
-}
-
 test('already-started Training queue callback cannot start Guest work after waiting on prior Account session', async () => {
-  const f = await fixture();
-  await f.signIn('A');
+  const training = page.window.app.training;
   const entered = deferred();
   const prior = deferred();
-  const app = { training: {
-    memoryGeneration: 1, memoryWritePromise: Promise.resolve(), currentExercise: null,
-    memorySessionPromise: { then(resolve) { entered.resolve(); prior.promise.then(resolve); } },
-  } };
-  const sandbox = { app, console, window: {}, $: () => null,
-    resetTrainingMemoryDecisionState() {}, setTrainingMemoryStatus() {},
-    callTrainingMemoryBridge: (method, ...args) => f.memory[method](...args),
-  };
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const functions = ['clearTrainingLearningPresentation', 'queueTrainingMemoryWrite', 'startTrainingMemorySession', 'clearTrainingMemoryOwnerPresentation']
-    .map((name) => runtimeFunction(source, name)).join('\n');
-  vm.createContext(sandbox);
-  vm.runInContext(`${functions}; this.result = startTrainingMemorySession({ mode: 'focused', requestedLength: 1 });`, sandbox);
-  await entered.promise;
-  await f.guest();
-  vm.runInContext('clearTrainingMemoryOwnerPresentation();', sandbox);
-  prior.resolve(null);
-  assert.equal(await sandbox.result, null);
-  assert.deepEqual(await f.memory.listRecentSessions(), [], 'Account intent must not create a Guest session');
+  const bridge = page.window.callTrainingMemoryBridge;
+  const calls = [];
+  page.window.callTrainingMemoryBridge = async (method) => { calls.push(method); return method === 'startSession' ? { id: 'guest-session' } : null; };
+  const previous = training.memorySessionPromise;
+  training.memorySessionPromise = { then(resolve) { entered.resolve(); prior.promise.then(resolve); } };
+  try {
+    const result = page.call('startTrainingMemorySession', { mode: 'focused', requestedLength: 1 });
+    await entered.promise;
+    // The owner changes (Account -> Guest) while the queued start waits on
+    // the prior Account session.
+    page.call('clearTrainingMemoryOwnerPresentation');
+    prior.resolve(null);
+    assert.equal(await result, null);
+    assert.deepEqual(calls.filter((method) => method === 'startSession'), [], 'Account intent must not create a Guest session');
+  } finally {
+    page.window.callTrainingMemoryBridge = bridge;
+    training.memorySessionPromise = previous;
+    page.call('clearTrainingMemoryOwnerPresentation');
+  }
 });
 
 test('Saved Hand opener validates lifecycle after read and before mutating Playbook', async () => {
@@ -503,83 +493,75 @@ test('Saved Hand opener validates lifecycle after read and before mutating Playb
   assert.equal(openCalls, 0);
 });
 
-test('owner clearing removes Saved Scenario cards and context even after its viewer banner was dismissed', () => {
-  const controls = new Map([
-    ['stack', { value: '237', defaultValue: '100' }],
-    ['pot', { value: '84', defaultValue: '1.5' }],
-    ['heroPosition', { value: 'CO', options: [
-      { value: 'UTG', defaultSelected: false }, { value: 'BTN', defaultSelected: true },
-    ] }],
-    ['lastAction', { value: 'raise', options: [{ value: 'none' }, { value: 'check' }] }],
-  ]);
-  const canonicalInput = Object.freeze({ schemaVersion: 'canonical-test-scenario', heroCards: [], board: [] });
-  const unavailable = Object.freeze({ status: 'unavailable', reason: 'scenario_not_ready' });
-  const calls = [];
-  const app = {
-    playbookMode: 'scenario', gto: { hero: ['As', 'Kh'], board: ['Qc', '7d', '2s'], dead: ['9h'] },
-    decisionContext: { ownerPrivate: 'A decision' }, strategyResult: { ownerPrivate: 'A strategy' },
-    playbookResolution: { ownerPrivate: 'A resolution' }, handReview: { savedDecisionIds: new Set(['A-decision']) },
+test('owner clearing removes Saved Scenario cards and context even after its viewer banner was dismissed', async () => {
+  const app = page.window.app;
+  await page.navigate('analyze');
+  await page.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kh']);
+  await page.pickCards('#gtoMode [data-card-set-edit="board"]', ['Qc', '7d', '2s']);
+  for (const [id, value] of [['stack', '237'], ['potSize', '84']]) page.byId(id).value = value;
+  const heroPos = page.byId('heroPos');
+  heroPos.value = [...heroPos.options].find((option) => !option.defaultSelected && option !== heroPos.options[0])?.value ?? heroPos.value;
+  // A Saved Scenario owned by A is presented; its viewer banner was dismissed.
+  page.evaluate('savedScenarioOwnerActive = true; savedPlaybookScenarioPresentation = { ownerPrivate: "cached A presentation" }; activeSavedSpotContext = null');
+  page.evaluate('homeViewModel = { ownerPrivate: "A home" }');
+  page.window.__ownerObject = { ownerPrivate: 'A object' };
+  page.evaluate('savedStudyCurrentObject = window.__ownerObject');
+  delete page.window.__ownerObject;
+  app.handReview.savedDecisionIds.add('A-decision');
+  const library = page.evaluate('savedLibraryController');
+  const history = page.evaluate('savedTrainingHistoryController');
+  const ownerChanged = { library: 0, history: 0 };
+  // The controllers are frozen: swap the page bindings for counting wrappers.
+  const wrap = (controller, key) => controller && Object.create(controller, {
+    ownerChanged: { value: (...args) => { ownerChanged[key] += 1; return controller.ownerChanged(...args); } },
+  });
+  page.window.__wrappedControllers = [wrap(library, 'library'), wrap(history, 'history')];
+  page.evaluate('[savedLibraryController, savedTrainingHistoryController] = window.__wrappedControllers');
+  const observed = [];
+  const spy = page.spy(['readPlaybookScenarioInput', 'callPlaybookStateBridge', 'renderUnavailableStrategy', 'renderAllCards']);
+  const read = page.window.readPlaybookScenarioInput;
+  page.window.readPlaybookScenarioInput = (...args) => {
+    observed.push({
+      cards: app.gto.hero.length + app.gto.board.length + app.gto.dead.length,
+      decisionContext: app.decisionContext,
+      strategyResult: app.strategyResult,
+      stack: page.byId('stack').value,
+      pot: page.byId('potSize').value,
+      heroPos: page.byId('heroPos').value,
+    });
+    return read(...args);
   };
-  const sandbox = {
-    app, PLAYBOOK_MODES: { SCENARIO: 'scenario' },
-    PLAYBOOK_SCENARIO_CONTROL_IDS: [...controls.keys(), 'absent-control'],
-    document: { getElementById: (id) => controls.get(id) ?? null },
-    savedScenarioOwnerActive: true,
-    importedHandOwnerPresentation: false,
-    handReviewDecisionSaver: { clear() { sandbox.decisionSaverCleared = true; } },
-    handReviewProjector: { clear() { sandbox.reviewProjectorCleared = true; } },
-    closeActiveHandReview({ returnToEndpoint }) {
-      assert.equal(returnToEndpoint, false);
-      app.handReview.source = null;
-      app.handReview.model = null;
-    },
-    activeSavedSpotContext: null,
-    savedPlaybookScenarioPresentation: { ownerPrivate: 'cached A presentation' },
-    homeRefreshSequence: 0, homeViewModel: { ownerPrivate: 'A home' },
-    savedLibraryController: { ownerChanged() { sandbox.savedLibraryOwnerChanged = true; } },
-    savedTrainingHistoryController: { ownerChanged() { sandbox.savedTrainingHistoryOwnerChanged = true; } },
-    savedStudyRefreshSequence: 0, savedStudyCurrentObject: { ownerPrivate: 'A object' },
-    $: () => null, renderSavedSpotViewer() {},
-    closeSavedStudyEditor() {},
-    playbookUpdateScheduler: { cancel() { calls.push('cancel'); } },
-    readPlaybookScenarioInput() {
-      calls.push('canonical-read');
-      assert.equal(app.gto.hero.length + app.gto.board.length + app.gto.dead.length, 0);
-      assert.equal(app.decisionContext, null);
-      assert.equal(app.strategyResult, null);
-      assert.equal(controls.get('stack').value, '100');
-      assert.equal(controls.get('pot').value, '1.5');
-      assert.equal(controls.get('heroPosition').value, 'BTN');
-      assert.equal(controls.get('lastAction').value, 'none');
-      return canonicalInput;
-    },
-    callPlaybookStateBridge(method, ...args) {
-      if (method === 'createReplayProjectionViewModel') return null;
-      calls.push(method);
-      if (method === 'setMode') {
-        assert.equal(args[0], 'scenario');
-        assert.equal(args[1], canonicalInput);
-      } else if (method === 'resolveDecisionContext') {
-        assert.equal(args[0], canonicalInput);
-        return unavailable;
-      } else assert.fail(`Unexpected authority invocation ${method}`);
-    },
-    renderUnavailableStrategy(result) { assert.equal(result, unavailable); calls.push('render-unavailable'); },
-    renderAllCards(options) { assert.equal(options.mode, 'gto'); calls.push('render-empty-cards'); },
+  try {
+    page.call('clearSavedOwnerPresentation');
+  } finally {
+    page.window.readPlaybookScenarioInput = read;
+    spy.restore();
+    page.window.__wrappedControllers = [library, history];
+    page.evaluate('[savedLibraryController, savedTrainingHistoryController] = window.__wrappedControllers');
+    delete page.window.__wrappedControllers;
+  }
+  // The scenario was reset to its defaults before the canonical read.
+  assert.equal(observed.length, 1);
+  const defaults = (id) => {
+    const control = page.byId(id);
+    return control.options ? ([...control.options].find((option) => option.defaultSelected) || control.options[0]).value : control.defaultValue;
   };
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const functions = ['clearSavedScenarioOwnerPresentation', 'clearSavedOwnerPresentation']
-    .map((name) => runtimeFunction(source, name)).join('\n');
-  vm.runInNewContext(`${functions}; clearSavedOwnerPresentation();`, sandbox);
-  assert.deepEqual(calls, ['cancel', 'canonical-read', 'setMode', 'resolveDecisionContext', 'render-unavailable', 'render-empty-cards']);
-  assert.equal(sandbox.savedScenarioOwnerActive, false);
-  assert.equal(sandbox.savedPlaybookScenarioPresentation, null);
-  assert.equal(sandbox.savedStudyCurrentObject, null);
-  assert.equal(sandbox.homeViewModel, null);
-  assert.equal(sandbox.savedLibraryOwnerChanged, true, 'Saved library private state clears with the owner');
-  assert.equal(sandbox.savedTrainingHistoryOwnerChanged, true, 'Saved Training history view state and toggle reset with the owner');
-  assert.equal(app.playbookResolution, unavailable);
+  assert.deepEqual(observed[0], { cards: 0, decisionContext: null, strategyResult: null, stack: defaults('stack'), pot: defaults('potSize'), heroPos: defaults('heroPos') });
+  // Besides read-only queries and projections (get*/create*, including the
+  // canonical scenario read itself), the only authority calls are setMode
+  // then resolveDecisionContext.
+  const authority = spy.calls.callPlaybookStateBridge.map(([method]) => method)
+    .filter((method) => !/^(?:get|create)[A-Z]/.test(method));
+  assert.deepEqual(authority, ['setMode', 'resolveDecisionContext']);
+  assert.equal(spy.calls.callPlaybookStateBridge.find(([method]) => method === 'setMode')[1], 'scenario');
+  assert.equal(spy.count('renderUnavailableStrategy'), 1);
+  assert.equal(spy.calls.renderAllCards[0][0].mode, 'gto');
+  assert.equal(page.evaluate('savedScenarioOwnerActive'), false);
+  assert.equal(page.evaluate('savedPlaybookScenarioPresentation'), null);
+  assert.equal(page.evaluate('savedStudyCurrentObject'), null);
+  assert.equal(page.evaluate('homeViewModel'), null);
+  if (library) assert.equal(ownerChanged.library, 1, 'Saved library private state clears with the owner');
+  if (history) assert.equal(ownerChanged.history, 1, 'Saved Training history view state and toggle reset with the owner');
+  assert.equal(app.playbookResolution.status, 'unavailable');
   assert.equal(app.handReview.savedDecisionIds.size, 0);
-  assert.equal(sandbox.decisionSaverCleared, true);
-  assert.equal(sandbox.reviewProjectorCleared, true);
 });

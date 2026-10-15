@@ -28,6 +28,7 @@ import {
   createRfiContextTransferProjection,
   createRfiContextTransferRelationship,
 } from '../app/src/personal-strategy/rfi-context-transfer.mjs';
+import { appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
 
 const PROFILE_ID = 'range-intelligence-003a-profile';
 const MODE_ID = 'range-intelligence-003a-mode';
@@ -475,17 +476,28 @@ test('repository discovery, Matrix, and Teacher expose transfer without durable 
 });
 
 test('Matrix and Teacher visible seams label transferred provenance with accepted EN, RU, and HE vocabulary', async () => {
-  const [workspace, presentation, html, css, translations] = await Promise.all([
+  const [workspace, presentation, translations] = await Promise.all([
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/personal-strategy-presentation.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/range-calibration-translations.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /data-matrix-status="transferred"><i>T<\/i>/);
-  assert.match(html, /id="calibrationTeacherTransferred"/);
-  assert.match(html, /id="calibrationTeacherTransferredList"/);
-  assert.match(css, /data-matrix-status="transferred"/);
+  // TEST-HYGIENE-001: the legend and Teacher seams are read from the parsed
+  // Range Calibration template (in context); the status style via the cascade.
+  const markup = freshIndexDocument();
+  const css = appStyleSheet();
+  const host = markup.createElement('div');
+  host.appendChild(markup.getElementById('rangeCalibrationTemplate').content.cloneNode(true));
+  markup.getElementById('calibrationMode').appendChild(host);
+  const legend = host.querySelector('[data-matrix-status="transferred"]');
+  assert.equal(legend.querySelector('i').textContent, 'T');
+  assert.ok(host.querySelector('#calibrationTeacherTransferred'));
+  assert.ok(host.querySelector('#calibrationTeacherTransferredList'));
+  const cell = markup.createElement('button');
+  cell.className = 'calibration-matrix-cell';
+  host.querySelector('.calibration-matrix-grid').appendChild(cell);
+  const plain = css.matchingRules(cell).length;
+  cell.dataset.matrixStatus = 'transferred';
+  assert.ok(css.matchingRules(cell).length > plain, 'a transferred cell has its own presentation');
   assert.match(workspace, /personalStrategyStatusLabelKey/);
   assert.match(presentation, /transferred:\s*'Supported'/);
   assert.match(workspace, /cell\.status === 'transferred'/);

@@ -11,6 +11,7 @@ import {
 } from '../app/src/application/home-game-amount-input.mjs';
 import { installHomeGameBridge, installHomeGameWorkspace } from '../app/src/application/home-game-bootstrap.mjs';
 import { createMemoryHomeGameDatabase } from '../app/src/home-game/index.mjs';
+import { appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
 
 const T0 = '2026-10-01T19:00:00.000Z';
 
@@ -590,17 +591,36 @@ test('Guest hides account-only controls and states that sessions are not kept af
 });
 
 test('hidden Home Game controls cannot be resurrected by component display rules; Guest copy is localized', async () => {
-  const [css, html, authBootstrap, homeGameTranslations, accountTranslations] = await Promise.all([
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
+  const [authBootstrap, homeGameTranslations, accountTranslations] = await Promise.all([
     readFile(new URL('../app/src/application/authentication-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/home-game-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/account-translations.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(css, /\.home-game-workspace \[hidden\] \{ display: none !important; \}/);
-  assert.match(css, /\.home-game-field-error \{[^}]*grid-column: 1 \/ -1/);
+  // TEST-HYGIENE-001: markup is parsed and the hidden rule is checked through
+  // the cascade against every component display rule in the workspace.
+  const markup = freshIndexDocument();
+  const css = appStyleSheet();
+  const workspace = markup.querySelector('.home-game-workspace');
+  const controls = [workspace, ...workspace.querySelectorAll('*'), ...markup.querySelectorAll('template').flatMap((template) => template.content.querySelectorAll('*'))]
+    .filter((element) => element.localName !== 'template');
+  const probes = [];
+  for (const element of controls.slice(0, 400)) {
+    const clone = element.cloneNode(false);
+    clone.setAttribute('hidden', '');
+    workspace.appendChild(clone);
+    probes.push(clone);
+    for (const width of [1440, 700]) assert.equal(css.cascaded(clone, 'display', { width }), 'none', `${clone.localName}.${clone.className}@${width}`);
+  }
+  probes.forEach((probe) => probe.remove());
+  const error = markup.createElement('p');
+  error.className = 'home-game-field-error';
+  workspace.appendChild(error);
+  assert.equal(css.cascaded(error, 'grid-column'), '1 / -1');
+  error.remove();
   const settingsGuest = 'Your learning workspace is saved on this device. Guest Home Game sessions are not kept after reload.';
-  assert.ok(html.includes(`id="settingsAccountDescription" class="panel-note" data-i18n="${settingsGuest}"`));
+  const description = markup.getElementById('settingsAccountDescription');
+  assert.ok(description.classList.contains('panel-note'));
+  assert.equal(description.dataset.i18n, settingsGuest);
   assert.ok(authBootstrap.includes(`: '${settingsGuest}'`));
   assert.equal(accountTranslations.split(`'${settingsGuest}':`).length - 1, 3, 'EN/RU/HE');
   for (const key of [

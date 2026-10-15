@@ -32,6 +32,7 @@ import {
   createSyncRepository,
   toRemoteSavedStudyObject,
 } from '../app/src/sync/index.mjs';
+import { appStyleSheet, freshIndexDocument } from './helpers/app-under-test.mjs';
 
 const IDENTITY = 'riverline-account-sync-test';
 
@@ -552,21 +553,25 @@ test('import adopts locally, enqueues after commit, and export excludes sync int
 });
 
 test('account sync UI is opt-in, localized, status-visible, and keyboard-conflict accessible', async () => {
-  const [html, bootstrap, translations, css] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
+  const [bootstrap, translations] = await Promise.all([
     readFile(new URL('../app/src/application/saved-study-sync-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/account-translations.js', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /id="accountSyncEnable"[^>]+data-i18n="Enable sync"/);
-  assert.match(html, /id="accountSyncNotNow"/);
-  assert.match(html, /id="accountSyncToggle"[^>]+role="switch"/);
-  assert.match(html, /id="accountMenuSyncStatus"[^>]+role="status"/);
-  assert.match(html, /id="accountSyncNow"/);
-  assert.match(html, /id="syncConflictModal"[^>]+role="dialog"[^>]+aria-modal="true"/);
-  assert.match(html, /data-choice="keep_device"/);
-  assert.match(html, /data-choice="keep_cloud"/);
-  assert.match(html, /data-choice="keep_both"/);
+  // TEST-HYGIENE-001: sync markup is parsed (page and templates) and its
+  // state styles are read through the cascade.
+  const markup = freshIndexDocument();
+  const css = appStyleSheet();
+  const fragments = [markup, ...markup.querySelectorAll('template').map((template) => template.content)];
+  const find = (selector) => fragments.map((root) => root.querySelector(selector)).find(Boolean);
+  assert.equal(find('#accountSyncEnable').dataset.i18n, 'Enable sync');
+  assert.ok(find('#accountSyncNotNow'));
+  assert.equal(find('#accountSyncToggle').getAttribute('role'), 'switch');
+  assert.equal(find('#accountMenuSyncStatus').getAttribute('role'), 'status');
+  assert.ok(find('#accountSyncNow'));
+  const conflict = find('#syncConflictModal');
+  assert.equal(conflict.getAttribute('role'), 'dialog');
+  assert.equal(conflict.getAttribute('aria-modal'), 'true');
+  for (const choice of ['keep_device', 'keep_cloud', 'keep_both']) assert.ok(find(`[data-choice="${choice}"]`), choice);
   assert.match(bootstrap, /event\.key === 'Escape'/);
   assert.match(bootstrap, /event\.key !== 'Tab'/);
   assert.match(bootstrap, /riverline:identitychange|activateFromAuthentication/);
@@ -575,8 +580,16 @@ test('account sync UI is opt-in, localized, status-visible, and keyboard-conflic
   }
   assert.match(translations, /[\u0590-\u05ff]/u);
   assert.match(translations, /[\u0400-\u04ff]/u);
-  assert.match(css, /\.account-sync-toggle input\[role="switch"\]/);
-  assert.match(css, /\.account-sync-status\[data-sync-state="conflict"\]/);
+  const toggle = find('#accountSyncToggle');
+  assert.ok(toggle.closest('.account-sync-toggle'));
+  assert.ok(css.matchingRules(toggle).some((rule) => rule.selectors.some((selector) => selector.includes('.account-sync-toggle input[role="switch"]'))), 'the switch is styled as a switch');
+  const status = markup.createElement('span');
+  status.className = 'account-sync-status';
+  markup.body.appendChild(status);
+  const ordinary = css.matchingRules(status).length;
+  status.dataset.syncState = 'conflict';
+  assert.ok(css.matchingRules(status).length > ordinary, 'the conflict state is styled distinctly');
+  status.remove();
 });
 
 test('remote documents exclude local ownership and SQL covers own-row RLS, tombstones, and versioned RPCs', async () => {

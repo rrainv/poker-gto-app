@@ -29,8 +29,12 @@ import { createAnalysisExplanation } from '../app/src/application/analysis-expla
 import { evaluateTrainingAnswer } from '../app/src/application/training-answer-evaluation.mjs';
 import { resolveHeuristicStrategy } from '../app/src/strategy/heuristic-strategy.mjs';
 
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: logic.js / index.html assertions are behavioural: the
+// Training, Analyze and Matrix paths run in the booted app (spies, a provider
+// probe, a read-tracking StrategyResult) and markup is parsed.
+const { bootApp, indexDocument, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+const probe = strategyProviderProbe();
+const app = await bootApp({ beforeScripts: probe.beforeScripts });
 const translationsSource = fs.readFileSync(
   new URL('../app/src/locales/product-translations.js', import.meta.url),
   'utf8',
@@ -516,7 +520,7 @@ test('legacy comparison distance and heuristic probabilities remain descriptive 
   });
 });
 
-test('Analysis, Training, and Matrix consume structured policy without adding authorities', () => {
+test('Analysis, Training, and Matrix consume structured policy without adding authorities', async () => {
   const provider = createStrategyProvider({ fallbackResolver: resolveHeuristicStrategy });
   const decisionContext = context({ lastAction: '3bet', facingSizeBb: 9, callAmountBb: 6 });
   const strategyResult = provider.resolve(decisionContext);
@@ -527,34 +531,61 @@ test('Analysis, Training, and Matrix consume structured policy without adding au
     entry.code === 'heuristic_facing_3bet_coarse'
   )));
 
-  const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
-  assert.match(trainingMarkup, /id="trainingSourceLimitation"[^>]*hidden/);
-  assert.match(trainingMarkup, /id="trainingAnalysis"[^>]*hidden/);
-  const preAnswerSource = logic.slice(
-    logic.indexOf('function renderTrainingSource('),
-    logic.indexOf('function renderTrainingGenerationError('),
-  );
-  assert.doesNotMatch(preAnswerSource, /\.actions|recommendation|probability/);
-  const answerHandler = logic.slice(
-    logic.indexOf('function handleTrainingGuess('),
-    logic.indexOf('function bindTrainingSizingControl('),
-  );
-  assert.match(answerHandler, /renderTrainingDecisionAnalysis\(exercise\)/);
+  const trainingMarkup = indexDocument().getElementById('trainingMode');
+  assert.equal(trainingMarkup.querySelector('#trainingSourceLimitation').hidden, true);
+  assert.equal(trainingMarkup.querySelector('#trainingAnalysis').hidden, true);
 
-  const analysisRender = logic.slice(
-    logic.indexOf('async function updateContext('),
-    logic.indexOf('// Legacy fast evaluator retained for the existing Outs display only.'),
-  );
-  assert.match(analysisRender, /strategyClaimPolicy\(strategyResult\)/);
-  assert.match(analysisRender, /strategySourceDisplayLabel\(strategyResult\)/);
+  // Before an answer, the Training source presentation never reads the
+  // strategy's actions, recommendation or probabilities.
+  await app.training.start('focused');
+  const exercise = app.window.app.training.currentExercise;
+  const read = new Set();
+  // Only reads made directly by page code count; the claim-policy module may
+  // inspect actions to derive capabilities.
+  const tracked = new Proxy(exercise.strategyResult, { get(target, key, receiver) {
+    const caller = new Error().stack.split('\n')[2] || '';
+    if (caller.includes('core/logic.js')) read.add(key);
+    return Reflect.get(target, key, receiver);
+  } });
+  app.call('renderTrainingSource', { ...exercise, strategyResult: tracked });
+  for (const key of ['actions', 'recommendation', 'probability']) assert.equal(read.has(key), false, `${key}: ${[...read].map(String)}`);
+  // Answering renders the decision analysis for that exercise.
+  const answerSpy = app.spy(['renderTrainingDecisionAnalysis']);
+  try {
+    await app.training.answer();
+    assert.equal(answerSpy.count('renderTrainingDecisionAnalysis'), 1);
+    assert.equal(answerSpy.calls.renderTrainingDecisionAnalysis[0][0].id, exercise.id);
+  } finally {
+    answerSpy.restore();
+  }
 
-  const matrixRender = logic.slice(
-    logic.indexOf('function renderChart('),
-    logic.indexOf('function visualActionKind('),
-  );
-  assert.match(matrixRender, /strategyProvider\.resolve\(cellDecisionContext\)/);
-  assert.match(matrixRender, /strategyClaimPolicy\(cellStrategyResult\)/);
-  assert.doesNotMatch(matrixRender, /STRATEGY_SOURCE_AUTHORITIES|createStrategySourceDescriptor/);
+  // Analyze reads claim permissions and the source label from the resolved
+  // StrategyResult; the Matrix resolves and polices every cell through the
+  // provider without touching source authorities.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const spy = app.spy(['strategyClaimPolicy', 'strategySourceDisplayLabel']);
+  try {
+    await app.call('updateContext');
+    await app.settle(200);
+    const current = app.window.app.strategyResult;
+    assert.ok(spy.calls.strategyClaimPolicy.some(([result]) => result === current));
+    assert.ok(spy.calls.strategySourceDisplayLabel.some(([result]) => result === current));
+    spy.reset();
+    const cells = await probe.count(() => {
+      app.evaluate('app.matrixModel = null');
+      app.call('renderChart');
+    });
+    assert.ok(cells.length >= 169);
+    // The Matrix's claim policy is derived from a provider-resolved cell
+    // result (once per model) and carried on the model.
+    assert.ok(spy.count('strategyClaimPolicy') >= 1);
+    assert.equal(spy.calls.strategyClaimPolicy[0][0].schemaVersion, 'strategy-result/v1');
+    assert.ok(app.evaluate('app.matrixModel.claimPolicy'));
+  } finally {
+    spy.restore();
+  }
+  for (const name of ['STRATEGY_SOURCE_AUTHORITIES', 'createStrategySourceDescriptor']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
 });
 
 test('new comparative semantics have complete EN/RU/HE catalog entries', () => {
