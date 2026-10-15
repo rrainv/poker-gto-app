@@ -52,7 +52,7 @@ Details: `docs/project/ARCHITECTURE_CONTRACT.md` and NORTH_STAR §5.
 | T2 | redesigns, big features | focused | mockup comparison: 1920+1366 EN, 1920 HE, one Daylight shot | once, at the end | no |
 | T3 | milestones only | all | full matrix | yes | yes |
 
-Commands: focused `node --test <files>`; syntax `node --check <changed .js/.mjs>`; hygiene `git diff --check`; full suite `node --test tests/*.test.js tests/*.test.mjs`; solver suite (only when domain/solver/strategy changed), PowerShell: `$env:PYTHONPATH='solver;.'; python -B -m unittest discover -s tests/solver -p 'test_*.py'`. Poker-maths changes need invariant/property tests. Structural tests are not visual acceptance: without a real browser check, report visual status as `UNVERIFIED`, `PARTIAL` or `STRUCTURAL ONLY`. Human acceptance is the owner's; tests and commit titles cannot create it.
+Commands: focused `node --test <files>`; syntax `node --check <changed .js/.mjs>`; hygiene `git diff --check`; full suite `node --test --test-concurrency=4 tests/*.test.js tests/*.test.mjs` (capped: CPU-heavy files such as `range_cal001b_elicitation` can crash under unbounded parallel load); solver suite (only when domain/solver/strategy changed), PowerShell: `$env:PYTHONPATH='solver;.'; python -B -m unittest discover -s tests/solver -p 'test_*.py'`. Poker-maths changes need invariant/property tests. Structural tests are not visual acceptance: without a real browser check, report visual status as `UNVERIFIED`, `PARTIAL` or `STRUCTURAL ONLY`. Human acceptance is the owner's; tests and commit titles cannot create it.
 
 Visible features also own their tutorial, EN/RU/HE + RTL, accessibility, reduced motion and responsive behaviour (minimum desktop 1366×768).
 

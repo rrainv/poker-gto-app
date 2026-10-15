@@ -51,7 +51,7 @@ See [browser prerequisites, coverage and failure artifacts](tests/tooling/README
 Automated smoke does not replace human Firefox visual acceptance.
 
 ```powershell
-node --test tests/*.test.js tests/*.test.mjs
+node --test --test-concurrency=4 tests/*.test.js tests/*.test.mjs
 $env:PYTHONPATH='solver;.'
 py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'
 ```
