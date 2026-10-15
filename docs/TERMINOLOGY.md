@@ -138,6 +138,6 @@ Checked 2026-10-15 by search in `app/src/locales/`; the code follows the older s
 | RU value | валью | велью | |
 | RU C-bet | си-бет | контбет | |
 | HE Hero | הירו | `Hero` kept Latin as an invariant token | the sheet wins; confirm with the owner |
-| Analyze workspace | standard translation (rule 1) | RU «Разбор», HE «ניתוח» (old house style) | open decision: keep «Разбор» or use «Анализ» |
+| Analyze workspace | RU «Анализ», HE «ניתוח» (owner decision D-19, 2026-10-15) | RU «Разбор», HE «ניתוח» (old house style) | RU label to change in code; HE already matches |
 
 The M1 bar is "complete and natural enough"; native-level polish comes later (NORTH_STAR §7.17).

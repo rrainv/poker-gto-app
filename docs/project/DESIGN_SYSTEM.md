@@ -2,7 +2,7 @@
 
 The visual contract: design direction (Style v4), tokens, components, composition and stability rules, and the acceptance standard. It merges the former design-system document (tokens, components and cascade facts that match the code) with Design Language v2 (the Manager's 2026-10-12/13 spec, authoritative for direction). Direction comes from [NORTH_STAR §8](../NORTH_STAR.md#8-design-language); this file says how. A guide, not an ultimatum: the owner's judgement is final.
 
-Where the target and the current code differ, both are stated: **Target** is what M1 builds toward, **Code** is what `app/styles.css` and `presentation-theme.mjs` do today. Values marked *provisional* are proposals to confirm on the PC (decisions D-10 to D-14 in [STATE.md](../STATE.md#open-decisions)).
+Where the target and the current code differ, both are stated: **Target** is what M1 builds toward, **Code** is what `app/styles.css` and `presentation-theme.mjs` do today. Values marked *provisional* are proposals to confirm on the PC (decisions D-10 to D-13 in [STATE.md](../STATE.md#open-decisions); D-14 resolved 2026-10-15).
 
 Interaction semantics live in [INTERACTION_GRAMMAR.md](INTERACTION_GRAMMAR.md); terms and copy in [TERMINOLOGY.md](../TERMINOLOGY.md); theme values in `app/src/application/presentation-theme.mjs`.
 
@@ -37,7 +37,7 @@ Characters: original illustrated portraits (Cleo, Fern, Luma, Mika, Nova, Otto, 
 
 Owner-approved direction, 2026-10-14. The app style comes from Analyze v4 and is shown on the design kit's "Style v4" board. Every screen, mockup and polish pass follows it.
 
-- **Soft panels:** 16 px radius, a gentle vertical gradient (#1d2420 → #1a201d), a soft shadow, 22 px padding; panel titles in sentence case at 15 px / 650. No small-capital overlines except for tiny data labels. *(Code: flat panels, `--radius-panel` 10 px, no shadow in Midnight. See D-14.)*
+- **Soft panels:** 16 px radius, a gentle vertical gradient (#1d2420 → #1a201d), a soft shadow, 22 px padding; panel titles in sentence case at 15 px / 650. No small-capital overlines except for tiny data labels. *(Code: flat panels, `--radius-panel` 10 px, no shadow in Midnight. Target values settled by D-14.)*
 - **A hero answer card** wherever a screen gives an answer: the big result, small pills right beside it (closeness, confidence tier with a coloured dot), a thick mix bar with labels inside the segments, one plain sentence of why, the primary action, and "All details ›" for the raw data.
 - **Number tiles** instead of fact tables for the 2–4 numbers that matter; full fact lists live behind "All details".
 - **Pills** for chips, context and quick links (tinted when selected); content-sized, never long strips.
@@ -49,7 +49,7 @@ Owner-approved direction, 2026-10-14. The app style comes from Analyze v4 and is
 
 The canonical base for mockups and for the M1 build: <https://claude.ai/artifact/SStpE2d5pkehonTDTfWadu> (shell template, components, table at a realistic size, Style v4 board). All screens re-drawn on it: <https://claude.ai/artifact/T3AFKWngjB7Wwt16S4Ghts>. The target look is these canvases, not the current app; only the real card backs and icons, and the current table's measurements, come from the app (MOCKUP-ASSETS-001).
 
-Kit values (*provisional*, settle in DES-STYLE, D-14): sidebar 240 px; header 56 px; page padding 28 px; gaps 24 px; right rail 340–400 px; panels 12 px radius and 20 px padding (Style v4 board: 16 px / 22 px); buttons 40 px tall (44–48 for the main action); content capped at ~1600–1680 px. *(Code: header 56, gutter 24, `--canvas-max` 1680, controls 36 px.)*
+Target values (Style v4 wins where the kit disagreed; owner decision D-14, 2026-10-15): panels 16 px radius and 22 px padding; buttons 40 px tall (44–48 for the main action); content capped at ~1640 px. Kit values (*provisional*): sidebar 240 px; header 56 px; page padding 28 px; gaps 24 px; right rail 340–400 px. *(Code: header 56, gutter 24, `--canvas-max` 1680, controls 36 px.)*
 
 ---
 
@@ -142,8 +142,8 @@ The 600 → 650 change is TRUTH-FIXES-001. Surface CSS uses no literal weights: 
 ### Spacing and geometry (code)
 
 - Spacing scale `--space-1…11` on a 4 px base (2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48). Roles: `--gap-control` 8, `--gap-group` 12, `--gap-section` 24, `--pad-control-block` 8, `--pad-control-inline` 12, `--pad-surface` 16 (dense) / `--pad-surface-reading` 24, `--gutter-canvas` 24, `--canvas-max` 1680, `--header-bar-height` 56. One spacing rhythm per screen.
-- Radius: `--radius-cell` 4 (matrix cells, mini cards in rows), `--radius-control` 7 (buttons, fields, chips), `--radius-panel` 10 (surfaces, overlays), `--radius-pill` 999. `--radius-sm/md/lg` alias cell/control/panel. *(Style v4 target: panels 16, controls 7–8, chips fully rounded.)*
-- Controls: `--control-height-md` 36 px (fields, md buttons, icon buttons), `--control-height-sm` 32 px (sm buttons, chips). *(Kit: 40 px, 44–48 for the main action.)*
+- Radius: `--radius-cell` 4 (matrix cells, mini cards in rows), `--radius-control` 7 (buttons, fields, chips), `--radius-panel` 10 (surfaces, overlays), `--radius-pill` 999. `--radius-sm/md/lg` alias cell/control/panel. *(Style v4 target, D-14: panels 16, controls 7–8, chips fully rounded.)*
+- Controls: `--control-height-md` 36 px (fields, md buttons, icon buttons), `--control-height-sm` 32 px (sm buttons, chips). *(Target, D-14: 40 px, 44–48 for the main action.)*
 - Elevation, maximum nesting surface → group: group (no box; separated by `--border-subtle` or space) · surface (`--surface-panel`, 1 px `--border-default`, `--radius-panel`, `--elevation-surface`) · overlay (`--surface-elevated`, `--border-strong`, `--elevation-overlay`) · primary press (`--elevation-primary`, `--elevation-pressed`, primary buttons only) · field well (`--elevation-inset`, inputs only, never a nested box). `--elevation-feature` (Welcome, coach and Ranges & runouts cards) is legacy debt.
 
 ### Structure
@@ -252,7 +252,7 @@ Code since SHELL-001 (`bf90a55`); the shell and sidebar direction is being re-de
 - **Help panel and Tab order:** Help opens a non-modal panel with the workspace description and its tutorials; focus moves into it, Escape or Help closes it and focus returns to Help (`aria-expanded` reflects the state). Header Tab order: mode switch (Hand/Analyze), Learn Riverline, Help, Account; the source badge is a non-interactive note. Sidebar footer Tab order: Language (native select), Audio, Settings.
 - **Context lines:** Home `Guest Mode` or name · sync state; Hand setup summary · street; Analyze `Scenario`/`Hand` · position · stack · street; Training mode · `Exercise n of N`; Personal Strategy Game · Approach; Equity `n players`; Saved `Showing n of m`; Home Game persistence · open session; Guide none.
 - **Source badge placement:** shown only where strategy content is shown (Analyze; Hand while Review is open, never during live play; Training once feedback or the Full Hand review is visible; Personal Strategy while a comparison is open). It reads presentation state only and never changes when strategy information is revealed.
-- **Canvas grid:** `--canvas-max` 1680 px; the canvas owns the 24 px gutter; every frame is `min(100%, --canvas-max)` centered and the header pads to the same start edge. Workspaces choose column templates inside the frame; they never set page margins or their own max widths.
+- **Canvas grid:** `--canvas-max` 1680 px (target ~1640 px, D-14); the canvas owns the 24 px gutter; every frame is `min(100%, --canvas-max)` centered and the header pads to the same start edge. Workspaces choose column templates inside the frame; they never set page margins or their own max widths.
 - **Sidebar footer:** Language, Audio and Settings as one row of 36 px icon buttons (one column in the collapsed rail), each with `aria-label`, an `sr-only` label and one translated tooltip. Expanded nav items carry no tooltip; the collapsed rail sets one to the inline end. Target footer adds an About & legal link (NORTH_STAR §7.11).
 - **One accent action per view:** at most one accent-filled control per state; legal poker actions are peers; transport controls and tutorial offers are secondary; switch tracks and selected segments are indicators, not actions.
 - **Target shell** (D-03): brand at the top, clear groups, footer row with language, sound, settings and About & legal; header per workspace with title, one context line and the workspace's chips. Sidebar options: variant 4 (hubs with sub-items: Home, Study, Tools, Library, Game night), variant 2 (Home first, grouped by job: Study, Tools, Yours), or the current rail refreshed.
@@ -365,4 +365,4 @@ The M1 refresh reserves space and patterns so M2/M3 features slot in without ano
 
 ## Open design decisions
 
-Tracked in [STATE.md › Open decisions](../STATE.md#open-decisions): shell and sidebar variant and hub screens (D-03); My poker placement (D-04); decision controls (D-05); drill with or without a table (D-06); Equity layout (D-07); Learn mix (D-08); heading face (D-10); card back (D-11); Daylight values and table theme scope (D-12); Hebrew mix bar direction (D-13); conflicting kit numbers (D-14).
+Tracked in [STATE.md › Open decisions](../STATE.md#open-decisions): shell and sidebar variant and hub screens (D-03); My poker placement (D-04); decision controls (D-05); drill with or without a table (D-06); Equity layout (D-07); Learn mix (D-08); heading face (D-10); card back (D-11); Daylight values and table theme scope (D-12); Hebrew mix bar direction (D-13). Kit-number conflicts (D-14) are resolved: Style v4 values win (see Style v4 › The design kit).

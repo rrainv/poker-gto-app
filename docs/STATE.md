@@ -38,8 +38,8 @@ From the Manager's M1 plan (2026-10-15). The top unfinished row is next.
 | ID | Outcome | Depends | Tier | Size | Status |
 |---|---|---|---|---|---|
 | WIP-BACKUP-001 | Uncommitted Analyze work backed up on a wip branch | none | T0 | S | Done: `wip/analyze-composition-2026-10` @ `956ca6e` (unaccepted backup) |
-| DOCS-RESET-001 | Compact agent docs: AGENTS, NORTH_STAR, STATE, ISSUE_REGISTER, TERMINOLOGY, DESIGN_SYSTEM (merging Design Language v2) + invariant ledger | backup | T0 | L | Done (2026-10-15, uncommitted): new doc set live, old planning archived, specs slimmed; owner review and commit pending |
-| ANALYZE-ACCEPT | Owner accepts or corrects the Analyze composition work, then commit | docs reset | human | S | Waiting |
+| DOCS-RESET-001 | Compact agent docs: AGENTS, NORTH_STAR, STATE, ISSUE_REGISTER, TERMINOLOGY, DESIGN_SYSTEM (merging Design Language v2) + invariant ledger | backup | T0 | L | Done and accepted (2026-10-15): committed `d1c826e` |
+| ANALYZE-ACCEPT | Owner accepts or corrects the Analyze composition work, then commit | docs reset | human | S | Done (2026-10-15): accepted, committed `4e3e11a` (COMMIT-001) |
 | TRUTH-FIXES-001 | Hide strategy sliders, honest spot table, reject 0 buy-in, 650 weights | docs reset | T1 | M | Waiting |
 | MOCKUP-ASSETS-001 | Real card backs, icons, table measurements for the design kit | none | T0 | S | Can run any time |
 
@@ -101,7 +101,7 @@ Commits on `codex/stabilization`. Per NORTH_STAR §10, a commit title is not acc
 
 | Commit | Date | Work | Acceptance |
 |---|---|---|---|
-| `0919e62` | 2026-10-03 | SAVED-COMPOSITION-002: Saved list + inspector; Midnight = mockup palette, mockup weights | Committed; register rows still say "human acceptance pending" (see open decision D-01) |
+| `0919e62` | 2026-10-03 | SAVED-COMPOSITION-002: Saved list + inspector; Midnight = mockup palette, mockup weights | Treated as accepted (D-01, 2026-10-15); the M1 owner design pass catches remaining issues |
 | `bf90a55` | 2026-10-02 | SHELL-001: one header bar, shared canvas grid, compact sidebar footer, one accent action per view | same |
 | `71b7ccb` | 2026-10-02 | DS-FOUNDATION-001: design-system foundation; override stylesheet retired | same |
 | `1e23638` | 2026-10-02 | REPO-HYGIENE-001: LF via `.gitattributes`, Node engines (≥22, `.nvmrc` 24), portable Electron test, non-flaky range-analysis timing | Committed |
@@ -113,7 +113,8 @@ Commits on `codex/stabilization`. Per NORTH_STAR §10, a commit title is not acc
 | `8541e76` | 2026-09-29 | REFERENCE-INTEGRITY-RECOVERY-001: unsupported HRC pilot removed; strict reference coverage restored | Committed |
 | `67b6713` | 2026-09-13 | Solver: local tree-building and memory benchmarks (46-node toy tree) | Committed |
 | `ef902ba` … `b36999b` | 2026-09-07 → 09-13 | Beta candidate checkpoints (intelligence foundations, beta repair sweeps, modernization, browser smoke) | Checkpoint commits; detailed acceptance rows pending in the register |
-| — (uncommitted) | 2026-10-03 | ANALYZE-COMPOSITION-001 incl. amendments 1–2 | Unaccepted; backed up at `956ca6e`; next human step ANALYZE-ACCEPT |
+| `d1c826e` | 2026-10-15 | DOCS-RESET-001: agent docs reset (AGENTS, NORTH_STAR, STATE, ISSUE_REGISTER, TERMINOLOGY, IDEA_BANK, DESIGN_SYSTEM); superseded planning docs archived | Accepted (owner, 2026-10-15) |
+| `4e3e11a` | 2026-10-15 | ANALYZE-COMPOSITION-001 incl. amendments 1–2: composition, verdict dominance, fact omission, inline Explain | Accepted (owner, 2026-10-15; D-21); known follow-up for TRUTH-FIXES-001: heuristic provenance shown more than once |
 
 ### What exists today (one line per area; contracts in `docs/project/`)
 
@@ -139,7 +140,6 @@ Decisions the owner (or Manager) still has to make. Mockup-derived items are des
 
 | ID | Decision | Source / note |
 |---|---|---|
-| D-01 | Treat committed tickets whose QA rows still say "human acceptance pending" (SHELL-001, DS-FOUNDATION-001, SAVED-*, DECISION-INPUT-TRUTH-001, LANGUAGE-SWITCH-EVENT-001, HOMEGAME-LEDGER-INPUT-001, token tuning) as accepted, or re-check them in the M1 owner design pass? Many will be superseded by the Style v4 redesign anyway | REPO-AUDIT-001; register section [Pending acceptance](ISSUE_REGISTER.md#g-pending-human-acceptance-pre-reset) |
 | D-02 | Bulk disposition of ~60 pre-reset "human acceptance pending / partial" rows (Beta-era, Firefox-matrix debts): close as superseded by the M1 redesign + owner design pass, or keep individually | ISSUE_REGISTER §G |
 | D-03 | Shell and sidebar direction (variant 4 with hubs, 2, or current refreshed); whether Tools/Study hubs become screens. Decide before M1 screen work | NORTH_STAR §13; mockups 12, 14, 16, 18 |
 | D-04 | "My poker": own sidebar slot vs merge with Saved into "Library"; final name | NORTH_STAR §13; mockup 11 |
@@ -152,15 +152,22 @@ Decisions the owner (or Manager) still has to make. Mockup-derived items are des
 | D-11 | Card back: the app's real back vs the kit's modernised proposal | mockups 19, 20 |
 | D-12 | Daylight values (first draft only) and table-theme picker scope | DESIGN_SYSTEM; mockup 13 |
 | D-13 | Mix bar direction in Hebrew: left-to-right data island (Manager leans) vs mirrored | NORTH_STAR §13; mockup 13 |
-| D-14 | Style v4 numbers that disagree: panel radius (kit 12 px vs Style v4 16 px vs code 10 px), panel padding (20 vs 22), content max width (~1600 / ~1640 / code 1680), button height (kit 40 vs code 36) | DESIGN_SYSTEM › Open; settle in DES-STYLE |
 | D-15 | Game night workspace name ("Game night" applied; owner may revisit) | NORTH_STAR §13 |
 | D-16 | Baseline for 30–60 bb multiway home play: how to reference-check (may stay Estimated); exact "Verified" tolerances per spot type (worker proposes, owner approves) | NORTH_STAR §3, §13 |
 | D-17 | Open-source vs closed (keeps AGPL out until decided) | NORTH_STAR §3.4, §13 |
 | D-18 | Pre-dependency versions of screens (an M1/M2 screen never relies on an M3 feature); Manager handles per redesign ticket | NORTH_STAR §13 |
-| D-19 | RU/HE name of the Analyze workspace: keep «Разбор» / «ניתוח» or use a standard «Анализ»; HE "Hero" as הירו (sheet) vs Latin `Hero` (old invariant) | [TERMINOLOGY](TERMINOLOGY.md#applying-this-sheet-code-still-differs) |
+| D-19 | HE "Hero" as הירו (sheet) vs Latin `Hero` (old invariant). (The Analyze workspace name part is resolved; see below) | [TERMINOLOGY](TERMINOLOGY.md#applying-this-sheet-code-still-differs) |
 | D-20 | Historical pilot-era Training Memory records (2026-09 HRC pilot): zero affected records found on the owner's origins; field-path control not run. Close, or run the control | NORTH_STAR §2; RET-REFERENCE-PACK-001 |
-| D-21 | Commit order: DOCS-RESET-001 moved files that carry uncommitted Analyze edits (`CURRENT_PHASE.md`, `QA_BACKLOG.md` → archive; old `DESIGN_SYSTEM.md` → `archive/2026-10/DESIGN_SYSTEM.2026-10-03.md`). **Decided (owner, 2026-10-15):** hold the docs-reset commit; the owner accepts or corrects the Analyze work (ANALYZE-ACCEPT) first, then commits both. (Analyze backup: `956ca6e`) | DOCS-RESET-001 report |
 | D-22 | Older carried-over product questions: Training `Not sure` behaviour; Training-evidence opt-in placement/default; default comparison source; Home Game settlement preference (fewest transfers first per NORTH_STAR §7.9); username login before release; card-outcome preview touch/click semantics | archived PRODUCT_BACKLOG §14 |
+
+### Resolved (owner, 2026-10-15)
+
+| ID | Decision |
+|---|---|
+| D-01 | Tickets committed but never formally accepted (SHELL-001, DS-FOUNDATION-001, SAVED-*, DECISION-INPUT-TRUTH-001, LANGUAGE-SWITCH-EVENT-001, HOMEGAME-LEDGER-INPUT-001, token tuning) are treated as accepted for now; the M1 owner design pass catches remaining issues |
+| D-14 | Style v4 values win: panel radius 16 px, panel padding 22 px, content max width ~1640 px, buttons 40 px (44–48 px for the main action). Recorded in [DESIGN_SYSTEM](project/DESIGN_SYSTEM.md) |
+| D-19 (part) | Analyze workspace name: RU «Анализ», HE «ניתוח». Recorded in [TERMINOLOGY](TERMINOLOGY.md#applying-this-sheet-code-still-differs); the HE Hero question stays open |
+| D-21 | Analyze work accepted; committed in order Analyze `4e3e11a`, then docs reset `d1c826e` (backup `956ca6e` superseded) |
 
 Answered and recorded in NORTH_STAR (not open): verdict states, confidence tier names, Equity input types, streaks dropped, achievements reopened, Table rules naming, data-safety staging, 650 weights.
 
