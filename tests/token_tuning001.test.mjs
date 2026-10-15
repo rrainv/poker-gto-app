@@ -43,8 +43,10 @@ test('final values: mockup Midnight, jade accents, B Daylight surfaces, radius 1
   assert.equal(presetBlock('daylight')['--surface-panel'], '#fbfaf6');
   assert.equal(presetBlock('daylight')['--text-muted'], '#545e58');
   const root = css.slice(css.indexOf(':root {'), css.indexOf('}', css.indexOf(':root {')));
+  // ANALYZE-COMPOSITION-001 superseded the C heading sizes with the mockups' global type scale
+  // (title 20px, heading 15px, display 40px; DESIGN_SYSTEM.md "Type scale").
   for (const [name, value] of Object.entries({
-    '--radius-panel': '10px', '--radius-control': '7px', '--t-title': '1.375rem', '--t-heading': '1.0625rem',
+    '--radius-panel': '10px', '--radius-control': '7px', '--t-title': '1.25rem', '--t-heading': '0.9375rem',
     '--t-display': '2.5rem', '--weight-bold': '700', '--gap-section': 'var(--space-8)', '--pad-surface': 'var(--space-6)',
   })) assert.match(root, new RegExp(`${name}: ${value.replace(/[()]/g, '\\$&')};`), name);
   assert.match(root, /--elevation-surface: none;/);

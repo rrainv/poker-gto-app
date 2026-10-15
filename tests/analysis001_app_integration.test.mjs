@@ -171,7 +171,8 @@ test('economics, reasons, and context retain distinct descending presentation pr
 });
 
 test('expanded Playbook analysis owns the full Decision-grid row at desktop widths', () => {
-  assert.match(html, /class="teacher-panel"/);
+  // ANALYZE-COMPOSITION-001: the Explain section keeps .teacher-panel and adds its composition class.
+  assert.match(html, /class="teacher-panel[\s"]/);
   const desktopGrid = css.slice(css.indexOf('@media (min-width: 1200px)'));
   assert.match(desktopGrid, /\.playbook-primary-decision \{[\s\S]*display: grid/);
   assert.match(desktopGrid, /\.playbook-primary-decision \.teacher-panel \{[\s\S]*grid-column: 1 \/ -1;[\s\S]*grid-row: 3/);

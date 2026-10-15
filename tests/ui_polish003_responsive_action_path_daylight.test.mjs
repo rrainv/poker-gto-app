@@ -12,7 +12,9 @@ const electronVerifier = fs.readFileSync(new URL('./tooling/verify_ui_polish003_
 const polishStart = css.indexOf('UI-POLISH-003: Action Path');
 assert.ok(polishStart >= 0, 'UI-POLISH-003 CSS section must exist');
 const polishCss = css.slice(polishStart, css.indexOf('Ordinary status labels', polishStart));
-const pathLogicStart = logic.indexOf("const ACTION_PATH_COMPACT_MEDIA");
+// ANALYZE-COMPOSITION-001 removed the responsive media constant (the street stepper always uses the
+// compact mount); the bounded Action Path implementation now starts at its state declaration.
+const pathLogicStart = logic.indexOf("let actionPathCompactExpanded");
 const pathLogicEnd = logic.indexOf('function handCode', pathLogicStart);
 assert.ok(pathLogicStart >= 0 && pathLogicEnd > pathLogicStart, 'responsive Action Path implementation must be bounded');
 const pathLogic = logic.slice(pathLogicStart, pathLogicEnd);
@@ -27,9 +29,12 @@ test('one Action Path panel and renderer move between full and compact mounts', 
   assert.equal((logic.match(/function renderPath\(/g) || []).length, 1);
 });
 
-test('responsive selection responds to both Playbook width and viewport height', () => {
-  assert.match(pathLogic, /ACTION_PATH_COMPACT_MEDIA = '\(max-width: 1499px\), \(max-height: 900px\)'/);
-  assert.match(pathLogic, /window\.matchMedia\(ACTION_PATH_COMPACT_MEDIA\)/);
+test('the street stepper uses the compact mount at every width (ANALYZE-COMPOSITION-001)', () => {
+  // Superseded selection: the Result panel's street stepper replaces the Action path rail, so the
+  // same panel and renderer are always placed in the compact mount with every step's context shown.
+  assert.match(pathLogic, /actionPathCompactExpanded = true;/);
+  assert.match(pathLogic, /const syncPresentation = \(\) => applyActionPathPresentation\(true\);/);
+  assert.doesNotMatch(pathLogic, /matchMedia/);
   assert.match(polishCss, /@media \(max-width: 1499px\), \(max-height: 900px\)/);
   assert.match(polishCss, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(polishCss, /\.path-current-summary/);

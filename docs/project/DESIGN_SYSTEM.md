@@ -50,27 +50,39 @@ surface declaration instead.
 
 | Token / class | Size / line | Weight | Text role (color) | Use |
 |---|---|---|---|---|
-| `--t-hero` / `.t-hero` | 3.5rem / 1.07 | 750 | primary; an action-named verdict takes `--action-*-text` | Analyze verdict only |
-| `--t-display` / `.t-display` | 2.5rem / 1.1 | 750 | primary | one focal value per view |
-| `--t-title` / `.t-title` | 1.375rem / 1.25 | 700 (`--weight-title`) | primary | workspace and inspector titles |
-| `--t-heading` / `.t-heading` | 1.0625rem / 1.3 | 650 (`--weight-heading`) | primary | section heading inside a surface |
-| `--t-body` / `.t-body` | .875rem / 1.5 | 400 | secondary | prose (callout text included) |
-| `--t-small` / `.t-small` | .75rem / 1.45 | 500 | muted (≥ 4.5:1) | metadata, row meta, field labels |
-| `--t-label` / `.t-label` | .6875rem / 1.3, `--t-label-tracking` | 650 | muted (≥ 4.5:1) | fact-grid keys (uppercase only there); floor size |
+| `--t-display` / `.t-display` | 2.5rem (40px) / 1.1 | 800 (`--weight-display`) | primary | one focal value per view; the Analyze verdict when one action dominates |
+| `--t-verdict-close` | 1.75rem (28px) / 1.2 | 800 | primary | the Analyze verdict for a close mix only ([Verdict dominance](#verdict-dominance)) |
+| `--t-hero` / `.t-hero` | = `--t-display` | 800 | primary | legacy alias (was 3.5rem); no new use |
+| `--t-title` / `.t-title` | 1.25rem (20px) / 1.3 | 700 (`--weight-title`) | primary | workspace and inspector titles |
+| `--t-heading` / `.t-heading` | .9375rem (15px) / 1.45 | 650 (`--weight-heading`) | primary | section heading inside a surface |
+| `--t-value` | .9375rem (15px) / 1.4 | 600 (`--weight-value`) | primary | fact-grid values (`.ui-facts dd`, the Analyze fact table) |
+| `--t-body` / `.t-body` | .875rem (14px) / 1.5 | 400 | secondary | prose (callout text included), controls |
+| `--t-small` / `.t-small` | .78125rem (12.5px) / 1.5 | 400 | muted (≥ 4.5:1) | metadata, row meta, field labels, badges, sm segments; the product-text floor |
+| `--t-label` / `.t-label` | .6875rem (11px) / 1.4, `--t-label-tracking` | 600 | muted (≥ 4.5:1) | overline labels only (uppercase); in Hebrew no uppercase and the small size |
+
+**Global type scale (ANALYZE-COMPOSITION-001).** The mockups' sizes are the app-wide
+scale: body 14, small 12.5, label 11, heading 15, title 20, display 40; fact values
+15/600. No product text renders below 12px except overline labels. Excluded: card
+faces, table SVG art, matrix/range cell glyphs, theme swatches and icon glyphs.
+Mechanics: literal sub-12px sizes moved to `--t-small` (uppercase ones to `--t-label`);
+`--text-micro-size` now resolves to `--t-small` (uppercase rules that used it moved to
+`--t-label`); badges, sm segments, chip counts, panel notes and legends moved from
+`--t-label` to `--t-small`; `<small>` never drops below the small step
+(`max(var(--t-small), .83em)`). `tests/analyze_composition001.test.mjs` guards the
+floor. (History: the token tuning had title 22px / heading 17px and a 12px small step.)
 
 Hierarchy comes from color role as well as size. The accent is **never** a
 text-hierarchy color (it is reserved for the one primary action and selection
 indicators); provenance (brass) is for provenance only. Control text (buttons,
-segments, check labels) keeps its component's role. Verdict mapping: fold →
-`--action-fold-text`; check/call → `--action-passive-text`; bet/raise →
-`--action-aggressive-text`; all-in → `--action-all-in-text`; anything else →
-primary. `.t-hero[data-action]` and Analyze's existing
-`.recommend[data-action-kind] .action-name` consume it.
+segments, check labels) keeps its component's role. **Verdict color:** the Analyze
+verdict is sentence case in primary text color (ANALYZE-COMPOSITION-001 supersedes the
+earlier action-colored verdict for Analyze); action color appears in the mix card. The
+action text roles (fold → `--action-fold-text`; check/call → `--action-passive-text`;
+bet/raise → `--action-aggressive-text`; all-in → `--action-all-in-text`) remain for
+`.t-hero[data-action]` and other action-named text.
 
-Weights: `--weight-regular` 400, `--weight-medium` 500, `--weight-strong` 650,
-`--weight-bold` 700, `--weight-heavy` 750 (the Analyze verdict / display values only).
-Small 12px (not 12.5) snaps to the most-used existing value. Headings were raised by the
-token tuning (see below): title 22px, heading 17px, display 40px.
+Weights: `--weight-regular` 400, `--weight-medium` 500, `--weight-strong` 600,
+`--weight-bold` 700, `--weight-heavy` 800 (the Analyze verdict / display values only).
 
 **Weight roles** (SAVED-COMPOSITION-002 amendment 2: the mockups' weights): `--weight-body`
 400 (body and prose, row meta, chip counts, typed inputs), `--weight-control` 600 (buttons,
@@ -347,6 +359,148 @@ Owner since `SAVED-COMPOSITION-002` (October 2, 2026; human acceptance pending u
 - Scroll note: a sticky child needs every ancestor up to the scroller to be
   `overflow: visible`; Saved sets `#homeMode[data-product-destination="saved"]`
   to `overflow-y: visible` because the document, not the mode view, scrolls.
+
+## Composition principles
+
+Owner-approved in `ANALYZE-COMPOSITION-001` (October 3, 2026). They apply to every
+workspace batch; Analyze is the first consumer.
+
+1. **Structure by spacing and hairlines, not boxes.** At most two containment levels
+   (surface → section). Sections are separated by space and `--border-subtle` rules.
+2. **Three depths.** Summary visible → detail on hover/focus (keyboard equivalent) →
+   full detail on click/disclosure. Nothing is lost, only layered.
+3. **One action color language** (fold, check/call, bet/raise, all-in) through the same
+   `--action-*` roles in mix bars, matrix, history, Replay, Training and Saved badges.
+4. **Mini-visuals next to numbers** where they aid reading (inline mix bars, thin equity
+   or stack bars), always paired with the number; never decorative or invented.
+5. **Ledger numbers:** tabular digits, right-aligned numeric columns, muted smaller units.
+6. **One object, one look:** hands, spots and decisions use the same object component
+   everywhere.
+7. **Free space shows context relevant to the job**, built only from facts the workspace
+   already has: never hidden computation (PERF-001), fake recommendations or filler. If
+   nothing qualifies, the layout tightens instead.
+8. **Calm loading and motion:** skeletons, ~150ms functional transitions from motion
+   tokens, no layout jumps when results arrive, reduced motion respected.
+
+## Analyze (ANALYZE-COMPOSITION-001)
+
+Owner since `ANALYZE-COMPOSITION-001` (October 3, 2026; human acceptance pending under
+`QA-ANALYZE-COMPOSITION-001`). Visual base: `mockup-analyze.html` (frames `#a-en`,
+`#a-he`); product rules win. CSS: the `ANALYZE-COMPOSITION-001: Analyze composition`
+section at the end of `styles.css`, scoped to
+`html[data-layout-preset] #gtoMode[data-product-destination="analyze"]` (Hand keeps its
+own composition). It places and sizes components only.
+
+- **Containers.** Exactly two Surfaces: the Spot rail panel (`#playbookSpotPanel`, start
+  side, `--analyze-rail-width: clamp(300px, 21vw, 340px)`) and the Result panel (the
+  `.playbook-decision-workspace` itself). Analysis Focus mirrors the order; below
+  1100px they stack. Everything else is a section. No context column is rendered: no
+  existing owner provides per-decision card-removal/blocker facts without extra work
+  in the Decision view, and the lossy-context sentence lives in Provenance (principle 7).
+- **Spot rail.** Head: "Spot", the live indicator and the quiet randomize controls.
+  Sections: Cards (Hero hand, board with Flop/Turn/River labels, dead cards) → Action
+  (position + prior action pair; facing size and pot before action as slider + value
+  rows) → Table (table size, stack setup, starting stack) → disclosures "Strategy
+  adjustment" and "Game & accounting" whose summaries show the current values. Same
+  control ids, readiness gate and numeric-entry behavior (`INTERACTION_GRAMMAR.md`).
+  The saved-spot banner is a rail section.
+- **Hand context.** A decision handed off from a completed Hand or a Full Hand review
+  (`setAnalyzeHandContext`) shows a read-only "Hand decision" section (title, exact
+  facts: position, street, Hero hand, board, pot, to call, stack) with the existing
+  route back (Back to Hand / Back to Training, i.e. the navigation destination) and
+  "Edit as Scenario", which reveals the Scenario sections. Any Scenario edit clears the
+  Hand context (it becomes a lossy Scenario), like the saved-spot context. The header
+  context reads "Hand".
+- **Result header.** View Tabs (Decision / Range matrix / Category comparison, underline
+  selection) on the start side; Save spot (secondary, sm) and View all hands (quiet, sm)
+  on the end side. Under it the **street stepper**: the existing Action path panel and
+  renderer, always in the compact mount, one row (Preflop → Flop → Turn → River) with
+  per-street context; the active step carries the accent.
+- **Decision view**, top to bottom: verdict block (provenance eyebrow "Heuristic baseline
+  · Preflop", verdict, optional close-mix line, one-sentence summary at 15px, the
+  honest-limits line) beside the mix card (inset well, stacked bar + per-action mini bars
+  and percentages) → caution callouts (existing text) → fact table → Explain.
+- **Fact table.** One bordered table with hairlines: Position, Pot, Facing, To call,
+  Stack, Hero hand, Pot odds (required equity), SPR, Board. Labels 11px overline muted;
+  values `--t-value` 15/600, wrap, never truncate, `unicode-bidi: plaintext` (LTR for
+  amounts and cards in Hebrew). Facing reads `decision-facing-summary/v1` (a voluntary
+  wager shows its size; unopened / limped / option / check available say so); To call is
+  the exact canonical price, or "price unavailable" for a Scenario
+  (`DECISION_CONTEXT_SPEC.md` §10).
+- **Explain.** Inline section: "EXPLAIN" overline, Facts | Explain depth (Segmented sm;
+  Facts collapses, Explain opens the existing explanation; collapsed by default), the
+  hint, and "Teach from this decision" (secondary). The explanation renders flat: "Why
+  this action?" headline (title size) and summary, then Hero state | Decision economics
+  | Bluff & pressure as three columns separated by thin rules, then the renderer's own
+  sections and disclosures; no inner scrollbar. "Provenance & limitations" (static
+  disclosure, keeps its open state across language switches) holds the Scenario
+  authority sentence and the source version (`code.technical-id`, the only monospace).
+- **Source badge once.** The header badge names the source. The in-body `#sourceBadge`
+  shows only when the result's source differs (comparative reference).
+- **Range matrix.** Cells tinted by the dominant action from the shared action roles
+  (`--matrix-action-tint` 52% pure / 34% mixed; Daylight 42 / 26), fold cells neutral,
+  unavailable cells dashed with a hatch; the selected-hand inspector (hover/focus shows
+  that hand's mix; Escape restores) is a hairline-separated section.
+- **Spot table.** A collapsed section at the end of the Result panel; each destination
+  remembers its choice (Analyze collapsed, Hand open).
+
+### Amendment 2 patterns (fidelity finish, October 3, 2026)
+
+Values come from the extracted mockup spec (`Riverline_QA_2026-10/analyze/mockup/mockup-spec.json`):
+type exact, geometry within ±2px, role tokens only. Off-scale mockup sizes (13, 13.5, 19px) map to
+the type scale and weights follow the weight roles; those are recorded exceptions, not drift.
+Analyze text uses line height 1.5 like the mockup.
+
+- **Fact-cell omission rule.** A fact that is unavailable for the current context (Scenario has no
+  exact call price, so To call and Pot odds; SPR without one opponent and an exact pot; anything
+  shown as "—"/"-") is not rendered as a bare dash: its cell is hidden, the table reflows into
+  `--fact-cols` equal columns (`--fact-cols-narrow` = half, rounded up, under a 900px panel), and
+  Provenance & limitations lists the omitted facts ("Not shown for this decision: To call (price
+  unavailable) · Pot odds (Price unavailable) · SPR"). `applyAnalyzeFactOmission` reads only the
+  rendered values and the DecisionContext price; it computes nothing.
+- **Mix card rows.** Only actions present in the mix (probability > 0) get a row; rows are
+  `74px | 1fr | 48px` with 12px gaps, a 9px swatch, a 6px mini bar and a right-aligned tabular
+  percentage. The stacked bar is 10px with 2px gaps between action segments. "Alternate view" is a
+  quiet link.
+- **Rail numeric row.** Label above; then the slider and a boxed value field on one row, aligned to
+  a shared 92px column (`--analyze-value-column`): inset well, strong border, 36px, the number at
+  body size with tabular digits and a muted unit suffix behind a hairline ("3 | bb", "6 | max").
+  Same inputs, slider sync, readiness and numeric-entry behavior (CSS-only grid over the existing
+  slider-pair markup). Selects and values use the regular weight.
+- **Rail fit.** Hero cards 44×60, board slots 40×54, dead slots 28×38 (rail-scoped
+  `--poker-card-*`); dead cards are one row ("Known burned / dead · Dead: N · Available: M",
+  Clear, slots on the end side; the whole-set editor opens from the slots); randomization status and
+  details are quiet text under the rail header; Stack setup puts its label and select on one row.
+  The rail measures 978px at 1920×1080 (mockup 976) and fits without scrolling. At 1366×768 it
+  cannot fit; disclosures are collapsed by default and the rail scrolls with the page.
+- **Stepper mini cards.** Reached streets show their board cards as the shared mini card object
+  (`analysis-mini-card riverline-card`, 22×30 at stepper scale, overhanging the row by 5px; the
+  path list uses `contain: layout style` so the overhang is not clipped) inside an LTR island
+  labelled with the card text; pending streets keep their text. Dots 10px with a 2px ring, 56px rules with 14px
+  margins; completed steps muted, the active step accent with a 4px halo.
+- **Disclosure row.** One style for Strategy adjustment, Game & accounting, Provenance &
+  limitations and the Spot table row: a rotating chevron, a 14px control-weight title, a muted
+  12.5px caption, 12px block padding and a hairline above.
+- **Close-mix line.** Secondary small text; action colors appear only as 7px dots before each
+  action name.
+- **Calm loading.** While an update is pending, the verdict copy and mix card fade to 55% opacity;
+  no size, position or display changes, so results never jump (Firefox probe: 0px shift during and
+  after recomputes). Recomputes usually finish within one frame, so the fade is rarely visible.
+  Reduced motion removes the transitions.
+- **Interaction finish.** Tabs, disclosure rows, value fields, segmented items, matrix cells and
+  links have hover, pressed and `:focus-visible` states with transitions from `--motion-fast` /
+  `--ease-standard`.
+
+### Verdict dominance
+
+`app/src/application/analyze-verdict.mjs` (`analyze-verdict/v1`) reads the existing
+StrategyResult action distribution; it never changes the recommendation, frequencies or
+claim policy. **Dominant** when the leading action is at least 20 percentage points
+ahead of the next action, or no other action reaches 5%: the verdict shows the leading
+action alone at `--t-display`. **Close** when the two leading actions are within 20
+points: the verdict reads "3-Bet or Call" at `--t-verdict-close` and a line under it
+says "Close mix · 3-Bet 50% · Call 40%" (shares from the mix card's rounding). Ties
+follow the provider's order. Labels are the provider's sentence-case action labels.
 
 ## Component sheet (dev only)
 

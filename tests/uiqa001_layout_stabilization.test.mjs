@@ -87,19 +87,22 @@ test('responsive strategy is fluid rather than resolution-specific', () => {
 
 test('Playbook workflow and betting context use compact structural strips', () => {
   assert.match(playbookHtml, /class="playbook-state-source"/);
-  assert.match(playbookHtml, /class="playbook-context-primary"/);
+  // ANALYZE-COMPOSITION-001: position and prior action moved from the center strip into the Spot rail pair.
+  assert.match(playbookHtml, /class="playbook-field-pair"/);
   assert.match(playbookHtml, /class="fields playbook-context-sliders"/);
   // SHELL-001: the Hand/Scenario switch is a small segmented control in the header bar.
   assert.match(css, /\.workspace-mode-switch #playbookModeControl \.ui-tab \{[^}]*min-height: var\(--control-height-sm\)/);
   assert.match(headerHtml, /id="workspaceModeSwitch"[\s\S]*?id="playbookModeControl"/);
-  assert.match(uiQaCss, /\.playbook-context-primary\s*\{[^}]*grid-template-columns:/);
+  // ANALYZE-COMPOSITION-001 amendment 2 removed the dead .playbook-context-primary CSS.
+  assert.doesNotMatch(css, /\.playbook-context-primary\b/);
 });
 
 test('Playbook table collapse releases its entire layout region', () => {
   assert.match(playbookHtml, /id="toggleTableBtn"[^>]+aria-expanded="true"[^>]+aria-controls="table-wrapper"/);
   assert.match(playbookHtml, /id="table-wrapper"[^>]+data-collapsible-region="poker-table"/);
   assert.match(logic, /function setCanonicalTableExpanded\(expanded\)[\s\S]*?button\.setAttribute\('aria-expanded', String\(expanded\)\)/);
-  assert.match(logic, /toggleTableBtn[\s\S]*?setCanonicalTableExpanded\(wrapper\.classList\.contains\('collapsed'\)\)/);
+  // ANALYZE-COMPOSITION-001: the toggle also records the choice per destination (Analyze collapsed, Hand open).
+  assert.match(logic, /toggleTableBtn[\s\S]*?const expanded = wrapper\.classList\.contains\('collapsed'\);[\s\S]*?setCanonicalTableExpanded\(expanded\)/);
   assert.match(uiQaCss, /\.table-wrapper\.collapsed\s*\{[^}]*height:\s*0[^}]*min-height:\s*0[^}]*max-height:\s*0/);
 });
 

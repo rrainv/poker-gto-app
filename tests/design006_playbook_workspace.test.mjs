@@ -71,7 +71,8 @@ test('workspace hierarchy keeps Decision primary and its alternate analytical vi
   assert.match(html, /class="app-grid playbook-workspace"/);
   assert.match(html, /class="panel recommend playbook-primary-decision" id="recommendation"/);
   assert.match(html, /id="playbookAnalysisNavigation" class="playbook-analysis-switcher"/);
-  assert.match(html, /id="playbookAnalysisTabs" class="sub-tabs ui-segments"/);
+  // ANALYZE-COMPOSITION-001: view navigation uses the underline Tabs component.
+  assert.match(html, /id="playbookAnalysisTabs" class="sub-tabs ui-tabs"/);
   const sharedIndex = html.indexOf('id="sharedControls"');
   const decisionIndex = html.indexOf('id="recommendation"');
   assert.ok(sharedIndex < decisionIndex);
@@ -88,7 +89,9 @@ test('Scenario organization retains supported product controls only', () => {
     'lastAction', 'rakeMode', 'ante', 'straddle',
   ]) assert.match(html, new RegExp(`id="${id}"`), id);
   assert.match(html, /data-playbook-scenario/);
-  assert.match(html, /Spot context/);
+  // ANALYZE-COMPOSITION-001: the Spot rail groups these controls under Action and Table.
+  assert.match(html, /id="sharedControls"[^>]*>[\s\S]*?data-i18n="Action"/);
+  assert.match(html, /id="scenarioConfigurationPanel"[^>]*>[\s\S]*?data-i18n="Table"/);
   assert.match(html, /Game and accounting/);
   assert.match(html, /Show Advanced Rules/);
   assert.doesNotMatch(html, /Legacy percentage|rakeValue|rakeUnit|rakePot/);
