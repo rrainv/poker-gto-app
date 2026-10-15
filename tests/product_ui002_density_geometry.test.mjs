@@ -49,13 +49,16 @@ test('Betting Context composes its utility action in the heading and values in a
   for (const id of ['heroPos', 'lastAction', 'facingSize', 'potSize', 'openCharts']) {
     assert.match(html, new RegExp(`id="${id}"`), id);
   }
-  const heading = html.slice(html.indexOf('class="playbook-inline-heading"'), html.indexOf('class="playbook-context-grid"'));
-  const primary = html.slice(html.indexOf('class="playbook-context-primary"'), html.indexOf('class="fields playbook-context-sliders"'));
+  // ANALYZE-COMPOSITION-001: the center Betting context strip moved into the Spot rail (Action section)
+  // and its utility action (View all hands) into the Result header actions.
+  const heading = html.slice(html.indexOf('class="playbook-result-actions"'), html.indexOf('</nav>', html.indexOf('class="playbook-result-actions"')));
+  const primary = html.slice(html.indexOf('class="playbook-field-pair"'), html.indexOf('class="fields playbook-context-sliders"'));
   assert.match(heading, /id="openCharts"/);
   assert.doesNotMatch(primary, /id="openCharts"/);
-  assert.match(density, /\.playbook-context-grid \{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(density, /@media \(min-width: 1200px\)[\s\S]*\.playbook-context-grid \{ grid-template-columns: repeat\(4, minmax\(0, 1fr\)\); \}/);
-  assert.match(density, /\.playbook-inline-heading #openCharts \{[\s\S]*white-space: nowrap/);
+  // ANALYZE-COMPOSITION-001 amendment 2 removed the strip's dead CSS (.playbook-context-grid,
+  // .playbook-inline-heading); the rail pair lays out position and prior action instead.
+  assert.doesNotMatch(css, /\.playbook-context-grid\b|\.playbook-inline-heading\b/);
+  assert.match(css, /\.playbook-field-pair \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(density, /\.playbook-context-field \.control-select \{ min-height: 36px; \}/);
   assert.match(density, /\.playbook-context-sliders \.slider-container[\s\S]*min-height: 48px/);
   assert.match(density, /\.playbook-context-sliders > \.field \{ grid-column: 1 \/ -1; \}/);

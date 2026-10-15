@@ -229,7 +229,8 @@ test('A: typing 2.5 / 6.5 resolves exactly once per update with the typed values
 test('A: programmatic facing resets never overwrite a focused draft', () => {
   const display = sourceBetween(LOGIC, 'function setSliderPairDisplay(', 'const SLIDER_PAIR_NUMBER_IDS');
   assert.match(display, /document\.activeElement !== number/);
-  const metrics = sourceBetween(LOGIC, 'function updateMetrics()', 'const ACTION_PATH_COMPACT_MEDIA');
+  // ANALYZE-COMPOSITION-001 removed the responsive Action path media constant; the next declaration bounds the slice.
+  const metrics = sourceBetween(LOGIC, 'function updateMetrics()', 'let actionPathCompactExpanded');
   assert.match(metrics, /setSliderPairDisplay\('facingSize', 'facingSizeNum', 0\)/);
   const sync = sourceBetween(LOGIC, 'function syncSliderPair(rangeId, numberId) {', 'function normalizeSliderPairDisplay(');
   assert.doesNotMatch(sync, /number\.value\s*=/);

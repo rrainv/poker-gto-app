@@ -407,6 +407,11 @@ function requireHandReviewBridge() {
 }
 
 let handReviewProjector = null;
+// ANALYZE-COMPOSITION-001: the Spot table is a collapsed section of the Analyze
+// Result panel; Hand keeps its table open. Each destination remembers its choice.
+const playbookTableExpandedByDestination = { hand: true, analyze: false };
+// Hand context shown in Analyze (see setAnalyzeHandContext).
+let analyzeHandContext = null;
 
 function requireProductPerformanceBridge() {
   const bridge = globalThis.RiverlineProductPerformance;
@@ -2727,6 +2732,153 @@ function renderPlaybookModeStatus(resolution) {
   if (!status) return;
   status.textContent = playbookResolutionMessage(resolution);
   status.dataset.status = resolution?.status || 'unavailable';
+  // ANALYZE-COMPOSITION-001 / QA-SHELL-003: no status line above the workspace;
+  // the authority meaning stays readable in Provenance & limitations.
+  const provenance = $('#playbookModeProvenance');
+  if (provenance) provenance.textContent = status.textContent;
+}
+
+// ANALYZE-COMPOSITION-001: verdict dominance. Presentation only; it reads the
+// existing StrategyResult action distribution (analyze-verdict/v1) and never
+// changes the recommendation, frequencies or claim policy.
+function renderAnalyzeVerdict(strategyResult) {
+  const element = $('#bestAction');
+  const closeNote = $('#bestActionClose');
+  if (!element) return null;
+  const verdict = window.RiverlineAnalyzeVerdict?.describe(strategyResult) || null;
+  const shares = strategyResult?.actions ? strategyResultPresentationActions(strategyResult) : [];
+  const share = (entry) => `${shares[entry.index]?.value ?? Math.round(entry.probability * 100)}%`;
+  if (!verdict || verdict.kind === 'unavailable') {
+    element.textContent = t(strategyResult?.recommendation?.label || 'Unavailable');
+    element.dataset.verdictKind = 'unavailable';
+    if (closeNote) closeNote.hidden = true;
+    return verdict;
+  }
+  element.dataset.verdictKind = verdict.kind;
+  if (verdict.kind === 'close') {
+    element.textContent = t('{first} or {second}', { first: t(verdict.primary.label), second: t(verdict.secondary.label) });
+    if (closeNote) {
+      // Amendment 2: secondary text; the action colors appear only as small dots.
+      const marks = { first: '⁠F⁠', firstShare: '⁠f⁠', second: '⁠S⁠', secondShare: '⁠s⁠' };
+      const template = t('Close mix · {first} {firstShare} · {second} {secondShare}', marks);
+      const entries = { F: verdict.primary, S: verdict.secondary };
+      const nodes = template.split(/(⁠[FfSs]⁠)/).filter(Boolean).map((part) => {
+        const key = part.length === 3 && part[0] === '⁠' ? part[1] : null;
+        if (!key) return document.createTextNode(part);
+        const entry = entries[key.toUpperCase()];
+        const span = document.createElement('span');
+        if (key === key.toUpperCase()) {
+          span.className = 'verdict-share';
+          const dot = document.createElement('i');
+          dot.className = 'verdict-dot';
+          dot.dataset.actionKind = entry.kind;
+          dot.setAttribute('aria-hidden', 'true');
+          span.append(dot, document.createTextNode(t(entry.label)));
+        } else {
+          span.className = 'verdict-share-value';
+          span.textContent = share(entry);
+        }
+        return span;
+      });
+      closeNote.replaceChildren(...nodes);
+      closeNote.hidden = false;
+    }
+  } else {
+    element.textContent = t(verdict.primary.label);
+    if (closeNote) closeNote.hidden = true;
+  }
+  return verdict;
+}
+
+// Technical source id/version lives in Provenance & limitations (monospace only there).
+function renderStrategyMeta(claimPolicy) {
+  const strategyMeta = $('#strategyMeta');
+  if (!strategyMeta) return;
+  const marker = '\u2063';
+  const [before = '', after = ''] = t('Source version {version}', { version: marker }).split(marker);
+  const version = document.createElement('code');
+  version.className = 'technical-id';
+  version.textContent = claimPolicy.sourceVersion;
+  strategyMeta.replaceChildren(
+    document.createTextNode(before),
+    version,
+    document.createTextNode(`${after} · ${claimPolicy.coverage.kind === 'exact'
+      ? t('Exact covered context')
+      : t('Broad approximate coverage')}`),
+  );
+  strategyMeta.hidden = false;
+}
+
+// Collapsed rail disclosures summarize their current values (no computation).
+function syncSpotDisclosureSummaries() {
+  const adjustment = $('#playbookStrategyAdjustmentSummary');
+  if (adjustment) {
+    adjustment.textContent = [$('#tightnessLabel')?.textContent, $('#oppTightnessLabel')?.textContent]
+      .map((value) => String(value || '').trim()).filter(Boolean).join(' · ');
+  }
+  const accounting = $('#playbookGameAccountingSummary');
+  const rake = $('#rakeMode');
+  if (accounting && rake) accounting.textContent = rake.selectedOptions?.[0]?.textContent?.trim() || '';
+}
+
+// ANALYZE-COMPOSITION-001: Hand context. A decision handed off from a completed
+// Hand (or Full Hand review) shows its exact facts read-only, with the existing
+// route back. Editing any Scenario control turns it into a lossy Scenario.
+function setAnalyzeHandContext(context) {
+  analyzeHandContext = context || null;
+  renderAnalyzeHandContext();
+}
+function renderAnalyzeHandContext() {
+  const section = $('#analyzeHandContext');
+  const mode = $('#gtoMode');
+  if (!section) return;
+  const context = analyzeHandContext;
+  section.hidden = !context;
+  if (mode) {
+    if (context) mode.dataset.analyzeContext = 'hand';
+    else {
+      delete mode.dataset.analyzeContext;
+      delete mode.dataset.analyzeHandEditing;
+    }
+  }
+  const edit = $('#analyzeHandContextEdit');
+  if (edit) edit.setAttribute('aria-expanded', String(Boolean(context && mode?.dataset.analyzeHandEditing === 'true')));
+  if (!context) return;
+  const decision = context.decisionContext;
+  const name = $('#analyzeHandContextName');
+  if (name) name.textContent = context.titleKey ? t(context.titleKey, context.titleValues || {}) : '';
+  const back = $('#analyzeHandContextReturn');
+  if (back) {
+    back.dataset.i18n = context.returnLabelKey;
+    back.textContent = t(context.returnLabelKey);
+  }
+  const facts = $('#analyzeHandContextFacts');
+  if (!facts || !decision) return;
+  const bb = (value) => (Number.isFinite(value) ? `${Number(value).toFixed(1)} bb` : t('Unavailable'));
+  const cards = (list) => (list || []).filter(Boolean).map(displayCard).join(' ');
+  const rows = [
+    ['Position', decision.heroPosition || '-'],
+    ['Street', reviewStreetLabel(decision.street)],
+    ['Hero hand', cards(decision.heroCards) || t('Unknown'), true],
+    ['Board', cards(decision.board) || t('Preflop · no board'), Boolean(cards(decision.board))],
+    ['Pot', bb(decision.currentPotBb ?? decision.potBb), true],
+    ['To call', Number.isFinite(decision.callAmountBb) ? bb(decision.callAmountBb) : t('facing.price.unavailable'), Number.isFinite(decision.callAmountBb)],
+    ['Stack', bb(decision.heroStackBb ?? decision.stackBb), true],
+  ];
+  facts.replaceChildren(...rows.map(([label, value, island]) => {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    term.dataset.i18n = label;
+    term.textContent = t(label);
+    const detail = document.createElement('dd');
+    if (island) {
+      detail.dir = 'ltr';
+      detail.classList.add('poker-island');
+    }
+    detail.textContent = value;
+    row.append(term, detail);
+    return row;
+  }));
 }
 
 function renderCanonicalDecisionCards(group, cards, count) {
@@ -2778,7 +2930,11 @@ function renderUnavailableStrategy(resolution) {
   const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
   setRecommendationState(waiting ? 'waiting' : 'unavailable');
   if ($('#analysisInputMessage')) $('#analysisInputMessage').textContent = message;
-  if ($('#bestAction')) $('#bestAction').textContent = t('Unavailable');
+  if ($('#bestAction')) {
+    $('#bestAction').textContent = t('Unavailable');
+    $('#bestAction').dataset.verdictKind = 'unavailable';
+  }
+  if ($('#bestActionClose')) $('#bestActionClose').hidden = true;
   if ($('#bestSizing')) {
     $('#bestSizing').textContent = '';
     $('#bestSizing').hidden = true;
@@ -2787,6 +2943,7 @@ function renderUnavailableStrategy(resolution) {
   if ($('#sourceBadge')) {
     $('#sourceBadge').textContent = t('Unavailable');
     $('#sourceBadge').className = 'badge status-badge status-badge--unavailable';
+    $('#sourceBadge').hidden = true;
   }
   if ($('#strategyMeta')) $('#strategyMeta').hidden = true;
   if ($('#strategyWarnings')) {
@@ -2807,6 +2964,9 @@ function renderUnavailableStrategy(resolution) {
   });
   if (resolution?.mode === 'hand') {
     renderUnavailableActionPath(message, waiting ? 'waiting' : 'unavailable');
+  } else if (typeof renderPath === 'function') {
+    // Amendment 2: an incomplete Scenario's stepper follows the current inputs (no stale board).
+    renderPath();
   }
   playbookSurfaceInvalidator.renderIfNeeded('analysis');
   renderPlaybookModeStatus(resolution);
@@ -5607,6 +5767,13 @@ async function openCanonicalHandDecisionInAnalysis(decisionIndex = null) {
     decisionContext: record.decisionContext,
     object: { annotations: { title: t('Hero Decision {number}', { number: record.decisionOrdinal + 1 }) } }
   });
+  setAnalyzeHandContext({
+    decisionContext: record.decisionContext,
+    titleKey: 'Hero Decision {number}',
+    titleValues: { number: record.decisionOrdinal + 1 },
+    returnDestination: 'hand',
+    returnLabelKey: 'Back to Hand',
+  });
   restoreSharedPokerTable();
   navigateToWorkspace('gto', 'analyze');
   await updateContext('Completed Hand decision opened', {
@@ -5951,6 +6118,11 @@ function renderVisiblePlaybookDerivedSurfaces() {
 }
 
 function schedulePlaybookUpdate(reason) {
+  // Amendment 2 (calm loading): while an update is pending the verdict and mix
+  // card fade; every dimension stays, so the result never jumps. updateContext
+  // clears the mark when it renders.
+  const recommendation = $('#recommendation');
+  if (recommendation) recommendation.dataset.recomputing = 'true';
   playbookUpdateScheduler.schedule(reason);
 }
 
@@ -5983,6 +6155,10 @@ function setFrequency(index, action) {
 
   if (numEl) numEl.textContent = action.value ? action.value + '%' : '-';
 
+  // ANALYZE-COMPOSITION-001 amendment 2: the mix card lists only actions present in the mix.
+  const row = (barEl || nameEl)?.closest('.frequency');
+  if (row) row.hidden = !(Number(action.value) > 0);
+
 }
 
 
@@ -5994,6 +6170,29 @@ function preflopBasePot() {
 }
 
 
+
+// Facing reads the canonical facing class: a voluntary wager shows its size;
+// unopened, limped, option and check-available spots say so instead of "0.0 bb".
+function analyzeFacingFact(context, facing) {
+  const summary = context && window.RiverlineDecisionFacing?.describe(context);
+  const kinds = window.RiverlineDecisionFacing?.kinds || {};
+  const wording = summary && {
+    [kinds.UNOPENED]: 'Unopened',
+    [kinds.LIMPED]: 'Limped',
+    [kinds.OPTION]: 'Option',
+    [kinds.CHECK_AVAILABLE]: 'Check available',
+  }[summary.kind];
+  return wording ? t(wording) : `${Number(facing).toFixed(1)} bb`;
+}
+
+// To call is the exact canonical price; Scenario contexts never fabricate it.
+function analyzeToCallFact(context) {
+  if (!context) return '-';
+  if (!Number.isFinite(context.callAmountBb)) return t('facing.price.unavailable');
+  const call = `${Number(context.callAmountBb).toFixed(1)} bb`;
+  const allIn = Number.isFinite(context.heroStackBb) && context.callAmountBb > 0 && context.callAmountBb >= context.heroStackBb;
+  return allIn ? `${call} · ${t('All-in')}` : call;
+}
 
 function updateMetrics() {
   const decisionContext = arguments.length > 0 ? arguments[0] : null;
@@ -6060,7 +6259,8 @@ function updateMetrics() {
   const metricValues = {
     mPosition: heroPos || '-',
     mPot: `${Number(pot).toFixed(1)} bb`,
-    mFacing: `${Number(facing).toFixed(1)} bb`,
+    mFacing: analyzeFacingFact(context, facing),
+    mToCall: analyzeToCallFact(context),
     mStack: `${Number(stack).toFixed(0)} bb`
   };
   Object.entries(metricValues).forEach(([id, value]) => {
@@ -6068,7 +6268,7 @@ function updateMetrics() {
   });
   // SHELL-001: Analyze header context reuses the decision facts shown above.
   window.RiverlineWorkspaceHeader?.setContext('analyze', [
-    t(isHandMode() ? 'Hand' : 'Scenario'),
+    t(isHandMode() || (typeof analyzeHandContext !== 'undefined' && analyzeHandContext) ? 'Hand' : 'Scenario'),
     heroPos || '',
     metricValues.mStack,
     reviewStreetLabel(street),
@@ -6087,18 +6287,59 @@ function updateMetrics() {
 
   const potSizeOut = $('#potSizeOut');
   if (potSizeOut) potSizeOut.textContent = pot.toFixed(1) + ' bb';
+  if (typeof applyAnalyzeFactOmission === 'function') applyAnalyzeFactOmission(context);
+}
+
+// ANALYZE-COMPOSITION-001 amendment 2: fact-cell omission rule. A fact that is
+// unavailable for this context (no exact price, no SPR, not applicable when
+// unopened) is not shown as a bare dash: its cell is omitted, the table reflows
+// evenly, and the omitted facts are listed in Provenance & limitations.
+function analyzeFactIsUnavailable(id, text, context) {
+  const value = String(text || '').trim();
+  if (!value || value === '-' || value.startsWith('—') || value.startsWith('- (')) return true;
+  if (id === 'mToCall') return !context || !Number.isFinite(context.callAmountBb);
+  return false;
+}
+
+function applyAnalyzeFactOmission(context) {
+  const strip = $('.analyze-facts');
+  if (!strip) return;
+  const omitted = [];
+  let shown = 0;
+  strip.querySelectorAll('.metric').forEach((cell) => {
+    const value = cell.querySelector('b');
+    const label = cell.querySelector('span')?.textContent?.trim() || '';
+    const unavailable = Boolean(context) && analyzeFactIsUnavailable(value?.id, value?.textContent, context);
+    cell.hidden = unavailable;
+    if (unavailable) {
+      // "— (Price unavailable)" → "Price unavailable"; a bare dash carries no reason.
+      const reason = String(value?.textContent || '').replace(/^[—-]\s*\(?/, '').replace(/\)$/, '').trim();
+      omitted.push(reason ? `${label} (${reason})` : label);
+    } else shown += 1;
+  });
+  strip.style.setProperty('--fact-cols', String(Math.max(1, shown)));
+  strip.style.setProperty('--fact-cols-narrow', String(Math.max(1, Math.ceil(shown / 2))));
+  const note = $('#analyzeOmittedFacts');
+  if (note) {
+    note.hidden = omitted.length === 0;
+    note.textContent = omitted.length ? t('Not shown for this decision: {facts}', { facts: omitted.join(' · ') }) : '';
+  }
 }
 
 
 
-const ACTION_PATH_COMPACT_MEDIA = '(max-width: 1499px), (max-height: 900px)';
 let actionPathCompactExpanded = false;
-let actionPathMediaQuery = null;
 
 function escapeActionPathMarkup(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[character]);
+}
+
+function syncExplainDepthControls() {
+  const expanded = $('#toggleTeacher')?.getAttribute('aria-expanded') === 'true';
+  $('#toggleTeacher')?.setAttribute('aria-pressed', String(expanded));
+  $('#analyzeExplainFacts')?.setAttribute('aria-pressed', String(!expanded));
 }
 
 function updateActionPathDisclosure() {
@@ -6126,14 +6367,12 @@ function applyActionPathPresentation(compact) {
 
 function initActionPathPresentation() {
   const toggle = $('#actionPathDetailsToggle');
-  if (!toggle || !window.matchMedia) return applyActionPathPresentation(false);
-  actionPathMediaQuery = window.matchMedia(ACTION_PATH_COMPACT_MEDIA);
-  const syncPresentation = () => applyActionPathPresentation(actionPathMediaQuery.matches);
-  if (typeof actionPathMediaQuery.addEventListener === 'function') {
-    actionPathMediaQuery.addEventListener('change', syncPresentation);
-  } else if (typeof actionPathMediaQuery.addListener === 'function') {
-    actionPathMediaQuery.addListener(syncPresentation);
-  }
+  // ANALYZE-COMPOSITION-001: the street stepper under the Result header replaces
+  // the Action path rail at every width, so the compact mount is always used and
+  // every step shows its context.
+  actionPathCompactExpanded = true;
+  const syncPresentation = () => applyActionPathPresentation(true);
+  if (!toggle) return syncPresentation();
   toggle.addEventListener('click', () => {
     if ($('#playbookDecisionPathPanel')?.dataset.actionPathPresentation !== 'compact') return;
     actionPathCompactExpanded = !actionPathCompactExpanded;
@@ -6158,7 +6397,8 @@ function renderPath(street) {
   const context = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
     ? app.decisionContext
     : null;
-  const boardCards = (context?.board || app.gto.board).filter(Boolean).map(displayCard);
+  const rawBoard = (context?.board || app.gto.board).filter(Boolean);
+  const boardCards = rawBoard.map(displayCard);
   const heroPos = context?.heroPosition || selectedValue('#heroPos') || 'BTN';
   const lastActionEl = $('#lastAction');
   const lastActionText = context?.lastAction
@@ -6186,6 +6426,17 @@ function renderPath(street) {
   const activeSummary = activeIdx === 0
     ? branchSummary
     : `${stages[activeIdx].label} · ${stageDetails[activeIdx]} · ${branchSummary}`;
+  // Amendment 2: reached streets show their board cards as mini card glyphs (the
+  // shared analysis-mini-card object) in an LTR island; the text stays the label.
+  const streetCards = [[], rawBoard.slice(0, 3), rawBoard.slice(3, 4), rawBoard.slice(4, 5)];
+  const stageDetailMarkup = (idx) => {
+    const cards = streetCards[idx];
+    const reached = idx === 1 ? streetCount >= 3 : idx === 2 ? streetCount >= 4 : idx === 3 ? streetCount >= 5 : false;
+    if (!reached || !cards.length) return `<span>${escapeActionPathMarkup(stageDetails[idx])}</span>`;
+    return `<span class="path-cards" dir="ltr" role="img" aria-label="${escapeActionPathMarkup(stageDetails[idx])}">${cards.map((card) => (
+      `<span class="analysis-mini-card riverline-card card--suit-${escapeActionPathMarkup(String(card[1]).toLowerCase())}" data-card-size="mini" data-path-card="${escapeActionPathMarkup(card)}" aria-hidden="true">${escapeActionPathMarkup(displayCard(card))}</span>`
+    )).join('')}</span>`;
+  };
 
   if (panel) panel.dataset.actionPathState = 'available';
   pathList.innerHTML = `
@@ -6203,12 +6454,24 @@ function renderPath(street) {
           : '';
         return `<div class="path-step ${statusClass}" role="listitem"${currentAttribute}>
           <div class="path-node">${statusIcon}</div>
-          <div class="path-body"><b>${currentPrefix}${escapeActionPathMarkup(stage.label)}</b><span>${escapeActionPathMarkup(stageDetails[idx])}</span></div>
+          <div class="path-body"><b>${currentPrefix}${escapeActionPathMarkup(stage.label)}</b>${stageDetailMarkup(idx)}</div>
         </div>`;
       }).join('')}
     </div>
     <p class="path-current-summary"><span>${escapeActionPathMarkup(t('Current branch'))}</span><strong>${escapeActionPathMarkup(activeSummary)}</strong></p>
   `;
+  const presentation = globalThis.RiverlineCardPresentation;
+  if (presentation?.appendCardFaceContents) {
+    pathList.querySelectorAll('[data-path-card]').forEach((token) => {
+      const code = token.dataset.pathCard;
+      token.textContent = '';
+      presentation.appendCardFaceContents(token, {
+        rank: code[0].toUpperCase(),
+        suit: code[1].toLowerCase(),
+        rankStyle: document.documentElement.dataset.cardRankStyle,
+      });
+    });
+  }
 }
 
 
@@ -7026,8 +7289,12 @@ async function updateContext(reason = 'Context updated') {
     activeSavedSpotContext = null;
     renderSavedSpotViewer(null);
   }
+  if (!resolutionOverride
+    && typeof analyzeHandContext !== 'undefined'
+    && analyzeHandContext) setAnalyzeHandContext(null);
 
   if (playbookUpdateScheduler.isPending()) playbookUpdateScheduler.cancel();
+  if (typeof $ === 'function' && $('#recommendation')) delete $('#recommendation').dataset.recomputing;
 
   syncSliderPair('players', 'playersNum');
 
@@ -7132,9 +7399,7 @@ async function updateContext(reason = 'Context updated') {
 
 
 
-  const bestAction = $('#bestAction');
-
-  if (bestAction) bestAction.textContent = t(profile.best);
+  if (typeof renderAnalyzeVerdict === 'function') renderAnalyzeVerdict(strategyResult);
   renderAnalyzeTruth(strategyResult);
 
   const recommendationSizing = strategyResult.recommendation?.action;
@@ -7195,6 +7460,9 @@ async function updateContext(reason = 'Context updated') {
     sourceBadge.title = provenance;
     sourceBadge.setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
     sourceBadge.className = `badge status-badge status-badge--${sourceTone}`;
+    // ANALYZE-COMPOSITION-001 / QA-SHELL-004: the header badge names the production
+    // source; the body repeats a source only when it differs (comparative reference).
+    sourceBadge.hidden = !isReference;
     if (isReference) {
       sourceBadge.dataset.strategyAuthority = 'comparative_reference';
     } else {
@@ -7204,17 +7472,7 @@ async function updateContext(reason = 'Context updated') {
     if (provenanceElement) provenanceElement.textContent = provenance;
   }
 
-  const strategyMeta = $('#strategyMeta');
-  if (strategyMeta) {
-    const metadata = [
-      t('Source version {version}', { version: claimPolicy.sourceVersion }),
-      claimPolicy.coverage.kind === 'exact'
-        ? t('Exact covered context')
-        : t('Broad approximate coverage')
-    ];
-    strategyMeta.textContent = metadata.join(' · ');
-    strategyMeta.hidden = metadata.length === 0;
-  }
+  if (typeof renderStrategyMeta === 'function') renderStrategyMeta(claimPolicy);
 
   const strategyWarnings = $('#strategyWarnings');
   if (strategyWarnings) {
@@ -8027,6 +8285,10 @@ function applyPlaybookDestinationPresentation(destination = activeNavigationDest
     const labelKey = state.destination === 'hand' ? 'Hand' : 'Analyze';
     modeView.dataset.i18nAriaLabel = labelKey;
     modeView.setAttribute('aria-label', t(labelKey));
+    const tableExpanded = playbookTableExpandedByDestination[state.destination];
+    if ($('#table-wrapper') && $('#table-wrapper').classList.contains('collapsed') === tableExpanded) {
+      setCanonicalTableExpanded(tableExpanded);
+    }
   }
   // SHELL-001: the Hand/Scenario switch lives in the header bar; the old
   // workflow kicker/title duplicated the header title and Help description.
@@ -8677,6 +8939,8 @@ function scheduleHomeRefresh({ clearPrivateState = false } = {}) {
 }
 
 function restoreSavedSpotPresentation(result) {
+  // A new handoff replaces any earlier Hand context; the Hand flows set it again.
+  setAnalyzeHandContext(null);
   const source = result.scenarioInput || result.decisionContext;
   const context = result.decisionContext;
   const rulesDefinition = result.scenarioInput?.rulesSnapshot?.definition
@@ -8965,6 +9229,30 @@ function bindEvents() {
 
   if ($('#closeModal')) $('#closeModal').addEventListener('click', closePicker);
 
+  // Facts | Explain depth: Facts collapses the explanation; Explain opens it.
+  if ($('#analyzeExplainFacts')) $('#analyzeExplainFacts').addEventListener('click', () => {
+    if ($('#toggleTeacher')?.getAttribute('aria-expanded') === 'true') $('#toggleTeacher').click();
+  });
+  if (typeof syncExplainDepthControls === 'function') syncExplainDepthControls();
+
+  // Hand context: the existing route back, and the explicit switch to Scenario editing.
+  if ($('#analyzeHandContextReturn')) $('#analyzeHandContextReturn').addEventListener('click', () => {
+    if (analyzeHandContext?.returnDestination) navigateToProductDestination(analyzeHandContext.returnDestination);
+  });
+  if ($('#analyzeHandContextEdit')) $('#analyzeHandContextEdit').addEventListener('click', (event) => {
+    const mode = $('#gtoMode');
+    if (!mode) return;
+    const editing = mode.dataset.analyzeHandEditing !== 'true';
+    if (editing) mode.dataset.analyzeHandEditing = 'true';
+    else delete mode.dataset.analyzeHandEditing;
+    event.currentTarget.setAttribute('aria-expanded', String(editing));
+  });
+  ['tightnessSlider', 'oppTightnessSlider', 'rakeMode'].forEach((id) => {
+    $('#' + id)?.addEventListener('input', () => queueMicrotask(syncSpotDisclosureSummaries));
+    $('#' + id)?.addEventListener('change', () => queueMicrotask(syncSpotDisclosureSummaries));
+  });
+  if (typeof syncSpotDisclosureSummaries === 'function') syncSpotDisclosureSummaries();
+
   if ($('#toggleTeacher')) $('#toggleTeacher').addEventListener('click', () => {
 
     const t = $('#teacherContent');
@@ -8975,6 +9263,7 @@ function bindEvents() {
 
       t.style.display = isHidden ? 'block' : 'none';
       $('#toggleTeacher').setAttribute('aria-expanded', String(isHidden));
+      syncExplainDepthControls();
 
       t.classList.toggle('is-analysis-entering', isHidden);
 
@@ -9095,8 +9384,6 @@ function bindEvents() {
     if ($('#rangeView')) $('#rangeView').style.display = view === 'range' ? 'block' : 'none';
 
     if ($('#treeView')) $('#treeView').style.display = view === 'tree' ? 'block' : 'none';
-
-    if ($('#sharedControls')) $('#sharedControls').style.display = 'block';
 
     if (view === 'chart') {
       if (!playbookSurfaceInvalidator.renderIfNeeded('matrix')) renderChart();
@@ -9318,7 +9605,10 @@ function bindEvents() {
   if ($('#toggleTableBtn')) {
     $('#toggleTableBtn').addEventListener('click', () => {
       const wrapper = $('#table-wrapper');
-      if (wrapper) setCanonicalTableExpanded(wrapper.classList.contains('collapsed'));
+      if (!wrapper) return;
+      const expanded = wrapper.classList.contains('collapsed');
+      playbookTableExpandedByDestination[$('#gtoMode')?.dataset.productDestination === 'hand' ? 'hand' : 'analyze'] = expanded;
+      setCanonicalTableExpanded(expanded);
     });
   }
 
@@ -9438,6 +9728,8 @@ const localizedStrategyProfile = strategyResultToLegacyProfile;
 
 function refreshLocalizedPlaybookRuntime() {
   if (app.playbookResolution) renderPlaybookModeStatus(app.playbookResolution);
+  renderAnalyzeHandContext();
+  syncSpotDisclosureSummaries();
   renderSavedStudySourceState(savedStudySourceState, savedStudyCurrentObject);
   if (isHandMode()) {
     syncHandSeatSelectors();
@@ -9446,7 +9738,7 @@ function refreshLocalizedPlaybookRuntime() {
   if (app.decisionContext && app.strategyResult) {
     const profile = localizedStrategyProfile(app.strategyResult);
     const claimPolicy = strategyClaimPolicy(app.strategyResult);
-    if ($('#bestAction')) $('#bestAction').textContent = t(profile.best);
+    renderAnalyzeVerdict(app.strategyResult);
     renderAnalyzeTruth(app.strategyResult);
     if ($('#bestReason')) $('#bestReason').textContent = profile.reason;
     const sourceLabel = strategySourceDisplayLabel(app.strategyResult);
@@ -9461,6 +9753,7 @@ function refreshLocalizedPlaybookRuntime() {
           ? 'reference'
           : 'info';
       $('#sourceBadge').className = `badge status-badge status-badge--${sourceTone}`;
+      $('#sourceBadge').hidden = !isReference;
       if (isReference) {
         $('#sourceBadge').dataset.strategyAuthority = 'comparative_reference';
       } else {
@@ -9470,14 +9763,7 @@ function refreshLocalizedPlaybookRuntime() {
     if ($('#strategySourceProvenance')) {
       $('#strategySourceProvenance').textContent = strategyPolicySummary(claimPolicy);
     }
-    if ($('#strategyMeta')) {
-      $('#strategyMeta').textContent = [
-        t('Source version {version}', { version: claimPolicy.sourceVersion }),
-        claimPolicy.coverage.kind === 'exact'
-          ? t('Exact covered context')
-          : t('Broad approximate coverage')
-      ].join(' · ');
-    }
+    renderStrategyMeta(claimPolicy);
     if ($('#strategyWarnings')) {
       const warnings = [
         localizedStrategyLimitation(claimPolicy),
@@ -13998,6 +14284,13 @@ async function openFullHandDecisionInAnalysis() {
   restoreSavedSpotPresentation(viewerContext);
   activeSavedSpotContext = viewerContext;
   renderSavedSpotViewer(viewerContext);
+  setAnalyzeHandContext({
+    decisionContext: handoff.decisionContext,
+    titleKey: 'Full Hand · Hero Decision {number}',
+    titleValues: { number: handoff.decisionOrdinal + 1 },
+    returnDestination: 'training',
+    returnLabelKey: 'Back to Training',
+  });
   restoreSharedPokerTable();
   navigateToWorkspace('gto', 'analyze');
   await updateContext('Full-Hand review decision opened', {

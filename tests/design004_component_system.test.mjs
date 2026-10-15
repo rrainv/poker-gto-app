@@ -71,7 +71,8 @@ test('remaining switches expose labels and pressed states without replacing beha
 });
 
 test('tabs use structural selected semantics in markup and updates', () => {
-  assert.match(html, /class="sub-tabs ui-segments" role="tablist"/);
+  // ANALYZE-COMPOSITION-001: Analyze view navigation moved to the underline Tabs component.
+  assert.match(html, /class="sub-tabs ui-tabs" role="tablist"/);
   assert.match(html, /class="sub-tab ui-tab active"[^>]*role="tab"[^>]*aria-selected="true"/);
   assert.match(components, /\.ui-tab:is\(\.active, \[aria-selected="true"\], \[aria-pressed="true"\]/);
   assert.match(components, /box-shadow:\s*inset 0 -2px 0 var\(--accent-primary\)/);

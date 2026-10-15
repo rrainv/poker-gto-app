@@ -79,7 +79,8 @@ test('dead-card unavailable combos stay canonical and agree with the local inspe
 
 test('Facts are visible before bounded Explain and only secondary comparison detail stays disclosed', () => {
   const decision = html.slice(html.indexOf('id="recommendation"'), html.indexOf('id="handLiveStageHeader"'));
-  assert.match(decision, /class="playbook-facts-heading"[\s\S]*data-i18n="Facts"/);
+  // ANALYZE-COMPOSITION-001: the fact grid heading stays as an accessible (sr-only) heading.
+  assert.match(decision, /class="playbook-facts-heading[^"]*"[\s\S]*data-i18n="Facts"/);
   assert.match(decision, /id="mEquity"/);
   assert.match(decision, /id="mRake"/);
   assert.match(decision, /id="toggleTeacher"[^>]+aria-expanded="false"[^>]+aria-controls="teacherContent"/);

@@ -2165,6 +2165,25 @@ Object.assign(he, {
     ['Help', 'Справка', 'עזרה'],
     ['Workspace tools', 'Инструменты раздела', 'כלי סביבת העבודה']
   ]) { ru[key] = russian; he[key] = hebrew; }
+  // ANALYZE-COMPOSITION-001 Spot rail, Hand context, verdict dominance, facts and Explain.
+  for (const [key, russian, hebrew] of [
+    ['Table', 'Стол', 'שולחן'],
+    ['Hand decision', 'Решение из раздачи', 'החלטה מהיד'],
+    ['Exact decision facts from the Hand. Editing turns this into a Scenario.', 'Точные факты решения из раздачи. Изменение превратит его в сценарий.', 'עובדות ההחלטה המדויקות מהיד. עריכה הופכת אותה לתרחיש.'],
+    ['Back to Hand', 'Назад к раздаче', 'חזרה ליד'],
+    ['Edit as Scenario', 'Изменить как сценарий', 'עריכה כתרחיש'],
+    ['Explanation depth', 'Глубина объяснения', 'עומק ההסבר'],
+    ['Provenance & limitations', 'Источник и ограничения', 'מקור ומגבלות'],
+    ['Source version, coverage, method notes', 'Версия источника, покрытие, заметки о методе', 'גרסת מקור, כיסוי, הערות שיטה'],
+    ['Limped', 'Лимп', 'לימפ'],
+    ['Option', 'Опция', 'אופציה'],
+    ['Check available', 'Чек доступен', "אפשר צ'ק"],
+    ['{first} or {second}', '{first} или {second}', '{first} או {second}'],
+    ['Close mix · {first} {firstShare} · {second} {secondShare}', 'Близкий микс · {first} {firstShare} · {second} {secondShare}', 'תמהיל צמוד · {first} {firstShare} · {second} {secondShare}'],
+    // Amendment 2: rail value-field unit and the fact-cell omission note.
+    ['max', 'макс', 'שחקנים'],
+    ['Not shown for this decision: {facts}', 'Не показано для этого решения: {facts}', 'לא מוצג בהחלטה הזו: {facts}']
+  ]) { ru[key] = russian; he[key] = hebrew; }
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),

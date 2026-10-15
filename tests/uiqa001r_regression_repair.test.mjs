@@ -245,10 +245,12 @@ test('sidebar collapse control remains in-flow with reserved accessible geometry
 });
 
 test('Betting Context is a coherent six-column two-row structural grid', () => {
-  assert.match(playbookHtml, /class="playbook-context-grid"[\s\S]*class="playbook-context-primary"[\s\S]*class="fields playbook-context-sliders"/);
-  assert.match(repairCss, /\.playbook-context-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6/);
-  assert.match(repairCss, /\.playbook-context-primary\s*,\s*\n\.playbook-context-sliders\s*\{\s*display:\s*contents/);
-  assert.match(repairCss, /\.playbook-context-primary > \*\s*\{\s*grid-column:\s*span 2/);
+  // ANALYZE-COMPOSITION-001: the center Betting context strip became the Spot rail Action section
+  // (position + prior action pair, then the facing/pot slider rows).
+  assert.match(playbookHtml, /id="sharedControls"[\s\S]*?class="playbook-field-pair"[\s\S]*?class="fields playbook-context-sliders"/);
+  // ANALYZE-COMPOSITION-001 amendment 2 removed the strip's dead grid CSS; the live sliders rule stays.
+  assert.doesNotMatch(css, /\.playbook-context-grid\b|\.playbook-context-primary\b/);
+  assert.match(repairCss, /\.playbook-context-sliders\s*\{\s*display:\s*contents/);
   assert.match(repairCss, /\.playbook-context-sliders > \.field\s*\{[^}]*grid-column:\s*span 3/);
 });
 
