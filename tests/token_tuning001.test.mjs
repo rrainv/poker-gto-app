@@ -3,6 +3,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
+import { appStyleSheet } from './helpers/app-under-test.mjs';
+import { parseHTML } from './helpers/mini-dom.mjs';
+
 import {
   PRESENTATION_THEMES,
   contrastRatio,
@@ -10,18 +13,20 @@ import {
   deriveFeatureSurfaceRoles,
 } from '../app/src/application/presentation-theme.mjs';
 
-const css = await readFile(new URL('../app/styles.css', import.meta.url), 'utf8');
 const prepaint = await readFile(new URL('../app/src/application/presentation-theme-prepaint.js', import.meta.url), 'utf8');
 
-// The last block for a selector wins in the cascade (html[data-theme] beats [data-theme]).
+// TEST-HYGIENE-001: preset tokens are resolved through the cascade on the
+// document root (the theme attribute selects the painted preset), instead of
+// re-implementing "the last matching block wins" over styles.css text.
+const css = appStyleSheet();
+const root = parseHTML('<html><body></body></html>').documentElement;
+function themeToken(themeId, name) {
+  if (themeId) root.setAttribute('data-theme', themeId);
+  else root.removeAttribute('data-theme');
+  return css.cascaded(root, name);
+}
 function presetBlock(id) {
-  const blocks = [...css.matchAll(/(^|\n)(html)?\[data-theme="([a-z-]+)"\] \{([^}]*)\}/g)]
-    .filter((match) => match[3] === id);
-  const values = {};
-  for (const block of blocks) {
-    for (const [, name, value] of block[4].matchAll(/(--[a-z-]+):\s*([^;]+);/g)) values[name] = value.trim();
-  }
-  return values;
+  return new Proxy({}, { get: (_, name) => (typeof name === 'string' ? themeToken(id, name) : undefined) });
 }
 const RESTING = ['--surface-canvas', '--surface-shell', '--surface-panel', '--surface-elevated', '--surface-interactive', '--surface-inset'];
 
@@ -42,14 +47,13 @@ test('final values: mockup Midnight, jade accents, B Daylight surfaces, radius 1
   assert.equal(presetBlock('midnight')['--surface-canvas'], '#101311');
   assert.equal(presetBlock('daylight')['--surface-panel'], '#fbfaf6');
   assert.equal(presetBlock('daylight')['--text-muted'], '#545e58');
-  const root = css.slice(css.indexOf(':root {'), css.indexOf('}', css.indexOf(':root {')));
   // ANALYZE-COMPOSITION-001 superseded the C heading sizes with the mockups' global type scale
   // (title 20px, heading 15px, display 40px; DESIGN_SYSTEM.md "Type scale").
   for (const [name, value] of Object.entries({
     '--radius-panel': '10px', '--radius-control': '7px', '--t-title': '1.25rem', '--t-heading': '0.9375rem',
     '--t-display': '2.5rem', '--weight-bold': '700', '--gap-section': 'var(--space-8)', '--pad-surface': 'var(--space-6)',
-  })) assert.match(root, new RegExp(`${name}: ${value.replace(/[()]/g, '\\$&')};`), name);
-  assert.match(root, /--elevation-surface: none;/);
+  })) assert.equal(themeToken(null, name), value, name);
+  assert.equal(themeToken(null, '--elevation-surface'), 'none');
   assert.match(prepaint, /cache\?\.version === 'beta-b-2'/);
 });
 

@@ -322,7 +322,8 @@ class ParentMixin extends Node {
     for (const element of this._descendants()) {
       if (parsed.some((complex) => matchesComplex(element, complex, { scope, ...context }))) result.push(element);
     }
-    return Object.assign(result, { item: (index) => result[index] ?? null });
+    Object.defineProperty(result, 'item', { value: (index) => result[index] ?? null });
+    return result;
   }
   querySelector(selector) {
     const parsed = parseSelector(selector);
@@ -783,12 +784,15 @@ export class Element extends ParentMixin {
   // Geometry (no layout engine) ----------------------------------------
   setTestRect(rect) { this._rect = { x: 0, y: 0, width: 0, height: 0, ...rect }; return this; }
   getBoundingClientRect() {
-    const rect = this._rect || { x: 0, y: 0, width: 0, height: 0 };
+    const rect = this._rect || this.ownerDocument?.defaultView?.__layoutRect?.(this) || { x: 0, y: 0, width: 0, height: 0 };
     return { ...rect, left: rect.x, top: rect.y, right: rect.x + rect.width, bottom: rect.y + rect.height, toJSON() { return this; } };
   }
-  getClientRects() { return this._rect ? [this.getBoundingClientRect()] : []; }
-  get offsetWidth() { return this._rect?.width ?? 0; }
-  get offsetHeight() { return this._rect?.height ?? 0; }
+  getClientRects() {
+    const rect = this.getBoundingClientRect();
+    return rect.width > 0 || rect.height > 0 ? [rect] : [];
+  }
+  get offsetWidth() { return this.getBoundingClientRect().width; }
+  get offsetHeight() { return this.getBoundingClientRect().height; }
   get offsetLeft() { return this._rect?.x ?? 0; }
   get offsetTop() { return this._rect?.y ?? 0; }
   get offsetParent() { return this.parentElement; }
@@ -915,6 +919,7 @@ export class Document extends ParentMixin {
     return { finished: done, ready: done, updateCallbackDone: done, skipTransition() {} };
   }
   _noteMutation(target, type, attributeName, oldValue, nodes = { addedNodes: [], removedNodes: [] }) {
+    this._version = (this._version || 0) + 1;
     if (!this._mutationObservers.size) return;
     for (const observer of this._mutationObservers) observer._record(target, type, attributeName, oldValue, nodes);
   }

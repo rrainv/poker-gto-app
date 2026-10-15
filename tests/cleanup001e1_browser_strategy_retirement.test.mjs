@@ -2,21 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const appUrl = new URL('../app/', import.meta.url);
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const manifest = JSON.parse(fs.readFileSync(new URL('../app/package.json', import.meta.url), 'utf8'));
+import { bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
 
-function sourceBetween(start, end) {
-  const from = logic.indexOf(start);
-  const to = logic.indexOf(end, from + start.length);
-  assert.ok(from >= 0, `missing start marker: ${start}`);
-  assert.ok(to > from, `missing end marker: ${end}`);
-  return logic.slice(from, to);
-}
+// TEST-HYGIENE-001: index.html / logic.js assertions are behavioural (parsed
+// markup and the running page's globals and strategy results). File-system,
+// manifest and Equity worker checks are outside this ticket.
+const appUrl = new URL('../app/', import.meta.url);
+const manifest = JSON.parse(fs.readFileSync(new URL('../app/package.json', import.meta.url), 'utf8'));
+const markup = indexDocument();
+const scriptSources = markup.querySelectorAll('script[src]').map((script) => script.getAttribute('src'));
+const app = await bootApp();
+const pageDefines = (name) => app.evaluate(`typeof ${name}`) !== 'undefined';
 
 test('browser bootstrap contains no legacy ORT or model engine', () => {
-  assert.doesNotMatch(html, /ort(?:\.min)?\.(?:js|mjs)|src\/ml\/engine\.js|frozen_models|solver-model/i);
+  for (const src of scriptSources) {
+    assert.doesNotMatch(src, /(?:^|\/)ort(?:\.min)?\.(?:js|mjs)|src\/ml\/engine\.js|frozen_models|solver-model/i, src);
+  }
   assert.deepEqual(
     fs.readdirSync(appUrl).filter((name) => /^ort(?:[.-]|$)/i.test(name)),
     [],
@@ -35,24 +36,51 @@ test('browser package and build contain no web inference dependency or asset inc
   assert.doesNotMatch(JSON.stringify(manifest.build), /frozen_models|solver-model|equity\.worker\.js|ort(?:\.|-)/i);
 });
 
-test('Playbook resolves DecisionContext through the deterministic StrategyProvider fallback', () => {
-  const providerSeam = sourceBetween('function readHeuristicOptions(', 'function setFrequency(index, action)');
-  const updateContext = sourceBetween(
-    "async function updateContext(reason = 'Context updated')",
-    'let equityCalculationGeneration = 0;',
-  );
-
-  assert.match(providerSeam, /heuristicOptionsResolver: readHeuristicOptions/);
-  assert.match(updateContext, /const strategyResult = strategyProvider\.resolve\(decisionContext\)/);
-  assert.doesNotMatch(`${providerSeam}\n${updateContext}`, /fetch\(|InferenceSession|useOnnx|onnxSession|app\.solver|connectApi|loadOnnx|generateStrategyWithOnnx/i);
+test('Playbook resolves DecisionContext through the deterministic StrategyProvider fallback', async () => {
+  // Protects: Playbook strategy comes from the StrategyProvider bridge's
+  // deterministic heuristic fallback; resolving makes no network call and no
+  // ONNX/solver/API path exists in the page.
+  const provider = app.evaluate('strategyProvider');
+  assert.equal(typeof provider.resolve, 'function');
+  let fetches = 0;
+  const originalFetch = app.window.fetch;
+  app.window.fetch = async () => { fetches += 1; throw new Error('network disabled'); };
+  try {
+    await app.navigate('analyze');
+    await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  } finally {
+    app.window.fetch = originalFetch;
+  }
+  assert.equal(fetches, 0);
+  const result = provider.resolve(app.window.app.decisionContext);
+  assert.equal(result.source, provider.sources.HEURISTIC ?? result.source);
+  assert.match(String(result.source), /heuristic/i);
+  assert.deepEqual(provider.resolve(app.window.app.decisionContext), result, 'deterministic for the same context');
+  assert.deepEqual(app.window.app.strategyResult, result, 'the Playbook shows the provider result');
+  for (const name of ['InferenceSession', 'useOnnx', 'onnxSession', 'connectApi', 'loadOnnx', 'generateStrategyWithOnnx']) {
+    assert.equal(pageDefines(name), false, name);
+  }
+  assert.equal(app.window.app.solver, undefined);
 });
 
-test('strategy source provenance is static, truthful, and noninteractive', () => {
+test('strategy source provenance is static, truthful, and noninteractive', async () => {
   // SHELL-001: the header badge is the Badge component (source variant).
-  assert.match(html, /<div id="strategySourceStatus" class="strategy-source-status ui-badge" data-variant="source"[^>]*>/);
-  assert.match(html, /<strong[^>]*>Heuristic fallback<\/strong>/);
-  assert.doesNotMatch(html, /connectApiBtn|apiStatusText|toggleOnnx|Loading model|Model unavailable/i);
-  assert.doesNotMatch(logic, /connectApiBtn|setStrategySourceStatus|toggleOnnx|trainingProgress/i);
+  const status = markup.getElementById('strategySourceStatus');
+  assert.equal(status.tagName, 'div');
+  assert.ok(status.classList.contains('strategy-source-status') && status.classList.contains('ui-badge'));
+  assert.equal(status.dataset.variant, 'source');
+  assert.equal(text(status.querySelector('strong')), 'Heuristic fallback');
+  assert.equal(status.querySelector('button, a, input, select'), null, 'noninteractive');
+  for (const id of ['connectApiBtn', 'apiStatusText', 'toggleOnnx']) assert.equal(markup.getElementById(id), null, id);
+  assert.doesNotMatch(text(markup.body), /Loading model|Model unavailable/i);
+  for (const name of ['connectApiBtn', 'setStrategySourceStatus', 'toggleOnnx', 'trainingProgress']) {
+    assert.equal(pageDefines(name), false, name);
+  }
+  for (const destination of ['hand', 'analyze', 'training', 'equity', 'home']) {
+    await app.navigate(destination);
+    assert.equal(app.byId('connectApiBtn'), null);
+    assert.doesNotMatch(text(app.document.body), /Loading model|Model unavailable/i, destination);
+  }
 });
 
 test('canonical Equity remains on the shared module worker path', () => {
@@ -66,7 +94,9 @@ test('canonical Equity remains on the shared module worker path', () => {
 });
 
 test('current browser sources contain no live ONNX strategy entrypoint', () => {
-  const source = `${html}\n${logic}`;
-  assert.doesNotMatch(source, /\b(?:InferenceSession|loadOnnxModel|generateStrategyWithOnnx|getEquityWithWorker|toggleOnnxModel|runONNXInference)\b/);
-  assert.doesNotMatch(source, /\b(?:globalThis|window)\.ort\b|\bort\.Tensor\b/);
+  for (const name of ['InferenceSession', 'loadOnnxModel', 'generateStrategyWithOnnx', 'getEquityWithWorker', 'toggleOnnxModel', 'runONNXInference']) {
+    assert.equal(pageDefines(name), false, name);
+  }
+  assert.equal(app.window.ort, undefined);
+  assert.equal(scriptSources.some((src) => /onnx|(?:^|\/)ort\b/i.test(src)), false);
 });

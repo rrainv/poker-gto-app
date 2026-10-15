@@ -1,57 +1,57 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
 import { createHandDraftTablePresence } from '../app/src/application/table-presence-view-model.mjs';
 import { createTableGeometryProfile, createTablePresentation } from '../app/src/application/table-presentation.mjs';
 import { deriveFeatureSurfaceRoles, contrastRatio, PRESENTATION_THEMES } from '../app/src/application/presentation-theme.mjs';
+import { appStyleSheet, bootApp } from './helpers/app-under-test.mjs';
 
-const logic = readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: logic.js / styles.css assertions are behavioural: the Hand
+// setup preview is driven in the running app (instead of slicing logic.js into
+// a vm) and styles are resolved through the cascade. TableRenderer.js checks
+// are outside this ticket.
 const renderer = readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-// DS-FOUNDATION-001 retired riverline-design.css; its surface rules now live at the end of styles.css.
-const css = (() => { const all = readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8'); return all.slice(all.indexOf('Surface styles relocated from the retired')); })();
 const setup = (tableSize = 2) => ({ tableSize, gameMode: 'home', stackBb: 100, stackMode: 'hero', heroSeat: 0, buttonSeat: 0, anteType: 'none', anteBb: 0, straddleBb: 0 });
+const css = appStyleSheet();
+const app = await bootApp();
 
-test('reload with Players=2 reaches the table on renderer readiness; input previews 6/10 without creating a Hand', () => {
-  const events = new Map(), controls = new Map(); let draft = setup(), displayed = null, syncs = 0;
-  const window = { CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
-    addEventListener(type, fn) { const rows = events.get(type) ?? []; rows.push(fn); events.set(type, rows); },
-    dispatchEvent(event) { for (const fn of events.get(event.type) ?? []) fn(event); } };
-  const bridge = installPlaybookStateSourceBridge(window); bridge.setMode('hand');
-  for (const id of ['handTableSize', 'handCollectionType', 'handAnteType', 'handStackBb', 'handHeroSeat', 'handButtonSeat']) {
-    controls.set(`#${id}`, { dataset: {}, selectedOptions: [{ dataset: { position: 'BTN' } }], addEventListener(type, fn) { this[type] = fn; } });
-  }
-  const context = vm.createContext({ window, CustomEvent: window.CustomEvent,
-    $: selector => controls.get(selector), isHandMode: () => bridge.getMode() === 'hand',
-    app: { playbookHandDraft: { actionSubmissionLocked: false } },
-    callPlaybookStateBridge: (method, ...args) => bridge[method](...args),
-    canonicalHandTableSizeValidation: () => ({ valid: true }),
-    readCanonicalHandConfiguration: () => draft, syncHandSeatSelectors: () => { syncs++; },
-  });
-  vm.runInContext(logic.slice(logic.indexOf('function dispatchCanonicalTableState()'), logic.indexOf('\nfunction renderCanonicalHandWorkspace()')), context);
-  const bindStart = logic.indexOf('function bindCanonicalHandWorkspace()') + 'function bindCanonicalHandWorkspace() {'.length;
-  vm.runInContext(logic.slice(bindStart, logic.indexOf("  if ($('#handStartButton'))", bindStart)), context);
-  // Initial app event may precede construction; the readiness handshake reprojects.
-  context.dispatchCanonicalTableState();
-  window.addEventListener('gameStateUpdate', event => { displayed = event.detail; });
-  window.dispatchEvent(new window.CustomEvent('riverline:table-ready'));
-  assert.equal(displayed.seats.length, 2); assert.equal(displayed.tablePresence.status, 'setup_preview');
+test('reload with Players=2 reaches the table on renderer readiness; input previews 6/10 without creating a Hand', async () => {
+  // Protects: the table-ready handshake projects the setup preview; editing
+  // Players/Hero/stack previews seats without creating a Hand or dealing; once a
+  // Hand exists, setup edits no longer change the table.
+  await app.navigate('hand');
+  let displayed = null;
+  app.window.addEventListener('gameStateUpdate', (event) => { displayed = event.detail; });
+  const bridgeState = () => app.call('callPlaybookStateBridge', 'getState');
+  assert.equal(bridgeState(), null);
+  app.window.dispatchEvent(new app.window.CustomEvent('riverline:table-ready'));
+  assert.equal(displayed.seats.length, 2);
+  assert.equal(displayed.tablePresence.status, 'setup_preview');
   for (const count of [6, 10, 2]) {
-    draft = setup(count); controls.get('#handTableSize').input();
-    assert.equal(displayed.seats.length, count); assert.equal(bridge.getState(), null);
+    await app.setValue('#handTableSize', String(count), { events: ['input'] });
+    assert.equal(displayed.seats.length, count);
+    assert.equal(bridgeState(), null);
     assert.equal(displayed.decisionDock.available, false);
-    assert.ok(displayed.seats.every(seat => seat.prominence !== 'folded' && !seat.actorCue && !seat.showContribution));
-    assert.ok(displayed.tablePresence.seats.every(seat => !seat.hasCards && seat.cards.length === 0 && seat.latestAction === null));
+    assert.ok(displayed.seats.every((seat) => seat.prominence !== 'folded' && !seat.actorCue && !seat.showContribution));
+    assert.ok(displayed.tablePresence.seats.every((seat) => !seat.hasCards && seat.cards.length === 0 && seat.latestAction === null));
   }
-  draft = { ...draft, heroSeat: 1, buttonSeat: 1, stackBb: 50 }; controls.get('#handHeroSeat').input();
-  assert.equal(displayed.tablePresence.seats.find(seat => seat.isHero).visualSeatIndex, 0);
-  assert.equal(displayed.tablePresence.seats[1].currentStackMilliBb, 50000);
-  assert.ok(syncs >= 4); assert.equal(bridge.getState(), null);
-  const state = bridge.initializeHand(setup(6)); assert.ok(state);
-  context.dispatchCanonicalTableState(); assert.equal(displayed.seats.length, 6);
-  draft = setup(2); controls.get('#handTableSize').input();
-  assert.equal(displayed.seats.length, 6); assert.equal(bridge.getState(), state);
+  const heroSeat = app.byId('handHeroSeat');
+  heroSeat.value = heroSeat.options[1].value;
+  await app.setValue('#handStackBb', '50', { events: ['input'] });
+  await app.setValue('#handHeroSeat', heroSeat.options[1].value, { events: ['input', 'change'] });
+  assert.equal(displayed.tablePresence.seats.find((seat) => seat.isHero).visualSeatIndex, 0, 'Hero stays at the bottom seat');
+  assert.ok(displayed.tablePresence.seats.every((seat) => seat.currentStackMilliBb === 50000));
+  assert.equal(bridgeState(), null);
+
+  await app.setValue('#handTableSize', '6', { events: ['input'] });
+  await app.click('#handStartButton');
+  await app.settle(300);
+  const state = bridgeState();
+  assert.ok(state);
+  assert.equal(displayed.seats.length, 6);
+  await app.setValue('#handTableSize', '2', { events: ['input'] });
+  assert.equal(displayed.seats.length, 6, 'setup edits do not resize a live Hand');
+  assert.equal(bridgeState(), state);
   assert.match(renderer, /this.currentActivePlayers = 0/);
 });
 
@@ -64,13 +64,33 @@ test('invalid draft clears seats; preview never invents forced contributions or 
   assert.equal(preview.showStreetContributions, false); assert.ok(Object.isFrozen(preview.seats));
 });
 
-test('construction outlines are absent, Home auto-flows, and resting identity does not mimic focus', () => {
+test('construction outlines are absent, Home auto-flows, and resting identity does not mimic focus', async () => {
+  // Protects: no construction outlines in the table SVG; Home sections flow
+  // automatically (no fixed areas, no forced heights); the Hand table label is
+  // a grid when shown; Equity cards outline only when focus is inside; the
+  // current navigation item uses the navigation-active surface.
   assert.doesNotMatch(renderer, /<(?:rect|ellipse|path) id="table-(?:betting-line|pot-zone|riverline-mark)"/);
-  assert.match(css, /#homeWorkspaceContent\[data-product-destination="home"\] \{\s*grid-template-areas: none/);
-  assert.match(css, /home-section \{ grid-area: auto; min-height: 0/);
-  assert.match(css, /playbook-table-label\[data-playbook-hand\]:not\(\[hidden\]\) \{ display: grid/);
-  assert.match(css, /equity-player-card:focus-within \{ outline: 2px solid var\(--border-focus\)/);
-  assert.match(css, /mode-nav-item\[aria-current="page"\] \{\s*background: var\(--navigation-active-surface\)/);
+  await app.navigate('home');
+  const homeContent = app.byId('homeWorkspaceContent');
+  assert.equal(homeContent.dataset.productDestination, 'home');
+  assert.equal(css.cascaded(homeContent, 'grid-template-areas'), 'none');
+  for (const section of app.$$('#homeMode .home-section')) {
+    assert.equal(css.cascaded(section, 'grid-area'), 'auto');
+    assert.equal(css.cascaded(section, 'min-height'), '0');
+  }
+  const handLabel = app.$('.playbook-table-label[data-playbook-hand]');
+  handLabel.hidden = false;
+  assert.equal(css.cascaded(handLabel, 'display'), 'grid');
+  handLabel.hidden = true;
+
+  await app.navigate('equity');
+  const card = app.$('#equityPlayers .equity-player-card');
+  assert.doesNotMatch(css.cascaded(card, 'outline') || 'none', /var\(--border-focus\)/, 'no focus outline at rest');
+  card.querySelector('button').focus();
+  assert.match(css.cascaded(card, 'outline'), /^2px solid var\(--border-focus\)/);
+  app.document.activeElement.blur();
+  const current = app.$('.mode-nav-item[aria-current="page"]');
+  assert.equal(css.cascaded(current, 'background'), 'var(--navigation-active-surface)');
 });
 
 test('Scenario geometry consumes the same count-specific profile as canonical table presentation', () => {

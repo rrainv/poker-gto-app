@@ -8,10 +8,15 @@ import {
   cardFaceMarkup,
   tableCardSvgMarkup,
 } from '../app/src/application/card-presentation.mjs';
+import { appStyleSheet, bootApp, indexDocument } from './helpers/app-under-test.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural (parsed markup, Settings controls in the running app, cascade on
+// rendered cards). Module and renderer sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const root = app.document.documentElement;
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
 const themes = fs.readFileSync(
@@ -19,20 +24,44 @@ const themes = fs.readFileSync(
   'utf8',
 );
 
-test('curated card faces, backs, and rank notation are independent presentation controls', () => {
-  assert.match(html, /id="cardFaceStyleControl"/);
-  assert.match(html, /id="cardBackStyleControl"/);
-  assert.match(html, /id="cardRankStyleControl"/);
-  assert.match(html, /id="fourColorDeckToggle"/);
+function renderedFace(card = 'Th') {
+  const host = app.document.createElement('span');
+  host.className = 'training-readonly-card riverline-card';
+  host.dataset.cardSize = 'standard';
+  host.innerHTML = app.call('cardMarkup', card);
+  app.byId('trainingMode').appendChild(host);
+  return host;
+}
+
+test('curated card faces, backs, and rank notation are independent presentation controls', async () => {
+  // Protects: Settings exposes independent face/back/rank/four-colour
+  // controls; choosing a face or back style applies it to the document and
+  // the stylesheet styles cards for every curated style.
+  for (const id of ['cardFaceStyleControl', 'cardBackStyleControl', 'cardRankStyleControl', 'fourColorDeckToggle']) {
+    assert.ok(markup.getElementById(id), id);
+  }
+  await app.click('#openSettings');
+  const face = renderedFace('As');
   for (const style of Object.keys(CARD_FACE_STYLES)) {
-    assert.match(html, new RegExp(`data-card-face-style="${style}"`));
-    assert.match(css, new RegExp(`data-card-face-style="${style}"`));
+    await app.click(`[data-card-face-style="${style}"]`);
+    assert.equal(root.dataset.cardFaceStyle, style);
+    assert.equal(app.window.app.settings.cardStyle, style, 'syncCardPresentationState records the face');
+    const styled = [face, ...face.querySelectorAll('*')].some((node) => css.matchingRules(node)
+      .some((rule) => rule.selectorText.includes(`data-card-face-style="${style}"`)));
+    assert.ok(styled, `${style} faces are styled`);
   }
   for (const style of Object.keys(CARD_BACK_STYLES)) {
-    assert.match(html, new RegExp(`data-card-back-style="${style}"`));
-    assert.match(css, new RegExp(`data-card-back-style="${style}"`));
+    await app.click(`button[data-card-back-style="${style}"]`);
+    assert.equal(root.dataset.cardBackStyle, style);
+    const back = app.$('#equityPlayers .poker-card-back') || app.$('.riverline-card-back:not([data-card-preview-back-style])');
+    if (back) {
+      const styled = css.matchingRules(back).some((rule) => rule.selectorText.includes(`data-card-back-style="${style}"`))
+        || css.matchingRules(back, { pseudoElement: 'after' }).some((rule) => rule.selectorText.includes(`data-card-back-style="${style}"`));
+      assert.ok(styled, `${style} backs are styled`);
+    }
   }
-  assert.match(logic, /syncCardPresentationState/);
+  face.remove();
+  app.byId('settingsModal')?.classList.remove('show');
   assert.match(table, /riverline:cardpresentationchange/);
 });
 
@@ -42,11 +71,30 @@ test('DOM cards share one face markup and full-ten uses horizontal geometry only
   assert.match(ten, /card-corner--bottom/);
   assert.match(ten, /card-center/);
   assert.match(ten, /rank rank--ten/);
-  assert.match(css, /rank--ten[\s\S]*?scaleX\(var\(--card-rank-ten-scale-x\)\)/);
-  for (const [, selector, declarations] of css.matchAll(/(?:^|})([^{}]*rank--ten[^{}]*)\{([^{}]*)\}/g)) {
-    assert.doesNotMatch(declarations, /scaleY\s*\(|\bscale\s*\(/, selector);
+  // Protects: the full-ten rank is narrowed horizontally only, in every face style.
+  const previous = { rank: root.dataset.cardRankStyle, face: root.dataset.cardFaceStyle };
+  const host = app.document.createElement('span');
+  host.className = 'riverline-card';
+  host.innerHTML = ten;
+  app.byId('trainingMode').appendChild(host);
+  try {
+    root.dataset.cardRankStyle = 'full-ten';
+    for (const style of Object.keys(CARD_FACE_STYLES)) {
+      root.dataset.cardFaceStyle = style;
+      for (const rank of host.querySelectorAll('.rank--ten')) {
+        const transform = css.cascaded(rank, 'transform') || '';
+        assert.match(transform, /scaleX\(var\(--card-rank-ten-scale-x\)\)/, style);
+        assert.doesNotMatch(transform, /scaleY\s*\(|\bscale\s*\(/, style);
+      }
+    }
+  } finally {
+    host.remove();
+    root.dataset.cardRankStyle = previous.rank;
+    root.dataset.cardFaceStyle = previous.face;
   }
-  assert.match(logic, /function cardMarkup\(card\)[\s\S]*?presentation\.cardFaceMarkup/);
+  // Protects: DOM cards render through the shared card-presentation authority.
+  const presentation = app.window.RiverlineCardPresentation;
+  assert.equal(app.call('cardMarkup', 'Th'), presentation.cardFaceMarkup({ rank: 'T', suit: 'h', rankStyle: app.window.app.settings.cardRankStyle }));
 });
 
 test('table cards delegate to the same authority without changing 40 by 57 geometry', () => {
@@ -68,17 +116,40 @@ test('Analysis hero cards now consume the premium mini-card family', () => {
   assert.match(teacher, /analysis-mini-card riverline-card card--suit-/);
   assert.match(teacher, /token\.dataset\.cardSize = 'mini'/);
   assert.match(teacher, /presentation\.appendCardFaceContents/);
-  assert.match(css, /\.analysis-mini-card\s*\{[^}]*position:\s*relative[^}]*background:\s*var\(--riverline-card-face/);
-  assert.match(css, /\[dir="rtl"\] \.analysis-card-token \{[^}]*direction:\s*ltr/);
+  const token = app.document.createElement('span');
+  token.className = 'analysis-card-token';
+  token.innerHTML = '<span class="analysis-mini-card riverline-card card--suit-h" data-card-size="mini"></span>';
+  app.byId('gtoMode').appendChild(token);
+  const mini = token.firstElementChild;
+  assert.equal(css.cascaded(mini, 'position'), 'relative');
+  assert.match(css.cascaded(mini, 'background'), /var\(--riverline-card-face/);
+  root.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(token, 'direction'), 'ltr');
+  root.setAttribute('dir', 'ltr');
+  token.remove();
 });
 
 test('four-color semantics and Daylight controls retain their semantic tokens', () => {
+  // Protects: suit colours; two-colour mode maps diamonds to hearts (and clubs
+  // to spades); native selects and number inputs use the Field tokens in every theme.
+  const previousFour = root.dataset.fourColor;
+  root.dataset.fourColor = 'true';
   for (const [suit, color] of Object.entries({ heart: '#c83e48', spade: '#18201c', diamond: '#326fb5', club: '#328755' })) {
-    assert.match(css, new RegExp(`--suit-${suit}:\\s*${color}`, 'i'));
+    assert.equal(css.cascaded(root, `--suit-${suit}`).toLowerCase(), color, suit);
   }
-  assert.match(css, /html\[data-four-color="false"\][\s\S]*?--suit-diamond:\s*var\(--suit-heart\)/);
+  root.dataset.fourColor = 'false';
+  assert.equal(css.cascaded(root, '--suit-diamond'), 'var(--suit-heart)');
+  root.dataset.fourColor = previousFour;
+  const previousTheme = root.dataset.theme;
   // DS-FOUNDATION-001: the Field component owns native selects/number inputs in every theme.
-  assert.match(css, /\.control-select,\n:where\(input\[type="text"\], input\[type="number"\][^{]*select[^{]*\{[\s\S]*?color:\s*var\(--text-primary\);\s*background-color:\s*var\(--surface-inset\)/);
+  for (const theme of ['midnight', 'graphite', 'daylight']) {
+    root.dataset.theme = theme;
+    for (const control of [app.byId('handButtonSeat'), app.byId('handTableSize')]) {
+      assert.equal(css.cascaded(control, 'color'), 'var(--text-primary)', `${theme} ${control.id}`);
+      assert.equal(css.cascaded(control, 'background-color'), 'var(--surface-inset)', `${theme} ${control.id}`);
+    }
+  }
+  root.dataset.theme = previousTheme;
 });
 
 test('theme names remain curated and card identity tokens stay outside theme overrides', () => {
@@ -87,8 +158,15 @@ test('theme names remain curated and card identity tokens stay outside theme ove
   assert.match(themes, /name: 'Riverline Midnight'/);
   assert.match(themes, /name: 'Riverline Graphite'/);
   assert.match(themes, /name: 'Riverline Daylight'/);
+  // Protects: themes never override the card identity (suit) tokens.
+  const previousTheme = root.dataset.theme;
+  root.dataset.theme = 'midnight';
+  const baseline = ['heart', 'spade', 'diamond', 'club'].map((suit) => css.cascaded(root, `--suit-${suit}`));
   for (const theme of ['midnight', 'graphite', 'daylight']) {
-    const block = css.match(new RegExp(`\\[data-theme="${theme}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`))?.[1] ?? '';
-    assert.doesNotMatch(block, /--suit-(?:heart|spade|diamond|club)/);
+    root.dataset.theme = theme;
+    assert.deepEqual(['heart', 'spade', 'diamond', 'club'].map((suit) => css.cascaded(root, `--suit-${suit}`)), baseline, theme);
+    const themeRules = css.matchingRules(root).filter((rule) => rule.selectorText.includes(`data-theme="${theme}"`));
+    assert.ok(themeRules.every((rule) => rule.declarations.every((declaration) => !/^--suit-(?:heart|spade|diamond|club)$/.test(declaration.property))), theme);
   }
+  root.dataset.theme = previousTheme;
 });

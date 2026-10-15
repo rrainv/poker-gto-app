@@ -1,76 +1,169 @@
+// TEST-HYGIENE-001: behavioural rewrite. Drives toasts, navigation, the
+// sidebar, Hand showdown gating and Training answers in the running app
+// instead of slicing logic.js / matching index.html and styles.css text.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
 
-function between(start, end) {
-  const from = logic.indexOf(start);
-  const to = logic.indexOf(end, from);
-  assert.ok(from >= 0, `missing ${start}`);
-  assert.ok(to > from, `missing ${end}`);
-  return logic.slice(from, to);
-}
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const toastElement = () => app.byId('toast');
+const visible = (node) => {
+  for (let current = node; current?.nodeType === 1; current = current.parentNode) {
+    if (current.hidden || current.style.display === 'none') return false;
+  }
+  return true;
+};
 
 test('toast lifecycle supersedes, expires, and clears stale accessible text', () => {
-  const lifecycle = between('function clearToast()', 'function bindEvents()');
-  assert.match(lifecycle, /window\.clearTimeout\(toast\.timer\)/);
-  assert.match(lifecycle, /element\.textContent = ''/);
-  assert.match(lifecycle, /toast\.sequence/);
-  assert.match(lifecycle, /element\.dataset\.scope = scope/);
-  assert.match(lifecycle, /if \(toast\.sequence === sequence\) clearToast\(\)/);
-  assert.match(html, /id="toast" role="status" aria-live="polite" aria-atomic="true"/);
+  // Protects: a live polite status region; a newer toast replaces the text and
+  // owns the timer; an expired toast clears its accessible text and scope.
+  const region = markup.getElementById('toast');
+  assert.equal(region.getAttribute('role'), 'status');
+  assert.equal(region.getAttribute('aria-live'), 'polite');
+  assert.equal(region.getAttribute('aria-atomic'), 'true');
+
+  app.call('toast', 'First notice', 'info', 'home');
+  assert.equal(toastElement().textContent, 'First notice');
+  assert.equal(toastElement().dataset.scope, 'home');
+  app.advance(2000);
+  app.call('toast', 'Second notice', 'warning', 'gto');
+  assert.equal(toastElement().textContent, 'Second notice');
+  assert.equal(toastElement().dataset.tone, 'warning');
+  app.advance(1300); // the first toast's timer would have fired here
+  assert.equal(toastElement().textContent, 'Second notice', 'a superseded timer does not clear the newer toast');
+  app.advance(2000);
+  assert.equal(toastElement().textContent, '');
+  assert.equal(toastElement().classList.contains('show'), false);
+  assert.equal(toastElement().dataset.scope, undefined);
 });
 
-test('mode and modal transitions clear workflow-scoped transient feedback', () => {
-  const events = between('function bindEvents()', 'const localizedStrategyProfile');
-  assert.match(events, /const mode = button\.dataset\.mode;[\s\S]{0,240}?clearToast\(\)/);
-  assert.match(events, /#openSettings[\s\S]*?clearToast\(\)/);
-  assert.match(logic, /function applyCanonicalHandAction[\s\S]*?else \{\s*clearToast\(\)/);
+test('mode and modal transitions clear workflow-scoped transient feedback', async () => {
+  // Protects: switching workspace, opening Settings and taking a Hand action
+  // clear any visible toast.
+  app.call('toast', 'Stale', 'info');
+  await app.navigate('analyze');
+  assert.equal(toastElement().textContent, '');
+
+  app.call('toast', 'Stale', 'info');
+  await app.click('#openSettings');
+  assert.equal(toastElement().textContent, '');
+  await app.key(app.document.activeElement || app.document.body, 'Escape');
+  app.byId('settingsModal')?.classList.remove('show');
+
+  await app.startHand(['Ts', 'Td']);
+  app.call('toast', 'Stale', 'warning');
+  await app.handAction('call');
+  assert.equal(toastElement().textContent, '');
 });
 
-test('analysis navigation selects, reveals, and focuses its actual destination', () => {
-  const events = between('function bindEvents()', 'const localizedStrategyProfile');
-  assert.match(events, /const revealPlaybookDestination/);
-  assert.match(events, /destination\.scrollIntoView/);
-  assert.match(events, /control\?\.focus\?\.\(\{ preventScroll: true \}\)/);
-  assert.match(events, /selectPlaybookAnalysisView\(el, true\)/);
-  assert.match(events, /prefers-reduced-motion/);
+test('analysis navigation selects, reveals, and focuses its actual destination', async () => {
+  // Protects: "View all hands" selects the Range Matrix tab, shows its view,
+  // scrolls it into view (smooth unless reduced motion) and focuses the tab.
+  await app.navigate('analyze');
+  const chartTab = app.$('[data-gto-view="chart"]');
+  for (const reducedMotion of [false, true]) {
+    app.environment.media.reducedMotion = reducedMotion;
+    await app.click('[data-gto-view="context"]');
+    app.byId('chartView')._scrolledIntoView = undefined;
+    await app.click('#openCharts');
+    assert.equal(chartTab.getAttribute('aria-selected'), 'true');
+    assert.ok(chartTab.classList.contains('active'));
+    assert.equal(app.byId('chartView').style.display, 'block');
+    assert.equal(app.byId('contextView').style.display, 'none');
+    assert.deepEqual(app.byId('chartView')._scrolledIntoView, { behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    assert.equal(app.document.activeElement, chartTab);
+  }
+  app.environment.media.reducedMotion = false;
 });
 
-test('sidebar state has concrete expanded and collapsed layout contracts at narrow desktop widths', () => {
-  assert.match(logic, /shell\.dataset\.sidebarState = collapsed \? 'collapsed' : 'expanded'/);
-  assert.match(logic, /rail\.dataset\.expanded = String\(!collapsed\)/);
-  assert.match(css, /data-sidebar-state="expanded"\] \{ grid-template-columns: var\(--sidebar-expanded-width\)/);
-  assert.match(css, /data-sidebar-state="collapsed"\] \{ grid-template-columns: var\(--sidebar-collapsed-width\)/);
-  assert.match(css, /data-sidebar-state="expanded"\] \.mode-nav-item > span/);
+test('sidebar state has concrete expanded and collapsed layout contracts at narrow desktop widths', async () => {
+  // Protects: the collapse button flips shell/rail state; at narrow desktop
+  // widths the shell grid follows the state and expanded labels stay visible.
+  const shell = app.$('.riverline-shell');
+  const rail = app.byId('modeRail');
+  const label = app.$('.mode-nav-item > span');
+  const narrow = { width: 1100 };
+  assert.equal(shell.dataset.sidebarState, 'expanded');
+  assert.equal(rail.dataset.expanded, 'true');
+  assert.match(css.cascaded(shell, 'grid-template-columns', narrow), /^var\(--sidebar-expanded-width\) /);
+  assert.notEqual(css.cascaded(label, 'display', narrow), 'none');
+
+  await app.click('#sidebarCollapseBtn');
+  assert.equal(shell.dataset.sidebarState, 'collapsed');
+  assert.equal(rail.dataset.expanded, 'false');
+  assert.equal(app.byId('sidebarCollapseBtn').getAttribute('aria-expanded'), 'false');
+  assert.match(css.cascaded(shell, 'grid-template-columns', narrow), /^var\(--sidebar-collapsed-width\) /);
+
+  await app.click('#sidebarCollapseBtn');
+  assert.equal(shell.dataset.sidebarState, 'expanded');
 });
 
-test('Hand presentation reads the isolated canonical deck and gates showdown resolution', () => {
-  const cards = between('function renderPlaybookCards()', 'function renderEquityCards()');
-  assert.match(cards, /remainingCards\(isHandMode\(\) \? 'hand' : 'gto'\)/);
-  assert.match(logic, /const canResolveShowdown = state\?\.phase === 'showdown' && state\?\.showdown\?\.status === 'ready'/);
-  assert.match(logic, /handResolveShowdownButton'\)\.disabled = !canResolveShowdown/);
+test('Hand presentation reads the isolated canonical deck and gates showdown resolution', async () => {
+  // Protects: Hand deck counts come from the canonical hand; showdown can be
+  // resolved only once the canonical showdown is ready.
+  await app.startHand(['As', 'Ah']);
+  assert.equal(text(app.byId('deckCount')), '50');
+  const resolve = app.byId('handResolveShowdownButton');
+  assert.equal(resolve.disabled, true);
+  await app.handAction('all_in');
+  await app.handAction('call');
+  for (const cards of [['2c', '7d', '9h'], ['3s'], ['4d']]) {
+    await app.dealBoard(cards);
+    assert.equal(resolve.disabled, true, 'not before the showdown is ready');
+  }
+  // The Spot card summary (hidden in Hand) re-renders from the canonical deck.
+  app.call('renderPlaybookCards');
+  assert.equal(text(app.byId('deckCount')), '45');
+  await app.pickCards('[data-card-set-edit="hand-seat-1"]', ['Kc', 'Kh']);
+  await app.click('#handDealHoleButton');
+  await app.settle(300);
+  const state = app.call('callPlaybookStateBridge', 'getState');
+  assert.equal(state.phase, 'showdown');
+  assert.equal(state.showdown.status, 'ready');
+  assert.equal(resolve.disabled, false);
+  assert.ok(visible(resolve));
 });
 
-test('Training study hints and pricing copy remain truthful before and after an answer', () => {
-  assert.match(html, /id="trainingSolutionEyebrow"/);
-  assert.match(html, /id="trainingRevealHint"/);
-  assert.doesNotMatch(html, /id="trainingShowSolution"|Study mode preview/);
-  assert.match(html, /Get a nudge about the spot\./);
-  assert.match(html, />Get a hint<\/button>/);
-  assert.doesNotMatch(html, /Hints never reveal|never reveal the answer|does not change grading/i);
-  const solution = between('function showTrainingSolution(solution)', 'function updateTrainingStats()');
+test('Training study hints and pricing copy remain truthful before and after an answer', async () => {
+  // Protects: a hint control (no solution preview); after an answer the
+  // comparison is labelled as after-answer; the facing copy is the canonical
+  // decision-facing projection; answering goes through the Training service
+  // and renders the analysis before the solution.
+  const training = markup.getElementById('trainingMode');
+  assert.ok(training.querySelector('#trainingSolutionEyebrow'));
+  const hint = training.querySelector('#trainingRevealHint');
+  assert.equal(hint.tagName, 'button');
+  assert.equal(text(hint), 'Get a hint');
+  assert.equal(markup.getElementById('trainingShowSolution'), null);
+  assert.match(text(training), /Get a nudge about the spot\./);
+  assert.doesNotMatch(text(markup.body), /Study mode preview|Hints never reveal|never reveal the answer|does not change grading/i);
+
+  await app.navigate('training');
+  await app.click('#trainingNewHand');
+  await app.settle(500);
+  const exercise = app.window.app.training.currentExercise;
+  assert.equal(app.call('formatTrainingFacingCopy', exercise.decisionContext), app.call('decisionFacingCopy', exercise.decisionContext));
+  assert.equal(text(app.byId('trainingFacingVal')), app.call('decisionFacingCopy', exercise.decisionContext));
+
+  const spy = app.spy(['callTrainingServiceBridge', 'renderTrainingDecisionAnalysis', 'showTrainingSolution']);
+  try {
+    const answer = app.$$('#trainingMode .training-action-button[data-action]').find((button) => visible(button) && !button.disabled);
+    await app.click(answer);
+    await app.settle(300);
+    const answers = spy.calls.callTrainingServiceBridge.filter(([method]) => method === 'answer');
+    assert.equal(answers.length, 1);
+    assert.equal(answers[0][1], exercise.id);
+    assert.equal(answers[0][2]?.type ?? answers[0][2], answer.dataset.action);
+    const order = spy.sequence.filter((name) => name !== 'callTrainingServiceBridge');
+    assert.ok(order.indexOf('renderTrainingDecisionAnalysis') >= 0);
+    assert.ok(order.indexOf('renderTrainingDecisionAnalysis') < order.lastIndexOf('showTrainingSolution'));
+  } finally {
+    spy.restore();
+  }
+  const solution = text(app.byId('trainingMode'));
   assert.match(solution, /After-answer comparison/);
-  assert.doesNotMatch(solution, /Strategy preview|lifecycle === 'ready'/);
-  // DECISION-INPUT-TRUTH-001: the facing tile is a consumer of the canonical
-  // decision-facing-summary/v1 projection (unit-tested there), not UI math.
-  const pricing = between('function formatTrainingFacingCopy', 'function trainingActionLabel');
-  assert.match(pricing, /decisionFacingCopy\(context\)/);
-  assert.doesNotMatch(pricing, /facingSize|callAmount|toFixed/);
-  const answer = between('function handleTrainingGuess(', 'function replayTrainingExercise(');
-  assert.match(answer, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
-  assert.match(answer, /renderTrainingDecisionAnalysis\(exercise\)[\s\S]*showTrainingSolution\(app\.training\.currentSolution\)/);
+  assert.doesNotMatch(solution, /Strategy preview/);
 });

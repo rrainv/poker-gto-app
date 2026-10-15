@@ -217,6 +217,7 @@ function installGlobals(target, { document, clock, storage, sessionStorage, envi
   assign('listenerCount', dom.EventTarget.prototype.listenerCount);
   assign('__miniDomErrors', errors);
   assign('__canvasContext', (canvas) => canvasContext(canvas));
+  assign('__layoutRect', layoutRect(document, environment));
   assign('fetch', async () => { throw new Error('network disabled in tests'); });
   assign('indexedDB', createFakeIndexedDB());
   assign('IDBKeyRange', IDBKeyRange);
@@ -229,6 +230,34 @@ function installGlobals(target, { document, clock, storage, sessionStorage, envi
     },
     writable: true, configurable: true,
   });
+}
+
+/**
+ * Approximate layout: there is no layout engine, but code that asks whether
+ * an element is rendered (tutorial anchors, focus traps) gets a non-zero box
+ * for connected elements that neither are hidden nor resolve to display:none
+ * (self or ancestors). Sizes are nominal. Results are memoized per DOM version.
+ */
+function layoutRect(document, environment) {
+  const cache = new WeakMap();
+  const rendered = (element) => {
+    if (!element || element.nodeType !== 1) return true;
+    if (element === document.documentElement) return true;
+    const memo = cache.get(element);
+    if (memo && memo.version === document._version) return memo.value;
+    let value = element.isConnected && !element.hasAttribute('hidden') && element.style.getPropertyValue('display') !== 'none';
+    if (value) {
+      try {
+        value = appStyleSheet().cascaded(element, 'display', { environment: environment.media }) !== 'none';
+      } catch {
+        value = true;
+      }
+    }
+    if (value) value = rendered(element.parentNode);
+    cache.set(element, { version: document._version, value });
+    return value;
+  };
+  return (element) => (rendered(element) ? { x: 0, y: 0, width: 120, height: 24 } : null);
 }
 
 function canvasContext() {
@@ -325,6 +354,17 @@ export async function bootApp(options = {}) {
   console.error = (...args) => { consoleErrors.push(args); if (options.verbose) originalError(...args); };
   const originalWarn = console.warn;
   console.warn = (...args) => { if (options.verbose) originalWarn(...args); };
+  // The page's diagnostic logging is captured, not printed (pass verbose: true to see it).
+  const consoleLogs = [];
+  const appSource = new URL('../../app/', import.meta.url).pathname;
+  const fromApp = () => (new Error().stack || '').split('\n')[3]?.includes(appSource);
+  for (const method of ['log', 'info', 'debug']) {
+    const original = console[method];
+    console[method] = (...args) => {
+      if (!fromApp() || options.verbose) original(...args);
+      else consoleLogs.push(args);
+    };
+  }
 
   options.beforeScripts?.(globalThis);
 
@@ -427,6 +467,7 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
     spy(names) {
       const calls = {};
       const originals = {};
+      const sequence = [];
       for (const name of names) {
         const original = globalThis[name];
         if (typeof original !== 'function') throw new TypeError(`spy: ${name} is not a page function`);
@@ -434,14 +475,17 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         calls[name] = [];
         globalThis[name] = function spied(...args) {
           calls[name].push(args);
+          sequence.push(name);
           return original.apply(this, args);
         };
       }
       return {
         calls,
+        /** Names in call order. */
+        sequence,
         count: (name) => calls[name].length,
         total: () => Object.values(calls).reduce((sum, list) => sum + list.length, 0),
-        reset() { for (const name of names) calls[name].length = 0; },
+        reset() { for (const name of names) calls[name].length = 0; sequence.length = 0; },
         restore() { for (const name of names) globalThis[name] = originals[name]; },
       };
     },
@@ -451,6 +495,30 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       for (const card of cards) await harness.click(`[data-deck-card="${card}"]`);
       await harness.click('#cardSetPickerApply');
       await harness.settle(200);
+    },
+    /** Start a canonical Hand with Hero's private cards and begin betting. */
+    async startHand(heroCards = ['As', 'Kd']) {
+      await harness.navigate('hand');
+      if (harness.call('callPlaybookStateBridge', 'getState')) {
+        // Abort the current hand first (the confirm dialog answers yes).
+        await harness.click('#handResetButton');
+        await harness.settle(300);
+      }
+      await harness.click('#handStartButton');
+      await harness.settle(300);
+      await harness.pickCards('[data-card-set-edit="hand-seat-0"]', heroCards);
+      await harness.click('#handDealHoleButton');
+      await harness.settle(300);
+    },
+    /** Commit board cards for the pending Hand street. */
+    async dealBoard(cards) {
+      await harness.pickCards('[data-card-set-edit="hand-board-chance"]', cards);
+      await harness.click('#handDealBoardButton');
+      await harness.settle(300);
+    },
+    async handAction(type) {
+      await harness.click(`[data-canonical-action="${type}"]`);
+      await harness.settle(300);
     },
     async navigate(destination) {
       await harness.click(`.mode-nav-item[data-navigation-id="${destination}"]`);

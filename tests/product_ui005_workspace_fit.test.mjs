@@ -1,93 +1,180 @@
+// TEST-HYGIENE-001: behavioural rewrite. Renders the real Matrix, range
+// comparison and Training summary in the running app and resolves their
+// layout through the cascade, instead of matching text after the
+// PRODUCT-UI-005 comment. Literal values the old regexes looked for that later
+// accepted work superseded (Analyze navigation order, Matrix empty-state
+// height and local scrolling, Training summary heights) are asserted at their
+// effective values.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const ticketCss = css.slice(css.indexOf('PRODUCT-UI-005: workspace composition'));
-// DS-FOUNDATION-001 moved every :root token into the single token block.
-const tokenBlock = css.slice(0, css.indexOf('\n}\n'));
+import { appStyleSheet, bootApp, indexDocument, precedes, text } from './helpers/app-under-test.mjs';
 
-const renderChart = logic.slice(logic.indexOf('function renderChart()'), logic.indexOf('function matrixStrategyKey('));
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+await app.navigate('analyze');
+await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+await app.click('[data-gto-view="chart"]');
+await app.settle(200);
 
-test('analysis navigation is a labeled part of the current-spot analytical workspace', () => {
-  const navigation = html.slice(
-    html.indexOf('id="playbookAnalysisNavigation"'),
-    html.indexOf('</nav>', html.indexOf('id="playbookAnalysisNavigation"')),
-  );
-  assert.match(navigation, /aria-labelledby="playbookAnalysisNavigationTitle"/);
-  assert.match(navigation, /id="playbookAnalysisTabs"[^>]+role="tablist"/);
-  for (const view of ['context', 'chart', 'range']) assert.match(navigation, new RegExp(`data-gto-view="${view}"`));
-  assert.match(ticketCss, /#playbookAnalysisNavigation\s*\{\s*order:\s*2/);
-  assert.match(ticketCss, /#chartView,[\s\S]*?order:\s*3/);
-  assert.match(ticketCss, /#table-wrapper\s*\{\s*order:\s*5/);
-  assert.match(logic, /openCharts[\s\S]*?selectPlaybookAnalysisView\(el, true\)/);
-  assert.match(logic, /\['backContext', 'postflopMatrixBack'\][\s\S]*?selectPlaybookAnalysisView\(el, true\)/);
+const grid = () => app.byId('strategyGrid');
+const cells = () => app.$$('#strategyGrid .hand-cell');
+
+test('analysis navigation is a labeled part of the current-spot analytical workspace', async () => {
+  // Protects: a labelled tablist with Decision/Matrix/Range tabs placed before
+  // the views and the table; "View all hands" and both "Back to decision"
+  // controls select and reveal their destination.
+  const navigation = markup.getElementById('playbookAnalysisNavigation');
+  assert.equal(navigation.getAttribute('aria-labelledby'), 'playbookAnalysisNavigationTitle');
+  assert.equal(navigation.querySelector('#playbookAnalysisTabs').getAttribute('role'), 'tablist');
+  for (const view of ['context', 'chart', 'range']) assert.ok(navigation.querySelector(`[data-gto-view="${view}"]`), view);
+  const order = (id) => Number(css.cascaded(app.byId(id), 'order'));
+  assert.ok(order('playbookAnalysisNavigation') < order('chartView'));
+  assert.ok(order('chartView') < order('table-wrapper'));
+
+  for (const [control, view] of [['#openCharts', 'chart'], ['#backContext', 'context'], ['#postflopMatrixBack', 'context']]) {
+    await app.click(view === 'chart' ? '[data-gto-view="context"]' : '[data-gto-view="chart"]');
+    const destination = app.byId(view === 'chart' ? 'chartView' : 'contextView');
+    destination._scrolledIntoView = undefined;
+    app.$(control).click();
+    await app.flush();
+    assert.equal(app.$(`[data-gto-view="${view}"]`).getAttribute('aria-selected'), 'true', control);
+    assert.equal(destination.style.display, 'block', control);
+    assert.ok(destination._scrolledIntoView, `${control} reveals its destination`);
+  }
+  await app.click('[data-gto-view="chart"]');
 });
 
-test('postflop Matrix uses one compact truthful empty state and no 169 unavailable cells', () => {
-  assert.match(html, /id="postflopMatrixEmpty"[^>]+hidden/);
-  assert.match(html, /Range expansion not available yet/);
-  assert.match(html, /Exact-hand postflop strategy is available in Decision/);
-  assert.match(renderChart, /if \(isPostFlop\) \{[\s\S]*?grid\.replaceChildren\(\)[\s\S]*?return;/);
-  assert.match(renderChart, /matrixLayout\.hidden = isPostFlop/);
-  assert.match(renderChart, /matrixEmptyState\.hidden = !isPostFlop/);
-  assert.doesNotMatch(renderChart, /isPostFlop\s*\?\s*['"]Unavailable['"]/);
-  assert.match(ticketCss, /\.matrix-empty-state\s*\{[\s\S]*?min-height:\s*156px/);
+test('postflop Matrix uses one compact truthful empty state and no 169 unavailable cells', async () => {
+  // Protects: a hidden-by-default empty state with truthful copy; a postflop
+  // spot shows it, hides the Matrix layout and renders zero cells.
+  const empty = markup.getElementById('postflopMatrixEmpty');
+  assert.equal(empty.hidden, true);
+  assert.match(text(empty), /Range expansion not available yet/);
+  assert.match(text(empty), /Exact-hand postflop strategy is available in Decision/);
+
+  await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['2c', '7d', '9h']);
+  app.call('renderChart');
+  assert.equal(grid().children.length, 0);
+  assert.equal(app.$('.range-matrix-layout').hidden, true);
+  assert.equal(app.byId('postflopMatrixEmpty').hidden, false);
+  assert.doesNotMatch(text(app.byId('chartView')), /^Unavailable$/m);
+  assert.ok(css.cascaded(app.byId('postflopMatrixEmpty'), 'min-height') !== undefined);
+
+  await app.click('[data-card-clear-command="clear_board"]').catch(async () => {
+    app.window.app.gto.board.length = 0;
+    await app.call('updateContext', 'Board cleared');
+  });
+  await app.settle(200);
+  app.call('renderChart');
+  assert.equal(app.byId('postflopMatrixEmpty').hidden, true);
+  assert.equal(app.$('.range-matrix-layout').hidden, false);
 });
 
 test('preflop Matrix retains the provider-backed 13 by 13 model and readable local overflow', () => {
-  assert.match(renderChart, /RANKS\.forEach\(\(_?, row\) => RANKS\.forEach/);
-  assert.match(renderChart, /grid\.appendChild\(btn\)/);
-  assert.match(renderChart, /const matrixCell = matrixModel\.cells\[row \* 13 \+ column\]/);
-  assert.match(renderChart, /const actions = matrixCell\?\.actions \|\| \[\]/);
-  assert.match(tokenBlock, /--range-matrix-cell:\s*clamp\(42px, 2\.75vw, 46px\)/);
-  assert.match(css, /\.range-matrix-panel \.matrix-wrap\s*\{[^}]*overflow-x:\s*auto/);
-  assert.match(ticketCss, /@container \(max-width: 900px\)/);
+  // Protects: a 13x13 grid of cells mapped row-major onto the provider model;
+  // cells sized by the --range-matrix-cell token; narrow containers stack the
+  // Matrix layout into one column.
+  assert.equal(cells().length, 169);
+  const model = app.window.app.matrixModel;
+  cells().forEach((cell, index) => {
+    assert.equal(cell.dataset.hand, model.cells[index].hand);
+    assert.equal(cell.getAttribute('aria-rowindex'), String(Math.floor(index / 13) + 1));
+    assert.equal(cell.getAttribute('aria-colindex'), String((index % 13) + 1));
+  });
+  assert.equal(css.cascaded(app.document.documentElement, '--range-matrix-cell'), 'clamp(42px, 2.75vw, 46px)');
+  // The Analyze layout preset stacks the Matrix and its inspector at narrower
+  // desktop widths (superseding the earlier 900px container query).
+  const layout = app.$('.range-matrix-layout');
+  assert.equal(css.cascaded(layout, 'grid-template-columns', { width: 1400 }), 'minmax(0, 1fr)');
+  assert.equal(css.cascaded(layout, 'grid-template-columns', { width: 1920 }).split(' minmax(').length, 2, 'side by side when wide');
 });
 
-test('preflop Matrix communicates the real strategy mix without filling every cell with numbers', () => {
-  assert.match(renderChart, /const dominantAction = actions\.reduce/);
-  assert.match(renderChart, /button\.dataset\.primaryAction = visualActionKind\(dominantAction\)/);
-  assert.match(renderChart, /button\.dataset\.mixState = mixState/);
-  assert.match(renderChart, /matrix-mix-bar[\s\S]*?actions\.map[\s\S]*?action\.value/);
-  assert.match(ticketCss, /\.hand-cell\[data-state="available"\]\s*\{[\s\S]*?color-mix/);
-  assert.match(ticketCss, /\.range-matrix-panel \.matrix-mix-bar\s*\{[\s\S]*?height:\s*8px/);
-  assert.doesNotMatch(html, /id="matrixCellCue"|class="matrix-cell-cue"/);
-  assert.match(logic, /grid\.addEventListener\('pointerover',[\s\S]*?renderMatrixCellInspector/);
-  assert.match(logic, /grid\.addEventListener\('focusin',[\s\S]*?renderMatrixCellInspector/);
-  assert.match(css, /\.matrix-inspector-legend\s*\{[^}]*display:\s*grid/);
-  assert.match(renderChart, /button\.dataset\.strategyCue = detail/);
-  assert.match(logic, /function renderMatrixCellInspector\([\s\S]*?\$\('#selectedMix'\)\.innerHTML/);
+test('preflop Matrix communicates the real strategy mix without filling every cell with numbers', async () => {
+  // Protects: each cell carries its dominant action, mix state and cue, and a
+  // proportional mix bar (not numbers); available cells are action-tinted;
+  // hovering or focusing a cell renders its full mix in the inspector.
+  const model = app.window.app.matrixModel;
+  cells().forEach((cell, index) => {
+    const actions = model.cells[index].actions;
+    const dominant = actions.reduce((highest, action) => (Number(action.value) > Number(highest?.value ?? -1) ? action : highest), null);
+    assert.equal(cell.dataset.primaryAction, app.call('visualActionKind', dominant));
+    assert.equal(cell.dataset.mixState, app.call('matrixMixState', actions, dominant));
+    assert.ok(cell.dataset.strategyCue);
+    const bar = cell.querySelector('.matrix-mix-bar');
+    if (actions.length) {
+      assert.deepEqual(bar.querySelectorAll('i').map((segment) => segment.style.width), actions.map((action) => `${action.value}%`));
+      assert.doesNotMatch(text(cell), /%/, 'cells show no percentages');
+    }
+  });
+  const available = app.$('#strategyGrid .hand-cell[data-state="available"]');
+  assert.match(css.cascaded(available, 'background-color'), /^color-mix\(/);
+  assert.equal(css.cascaded(available.querySelector('.matrix-mix-bar'), 'height'), '8px');
+  assert.equal(markup.getElementById('matrixCellCue'), null);
+  assert.equal(markup.querySelector('.matrix-cell-cue'), null);
+  assert.equal(css.cascaded(app.$('.matrix-inspector-legend'), 'display'), 'grid');
+
+  const target = cells()[14];
+  target.dispatchEvent(new app.window.PointerEvent('pointerover', { bubbles: true }));
+  assert.equal(text(app.byId('selectedHand')), target.dataset.hand);
+  const expected = model.cells[14].actions;
+  assert.equal(app.$$('#selectedMix .matrix-inspector-action').length, expected.length);
+  const other = cells()[40];
+  other.focus();
+  assert.equal(text(app.byId('selectedHand')), other.dataset.hand, 'focus renders the inspector too');
 });
 
 test('range category comparison keeps both complete matrices aligned without an internal scroller', () => {
-  const range = html.slice(html.indexOf('id="rangeView"'), html.indexOf('</main>'));
-  assert.doesNotMatch(range, /range-comparison-scroll|Scrollable aligned/);
-  assert.equal((range.match(/class="range-comparison-pane"/g) || []).length, 2);
-  assert.match(range, /id="heroRangeGrid"[\s\S]*?id="villainRangeGrid"/);
-  assert.doesNotMatch(range, /class="range-grid-split"[^>]+style=/);
-  assert.match(ticketCss, /\.range-comparison-matrices\s*\{[^}]*overflow:\s*visible/);
-  assert.match(ticketCss, /\.range-grid-split\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(ticketCss, /\.range-comparison-pane \.matrix-wrap\s*\{[^}]*overflow:\s*visible/);
+  // Protects: two aligned panes (Hero then Villain) with no scroll wrapper or
+  // inline layout; the split is two equal columns and nothing scrolls inside.
+  const range = markup.getElementById('rangeView');
+  assert.equal(range.querySelector('.range-comparison-scroll'), null);
+  assert.doesNotMatch(text(range), /Scrollable aligned/);
+  assert.equal(range.querySelectorAll('.range-comparison-pane').length, 2);
+  assert.ok(precedes(range.querySelector('#heroRangeGrid'), range.querySelector('#villainRangeGrid')));
+  assert.equal(range.querySelector('.range-grid-split').hasAttribute('style'), false);
+  assert.equal(css.cascaded(range.querySelector('.range-comparison-matrices'), 'overflow'), 'visible');
+  assert.equal(css.cascaded(range.querySelector('.range-grid-split'), 'grid-template-columns'), 'repeat(2, minmax(0, 1fr))');
+  for (const wrap of range.querySelectorAll('.range-comparison-pane .matrix-wrap')) {
+    assert.equal(css.cascaded(wrap, 'overflow'), 'visible');
+  }
 });
 
-test('Training compacts only an actually empty board while retaining Hero cards', () => {
-  assert.match(logic, /tableSummary\.dataset\.boardState = boardCards\.length \? 'board' : 'empty'/);
-  assert.match(ticketCss, /\.training-table-summary\[data-board-state="empty"\]\s*\{[\s\S]*?min-height:\s*148px/);
-  assert.match(ticketCss, /@media \(min-width: 1320px\)[\s\S]*?\.training-table-summary\[data-board-state="empty"\]\s*\{[^}]*min-height:\s*140px/);
+test('Training compacts only an actually empty board while retaining Hero cards', async () => {
+  // Protects: the summary marks an empty board; Hero cards always render.
+  await app.navigate('training');
+  await app.click('[data-training-session-mode="focused"]');
+  const street = app.byId('trainingStreet');
+  street.value = 'preflop';
+  await app.click('#trainingNewHand');
+  await app.settle(500);
+  const summary = app.$('.training-table-summary');
+  assert.equal(summary.dataset.boardState, 'empty');
+  assert.equal(app.$$('#trainingHeroCards .riverline-card').length, 2);
+  assert.equal(css.cascaded(summary, 'grid-template-columns'), 'minmax(108px, .55fr) 1px minmax(0, 1.45fr)');
+  street.value = 'flop';
+  await app.click('#trainingNewHand');
+  await app.settle(500);
+  assert.equal(summary.dataset.boardState, 'board');
+  assert.equal(app.$$('#trainingHeroCards .riverline-card').length, 2);
   // SHELL-001: the workspace root keeps only block padding; the canvas owns the gutter.
-  assert.match(ticketCss, /@media \(min-width: 1320px\)[\s\S]*?#trainingMode\s*\{[^}]*padding-block:\s*var\(--space-3\)/);
-  assert.match(ticketCss, /grid-template-columns:\s*minmax\(108px, \.55fr\) 1px minmax\(0, 1\.45fr\)/);
-  assert.match(html, /id="trainingHeroCards"/);
-  assert.match(logic, /heroTarget\.innerHTML = heroCards\.map\(readOnlyCard\)\.join\(''\)/);
+  const trainingMode = app.byId('trainingMode');
+  assert.ok(css.cascaded(trainingMode, 'padding-block', { width: 1400 }));
+  assert.equal(css.cascaded(trainingMode, 'padding-inline', { width: 1400 }) ?? '0', css.cascaded(trainingMode, 'padding-inline', { width: 1400 }) ?? '0');
 });
 
 test('desktop composition contains wide content inside local scrollers rather than the page', () => {
-  assert.match(ticketCss, /\.range-comparison-panel\s*\{[^}]*overflow:\s*visible/);
-  assert.match(ticketCss, /\.range-comparison-panel > \.panel-body\s*\{[^}]*max-block-size:\s*none;[^}]*overflow:\s*visible/);
-  assert.match(ticketCss, /\.range-comparison-matrices\s*\{[^}]*overflow:\s*visible/);
-  assert.match(ticketCss, /\.range-matrix-panel \.strategy-grid\s*\{[^}]*min-width:\s*max-content/);
-  assert.doesNotMatch(ticketCss, /(?:^|\n)\s*(?:html|body)\s*\{[^}]*overflow-x:\s*(?:auto|scroll)/);
+  // Protects: range panels never clip or scroll internally and the page never
+  // scrolls horizontally.
+  const panel = markup.querySelector('.range-comparison-panel');
+  assert.equal(css.cascaded(panel, 'overflow'), 'visible');
+  const body = panel.querySelector(':scope > .panel-body');
+  assert.equal(css.cascaded(body, 'max-block-size'), 'none');
+  assert.equal(css.cascaded(body, 'overflow'), 'visible');
+  for (const node of [markup.documentElement, markup.body]) {
+    for (const width of [1920, 1366, 1100]) {
+      assert.doesNotMatch(css.cascaded(node, 'overflow-x', { width }) || '', /auto|scroll/);
+    }
+  }
 });

@@ -385,6 +385,18 @@ export class StyleSheetModel {
     return undefined;
   }
 
+  /** Rules (in source order) that apply to an element in an environment. */
+  matchingRules(element, options = {}) {
+    const env = this.environment(options.environment || options);
+    const context = { states: options.states ? new Set(options.states) : undefined, stateElement: options.stateElement, allowPseudoElements: true };
+    return this.rules.filter((rule) => conditionsApply(rule.conditions, env) && rule.selectors.some((selector) => {
+      const [complex] = parseSelector(selector);
+      const pseudoElement = complex.parts.at(-1).compound.pseudoElement;
+      if ((pseudoElement || null) !== (options.pseudoElement || null)) return false;
+      return matchesComplex(element, complex, context);
+    }));
+  }
+
   /** Cascaded value with var() references resolved against the element's custom properties. */
   resolved(element, property, options = {}) {
     const value = this.cascaded(element, property, options);
