@@ -8,94 +8,96 @@ import {
   createPlaybookScenarioInput,
 } from '../app/src/application/playbook-state-source.mjs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: navigation, destination presentation and Playbook mode
+// transitions run in the booted app (the page's own resolve* functions are
+// called instead of vm-sliced logic.js); markup is parsed and styling
+// resolved through the cascade. Home model, bootstrap and translation sources
+// are outside this ticket.
 const homeModel = fs.readFileSync(new URL('../app/src/application/home-view-model.mjs', import.meta.url), 'utf8');
 const personalStrategyBootstrap = fs.readFileSync(new URL('../app/src/application/range-calibration-bootstrap.mjs', import.meta.url), 'utf8');
 const translations = fs.readFileSync(new URL('../app/src/locales/home-translations.js', import.meta.url), 'utf8');
-
-function navigationMarkup() {
-  const start = html.indexOf('<nav class="mode-navigation"');
-  const end = html.indexOf('</nav>', start);
-  assert.ok(start >= 0 && end > start);
-  return html.slice(start, end + 6);
-}
-
-function modeNavigationHandler() {
-  const start = logic.indexOf("$$('.mode-nav-item[data-mode]').forEach");
-  const end = logic.indexOf('const revealPlaybookDestination', start);
-  assert.ok(start >= 0 && end > start);
-  return logic.slice(start, end);
-}
-
-function logicFunction(name, nextName, context = {}) {
-  const start = logic.indexOf(`function ${name}`);
-  const end = logic.indexOf(`function ${nextName}`, start);
-  assert.ok(start >= 0 && end > start, `${name} must remain independently testable`);
-  const sandbox = { ...context };
-  vm.runInNewContext(`${logic.slice(start, end)}\nthis.exposed = ${name};`, sandbox);
-  return sandbox.exposed;
-}
-
-const resolveHomeDestination = logicFunction(
-  'resolveHomeDestinationPresentation',
-  'setTranslatedElement',
-);
-const resolvePlaybookDestination = logicFunction(
-  'resolvePlaybookDestinationPresentation',
-  'applyPlaybookDestinationPresentation',
-  { PLAYBOOK_MODES: { HAND: 'hand', SCENARIO: 'scenario' } },
-);
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const navigation = markup.querySelector('nav.mode-navigation');
+const resolveHomeDestination = (destination, options) => app.call('resolveHomeDestinationPresentation', destination, options);
+const resolvePlaybookDestination = (destination, mode) => app.call('resolvePlaybookDestinationPresentation', destination, mode);
+const allTemplates = () => [markup, ...markup.querySelectorAll('template').map((template) => template.content)];
 
 test('Core Flow navigation presents six primary study destinations and three grouped support destinations', () => {
-  const navigation = navigationMarkup();
-  const destinations = [...navigation.matchAll(/data-navigation-id="([^"]+)"/g)].map((match) => match[1]);
+  const destinations = navigation.querySelectorAll('[data-navigation-id]').map((node) => node.dataset.navigationId);
   assert.deepEqual(destinations, [
     'hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved',
     'home', 'home-game', 'guide',
   ]);
-  assert.match(navigation, /mode-nav-group--core[\s\S]*?Core study/);
-  assert.match(navigation, /mode-nav-group--support[\s\S]*?Riverline/);
-  assert.match(navigation, /mode-nav-item mode-nav-item--hand/);
-  assert.match(css, /\.mode-nav-group--support \.mode-nav-item[\s\S]*?color: var\(--text-muted\)/);
+  assert.match(text(navigation.querySelector('.mode-nav-group--core')), /Core study/);
+  assert.match(text(navigation.querySelector('.mode-nav-group--support')), /Riverline/);
+  assert.ok(navigation.querySelector('.mode-nav-item.mode-nav-item--hand'));
+  const support = navigation.querySelector('.mode-nav-group--support .mode-nav-item:not([aria-current="page"])');
+  // Superseded: support items were --text-muted; the shell now gives every
+  // inactive item --text-secondary (groups are distinguished by headings).
+  assert.equal(css.cascaded(support, 'color'), 'var(--text-secondary)');
 });
 
-test('Hand, Analyze, and Saved remain destinations over existing mounted workspace authorities', () => {
-  const navigation = navigationMarkup();
-  assert.match(navigation, /data-mode="gto" data-navigation-id="hand"/);
-  assert.match(navigation, /data-mode="gto" data-navigation-id="analyze"/);
-  assert.match(navigation, /data-mode="home" data-navigation-id="saved"/);
-  assert.equal((html.match(/id="gtoMode"/g) || []).length, 1);
-  assert.equal((html.match(/id="homeMode"/g) || []).length, 1);
-  assert.equal((html.match(/id="trainingMode"/g) || []).length, 1);
-  assert.equal((html.match(/id="calibrationMode"/g) || []).length, 1);
-  assert.match(logic, /hand: \['gto', 'hand'\]/);
-  assert.match(logic, /analyze: \['gto', 'analyze'\]/);
-  assert.match(logic, /saved: \['home', 'saved'\]/);
+test('Hand, Analyze, and Saved remain destinations over existing mounted workspace authorities', async () => {
+  for (const [destination, mode] of [['hand', 'gto'], ['analyze', 'gto'], ['saved', 'home']]) {
+    assert.equal(navigation.querySelector(`[data-navigation-id="${destination}"]`).dataset.mode, mode, destination);
+  }
+  for (const id of ['gtoMode', 'homeMode', 'trainingMode', 'calibrationMode']) assert.equal(markup.querySelectorAll(`#${id}`).length, 1, id);
+  // The registry routes each destination to its mounted mode view.
+  for (const [destination, view] of [['hand', 'gtoMode'], ['analyze', 'gtoMode'], ['saved', 'homeMode']]) {
+    app.call('navigateToProductDestination', destination);
+    await app.settle(100);
+    assert.equal(app.$('.riverline-shell').dataset.activeDestination, destination);
+    assert.ok(app.byId(view).classList.contains('active'), destination);
+  }
 });
 
-test('destination switching changes presentation without recreating or resetting mounted study state', () => {
-  const handler = modeNavigationHandler();
-  assert.match(handler, /if \(!activateNavigationItem\(button\)\) return;/);
-  assert.match(handler, /const activeView = \$\(`#\$\{mode\}Mode`\)/);
-  assert.match(handler, /renderFullHandTrainingSnapshot\(app\.training\.fullHandSnapshot\)/);
-  assert.doesNotMatch(handler, /new\s+[A-Z]|create[A-Z]\w+Controller|dispose\(|reset(?:Hand|Training|Calibration|Strategy)|localStorage\.clear|indexedDB\.deleteDatabase/);
+test('destination switching changes presentation without recreating or resetting mounted study state', async () => {
+  // A live hand and an active Training session survive a tour of every
+  // destination; nothing is reset, disposed or cleared.
+  await app.startHand(['As', 'Kd']);
+  const handId = app.call('callPlaybookStateBridge', 'getState').handId;
+  await app.training.start('focused');
+  const exercise = app.window.app.training.currentExercise;
+  const storageKeys = app.window.localStorage.length;
+  const spy = app.spy(['resetCanonicalPlaybookHand', 'clearTrainingSessionState', 'renderFullHandTrainingSnapshot']);
+  try {
+    for (const destination of ['hand', 'analyze', 'personal-strategy', 'equity', 'saved', 'home', 'home-game', 'guide', 'training']) await app.navigate(destination);
+    assert.equal(spy.count('resetCanonicalPlaybookHand') + spy.count('clearTrainingSessionState'), 0);
+  } finally {
+    spy.restore();
+  }
+  assert.equal(app.call('callPlaybookStateBridge', 'getState').handId, handId);
+  assert.equal(app.window.app.training.currentExercise, exercise);
+  assert.ok(app.window.localStorage.length >= storageKeys);
   assert.match(personalStrategyBootstrap, /navigationButton = document\.querySelector\('\.mode-nav-item\[data-mode="calibration"\]'\)/);
   assert.match(personalStrategyBootstrap, /createRangeCalibrationLifecycle/);
 });
 
-test('Hand entry uses the canonical Playbook mode transition and Analyze selects the existing Decision view', () => {
-  const handler = modeNavigationHandler();
-  assert.match(handler, /destinationState\.requestedMode[\s\S]*?requestPlaybookMode\(destinationState\.requestedMode\)/);
-  assert.match(handler, /destination === 'analyze'[\s\S]*?data-gto-view="context"[\s\S]*?selectPlaybookAnalysisView\(decisionView\)/);
-  const modeRequest = logic.slice(logic.indexOf('async function requestPlaybookMode'), logic.indexOf('function bindPlaybookModeControl'));
-  assert.match(modeRequest, /capturePlaybookScenarioPresentation\(\)/);
-  assert.match(modeRequest, /callPlaybookStateBridge\('setMode', mode, scenarioInput\)/);
-  assert.match(modeRequest, /restorePlaybookScenarioPresentation\(savedPlaybookScenarioPresentation\)/);
+test('Hand entry uses the canonical Playbook mode transition and Analyze selects the existing Decision view', async () => {
+  await app.navigate('analyze');
+  // Analyze selects the Decision (context) view.
+  assert.equal(app.$('.sub-tab[data-gto-view="context"]').getAttribute('aria-selected'), 'true');
+  const spy = app.spy(['requestPlaybookMode', 'capturePlaybookScenarioPresentation', 'restorePlaybookScenarioPresentation', 'callPlaybookStateBridge']);
+  try {
+    await app.navigate('hand');
+    assert.deepEqual(spy.calls.requestPlaybookMode.map(([mode]) => mode), ['hand']);
+    assert.ok(spy.count('capturePlaybookScenarioPresentation') >= 1, 'the Scenario presentation is captured');
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method, mode]) => method === 'setMode' && mode === 'hand'));
+    spy.reset();
+    await app.navigate('analyze');
+    assert.deepEqual(spy.calls.requestPlaybookMode.map(([mode]) => mode), ['scenario']);
+    assert.ok(spy.count('restorePlaybookScenarioPresentation') >= 1, 'and restored on return');
+  } finally {
+    spy.restore();
+  }
 });
 
-test('Home and Saved resolve to distinct visible states over the same Home authority', () => {
+test('Home and Saved resolve to distinct visible states over the same Home authority', async () => {
   const home = resolveHomeDestination('home', { sessionMode: 'account', hasContinuation: true });
   const saved = resolveHomeDestination('saved', { sessionMode: 'account', hasContinuation: true });
   const homeAgain = resolveHomeDestination('home', { sessionMode: 'account', hasContinuation: true });
@@ -108,10 +110,21 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   // panel was removed; its sentence is the library's empty state.
   assert.deepEqual(Array.from(saved.visibleSections), ['library']);
   assert.deepEqual(Array.from(homeAgain.visibleSections), Array.from(home.visibleSections));
-  assert.doesNotMatch(html, /id="homeSavedOverview"/);
-  assert.match(css, /#homeWorkspaceContent\[data-product-destination="saved"\] \{ grid-template-columns: minmax\(0, 1fr\); \}/);
-  assert.match(logic, /applyHomeDestinationPresentation\(destination\)/);
-  assert.match(logic, /sequence !== homeRefreshSequence/);
+  // Navigating applies the destination's presentation over the Home view.
+  const spy = app.spy(['applyHomeDestinationPresentation']);
+  try {
+    await app.navigate('saved');
+    await app.navigate('home');
+    const applied = spy.calls.applyHomeDestinationPresentation.map(([destination]) => destination).filter(Boolean);
+    assert.deepEqual(applied.filter((destination, index) => destination !== applied[index - 1]), ['saved', 'home']);
+  } finally {
+    spy.restore();
+  }
+  assert.equal(markup.getElementById('homeSavedOverview'), null);
+  const content = markup.getElementById('homeWorkspaceContent');
+  content.dataset.productDestination = 'saved';
+  assert.equal(css.cascaded(content, 'grid-template-columns'), 'minmax(0, 1fr)');
+  delete content.dataset.productDestination;
 });
 
 test('Saved guest and empty presentation remains intentionally Saved instead of falling back to Home', () => {
@@ -121,11 +134,15 @@ test('Saved guest and empty presentation remains intentionally Saved instead of 
   assert.equal(savedGuest.guestCopy.title, 'Saved Hands & Spots');
   assert.match(savedGuest.guestCopy.primary, /stay on this device in Guest Mode/);
   assert.match(savedGuest.guestCopy.secondary, /does not enable sync or cloud backup/);
-  assert.match(logic, /renderHomeRecent\(model\.sections\.recent\)/);
-  assert.match(logic, /homeEmptyAction\('No saved study yet\.', 'Analyze a Hand', 'analyze'\)/);
+  // An empty Recent section offers Analyze a Hand.
+  app.call('renderHomeRecent', { status: 'ready', items: [] });
+  const empty = app.$('#homeRecentContent .home-empty-state');
+  assert.equal(text(empty.querySelector('p')), 'No saved study yet.');
+  assert.equal(text(empty.querySelector('button')), 'Analyze a Hand');
+  assert.equal(empty.querySelector('button').dataset.homeDestination, 'analyze');
 });
 
-test('Hand and Analyze resolve to observably different presentation modes', () => {
+test('Hand and Analyze resolve to observably different presentation modes', async () => {
   const handFromScenario = resolvePlaybookDestination('hand', 'scenario');
   const hand = resolvePlaybookDestination('hand', 'hand');
   const analyzeHand = resolvePlaybookDestination('analyze', 'hand');
@@ -136,9 +153,19 @@ test('Hand and Analyze resolve to observably different presentation modes', () =
   assert.equal(analyzeHand.requestedMode, 'scenario');
   assert.equal(analyze.requestedMode, null);
   assert.equal(analyzeHand.primarySurface, 'decision-analysis');
-  assert.match(css, /data-product-destination="hand"[\s\S]*?#contextView[\s\S]*?display: none !important/);
-  assert.match(logic, /modeView\.dataset\.playbookMode = mode/);
-  assert.match(logic, /\$\$\('\[data-playbook-scenario\]'\)[\s\S]*?element\.hidden = handMode/);
+  // The mounted view records the mode and hides Scenario-only controls in Hand.
+  await app.navigate('hand');
+  assert.equal(app.byId('gtoMode').dataset.playbookMode, 'hand');
+  assert.ok(app.$$('[data-playbook-scenario]').every((node) => node.hidden));
+  await app.navigate('analyze');
+  assert.equal(app.byId('gtoMode').dataset.playbookMode, 'scenario');
+  assert.ok(app.$$('[data-playbook-scenario]').every((node) => !node.hidden));
+  const gto = markup.getElementById('gtoMode');
+  gto.dataset.productDestination = 'hand';
+  const contextView = markup.getElementById('contextView');
+  contextView.style.display = 'block';
+  assert.equal(css.cascaded(contextView, 'display'), 'none');
+  contextView.style.removeProperty('display');
 });
 
 test('Hand to Analyze to Hand enters the matching internal mode and preserves the exact canonical Hand', () => {
@@ -180,40 +207,60 @@ test('Hand to Analyze to Hand enters the matching internal mode and preserves th
   assert.equal(controller.getMode(), 'hand');
 });
 
-test('active navigation state is applied together with the rendered destination state', () => {
-  const activation = logic.slice(logic.indexOf('function activateNavigationItem'), logic.indexOf('function resolveHomeDestinationPresentation'));
-  assert.match(activation, /shell\.dataset\.activeDestination = button\.dataset\.navigationId/);
-  assert.match(activation, /button\.dataset\.mode === 'home'\) applyHomeDestinationPresentation\(button\.dataset\.navigationId\)/);
-  assert.match(activation, /button\.dataset\.mode === 'gto'\) applyPlaybookDestinationPresentation\(button\.dataset\.navigationId\)/);
-  assert.match(logic, /syncPlaybookNavigationDestination\(previousMode\)/);
+test('active navigation state is applied together with the rendered destination state', async () => {
+  const spy = app.spy(['applyHomeDestinationPresentation', 'applyPlaybookDestinationPresentation']);
+  try {
+    for (const [destination, presenter] of [['saved', 'applyHomeDestinationPresentation'], ['hand', 'applyPlaybookDestinationPresentation'], ['analyze', 'applyPlaybookDestinationPresentation']]) {
+      spy.reset();
+      await app.navigate(destination);
+      assert.equal(app.$('.riverline-shell').dataset.activeDestination, destination);
+      assert.ok(spy.calls[presenter].some(([applied]) => applied === destination), `${presenter}(${destination})`);
+    }
+  } finally {
+    spy.restore();
+  }
+  // Switching the Playbook mode in place moves navigation with it.
+  await app.click('#playbookHandMode');
+  await app.settle(200);
+  assert.equal(app.$('.riverline-shell').dataset.activeDestination, 'hand');
+  await app.click('#playbookScenarioMode');
+  await app.settle(200);
+  assert.equal(app.$('.riverline-shell').dataset.activeDestination, 'analyze');
 });
 
 test('Personal Strategy is the umbrella while Calibration, Teacher, Matrix, and Builder remain its tools', () => {
-  const navigation = navigationMarkup();
-  assert.match(navigation, /data-navigation-id="personal-strategy"[^>]*data-mode-title="Personal Strategy"/);
-  assert.doesNotMatch(navigation, />Range Calibration</);
+  assert.equal(navigation.querySelector('[data-navigation-id="personal-strategy"]').dataset.modeTitle, 'Personal Strategy');
+  assert.ok(navigation.querySelectorAll('*').every((node) => text(node) !== 'Range Calibration'));
   for (const id of ['calibrationStartQuestions', 'calibrationTeacherTab', 'calibrationMatrixTab', 'calibrationBuilderToggle']) {
-    assert.match(html, new RegExp(`id="${id}"`));
+    assert.ok(allTemplates().some((scope) => scope.querySelector(`#${id}`)), id);
   }
-  assert.match(html, /id="calibrationMode"[^>]*aria-label="Personal Strategy"/);
+  assert.equal(markup.getElementById('calibrationMode').getAttribute('aria-label'), 'Personal Strategy');
 });
 
-test('Home offers real workflow entries and the Core Flow shell has EN, RU, HE, and RTL coverage', () => {
+test('Home offers real workflow entries and the Core Flow shell has EN, RU, HE, and RTL coverage', async () => {
   // SHELL-001: Home's Destinations links duplicated the sidebar and were removed;
   // the view model's quickStart destinations still gate the Review Mistakes link.
   for (const destination of ['hand', 'analyze', 'training', 'equity']) {
-    assert.match(html, new RegExp(`class="mode-nav-item[^"]*"[^>]*data-navigation-id="${destination}"`));
+    assert.ok(navigation.querySelector(`.mode-nav-item[data-navigation-id="${destination}"]`), destination);
     assert.match(homeModel, new RegExp(`['"]${destination}['"]`));
   }
-  assert.match(html, /id="homeReviewMistakesLink"[^>]*data-home-destination="review_mistakes"/);
-  assert.match(logic, /action\.dataset\.homeDestination = 'personal-strategy'/);
+  assert.equal(markup.getElementById('homeReviewMistakesLink').dataset.homeDestination, 'review_mistakes');
+  // A Personal Strategy summary routes to Personal Strategy.
+  await app.navigate('home');
+  app.call('renderHomePersonalStrategy', { status: 'unavailable' });
+  app.call('renderHomeContinue', { status: 'ready', items: [{ kind: 'range_calibration', profileName: 'P', answeredCount: 1, totalCount: 169 }] });
+  assert.ok(app.$('#homeMode [data-home-destination="personal-strategy"]'));
   // 'Hand workflow' / 'Analysis source' remain translated catalog keys (the strip
   // kicker they labelled moved into the SHELL-001 header mode switch).
   for (const key of ['Core study', 'Hand', 'Analyze', 'Saved study', 'Saved Hands & Spots', 'Hand workflow', 'Analysis source', 'Opening Personal Strategy']) {
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     assert.match(translations, new RegExp(`'${escaped}'`, 'g'));
   }
-  assert.match(html, /<option value="ru"/);
-  assert.match(html, /<option value="he"/);
-  assert.match(css, /\[dir="rtl"\]/);
+  const languages = markup.getElementById('langToggle').querySelectorAll('option').map((option) => option.value);
+  assert.ok(languages.includes('ru') && languages.includes('he'));
+  // RTL is styled: the shell rail border moves to the inline end.
+  const rail = markup.querySelector('.mode-rail');
+  markup.documentElement.setAttribute('dir', 'rtl');
+  assert.ok(css.matchingRules(rail).some((rule) => rule.selectorText.includes('[dir="rtl"]')));
+  markup.documentElement.setAttribute('dir', 'ltr');
 });

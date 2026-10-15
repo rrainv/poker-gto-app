@@ -205,22 +205,36 @@ test('account export uses the canonical v1 envelope while import and Guest durab
 });
 
 test('001B UI is progressive, dialog-safe, localized, RTL-aware, and does not add a second accounting authority', async () => {
-  const [html, css, bootstrap, service, translations] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
+  // TEST-HYGIENE-001: index.html / styles.css assertions use parsed markup
+  // and the cascade.
+  const { appStyleSheet, indexDocument } = await import('./helpers/app-under-test.mjs');
+  const markup = indexDocument();
+  const css = appStyleSheet();
+  const [bootstrap, service, translations] = await Promise.all([
     readFile(new URL('../app/src/application/home-game-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-service.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/home-game-translations.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /<details class="panel home-game-library home-game-management">/);
-  assert.match(html, /id="homeGameEditorDialog"[^>]*aria-labelledby=/);
-  assert.match(html, /id="homeGameConfirmDialog"[^>]*aria-labelledby=/);
-  assert.match(html, /id="homeGameRoster"[^>]*role="list"/);
-  assert.match(html, /id="homeGameShowArchivedSessions"/);
+  const library = markup.querySelector('details.panel.home-game-library.home-game-management');
+  assert.ok(library, 'the management library is a progressive disclosure');
+  for (const id of ['homeGameEditorDialog', 'homeGameConfirmDialog']) {
+    const dialog = markup.getElementById(id);
+    const label = dialog.getAttribute('aria-labelledby');
+    assert.ok(label && markup.getElementById(label.split(' ')[0]), id);
+  }
+  assert.equal(markup.getElementById('homeGameRoster').getAttribute('role'), 'list');
+  assert.ok(markup.getElementById('homeGameShowArchivedSessions'));
   assert.match(bootstrap, /if \(busy\) return/);
   assert.match(bootstrap, /replacementOfTransactionId|ledgerHistory/);
-  assert.match(css, /border-inline-start/);
-  assert.match(css, /\.home-game-money[\s\S]*?font-variant-numeric/);
+  // Money is tabular and never wraps; Home Game accents use a logical edge.
+  const money = markup.createElement('span');
+  money.className = 'home-game-money';
+  markup.body.appendChild(money);
+  assert.equal(css.cascaded(money, 'font-variant-numeric'), 'tabular-nums');
+  assert.equal(css.cascaded(money, 'white-space'), 'nowrap');
+  money.remove();
+  const homeGameRules = css.rules.filter((rule) => rule.selectorText.includes('home-game'));
+  assert.ok(homeGameRules.some((rule) => rule.declarations.some(({ property }) => property.startsWith('border-inline-start'))));
   for (const key of ['Player Library', 'Archive session', 'Ledger history', 'Correct entry', 'Reopen session?', 'Export JSON']) {
     assert.ok(translations.includes(`'${key}'`), key);
   }

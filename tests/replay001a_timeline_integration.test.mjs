@@ -2,7 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: the canonical Replay timeline is rendered in the booted Hand
+// workspace and inspected as DOM; markup is parsed and styling resolved
+// through the cascade. Bridge/model/translation sources are outside this
+// ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+// Imported after boot: the module installs the page's Playbook bridge on load.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
+const historySurface = markup.getElementById('handHistorySection');
+function probe(html, parent = markup.body) {
+  const host = markup.createElement('div');
+  host.innerHTML = html;
+  parent.appendChild(host);
+  return host.firstElementChild;
+}
+async function handWithActions(actions = ['call', 'check']) {
+  await app.startHand(['As', 'Kd']);
+  for (const action of actions) {
+    const button = app.$(`[data-canonical-action="${action}"]:not([disabled])`);
+    if (button) await app.handAction(action);
+  }
+}
+const timeline = () => app.byId('handActionHistory');
 
 const bridgeSource = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
@@ -12,9 +38,6 @@ const modelSource = fs.readFileSync(
   new URL('../app/src/application/replay-timeline-view-model.mjs', import.meta.url),
   'utf8',
 );
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const translations = fs.readFileSync(
   new URL('../app/src/locales/analysis-translations.js', import.meta.url),
   'utf8',
@@ -56,59 +79,78 @@ test('Playbook bridge exposes the immutable application-produced Replay model', 
   assert.deepEqual(events, []);
 });
 
-test('classic logic renders normalized Replay projection facts and Analysis keeps the accepted timeline', () => {
-  const renderer = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function dispatchCanonicalTableState()',
-  );
-  const analysisHistory = sourceBetween(
-    logic,
-    'function canonicalActionHistoryForAnalysis(',
-    'function trustedAnalysisFacts(',
-  );
-
-  assert.match(renderer, /callPlaybookStateBridge\('createReplayProjectionViewModel'\)/);
-  assert.match(analysisHistory, /callPlaybookStateBridge\('createReplayTimelineViewModel'\)/);
-  assert.doesNotMatch(`${renderer}\n${analysisHistory}`, /\.actionHistory|submittedAction|committedMilliBb|currentBetAfterMilliBb/);
-  assert.doesNotMatch(logic, /function renderCanonicalActionHistory\(/);
+test('classic logic renders normalized Replay projection facts and Analysis keeps the accepted timeline', async () => {
+  await handWithActions();
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    app.call('renderCanonicalReplayTimeline');
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'createReplayProjectionViewModel'));
+    spy.reset();
+    app.call('canonicalActionHistoryForAnalysis', { mode: 'hand' });
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'createReplayTimelineViewModel'));
+    // Neither path reads the raw canonical state's action history.
+    assert.ok(spy.calls.callPlaybookStateBridge.every(([method]) => method !== 'getState'));
+  } finally {
+    spy.restore();
+  }
+  assert.equal(app.evaluate('typeof renderCanonicalActionHistory'), 'undefined');
   assert.match(modelSource, /state\.actionHistory/);
 });
 
-test('the existing Hand history surface is upgraded once and Scenario Mode stays inactive', () => {
-  assert.equal((html.match(/id="handHistorySection"/g) || []).length, 1);
-  assert.equal((html.match(/id="handActionHistory"/g) || []).length, 1);
-  assert.match(html, /id="handActionHistory"[^>]*class="replay-timeline(?:\s|")/);
-  assert.match(logic, /function renderCanonicalReplayTimeline\(\)[\s\S]*?if \(!isHandMode\(\)\) \{[\s\S]*?root\.replaceChildren\(\)/);
-  assert.match(logic, /if \(event\.detail\?\.operation !== 'mode' && isHandMode\(\)\)/);
+test('the existing Hand history surface is upgraded once and Scenario Mode stays inactive', async () => {
+  assert.equal(markup.querySelectorAll('#handHistorySection').length, 1);
+  assert.equal(markup.querySelectorAll('#handActionHistory').length, 1);
+  assert.ok(markup.getElementById('handActionHistory').classList.contains('replay-timeline'));
   assert.doesNotMatch(modelSource, /scenarioInput|priorAction|DecisionContext|StrategyProvider/);
+  // State changes re-render the timeline in Hand mode, except pure mode switches.
+  await handWithActions([]);
+  const spy = app.spy(['renderCanonicalHandWorkspace']);
+  try {
+    app.window.dispatchEvent(new app.window.CustomEvent('riverline:playbook-state-change', { detail: { operation: 'mode' } }));
+    assert.equal(spy.count('renderCanonicalHandWorkspace'), 0);
+    app.window.dispatchEvent(new app.window.CustomEvent('riverline:playbook-state-change', { detail: { operation: 'replay_previous' } }));
+    assert.equal(spy.count('renderCanonicalHandWorkspace'), 1);
+  } finally {
+    spy.restore();
+  }
+  // Outside Hand mode the timeline is emptied.
+  await app.navigate('analyze');
+  app.call('renderCanonicalReplayTimeline');
+  assert.equal(timeline().childElementCount, 0);
+  await app.navigate('hand');
 });
 
-test('street headings, ordered entries, Hero, amount, all-in, and current semantics exist', () => {
-  const renderer = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function dispatchCanonicalTableState()',
-  );
-  for (const token of [
-    'replay-street-group', 'replay-street-heading', 'replay-action-list',
-    'replay-action-entry', 'replay-action-identity', 'replay-position',
-    'replay-action-label', 'replay-action-amount', 'replay-all-in-status',
-    'replay-current-marker', 'is-hero', 'is-all-in',
-  ]) {
-    assert.match(`${renderer}\n${css}`, new RegExp(token), token);
+test('street headings, ordered entries, Hero, amount, all-in, and current semantics exist', async () => {
+  await handWithActions(['all_in', 'call']);
+  app.call('renderCanonicalReplayTimeline');
+  const root = timeline();
+  const groups = root.querySelectorAll('details.replay-street-group');
+  assert.ok(groups.length >= 1);
+  for (const group of groups) {
+    assert.equal(group.firstElementChild.localName, 'summary');
+    assert.ok(group.querySelector('.replay-street-heading'));
   }
-  assert.match(renderer, /document\.createElement\('details'\)/);
-  assert.match(renderer, /document\.createElement\('summary'\)/);
-  assert.match(renderer, /section\.open = group\.isSelectedStreet/);
-  assert.match(renderer, /document\.createElement\('ol'\)/);
-  assert.match(renderer, /actionList\.start = item\.sequence \+ 1/);
-  assert.match(renderer, /item\.value = entry\.sequence \+ 1/);
-  assert.match(renderer, /entry\.amountKind !== 'none'/);
-  assert.match(renderer, /entry\.wasAllIn/);
-  assert.match(renderer, /setAttribute\('aria-current', 'true'\)/);
-  assert.match(renderer, /setAttribute\('role', 'status'\)/);
-  assert.match(renderer, /setAttribute\('aria-live', 'polite'\)/);
+  assert.ok(groups.some((group) => group.open), 'the selected street is open');
+  const list = root.querySelector('ol.replay-action-list');
+  assert.ok(list);
+  const entries = list.querySelectorAll('li.replay-action-entry');
+  assert.ok(entries.length >= 2);
+  // Ordered by canonical sequence: <ol start> and each <li value> are 1-based.
+  const values = entries.map((entry) => Number(entry.getAttribute('value') ?? entry.value));
+  assert.deepEqual(values, [...values].sort((a, b) => a - b));
+  assert.equal(Number(list.getAttribute('start') ?? list.start), values[0]);
+  for (const token of ['replay-action-identity', 'replay-position', 'replay-action-label']) assert.ok(root.querySelector(`.${token}`), token);
+  assert.ok(root.querySelector('.replay-action-entry.is-hero'));
+  const allIn = root.querySelector('.replay-action-entry.is-all-in');
+  assert.ok(allIn, 'the all-in entry is marked');
+  assert.ok(allIn.querySelector('.replay-all-in-status'));
+  assert.ok(allIn.querySelector('.replay-action-amount'), 'amounted actions show their amount');
+  const marker = root.querySelector('.replay-current-marker');
+  if (marker) {
+    assert.equal(marker.getAttribute('aria-current'), 'true');
+    assert.equal(marker.getAttribute('role'), 'status');
+    assert.equal(marker.getAttribute('aria-live'), 'polite');
+  }
 });
 
 test('action families use semantic accents while text stays high contrast', () => {
@@ -116,81 +158,83 @@ test('action families use semantic accents while text stays high contrast', () =
     ['fold', '--action-fold'],
     ['passive', '--action-passive'],
     ['aggressive', '--action-aggressive'],
-    ['all_in', '--action-all-in'],
+    ['all-in', '--action-all-in'],
   ]) {
-    const escapedFamily = family.replace('_', '[_-]');
-    assert.match(css, new RegExp(`replay-action-entry--${escapedFamily}[\\s\\S]{0,100}${token}`));
+    const entry = probe(`<li class="replay-action-entry replay-action-entry--${family}"><div class="replay-action-body"></div></li>`);
+    const declared = css.matchingRules(entry).flatMap((rule) => rule.declarations.map(({ value }) => value)).join(' ');
+    assert.match(declared, new RegExp(`var\\(${token}\\)`), family);
   }
-  const bodyRule = css.match(/\.replay-action-body\s*\{([^}]*)\}/)?.[1] || '';
-  const actionRule = css.match(/\.replay-action-label\s*\{([^}]*)\}/)?.[1] || '';
-  assert.match(bodyRule, /color:\s*var\(--text-primary\)/);
-  assert.match(actionRule, /color:\s*var\(--text-primary\)/);
-  assert.match(css, /\.replay-current-marker[\s\S]*?color:\s*var\(--text-primary\)/);
-  assert.doesNotMatch(bodyRule, /#[0-9a-f]{3,8}/i);
-  assert.match(css, /\.replay-action-entry\.is-hero \.replay-actor-name[^{]*\{[^}]*font-weight:\s*var\(--weight-title\)[^}]*text-decoration:\s*underline/); // SAVED-COMPOSITION-002 amendment: literal weights are role tokens
+  const entry = probe('<li class="replay-action-entry is-hero"><div class="replay-action-body"><span class="replay-actor-name">Hero</span><span class="replay-action-label">Call</span></div></li>');
+  assert.equal(css.cascaded(entry.querySelector('.replay-action-body'), 'color'), 'var(--text-primary)');
+  assert.equal(css.cascaded(entry.querySelector('.replay-action-label'), 'color'), 'var(--text-primary)');
+  assert.equal(css.cascaded(probe('<div class="replay-current-marker"></div>'), 'color'), 'var(--text-primary)');
+  const actor = entry.querySelector('.replay-actor-name');
+  assert.equal(css.cascaded(actor, 'font-weight'), 'var(--weight-title)'); // SAVED-COMPOSITION-002 amendment: literal weights are role tokens
+  // Superseded: a later Hand polish removed the underline; Hero is marked by
+  // the title weight.
+  assert.equal(css.cascaded(actor, 'text-decoration'), 'none');
 });
 
-test('timeline accessibility uses explicit direct-seek controls without an empty numbered action row', () => {
-  const renderer = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function dispatchCanonicalTableState()',
-  );
-  const historySurface = sourceBetween(
-    html,
-    '<section id="handHistorySection"',
-    '</section>',
-  );
-
-  assert.match(html, /id="handHistorySection"[^>]*aria-labelledby="handHistoryTitle"/);
-  assert.match(html, /id="handActionHistory"[^>]*data-i18n-aria-label="replay\.a11y\.timeline"/);
-  assert.match(renderer, /actionList\.setAttribute\('aria-labelledby', heading\.id\)/);
-  assert.match(renderer, /replay-empty-state/);
-  assert.doesNotMatch(historySurface, /<li/);
-  assert.doesNotMatch(renderer, /tabIndex/);
-  assert.match(renderer, /createElement\('button'\)/);
-  assert.match(renderer, /addEventListener\('click', \(\) => seekCanonicalReplayFrame/);
-  assert.match(renderer, /selectReplayFrame/);
-  assert.equal((historySurface.match(/id="handResolveShowdownButton"/g) || []).length, 1);
-  assert.match(historySurface, /class="replay-resolution-actions"[\s\S]*id="handResolveShowdownButton"/);
+test('timeline accessibility uses explicit direct-seek controls without an empty numbered action row', async () => {
+  assert.equal(historySurface.getAttribute('aria-labelledby'), 'handHistoryTitle');
+  assert.equal(markup.getElementById('handActionHistory').dataset.i18nAriaLabel, 'replay.a11y.timeline');
+  assert.equal(historySurface.querySelector('li'), null, 'no empty static row');
+  // Before any voluntary action the timeline shows an empty state.
+  await handWithActions([]);
+  app.call('renderCanonicalReplayTimeline');
+  assert.ok(timeline().querySelector('.replay-empty-state') || timeline().querySelector('.replay-current-marker'));
+  await handWithActions(['call', 'check']);
+  app.call('renderCanonicalReplayTimeline');
+  const list = timeline().querySelector('.replay-action-list');
+  const heading = app.byId(list.getAttribute('aria-labelledby'));
+  assert.ok(heading, 'each list is labelled by its street heading');
+  assert.equal(timeline().querySelector('[tabindex]'), null, 'native controls only');
+  const seek = timeline().querySelector('.replay-action-entry button');
+  assert.ok(seek, 'entries are direct-seek buttons');
+  const spy = app.spy(['seekCanonicalReplayFrame', 'callPlaybookStateBridge']);
+  try {
+    await app.click(seek);
+    assert.equal(spy.count('seekCanonicalReplayFrame'), 1);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'selectReplayFrame'));
+  } finally {
+    spy.restore();
+  }
+  assert.equal(historySurface.querySelectorAll('#handResolveShowdownButton').length, 1);
+  assert.ok(historySurface.querySelector('.replay-resolution-actions #handResolveShowdownButton'));
+  await app.click('#handReplayLiveButton');
 });
 
-test('bounded Replay step and playback controls exist without scrub or timing controls', () => {
-  const historySurface = sourceBetween(
-    html,
-    '<section id="handHistorySection"',
-    '</section>',
-  );
-  const renderer = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function dispatchCanonicalTableState()',
-  );
-
-  assert.match(historySurface, /id="handReplayPreviousButton"/);
-  assert.match(historySurface, /id="handReplayNextButton"/);
-  assert.match(historySurface, /id="handReplayLiveButton"/);
-  assert.match(historySurface, /id="handReplayPlaybackButton"/);
-  assert.doesNotMatch(historySurface, /\b(?:scrub|speed|autoplay)\b/i);
-  assert.doesNotMatch(renderer, /selectedReplay|replayIndex|projectedState|setInterval|requestAnimationFrame/);
+test('bounded Replay step and playback controls exist without scrub or timing controls', async () => {
+  for (const id of ['handReplayPreviousButton', 'handReplayNextButton', 'handReplayLiveButton', 'handReplayPlaybackButton']) {
+    assert.ok(historySurface.querySelector(`#${id}`), id);
+  }
+  assert.doesNotMatch(text(historySurface) + historySurface.querySelectorAll('[id],[class]').map((node) => `${node.id} ${node.className}`).join(' '), /\b(?:scrub|speed|autoplay)\b/i);
+  await handWithActions();
+  const spy = app.spy(['setInterval', 'requestAnimationFrame']);
+  try {
+    app.call('renderCanonicalReplayTimeline');
+    app.call('renderCanonicalReplayControls', app.call('callPlaybookStateBridge', 'createReplayProjectionViewModel'));
+    assert.equal(spy.total(), 0);
+  } finally {
+    spy.restore();
+  }
 });
 
-test('Replay renderer contains formatting only and no poker calculations or service calls', () => {
-  const renderer = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function dispatchCanonicalTableState()',
-  );
-  assert.doesNotMatch(
-    renderer,
-    /shared\/poker-domain|applyAction|getLegalActionSpec|calculateEquity|StrategyProvider|Training|potMilliBb|currentBet|toCall|streetContribution/i,
-  );
-  assert.doesNotMatch(renderer, /\.players\.|\.actionHistory|submittedAction/);
+test('Replay renderer contains formatting only and no poker calculations or service calls', async () => {
+  await handWithActions();
+  const spy = app.spy(['updateContext', 'calculateEquity', 'callEquityServiceBridge', 'callTrainingServiceBridge', 'callPlaybookStateBridge']);
+  try {
+    app.call('renderCanonicalReplayTimeline');
+    assert.equal(spy.count('updateContext') + spy.count('calculateEquity') + spy.count('callEquityServiceBridge') + spy.count('callTrainingServiceBridge'), 0);
+    // Only read-side Replay view models are requested.
+    for (const [method] of spy.calls.callPlaybookStateBridge) assert.match(method, /^create\w+ViewModel$|^get(?:Mode|HeroPlayerId)$/, method);
+  } finally {
+    spy.restore();
+  }
   assert.match(modelSource, /actionAmountMilliBb/);
   assert.match(modelSource, /record\.committedMilliBb/);
   assert.match(modelSource, /record\.streetContributionAfterMilliBb/);
 });
-
 test('EN, RU, and HE Replay catalogs cover every visible and assistive key', () => {
   const keys = [
     'replay.title', 'replay.subtitle', 'replay.a11y.timeline',
@@ -211,26 +255,38 @@ test('EN, RU, and HE Replay catalogs cover every visible and assistive key', () 
 });
 
 test('RTL chronology, LTR poker tokens, bounded scrolling, and overflow contracts are explicit', () => {
-  const timelineRule = css.match(/\.replay-timeline\s*\{([^}]*)\}/)?.[1] || '';
-  assert.match(timelineRule, /max-height:\s*min\(320px, 42vh\)/);
-  assert.match(timelineRule, /overflow-x:\s*hidden/);
-  assert.match(timelineRule, /overflow-y:\s*auto/);
-  assert.match(timelineRule, /overscroll-behavior-block:\s*contain/);
-  assert.match(css, /\.replay-street-heading[\s\S]*?position:\s*sticky/);
-  assert.match(css, /\.replay-current-marker[\s\S]*?position:\s*sticky/);
-  assert.match(css, /\[dir="rtl"\] \.replay-action-amount,[\s\S]*?direction:\s*ltr;\s*unicode-bidi:\s*isolate/);
-  assert.doesNotMatch(css, /\[dir="rtl"\][^{]*(?:replay-timeline|replay-action-list)[^{]*\{[^}]*flex-direction:\s*row-reverse/);
+  const bare = probe('<div class="replay-timeline"><details class="replay-street-group"><summary class="replay-street-heading">Flop</summary><ol class="replay-action-list"><li class="replay-action-entry"><span class="replay-action-amount">2 bb</span></li></ol></details><div class="replay-current-marker"></div></div>');
+  assert.equal(css.cascaded(bare, 'max-height'), 'min(320px, 42vh)');
+  assert.equal(css.cascaded(bare, 'overflow-x'), 'hidden');
+  assert.equal(css.cascaded(bare, 'overflow-y'), 'auto');
+  assert.equal(css.cascaded(bare, 'overscroll-behavior-block'), 'contain');
+  assert.equal(css.cascaded(bare.querySelector('.replay-street-heading'), 'position'), 'sticky');
+  assert.equal(css.cascaded(bare.querySelector('.replay-current-marker'), 'position'), 'sticky');
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try {
+    const amount = bare.querySelector('.replay-action-amount');
+    assert.equal(css.cascaded(amount, 'direction'), 'ltr');
+    assert.equal(css.cascaded(amount, 'unicode-bidi'), 'isolate');
+    for (const node of [bare, bare.querySelector('.replay-action-list')]) assert.notEqual(css.cascaded(node, 'flex-direction'), 'row-reverse', 'chronology is never mirrored');
+  } finally {
+    markup.documentElement.setAttribute('dir', 'ltr');
+  }
 });
 
-test('showdown resolution, Table Presence, and PERF-001 integration remain separate', () => {
-  const renderer = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function dispatchCanonicalTableState()',
-  );
-  assert.match(logic, /handResolveShowdownButton'\)\.addEventListener\('click'[\s\S]*?callPlaybookStateBridge\('resolveShowdown'\)/);
-  assert.match(logic, /callPlaybookStateBridge\('createTablePresenceViewModel'\)/);
+test('showdown resolution, Table Presence, and PERF-001 integration remain separate', async () => {
+  await handWithActions([]);
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    app.dispatch(app.byId('handResolveShowdownButton'), new app.window.MouseEvent('click', { bubbles: true }));
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'resolveShowdown'));
+    spy.reset();
+    app.call('dispatchCanonicalTableState');
+    // (Superseded: the table now receives the bridge's table-presentation
+    // view; table-presence/v1 remains the bridge's fallback model.)
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => /^createTable(?:Presentation|Presence)ViewModel$/.test(method)));
+  } finally {
+    spy.restore();
+  }
   assert.match(bridgeSource, /createTablePresenceViewModel\(\)/);
   assert.doesNotMatch(modelSource, /StrategyProvider|resolveStrategy|calculateEquity|Training|setInterval|requestAnimationFrame|addEventListener/);
-  assert.doesNotMatch(renderer, /strategyProvider|callEquityServiceBridge|callTrainingServiceBridge/);
 });

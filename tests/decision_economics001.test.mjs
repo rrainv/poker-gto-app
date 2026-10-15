@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 import {
   ACTION_TYPES,
@@ -77,17 +75,12 @@ function huPostflopShove() {
   return act(state, ACTION_TYPES.ALL_IN);
 }
 
-function trainingPresentationAdapter() {
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const start = source.indexOf('function trainingContextPresentationAdapter(');
-  const end = source.indexOf('function formatTrainingFacingCopy(', start);
-  assert.ok(start >= 0 && end > start);
-  const sandbox = {};
-  vm.runInNewContext(
-    `${source.slice(start, end)}\nglobalThis.adapter = trainingContextPresentationAdapter;`,
-    sandbox,
-  );
-  return sandbox.adapter;
+// TEST-HYGIENE-001: the page's own adapter runs in the booted app (was a
+// vm-sliced copy of logic.js).
+let pageApp = null;
+async function trainingPresentationAdapter() {
+  pageApp ||= await (await import('./helpers/app-under-test.mjs')).bootApp();
+  return (...args) => pageApp.call('trainingContextPresentationAdapter', ...args);
 }
 
 test('HU 100bb-vs-10bb preflop shove prices the short call at 45%, not 8.18%', () => {
@@ -205,8 +198,8 @@ test('free actions and lossy Scenario contexts do not invent required equity', (
   assert.equal(scenario.requiredRawEquity, null);
 });
 
-test('Training presents exact pot odds but limits scalar MDF to proven heads-up contexts', () => {
-  const adapter = trainingPresentationAdapter();
+test('Training presents exact pot odds but limits scalar MDF to proven heads-up contexts', async () => {
+  const adapter = await trainingPresentationAdapter();
   const base = {
     tableSize: 2,
     stackBb: 10,

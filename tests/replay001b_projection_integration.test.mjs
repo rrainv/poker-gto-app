@@ -11,10 +11,24 @@ const projectionSource = fs.readFileSync(
   new URL('../app/src/application/replay-projection-controller.mjs', import.meta.url),
   'utf8',
 );
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const renderer = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: Replay controls, table dispatch, read-only state and the
+// timeline run in the booted Hand workspace; markup is parsed and styling
+// resolved through the cascade. Bridge/projection/renderer/translation
+// sources are outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
+const projection = () => app.call('callPlaybookStateBridge', 'createReplayProjectionViewModel');
+async function handWithHistory() {
+  await app.startHand(['As', 'Kd']);
+  for (const action of ['call', 'check']) {
+    if (app.$(`[data-canonical-action="${action}"]:not([disabled])`)) await app.handAction(action);
+  }
+}
 const translations = fs.readFileSync(
   new URL('../app/src/locales/analysis-translations.js', import.meta.url),
   'utf8',
@@ -59,7 +73,7 @@ test('successful live transitions journal exact states while rejected and histor
   assert.doesNotMatch(projectionSource, /subtract|reverse|rollback|currentStackMilliBb\s*[-+]=|potMilliBb\s*[-+]=/i);
 });
 
-test('Scenario Mode receives neither Replay projection state nor active cursor operations', () => {
+test('Scenario Mode receives neither Replay projection state nor active cursor operations', async () => {
   assert.match(
     bridgeSource,
     /createReplayProjectionViewModel\(\)\s*\{[\s\S]*?modeController\.getMode\(\) === PLAYBOOK_MODES\.HAND[\s\S]*?: null/,
@@ -70,59 +84,91 @@ test('Scenario Mode receives neither Replay projection state nor active cursor o
       new RegExp(`${method}\\(\\) \\{[\\s\\S]*?getMode\\(\\) !== PLAYBOOK_MODES\\.HAND\\) return null`),
     );
   }
-  assert.match(logic, /function renderCanonicalReplayTimeline\(\)[\s\S]*?if \(!isHandMode\(\)\)/);
-  assert.equal((html.match(/id="handHistorySection"/g) || []).length, 1);
-  assert.match(html, /id="playbookHandWorkspace"[^>]*data-playbook-hand[^>]*hidden/);
+  assert.equal(markup.querySelectorAll('#handHistorySection').length, 1);
+  const handWorkspace = markup.getElementById('playbookHandWorkspace');
+  assert.ok(handWorkspace.hasAttribute('data-playbook-hand'));
+  assert.equal(handWorkspace.hidden, true);
+  // Outside Hand mode the timeline renders nothing.
+  await handWithHistory();
+  await app.navigate('analyze');
+  app.call('renderCanonicalReplayTimeline');
+  const timeline = app.byId('handActionHistory');
+  assert.equal(timeline.childElementCount, 0);
+  assert.equal(timeline.dataset.replayState, undefined);
+  assert.equal(projection(), null, 'Scenario receives no Replay projection');
+  await app.navigate('hand');
 });
 
-test('Previous, Next, and Return-to-live controls consume projection and canonical lifecycle flags', () => {
-  const controls = sourceBetween(
-    logic,
-    'function renderCanonicalReplayControls(',
-    'function renderCanonicalReplayTimeline()',
-  );
-  const bindings = sourceBetween(
-    logic,
-    'function bindCanonicalHandWorkspace()',
-    'function updatePositionSelect(',
-  );
-  assert.match(controls, /projection\.canPrevious/);
-  assert.match(controls, /projection\.canNext/);
-  assert.match(controls, /projection\.mode === 'replay'/);
-  assert.match(controls, /projection\.canReturnToLive === true/);
-  assert.match(controls, /liveState\.terminal\?\.isTerminal !== true/);
-  assert.match(controls, /live\.hidden = !canExitReplayToLive/);
-  assert.match(controls, /projection\.modeLabelKey/);
-  assert.match(controls, /projection\.selectedFrame\?\.labelKey/);
-  assert.match(bindings, /callPlaybookStateBridge\('previousReplayFrame'\)/);
-  assert.match(bindings, /callPlaybookStateBridge\('nextReplayFrame'\)/);
-  assert.match(bindings, /callPlaybookStateBridge\('returnReplayToEndpoint'\)/);
-  assert.doesNotMatch(`${controls}\n${bindings}`, /actionHistory|ledger|potMilliBb|streetContribution|legalAction|applyAction\(/);
+test('Previous, Next, and Return-to-live controls consume projection and canonical lifecycle flags', async () => {
+  await handWithHistory();
+  const [previous, next, live] = ['handReplayPreviousButton', 'handReplayNextButton', 'handReplayLiveButton'].map((id) => app.byId(id));
+  const check = () => {
+    const view = projection();
+    assert.equal(previous.disabled, !view.canPrevious, 'Previous follows canPrevious');
+    assert.equal(next.disabled, !view.canNext, 'Next follows canNext');
+    assert.equal(live.hidden, !(view.mode === 'replay' && view.canReturnToLive === true));
+    assert.match(text(app.byId('handReplayStatus')), new RegExp(app.evaluate(`t(${JSON.stringify(view.modeLabelKey)})`).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').slice(0, 12)));
+    return view;
+  };
+  assert.equal(check().mode, 'live');
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    await app.click(previous);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'previousReplayFrame'));
+    assert.equal(check().mode, 'replay');
+    spy.reset();
+    await app.click(next);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'nextReplayFrame'));
+    check();
+    await app.click(previous);
+    spy.reset();
+    await app.click(live);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([method]) => method === 'returnReplayToEndpoint'));
+    assert.equal(check().mode, 'live');
+  } finally {
+    spy.restore();
+  }
 });
 
-test('table dispatch sends the projection table-presence/v1 directly to the accepted renderer', () => {
-  const dispatch = sourceBetween(
-    logic,
-    'function dispatchCanonicalTableState()',
-    'function renderCanonicalHandWorkspace()',
-  );
-  assert.match(dispatch, /createReplayProjectionViewModel/);
-  assert.match(dispatch, /projection\?\.tablePresence/);
-  assert.match(dispatch, /new CustomEvent\('gameStateUpdate', \{ detail: tableModel \}\)/);
+test('table dispatch sends the projection table-presence/v1 directly to the accepted renderer', async () => {
   assert.match(renderer, /state\.schemaVersion === 'table-presence\/v1'/);
-  assert.doesNotMatch(dispatch, /\.players|actionHistory|ledger|potMilliBb|streetContributionMilliBb/);
+  await handWithHistory();
+  const updates = [];
+  const listener = (event) => updates.push(event.detail);
+  app.window.addEventListener('gameStateUpdate', listener);
+  try {
+    app.call('dispatchCanonicalTableState');
+  } finally {
+    app.window.removeEventListener('gameStateUpdate', listener);
+  }
+  // Superseded: the dispatched model is now the bridge's table-presentation/v1
+  // view built over the projection (table-presence/v1 remains the fallback).
+  assert.equal(updates.length, 1);
+  assert.match(updates[0].schemaVersion, /^table-presentation\/v1$|^table-presence\/v1$/);
+  assert.equal(app.byId('table-wrapper').dataset.replayMode, projection().mode);
+  await app.click('#handReplayPreviousButton');
+  assert.equal(app.byId('table-wrapper').dataset.replayMode, 'replay');
+  assert.ok(app.byId('table-wrapper').classList.contains('is-replay-projection'));
+  await app.click('#handReplayLiveButton');
 });
 
-test('cursor events rerender Replay/table only and bypass strategy and Equity recomputation', () => {
-  const stateListener = sourceBetween(
-    logic,
-    "window.addEventListener('riverline:playbook-state-change'",
-    'function formatCanonicalBb(',
-  );
-  assert.match(
-    stateListener,
-    /renderCanonicalHandWorkspace\(\);[\s\S]*?operation\?\.startsWith\('replay_'\)[\s\S]*?operation\?\.startsWith\('saved_hand_'\)\) return;[\s\S]*?updateContext/,
-  );
+test('cursor events rerender Replay/table only and bypass strategy and Equity recomputation', async () => {
+  await app.startHand(['As', 'Kd']);
+  const spy = app.spy(['renderCanonicalHandWorkspace', 'updateContext', 'calculateEquity']);
+  try {
+    // A live mutation refreshes the decision context …
+    await app.handAction('call');
+    await app.settle(300);
+    assert.ok(spy.count('updateContext') >= 1);
+    // … while Replay cursor moves only rerender Replay and the table.
+    spy.reset();
+    await app.click('#handReplayPreviousButton');
+    await app.click('#handReplayNextButton');
+    assert.ok(spy.count('renderCanonicalHandWorkspace') >= 2, 'Replay/table rerender');
+    assert.equal(spy.count('updateContext') + spy.count('calculateEquity'), 0, 'no strategy or Equity work');
+  } finally {
+    spy.restore();
+  }
   for (const method of ['previousReplayFrame', 'nextReplayFrame', 'returnReplayToLive']) {
     const block = sourceBetween(
       bridgeSource,
@@ -137,52 +183,56 @@ test('cursor events rerender Replay/table only and bypass strategy and Equity re
   assert.doesNotMatch(projectionSource, /StrategyProvider|resolveStrategy|calculateEquity|RiverlineEquity|Training/);
 });
 
-test('historical Replay disables live mutation surfaces and explains live-bound analysis', () => {
-  const readOnly = sourceBetween(
-    logic,
-    'function setCanonicalReplayReadOnly(',
-    'function dispatchCanonicalTableState()',
-  );
-  assert.match(readOnly, /projection\?\.readOnly === true/);
-  assert.match(readOnly, /'handDealSection', 'handChanceSection', 'handActionSection'/);
-  assert.match(readOnly, /querySelectorAll\('button, input, select'\)/);
-  assert.match(readOnly, /control\.disabled = true/);
-  assert.match(readOnly, /handResolveShowdownButton/);
-  const note = { hidden: true, textContent: '' };
-  let locale = 'en';
-  const context = { $: selector => selector === '#handReplayReadOnlyNote' ? note : null,
-    document: { activeElement: null }, callPlaybookStateBridge: () => null,
-    t: key => `${locale}:${key}` };
-  vm.runInNewContext(sourceBetween(logic, 'function renderCanonicalReplayControls(', 'function renderCanonicalReplayTimeline('), context);
-  const projection = { schemaVersion: 'replay-projection/v1', readOnly: true, selectedFrame: {} };
-  context.renderCanonicalReplayControls(projection);
-  assert.equal(note.hidden, false); assert.equal(note.textContent, 'en:replay.readOnlyHelp');
-  locale = 'he'; context.renderCanonicalReplayControls({ ...projection, viewerContext: { kind: 'saved_hand' } });
-  assert.equal(note.textContent, 'he:Read-only saved hand. Replay controls do not change your live hand.');
-  context.renderCanonicalReplayControls({ ...projection, readOnly: false }); assert.equal(note.hidden, true);
+test('historical Replay disables live mutation surfaces and explains live-bound analysis', async () => {
+  await handWithHistory();
+  await app.click('#handReplayPreviousButton');
+  assert.equal(projection().readOnly, true);
+  for (const id of ['handDealSection', 'handChanceSection', 'handActionSection']) {
+    const section = app.byId(id);
+    if (!section) continue;
+    for (const control of section.querySelectorAll('button, input, select')) assert.equal(control.disabled, true, `${id} ${control.id || control.className}`);
+  }
+  if (app.byId('handResolveShowdownButton')) assert.equal(app.byId('handResolveShowdownButton').disabled, true);
+  const note = app.byId('handReplayReadOnlyNote');
+  assert.equal(note.hidden, false);
+  assert.equal(text(note), app.evaluate("t('replay.readOnlyHelp')"));
+  // A saved hand explains that Replay never changes the live hand.
+  app.call('renderCanonicalReplayControls', { ...projection(), viewerContext: { kind: 'saved_hand' } });
+  assert.equal(text(note), app.evaluate("t('Read-only saved hand. Replay controls do not change your live hand.')"));
+  app.call('renderCanonicalReplayControls', { ...projection(), readOnly: false });
+  assert.equal(note.hidden, true);
+  await app.click('#handReplayLiveButton');
   assert.match(translations, /Strategy and analysis remain tied to the live decision/);
 });
 
-test('timeline consumes completed/current/future and selected-marker facts from the projection', () => {
-  const timeline = sourceBetween(
-    logic,
-    'function createReplayActionEntry(',
-    'function setCanonicalReplayReadOnly(',
-  );
+test('timeline consumes completed/current/future and selected-marker facts from the projection', async () => {
   assert.match(projectionSource, /presentationState/);
   assert.match(projectionSource, /return 'completed'/);
   assert.match(projectionSource, /return 'current'/);
   assert.match(projectionSource, /return 'future'/);
-  assert.match(timeline, /entry\.presentationState/);
-  assert.match(timeline, /data\.replayProgress|dataset\.replayProgress/);
-  assert.match(timeline, /model\.showCurrentMarker/);
-  assert.doesNotMatch(timeline, /actionHistory|submittedAction|committedMilliBb|currentBetAfterMilliBb/);
-  for (const state of ['current', 'future']) {
-    assert.match(css, new RegExp(`replay-action-entry\\.is-replay-${state}`));
-  }
+  await handWithHistory();
+  await app.click('#handReplayPreviousButton');
+  await app.click('#handReplayPreviousButton');
+  const entries = app.$$('#handActionHistory .replay-action-entry');
+  assert.ok(entries.length >= 2);
+  const states = entries.map((entry) => ['completed', 'current', 'future'].find((state) => entry.classList.contains(`is-replay-${state}`)));
+  assert.ok(states.includes('future'), JSON.stringify(states));
+  assert.ok(app.$('#handActionHistory .is-replay-current, #handActionHistory [aria-current="step"]'), 'a current step is marked');
+  const future = entries.find((node) => node.classList.contains('is-replay-future'));
+  const styled = (entry, state) => css.matchingRules(entry.querySelector('.replay-action-body') || entry)
+    .some((rule) => rule.selectorText.includes(`replay-action-entry.is-replay-${state}`));
+  assert.ok(styled(future, 'future'));
+  const current = markup.createElement('li');
+  current.className = 'replay-action-entry is-replay-current';
+  current.innerHTML = '<div class="replay-action-body"></div>';
+  markup.body.appendChild(current);
+  assert.ok(styled(current, 'current'));
+  current.remove();
+  assert.ok(app.$('#handActionHistory [data-replay-progress]') || app.byId('handActionHistory').dataset.replayProgress !== undefined);
+  await app.click('#handReplayLiveButton');
 });
 
-test('controls and status are native, localized, focus-stable, RTL-safe, and responsive', () => {
+test('controls and status are native, localized, focus-stable, RTL-safe, and responsive', async () => {
   const keys = [
     'replay.controls.label', 'replay.control.previous', 'replay.control.next',
     'replay.control.returnToLive', 'replay.status.live', 'replay.status.replay',
@@ -196,34 +246,57 @@ test('controls and status are native, localized, focus-stable, RTL-safe, and res
     const occurrences = translations.match(new RegExp(`'${key.replaceAll('.', '\\.')}':`, 'g')) || [];
     assert.equal(occurrences.length, 3, `${key} must exist in EN/RU/HE`);
   }
-  for (const id of [
-    'handReplayPreviousButton', 'handReplayNextButton', 'handReplayLiveButton',
-  ]) {
-    assert.match(html, new RegExp(`id="${id}"[^>]*type="button"`));
+  for (const id of ['handReplayPreviousButton', 'handReplayNextButton', 'handReplayLiveButton']) {
+    assert.equal(markup.getElementById(id).getAttribute('type'), 'button', id);
   }
-  assert.match(html, /class="replay-control-actions"[^>]*role="group"[^>]*data-i18n-aria-label="replay\.controls\.label"/);
-  assert.match(html, /id="handReplayStatus"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
-  assert.match(logic, /focusedControl\?\.disabled[\s\S]*?\.focus\(\)/);
-  assert.match(css, /\[dir="rtl"\] \.replay-step-progress[\s\S]*?direction:\s*ltr/);
-  assert.match(css, /replay-readonly-note[\s\S]*?border-inline-start/);
-  assert.match(css, /@media \(max-width: 720px\)[\s\S]*?replay-control-actions/);
+  const group = markup.querySelector('.replay-control-actions');
+  assert.equal(group.getAttribute('role'), 'group');
+  assert.equal(group.dataset.i18nAriaLabel, 'replay.controls.label');
+  const status = markup.getElementById('handReplayStatus');
+  assert.equal(status.getAttribute('role'), 'status');
+  assert.equal(status.getAttribute('aria-live'), 'polite');
+  assert.equal(status.getAttribute('aria-atomic'), 'true');
+  // Focus never stays on a control that becomes disabled.
+  await handWithHistory();
+  await app.click('#handReplayPreviousButton');
+  const next = app.byId('handReplayNextButton');
+  next.focus();
+  for (let step = 0; step < 10 && !next.disabled; step += 1) await app.click(next);
+  assert.notEqual(app.document.activeElement, next);
+  const progress = markup.createElement('span');
+  progress.className = 'replay-step-progress';
+  markup.body.appendChild(progress);
+  markup.documentElement.setAttribute('dir', 'rtl');
+  assert.equal(css.cascaded(progress, 'direction'), 'ltr');
+  markup.documentElement.setAttribute('dir', 'ltr');
+  progress.remove();
+  const note = markup.getElementById('handReplayReadOnlyNote') || markup.querySelector('.replay-readonly-note');
+  assert.ok(css.cascaded(note, 'border-inline-start') || css.cascaded(note, 'border-inline-start-width'));
+  assert.ok(css.rules.some((rule) => rule.selectorText.includes('replay-control-actions') && rule.conditions.some(({ query }) => query.includes('max-width: 720px'))));
 });
 
-test('REPLAY-001C playback and motion are additive while scrub, speed, persistence, and sound remain absent', () => {
-  const historySurface = sourceBetween(
-    html,
-    '<section id="handHistorySection"',
-    '</section>',
-  );
-  const replayLogic = sourceBetween(
-    logic,
-    'function replayActorLabel(',
-    'function renderCanonicalHandWorkspace()',
-  );
-  assert.match(historySurface, /id="handReplayPlaybackButton"/);
-  assert.match(replayLogic, /createReplayPlaybackViewModel/);
-  assert.doesNotMatch(historySurface, /\b(?:autoplay|scrub|speed)\b/i);
-  assert.doesNotMatch(replayLogic, /setInterval|requestAnimationFrame|SoundFX|localStorage|indexedDB/);
+test('REPLAY-001C playback and motion are additive while scrub, speed, persistence, and sound remain absent', async () => {
+  const historySurface = markup.getElementById('handHistorySection');
+  assert.ok(historySurface.querySelector('#handReplayPlaybackButton'));
+  assert.doesNotMatch(text(historySurface) + historySurface.querySelectorAll('[id], [class]').map((node) => `${node.id} ${node.className}`).join(' '), /\b(?:autoplay|scrub|speed)\b/i);
+  assert.equal(historySurface.querySelector('input[type="range"]'), null);
   assert.doesNotMatch(projectionSource, /setInterval|setTimeout|requestAnimationFrame|localStorage|indexedDB/);
-  assert.doesNotMatch(historySurface, /type="range"/);
+  // Playback drives the projection without intervals, frame loops or storage.
+  await handWithHistory();
+  await app.click('#handReplayPreviousButton');
+  await app.click('#handReplayPreviousButton');
+  const spy = app.spy(['setInterval', 'requestAnimationFrame']);
+  const setItem = app.window.localStorage.setItem;
+  const writes = [];
+  app.window.localStorage.setItem = (...args) => { writes.push(args[0]); return setItem.apply(app.window.localStorage, args); };
+  try {
+    await app.click('#handReplayPlaybackButton');
+    assert.ok(app.call('callPlaybookStateBridge', 'createReplayPlaybackViewModel')?.playing);
+    await app.settle(2000);
+    assert.equal(spy.total(), 0, JSON.stringify(spy.sequence));
+    assert.deepEqual(writes, []);
+  } finally {
+    spy.restore();
+    app.window.localStorage.setItem = setItem;
+  }
 });

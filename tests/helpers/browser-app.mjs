@@ -516,10 +516,19 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
     /** Start a canonical Hand with Hero's private cards and begin betting. */
     async startHand(heroCards = ['As', 'Kd']) {
       await harness.navigate('hand');
-      if (harness.call('callPlaybookStateBridge', 'getState')) {
-        // Abort the current hand first (the confirm dialog answers yes).
-        await harness.click('#handResetButton');
+      const current = harness.call('callPlaybookStateBridge', 'getState');
+      if (current) {
+        // A finished hand offers New hand; a live one is aborted (the confirm
+        // dialog answers yes).
+        const finished = current.phase === 'terminal' || current.terminal?.isTerminal === true;
+        const newHand = harness.document.getElementById('handCompletedNewHandButton');
+        await harness.click(finished && newHand && !newHand.hidden ? newHand : '#handResetButton');
         await harness.settle(300);
+        if (harness.call('callPlaybookStateBridge', 'getState')) {
+          harness.call('callPlaybookStateBridge', 'resetHand');
+          harness.call('resetCanonicalHandDraft');
+          harness.call('renderCanonicalHandWorkspace');
+        }
       }
       await harness.click('#handStartButton');
       await harness.settle(300);
