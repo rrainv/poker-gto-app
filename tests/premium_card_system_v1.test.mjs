@@ -2,7 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import {
+import { appStyleSheet, bootApp, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / logic.js / styles.css assertions are
+// behavioural: parsed markup, the cascade over rendered cards, and the booted
+// app's renderers. Other module sources keep their existing checks.
+const app = await bootApp();
+const css = appStyleSheet();
+// Imported after boot: the card presentation module self-installs on the page.
+const {
   CARD_BACK_STYLES,
   CARD_FACE_STYLES,
   CARD_GEOMETRY,
@@ -16,11 +24,8 @@ import {
   normalizeCardPresentation,
   tableCardBackSvgMarkup,
   tableCardSvgMarkup,
-} from '../app/src/application/card-presentation.mjs';
+} = await import('../app/src/application/card-presentation.mjs');
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const rangeWorkspace = fs.readFileSync(
   new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url),
@@ -39,6 +44,37 @@ const visualHarness = fs.readFileSync(
   new URL('./tooling/premium_card_system_v1_visual_harness.html', import.meta.url),
   'utf8',
 );
+
+const root = app.document.documentElement;
+
+/** Render markup into a scratch host on the booted page. */
+function rendered(markup) {
+  const host = app.document.createElement('div');
+  host.dataset.testHost = 'premium-card';
+  host.innerHTML = markup;
+  app.document.body.appendChild(host);
+  return host;
+}
+
+/** Run with root datasets temporarily set. */
+function withRoot(dataset, run) {
+  const previous = {};
+  for (const [key, value] of Object.entries(dataset)) {
+    previous[key] = root.dataset[key];
+    root.dataset[key] = value;
+  }
+  try { return run(); } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete root.dataset[key];
+      else root.dataset[key] = value;
+    }
+  }
+}
+
+/** A live slot card exactly as the page's slot renderer emits it. */
+function slotCard(card = 'Th', group = 'hero') {
+  return rendered(`<button type="button" class="card-slot card--known filled card--suit-${card[1]} riverline-card" data-card-state="known" data-card-size="slot" data-group="${group}">${app.call('cardMarkup', card)}</button>`).firstElementChild;
+}
 
 function occurrenceCount(value, pattern) {
   return [...value.matchAll(pattern)].length;
@@ -105,15 +141,27 @@ function controllerFixture({ stored, rootDataset = {} } = {}) {
 test('Premium Card System v1 exposes exactly three curated faces and backs', () => {
   assert.deepEqual(Object.keys(CARD_FACE_STYLES), ['classic', 'minimal', 'high-contrast']);
   assert.deepEqual(Object.keys(CARD_BACK_STYLES), ['riverline', 'solid', 'geometric']);
-  for (const id of Object.keys(CARD_FACE_STYLES)) {
-    assert.match(html, new RegExp(`data-card-face-style="${id}"`));
-    assert.match(css, new RegExp(`data-card-face-style="${id}"`));
-  }
-  for (const id of Object.keys(CARD_BACK_STYLES)) {
-    assert.match(html, new RegExp(`data-card-back-style="${id}"`));
-    assert.match(css, new RegExp(`data-card-back-style="${id}"`));
-  }
-  assert.doesNotMatch(html, /Classic Mirrored|Tournament|Clean Corner|Clarity Corner/);
+  // Was: each id appears in index.html and styles.css. Protects: Settings
+  // offers exactly these choices and each one restyles live cards.
+  const doc = indexDocument();
+  assert.deepEqual(
+    doc.querySelectorAll('button[data-card-face-style]').map((button) => button.getAttribute('data-card-face-style')),
+    Object.keys(CARD_FACE_STYLES),
+  );
+  assert.deepEqual(
+    doc.querySelectorAll('button[data-card-back-style]').map((button) => button.getAttribute('data-card-back-style')),
+    Object.keys(CARD_BACK_STYLES),
+  );
+  const face = slotCard('Ah');
+  const faceRules = (style) => withRoot({ cardFaceStyle: style }, () => css.matchingRules(face)
+    .filter((rule) => rule.selectors.some((selector) => selector.includes(`data-card-face-style="${style}"`))).length);
+  for (const id of Object.keys(CARD_FACE_STYLES)) assert.ok(faceRules(id) > 0, `${id} face style applies`);
+  const back = rendered('<i class="riverline-card-back" data-card-size="mini"></i>').firstElementChild;
+  const backImages = Object.keys(CARD_BACK_STYLES)
+    .map((style) => withRoot({ cardBackStyle: style }, () => css.cascaded(back, 'background-image')));
+  assert.equal(new Set(backImages).size, backImages.length, 'each back style paints a distinct back');
+  // Retired style names stay out of the shipped markup (text and attributes).
+  assert.doesNotMatch(doc.documentElement.outerHTML, /Classic Mirrored|Tournament|Clean Corner|Clarity Corner/);
 });
 
 test('face and back controls apply immediately and persist one validated record', () => {
@@ -188,11 +236,38 @@ test('all ranks, suits, and full-ten geometry remain presentation-only', () => {
       }
     }
   }
-  assert.doesNotMatch(logic, /card\[0\]\s*=|card\[1\]\s*=/);
   assert.equal(CARD_RANK_GEOMETRY.tenScaleX, 0.82);
-  assert.match(css, /--card-rank-ten-scale-x:\s*\.82/);
-  assert.match(css, /rank--ten[\s\S]*?scaleX\(var\(--card-rank-ten-scale-x\)\)/);
-  assert.doesNotMatch(css, /rank--ten[^}]*scaleY/);
+  // Was: --card-rank-ten-scale-x: .82 and a scaleX-only rank--ten transform.
+  // Protects: the CSS ten treatment matches the geometry authority and only
+  // narrows the glyph horizontally.
+  const ten = rendered(`<span class="riverline-card" data-card-size="slot">${cardFaceMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten' })}</span>`);
+  assert.equal(css.cascaded(ten.firstElementChild, '--card-rank-ten-scale-x'), String(CARD_RANK_GEOMETRY.tenScaleX).replace(/^0/, ''));
+  const tenTransform = css.cascaded(ten.querySelector('.card-center .rank--ten'), 'transform');
+  assert.equal(tenTransform, 'scaleX(var(--card-rank-ten-scale-x))');
+  assert.doesNotMatch(tenTransform, /scaleY/);
+});
+
+test('full-ten is presentation-only: the canonical Hand keeps its T cards', async () => {
+  // Was: logic.js never assigns card[0] / card[1]. Protects: switching the
+  // rank style re-renders labels without rewriting canonical card ids.
+  await app.startHand(['Th', '9h']);
+  const heroCards = () => {
+    const state = app.call('callPlaybookStateBridge', 'getState');
+    const heroId = app.call('callPlaybookStateBridge', 'getHeroPlayerId');
+    return state.players.find((player) => player.playerId === heroId).holeCards;
+  };
+  assert.deepEqual(heroCards(), ['Th', '9h']);
+  const previous = app.evaluate('app.settings.cardRankStyle');
+  try {
+    await app.click('button[data-card-rank-style="full-ten"]');
+    assert.equal(app.evaluate('app.settings.cardRankStyle'), 'full-ten');
+    app.call('renderCanonicalHandWorkspace');
+    assert.deepEqual(heroCards(), ['Th', '9h']);
+    assert.equal(app.call('cardMarkup', 'Th').includes('>10<'), true);
+  } finally {
+    await app.click(`button[data-card-rank-style="${previous}"]`);
+  }
+  assert.deepEqual(heroCards(), ['Th', '9h']);
 });
 
 test('all faces contain one rank/suit node pair and two empty mirrored corner units', () => {
@@ -225,10 +300,21 @@ test('all faces contain one rank/suit node pair and two empty mirrored corner un
 });
 
 test('Classic HTML and all table styles keep complete, symmetric corner geometry in bounds', () => {
-  assert.match(css, /\.card-corner--bottom\s*\{[^}]*transform:\s*rotate\(180deg\)/s);
-  assert.match(css, /\.riverline-card\s*\{[^}]*overflow:\s*hidden/s);
-  assert.match(css, /\.card-slot\.facedown,[\s\S]*?\.riverline-card-back\s*\{[^}]*overflow:\s*hidden/s);
-  assert.doesNotMatch(css, /table-card-corner--top\s+\.table-card-corner-(?:rank|suit)/);
+  // Was: .card-corner--bottom rotate(180deg), .riverline-card and
+  // facedown/back overflow: hidden, and no top-corner-only SVG text rule.
+  // Protects: the bottom corner mirrors the top, faces and backs clip to the
+  // card, and both SVG corners share one text treatment.
+  const classic = slotCard('Ah');
+  assert.equal(css.cascaded(classic.querySelector('.card-corner--bottom'), 'transform'), 'rotate(180deg)');
+  assert.equal(css.cascaded(classic, 'overflow'), 'hidden');
+  const backs = rendered('<span class="card-slot facedown" data-card-size="slot"></span><i class="riverline-card-back" data-card-size="mini"></i>');
+  for (const back of backs.children) assert.equal(css.cascaded(back, 'overflow'), 'hidden', back.className);
+  const svg = rendered(tableCardSvgMarkup({ rank: 'A', suit: 'h', rankStyle: 'poker', faceStyle: 'classic' }));
+  for (const part of ['rank', 'suit']) {
+    const [top, bottom] = svg.querySelectorAll(`.table-card-corner-${part}`);
+    const props = (node) => css.matchingRules(node).map((rule) => rule.order);
+    assert.deepEqual(props(top), props(bottom), `${part}: both SVG corners match the same rules`);
+  }
 
   const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
   for (const faceStyle of Object.keys(CARD_FACE_STYLES)) {
@@ -251,9 +337,23 @@ test('Classic HTML and all table styles keep complete, symmetric corner geometry
 });
 
 test('full-ten uses one symmetric wide-rank treatment in DOM and coordinate-anchored SVG', () => {
-  assert.match(css, /\.card-corner\[data-card-rank-width="wide"\]::before\s*\{[^}]*letter-spacing:\s*normal[^}]*scaleX\(var\(--card-rank-ten-scale-x\)\)/s);
-  assert.match(css, /\.card-center \.rank--ten\s*\{[^}]*inline-size:\s*var\(--card-rank-ten-inline-size\)[^}]*place-items:\s*center[^}]*letter-spacing:\s*normal[^}]*text-align:\s*center/s);
-  assert.doesNotMatch(css, /(?:rank--ten|card-rank-width="wide")[^}]*letter-spacing:\s*-/s);
+  // Was: the wide-corner ::before and .card-center .rank--ten rule text.
+  // Protects: both the corner and centre ten narrow with the shared scaleX,
+  // centre in a fixed inline size, and never use negative letter-spacing.
+  for (const faceStyle of Object.keys(CARD_FACE_STYLES)) {
+    const card = rendered(`<span class="riverline-card" data-card-size="slot">${cardFaceMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten' })}</span>`);
+    withRoot({ cardFaceStyle: faceStyle }, () => {
+      for (const corner of card.querySelectorAll('.card-corner[data-card-rank-width="wide"]')) {
+        assert.equal(css.cascaded(corner, 'letter-spacing', { pseudoElement: 'before' }), 'normal', faceStyle);
+        assert.match(css.cascaded(corner, 'transform', { pseudoElement: 'before' }) || '', /scaleX\(var\(--card-rank-ten-scale-x\)\)/, faceStyle);
+      }
+      const centre = card.querySelector('.card-center .rank--ten');
+      assert.equal(css.cascaded(centre, 'inline-size'), 'var(--card-rank-ten-inline-size)', faceStyle);
+      assert.equal(css.cascaded(centre, 'place-items'), 'center', faceStyle);
+      assert.equal(css.cascaded(centre, 'letter-spacing'), 'normal', faceStyle);
+      assert.equal(css.cascaded(centre, 'text-align'), 'center', faceStyle);
+    });
+  }
 
   for (const faceStyle of Object.keys(CARD_FACE_STYLES)) {
     const face = tableCardSvgMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten', faceStyle });
@@ -268,13 +368,28 @@ test('full-ten uses one symmetric wide-rank treatment in DOM and coordinate-anch
 });
 
 test('Settings previews use the shared renderer without selected-style leakage', () => {
-  const previewMatches = [...html.matchAll(/<span class="settings-card-face[^>]*data-card-preview-face-style="([^"]+)"[^>]*><\/span>/g)];
-  assert.deepEqual(previewMatches.map((match) => match[1]), Object.keys(CARD_FACE_STYLES));
-  assert.doesNotMatch(previewMatches.map((match) => match[0]).join(''), /card-corner|card-center|class="rank|class="suit/);
+  // Was: preview <span> regex over index.html plus the two :not(preview)
+  // selectors and no `html [data-card-preview-back-style=` rule. Protects:
+  // one empty preview per face style, filled by the shared renderer, and the
+  // selected root style never leaks into the previews.
+  const doc = indexDocument();
+  const staticPreviews = doc.querySelectorAll('span.settings-card-face[data-card-preview-face-style]');
+  assert.deepEqual(staticPreviews.map((preview) => preview.getAttribute('data-card-preview-face-style')), Object.keys(CARD_FACE_STYLES));
+  assert.ok(staticPreviews.every((preview) => preview.childNodes.length === 0), 'previews ship empty');
   assert.match(cardPresentationSource, /querySelector\?\.\('\[data-card-preview-face-style\]'\)[\s\S]*?appendCardFaceContents\(preview/);
-  assert.match(css, /riverline-card:not\(\[data-card-preview-face-style\]\)/);
-  assert.match(css, /riverline-card-back:not\(\[data-card-preview-back-style\]\)/);
-  assert.doesNotMatch(css, /html \[data-card-preview-back-style=/);
+  const livePreviews = app.$$('span.settings-card-face[data-card-preview-face-style]');
+  assert.ok(livePreviews.every((preview) => preview.querySelector('.card-corner--top') && preview.querySelector('.card-center')));
+
+  const classicPreview = livePreviews.find((preview) => preview.dataset.cardPreviewFaceStyle === 'classic');
+  const liveCard = slotCard('Ah');
+  withRoot({ cardFaceStyle: 'high-contrast' }, () => {
+    assert.equal(css.cascaded(liveCard.querySelector('.card-corner--bottom'), 'display'), 'none');
+    assert.notEqual(css.cascaded(classicPreview.querySelector('.card-corner--bottom'), 'display'), 'none');
+  });
+  const riverlineBackPreview = app.$('.riverline-card-back[data-card-preview-back-style="riverline"]');
+  const previewBack = (style) => withRoot({ cardBackStyle: style }, () => css.cascaded(riverlineBackPreview, 'background-image'));
+  assert.equal(previewBack('solid'), previewBack('geometric'));
+  assert.equal(previewBack('solid'), previewBack('riverline'));
   assert.match(visualHarness, /import \{ appendCardFaceContents(?:, [^}]+)? \}/);
   assert.match(visualHarness, /appendCardFaceContents\(card/);
 });
@@ -295,25 +410,44 @@ test('named sizes share a coherent ratio and table SVG uses the geometry authori
   assert.match(back, /table-card-back-river/);
   assert.match(back, /table-card-back-geometric/);
   assert.doesNotMatch(back, /data-card-state="known"/);
+  // Was: each --card-size-* token appears in styles.css. Protects: every
+  // named size resolves to a pixel token on the root.
   for (const token of ['mini', 'result', 'table', 'picker', 'compact', 'slot', 'standard', 'representative', 'full']) {
-    assert.match(css, new RegExp(`--card-size-${token}-width`));
-    assert.match(css, new RegExp(`--card-size-${token}-height`));
+    assert.match(css.cascaded(root, `--card-size-${token}-width`) || '', /^\d+(?:\.\d+)?px$/, `${token} width`);
+    assert.match(css.cascaded(root, `--card-size-${token}-height`) || '', /^\d+(?:\.\d+)?px$/, `${token} height`);
   }
 });
 
-test('runtime slot, board, and SVG clipping contracts use the shared geometry layers', () => {
-  assert.match(css, /\.riverline-card\.card-slot\[data-card-size="slot"\]\s*\{[^}]*width:\s*var\(--poker-card-width\) !important[^}]*height:\s*var\(--poker-card-height\) !important/s);
-  assert.match(css, /\.card-slots\s*\{[^}]*overflow:\s*visible/s);
-  assert.match(css, /\.card-slot\s*\{[^}]*overflow:\s*hidden/s);
-  assert.match(css, /\.poker-card-svg\s*\{[^}]*overflow:\s*visible/s);
-  assert.match(css, /@media \(max-width:\s*768px\)[\s\S]*?\.card-slot\s*\{[^}]*--poker-card-width:\s*var\(--card-size-compact-width\)[^}]*--poker-card-height:\s*var\(--card-size-compact-height\)/);
+test('runtime slot, board, and SVG clipping contracts use the shared geometry layers', async () => {
+  // Was: slot / card-slots / card-slot / poker-card-svg rule text, the
+  // compact ≤768px slot tokens, rule order over the legacy 48px filled slot,
+  // the slot renderer's data attributes and the Equity board row track.
+  // Protects: live slots size from the shared tokens (beating the legacy
+  // filled size), clip their face while the row and SVG do not clip, and
+  // shrink to the compact size on narrow layouts.
+  await app.startHand(['As', 'Kd']);
+  const slots = app.$$('[data-slots="hero"] .riverline-card.card-slot');
   assert.ok(
-    css.indexOf('.riverline-card.card-slot[data-card-size="slot"]')
-      > css.indexOf('.card-slot.filled {\n\n  width: 48px'),
-    'shared slot authority follows and overrides the legacy filled-card dimensions',
+    slots.length > 0 && slots.every((slot) => slot.dataset.cardSize === 'slot' && slot.dataset.group === 'hero'),
+    'the slot renderer tags size and group',
   );
-  assert.match(logic, /data-card-size="slot" data-group="\$\{group\}"/);
-  assert.match(css, /\.equity-board-layout\s*\{[^}]*grid-template-rows:\s*auto var\(--poker-card-height,\s*68px\)/s);
+  const filled = slots.find((slot) => slot.classList.contains('filled'));
+  assert.ok(filled, 'a filled live slot exists');
+  for (const [property, token] of [['width', 'width'], ['min-width', 'width'], ['height', 'height'], ['min-height', 'height']]) {
+    assert.equal(css.cascaded(filled, property), `var(--poker-card-${token})`, property);
+  }
+  assert.equal(css.cascaded(filled, 'overflow'), 'hidden');
+  assert.equal(css.cascaded(filled, '--poker-card-width', { width: 768 }), 'var(--card-size-compact-width)');
+  assert.equal(css.cascaded(filled, '--poker-card-height', { width: 768 }), 'var(--card-size-compact-height)');
+  const row = app.$('.card-slots');
+  assert.ok(row);
+  assert.equal(css.cascaded(row, 'overflow'), 'visible');
+  const svg = rendered(tableCardSvgMarkup({ rank: 'A', suit: 's', rankStyle: 'poker', faceStyle: 'classic' })).firstElementChild;
+  assert.ok(svg.classList.contains('poker-card-svg'));
+  assert.equal(css.cascaded(svg, 'overflow'), 'visible');
+  const board = app.$('.equity-board-layout');
+  assert.ok(board);
+  assert.equal(css.cascaded(board, 'grid-template-rows'), 'auto var(--poker-card-height, 68px)');
 
   const tableTen = tableCardSvgMarkup({ rank: 'T', suit: 's', rankStyle: 'full-ten', faceStyle: 'classic' });
   assert.match(tableTen, /width="40" height="57" rx="5" ry="5"/);
@@ -321,36 +455,90 @@ test('runtime slot, board, and SVG clipping contracts use the shared geometry la
   assert.doesNotMatch(tableTen, /foreignObject|overflow="hidden"/);
 });
 
-test('major workspaces consume the shared face and back renderers', () => {
-  assert.match(logic, /function cardMarkup\(card\)[\s\S]*?presentation\.cardFaceMarkup/);
-  assert.match(logic, /data-card-size="slot"/);
-  assert.match(logic, /data-card-size="picker"/);
-  assert.match(logic, /data-card-size="standard"/);
-  assert.match(logic, /data-card-size="result"/);
+test('major workspaces consume the shared face and back renderers', async () => {
+  // Was: logic.js source names (cardMarkup -> presentation.cardFaceMarkup,
+  // data-card-size slot/picker/standard/result, renderTrainingCards,
+  // equityReadOnlyCardsMarkup, hand-card-backs -> riverline-card-back).
+  // Protects: the page's card renderers emit the shared face markup at the
+  // named sizes, and hidden opponents render shared backs.
+  const rankStyle = app.evaluate('app.settings.cardRankStyle');
+  assert.equal(app.call('cardMarkup', 'Ah'), cardFaceMarkup({ rank: 'A', suit: 'h', rankStyle }));
+  const result = rendered(app.call('equityReadOnlyCardsMarkup', ['Ah', 'Kd'], 'Hero'));
+  const resultCards = result.querySelectorAll('.riverline-card[data-card-size="result"]');
+  assert.equal(resultCards.length, 2);
+  assert.equal(resultCards[0].innerHTML, cardFaceMarkup({ rank: 'A', suit: 'h', rankStyle }));
+  const unknown = rendered(app.call('equityReadOnlyCardsMarkup', null, 'Villain'));
+  assert.equal(unknown.querySelectorAll('.riverline-card-back[data-card-size="result"]').length, 2);
+  assert.equal(app.evaluate('typeof renderTrainingCards'), 'function');
+
+  await app.startHand(['As', 'Kd']);
+  assert.ok(app.$$('[data-slots="hero"] [data-card-size="slot"]').length > 0);
+  assert.equal(app.$$('.hand-card-backs .riverline-card-back').length, 2);
+  await app.click('[data-card-set-edit="hand-seat-1"]');
+  const deck = app.$$('[data-deck-card]');
+  assert.equal(deck.length, 52);
+  assert.ok(deck.every((card) => card.dataset.cardSize === 'picker' && card.classList.contains('riverline-card')));
+  assert.ok(deck[0].querySelector('.card-corner--top'), 'deck cards use the shared face');
+  assert.ok(app.$$('.card-set-picker-card[data-card-size="standard"]').length > 0, 'the picker preview uses the standard size');
+  await app.key('#cardModal', 'Escape');
+
   assert.match(table, /presentation\.tableCardSvgMarkup/);
   assert.match(table, /presentation\.tableCardBackSvgMarkup/);
   assert.match(rangeWorkspace, /appendCardFaceContents/);
   assert.match(rangeWorkspace, /cardSize = 'representative'/);
   assert.match(teacher, /presentation\.appendCardFaceContents/);
   assert.match(teacher, /cardSize = 'mini'/);
-  assert.match(logic, /renderTrainingCards/);
-  assert.match(logic, /equityReadOnlyCardsMarkup/);
-  assert.match(logic, /hand-card-backs[\s\S]*?riverline-card-back/);
 });
 
-test('picker accessibility, four-color semantics, RTL, and reduced motion remain explicit', () => {
-  assert.match(logic, /class="deck-suit-row" data-picker-suit="\$\{suit\.id\}"/);
-  assert.match(logic, /aria-pressed="\$\{isSelected\}"/);
-  assert.match(logic, /data-deck-card="\$\{card\}" \$\{isUnavailable \? 'disabled' : ''\}/);
-  assert.match(logic, /t\('\{card\}, unavailable'/);
-  assert.match(logic, /t\('Select \{card\}'/);
-  assert.match(css, /html\[data-four-color="false"\][\s\S]*?--suit-diamond:\s*var\(--suit-heart\)[\s\S]*?--suit-club:\s*var\(--suit-spade\)/);
+test('picker accessibility, four-color semantics, RTL, and reduced motion remain explicit', async () => {
+  // Was: renderDeck template text (suit rows, aria-pressed, disabled
+  // unavailable cards, Select / unavailable labels). Protects: the picker
+  // groups cards by suit and exposes selection and availability to AT.
+  await app.startHand(['As', 'Kd']);
+  await app.click('[data-card-set-edit="hand-seat-1"]');
+  assert.deepEqual(app.$$('.deck-suit-row[data-picker-suit]').map((row) => row.dataset.pickerSuit), ['h', 's', 'd', 'c']);
+  const deckCard = (card) => app.$(`[data-deck-card="${card}"]`);
+  const unavailable = deckCard('As');
+  assert.equal(unavailable.disabled, true);
+  assert.equal(unavailable.getAttribute('aria-label'), app.call('t', '{card}, unavailable', { card: 'A♠' }));
+  assert.equal(deckCard('2c').disabled, false);
+  assert.equal(deckCard('2c').getAttribute('aria-pressed'), 'false');
+  assert.equal(deckCard('2c').getAttribute('aria-label'), app.call('t', 'Select {card}', { card: '2♣' }));
+  await app.click(deckCard('2c'));
+  assert.equal(deckCard('2c').getAttribute('aria-pressed'), 'true');
+
+  // Was: .deck-card:focus-visible { outline } text. Protects: keyboard focus
+  // on a deck card draws an outline.
+  const focusTarget = deckCard('3c');
+  assert.notEqual(css.cascaded(focusTarget, 'outline-offset', { states: ['focus-visible'] }), '3px', 'unfocused');
+  focusTarget.focus();
+  assert.match(css.cascaded(focusTarget, 'outline', { states: ['focus-visible'] }) || '', /\d+px solid/);
+  assert.equal(css.cascaded(focusTarget, 'outline-offset', { states: ['focus-visible'] }), '3px');
+  await app.key('#cardModal', 'Escape');
+
+  // Was: html[data-four-color="false"] diamond/club remap and per-suit
+  // card--suit-* colour text. Protects: two-colour mode maps diamonds to
+  // hearts and clubs to spades; each suit class colours from its token.
+  withRoot({ fourColor: 'false' }, () => {
+    assert.equal(css.cascaded(root, '--suit-diamond'), 'var(--suit-heart)');
+    assert.equal(css.cascaded(root, '--suit-club'), 'var(--suit-spade)');
+  });
   for (const [suit, token] of Object.entries({ h: 'heart', d: 'diamond', c: 'club', s: 'spade' })) {
-    assert.match(css, new RegExp(`card--suit-${suit}[\\s\\S]*?var\\(--suit-${token}\\)`));
+    const card = rendered(`<span class="riverline-card card--suit-${suit}"></span>`).firstElementChild;
+    assert.equal(css.cascaded(card, '--riverline-card-suit-color'), `var(--suit-${token})`, suit);
   }
-  assert.match(css, /\.riverline-card[\s\S]*?direction:\s*ltr[\s\S]*?unicode-bidi:\s*isolate/);
-  assert.match(css, /\.deck-card:focus-visible[\s\S]*?outline:/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+
+  // Was: .riverline-card direction / unicode-bidi text. Protects: cards stay
+  // LTR-isolated inside RTL pages.
+  const isolated = slotCard('Ah');
+  assert.equal(css.cascaded(isolated, 'direction'), 'ltr');
+  assert.equal(css.cascaded(isolated, 'unicode-bidi'), 'isolate');
+
+  // Was: a prefers-reduced-motion media block exists. Protects: dealt-card
+  // motion is removed under reduced motion.
+  const dealt = rendered('<span class="card-slot is-card-dealt"></span>').firstElementChild;
+  assert.notEqual(css.cascaded(dealt, 'animation'), 'none');
+  assert.equal(css.cascaded(dealt, 'animation', { reducedMotion: true }), 'none');
   for (const key of ['Four-color deck', 'Card face style', 'Card-back style', 'High Contrast', 'Geometric']) {
     assert.ok(translations.split(`"${key}"`).length >= 3, `${key} must exist in EN/RU/HE catalogs`);
   }
@@ -358,15 +546,39 @@ test('picker accessibility, four-color semantics, RTL, and reduced motion remain
 
 test('runtime DOM, Settings, SVG, and Replay consume one canonical suit-color path', () => {
   for (const [suit, token] of Object.entries({ h: 'heart', d: 'diamond', c: 'club', s: 'spade' })) {
-    assert.match(css, new RegExp(`data-card-suit-id="${suit}"[^}]*--riverline-card-suit-color:\\s*var\\(--suit-${token}\\)`));
+    // Was: [data-card-suit-id] colour-token rule text. Protects: every
+    // renderer's suit metadata resolves the suit colour from one token.
+    const tagged = rendered(`<span data-card-suit-id="${suit}"></span>`).firstElementChild;
+    assert.equal(css.cascaded(tagged, '--riverline-card-suit-color'), `var(--suit-${token})`, suit);
     const face = cardFaceMarkup({ rank: 'A', suit });
     assert.equal(occurrenceCount(face, new RegExp(`data-card-suit-id="${suit}"`, 'g')), 3);
     assert.match(tableCardSvgMarkup({ rank: 'A', suit }), new RegExp(`data-card-suit-id="${suit}"`));
   }
-  assert.match(css, /\.riverline-card \[data-card-suit-id\] :is\(\.rank, \.suit\)[\s\S]*?color:\s*var\(--riverline-card-suit-color\) !important/);
-  assert.doesNotMatch(css, /\.poker-card-svg\.card--suit-[hdcs]\s*\{/);
-  assert.match(logic, /cardSuitPresentation\(card\.suit\)[\s\S]*?replay-transition-card[\s\S]*?dataset\.cardSuitId/);
-  assert.doesNotMatch(logic, /replay-transition-card--\$\{card\.tone\}/);
+  // Was: the rank/suit !important colour rule. Protects: face glyphs take
+  // the suit token colour over legacy suit classes.
+  const face = slotCard('Ad');
+  for (const glyph of face.querySelectorAll('.card-center .rank, .card-center .suit')) {
+    assert.equal(css.cascaded(glyph, 'color'), 'var(--riverline-card-suit-color)');
+  }
+  // SOURCE-SHAPE: policy lint over parsed rules - no `.poker-card-svg.card--suit-*`
+  // rule may reintroduce a second SVG suit-colour path (absence of a rule has
+  // no behavioural observable short of enumerating every possible element).
+  for (const suit of ['h', 'd', 'c', 's']) {
+    assert.equal(css.rulesFor(`.poker-card-svg.card--suit-${suit}`, { anyCondition: true }).length, 0, suit);
+  }
+  // Was: logic.js replay-transition-card source. Protects: Replay board
+  // tokens carry the canonical suit id (no tone class).
+  const entry = app.call('createReplayTransitionEntry', {
+    transitionKind: 'deal_flop',
+    presentationState: 'current',
+    frameIndex: 0,
+    labelKey: 'Flop',
+    cardVisibility: 'public_board',
+    cards: [{ rank: 'A', suit: 'h' }, { rank: 'T', suit: 'c' }],
+  });
+  const tokens = entry.querySelectorAll('.replay-transition-card');
+  assert.deepEqual(tokens.map((token) => token.dataset.cardSuitId), ['h', 'c']);
+  assert.ok(tokens.every((token) => token.className === 'replay-transition-card'));
 });
 
 test('two-color and four-color preference changes apply live through root suit tokens', () => {
@@ -380,9 +592,18 @@ test('two-color and four-color preference changes apply live through root suit t
   assert.equal(view.root.dataset.fourColor, 'true');
   assert.equal(view.controller.get().fourColor, true);
   assert.equal(view.events.length, initialEventCount + 2);
-  assert.match(css, /html\[data-four-color="false"\]\s*\{[^}]*--suit-diamond:\s*var\(--suit-heart\)[^}]*--suit-club:\s*var\(--suit-spade\)/s);
-  assert.match(css, /--heart:\s*var\(--suit-heart\)/);
-  assert.match(css, /--diamond:\s*var\(--suit-diamond\)/);
+  // Was: html[data-four-color="false"] block and --heart/--diamond alias
+  // text. Protects: the root dataset the controller writes remaps the suit
+  // tokens, and the legacy aliases follow them.
+  withRoot({ fourColor: 'false' }, () => {
+    assert.equal(css.cascaded(root, '--suit-diamond'), 'var(--suit-heart)');
+    assert.equal(css.cascaded(root, '--suit-club'), 'var(--suit-spade)');
+  });
+  withRoot({ fourColor: 'true' }, () => {
+    assert.match(css.cascaded(root, '--suit-diamond'), /^#/);
+  });
+  assert.equal(css.cascaded(root, '--heart'), 'var(--suit-heart)');
+  assert.equal(css.cascaded(root, '--diamond'), 'var(--suit-diamond)');
 });
 
 test('card presentation preserves theme, density, and layout datasets in every supported combination', () => {
@@ -400,8 +621,11 @@ test('card presentation preserves theme, density, and layout datasets in every s
       }
     }
   }
-  for (const theme of ['midnight', 'daylight', 'graphite']) {
-    const block = css.match(new RegExp(`\\[data-theme="${theme}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`))?.[1] ?? '';
-    assert.doesNotMatch(block, /--suit-(?:heart|diamond|club|spade)/);
+  // Was: theme blocks never declare --suit-* tokens. Protects: suit colours
+  // are theme-independent.
+  const suitTokens = () => ['heart', 'diamond', 'club', 'spade'].map((suit) => css.cascaded(root, `--suit-${suit}`));
+  const baseline = withRoot({ theme: 'midnight' }, suitTokens);
+  for (const theme of ['daylight', 'graphite']) {
+    assert.deepEqual(withRoot({ theme }, suitTokens), baseline, theme);
   }
 });

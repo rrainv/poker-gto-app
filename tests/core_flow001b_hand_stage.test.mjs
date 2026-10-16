@@ -4,24 +4,19 @@ import fs from 'node:fs';
 
 import { ACTION_TYPES, GAME_MODES } from '../shared/poker-domain/index.js';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
 import { createPlaybookScenarioInput } from '../app/src/application/playbook-state-source.mjs';
+import { appStyleSheet, bootApp, indexDocument, precedes } from './helpers/app-under-test.mjs';
 
-const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const CSS = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: index.html / logic.js / styles.css assertions are
+// behavioural: parsed markup, the cascade, and the Hand flow in the booted app.
+const app = await bootApp();
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
+const css = appStyleSheet();
 const PRODUCT_TRANSLATIONS = fs.readFileSync(
   new URL('../app/src/locales/product-translations.js', import.meta.url),
   'utf8',
 );
-
-function sourceBetween(source, startToken, endToken) {
-  const start = source.indexOf(startToken);
-  const end = source.indexOf(endToken, start);
-  assert.ok(start >= 0, `Missing ${startToken}`);
-  assert.ok(end > start, `Missing ${endToken}`);
-  return source.slice(start, end);
-}
 
 function scenario() {
   return createPlaybookScenarioInput({
@@ -87,55 +82,73 @@ function createHandBridge(id = 'core-flow-hand', {
   return { bridge, controller, initial, browserWindow };
 }
 
-test('setup stays compact while private cards and actions share the table-adjacent Hand rail', () => {
-  const setupStart = HTML.indexOf('id="handSetupDisclosure"');
-  const railStart = HTML.indexOf('class="side-stack playbook-context-rail"');
-  const railEnd = HTML.indexOf('</aside>', railStart);
-  const privateCardsStart = HTML.indexOf('id="handDealSection"');
-  const tableStart = HTML.indexOf('id="table-wrapper"');
-  const interactionStart = HTML.indexOf('id="handInteractionRail"');
-  const dockStart = HTML.indexOf('id="handStageDock"');
-  const actionStart = HTML.indexOf('id="handActionSection"');
-  assert.ok(railStart >= 0 && setupStart > railStart);
-  assert.ok(tableStart > railEnd && interactionStart > tableStart);
-  assert.ok(dockStart > interactionStart && privateCardsStart > dockStart && actionStart > privateCardsStart);
-  assert.equal((HTML.match(/id="handSetupDisclosure"/g) || []).length, 1);
-  assert.equal((HTML.match(/id="handDealSection"/g) || []).length, 1);
-  assert.equal((HTML.match(/id="handActionSection"/g) || []).length, 1);
-  assert.match(HTML, /id="handSetupDisclosure"[^>]*open/);
-  assert.match(HTML, /id="handHistoryDisclosure"[^>]*open/);
-  assert.match(HTML, /id="handHistorySelectionSummary"/);
-  assert.match(HTML, /id="handHistoryDisclosureAction"/);
-  assert.match(HTML, /id="handHistorySection"[^>]*hand-replay-rail/);
-  assert.match(HTML, /id="handLiveStageHeader"[^>]*data-playbook-hand/);
-  assert.match(HTML, /id="handStageDock"[^>]*data-playbook-hand[^>]*data-tutorial-anchor="hand-action-controls"/);
-  assert.match(
-    sourceBetween(HTML, 'id="handStageDock"', 'id="playbookAnalysisNavigation"'),
-    /id="handDealSection"/,
-  );
+test('setup stays compact while private cards and actions share the table-adjacent Hand rail', async () => {
+  const doc = indexDocument();
+  const byId = (id) => doc.getElementById(id);
+  const rail = doc.querySelector('.side-stack.playbook-context-rail');
+  const setup = byId('handSetupDisclosure');
+  const privateCards = byId('handDealSection');
+  const table = byId('table-wrapper');
+  const interaction = byId('handInteractionRail');
+  const dock = byId('handStageDock');
+  const action = byId('handActionSection');
+  // Was: index offsets of the rail, setup, table, interaction rail, dock,
+  // private-card and action sections. Protects: setup lives in the context
+  // rail; the table follows the rail; the dock (with private cards, then
+  // actions) follows the table-adjacent interaction rail.
+  assert.equal(rail.tagName, 'ASIDE');
+  assert.ok(precedes(rail, setup));
+  assert.ok(precedes(rail, table) && !rail.contains(table) && precedes(table, interaction));
+  assert.ok(precedes(interaction, dock) && precedes(dock, privateCards) && precedes(privateCards, action));
+  assert.ok(dock.contains(privateCards), 'private cards stay inside the stage dock');
+  for (const id of ['handSetupDisclosure', 'handDealSection', 'handActionSection']) {
+    assert.equal(doc.querySelectorAll(`#${id}`).length, 1, `#${id} is unique`);
+  }
+  assert.equal(setup.hasAttribute('open'), true);
+  assert.equal(byId('handHistoryDisclosure').hasAttribute('open'), true);
+  assert.ok(byId('handHistorySelectionSummary'));
+  assert.ok(byId('handHistoryDisclosureAction'));
+  assert.ok(byId('handHistorySection').classList.contains('hand-replay-rail'));
+  assert.equal(byId('handLiveStageHeader').hasAttribute('data-playbook-hand'), true);
+  assert.equal(dock.hasAttribute('data-playbook-hand'), true);
+  assert.equal(dock.getAttribute('data-tutorial-anchor'), 'hand-action-controls');
 
-  const stageResolver = sourceBetween(
-    LOGIC,
-    'function canonicalHandStageKey(',
-    'function canonicalActionHistoryLabel(',
-  );
-  assert.match(stageResolver, /if \(!state\) return 'setup'/);
-  assert.match(stageResolver, /phase === 'terminal'\) return 'complete'/);
-  assert.match(stageResolver, /pendingChance\?\.type === 'deal_hole'\) return 'private-cards'/);
-  assert.match(stageResolver, /phase === 'chance'\) return 'chance'/);
-  assert.match(stageResolver, /phase === 'betting'\) return 'action'/);
-  assert.match(LOGIC, /previousStage === 'setup' && stage !== 'setup'\) setCanonicalTableExpanded\(true\)/);
-  assert.match(LOGIC, /stageDock\.querySelector\('\.hand-control-section:not\(\[hidden\]\)'\)/);
-  const stageRenderer = sourceBetween(
-    LOGIC,
-    'function renderCanonicalHandStage(',
-    'function renderCanonicalPrivateDeal(',
-  );
-  assert.ok(
-    stageRenderer.indexOf("completed.hidden = !terminal")
-      < stageRenderer.indexOf("stageDock.querySelector('.hand-control-section:not([hidden])')"),
-    'main-stage visibility must account for the completed-Hand actions',
-  );
+  // Was: the canonicalHandStageKey source. Protects: one stage resolver maps
+  // canonical phase and pending chance onto the live stage.
+  const stageKey = (state) => app.call('canonicalHandStageKey', state, null);
+  assert.equal(stageKey(null), 'setup');
+  assert.equal(stageKey({ phase: 'terminal' }), 'complete');
+  assert.equal(stageKey({ phase: 'chance', pendingChance: { type: 'deal_hole' } }), 'private-cards');
+  assert.equal(stageKey({ phase: 'chance', pendingChance: { type: 'deal_flop' } }), 'chance');
+  assert.equal(stageKey({ phase: 'betting' }), 'action');
+
+  // Was: `previousStage === 'setup' && stage !== 'setup') setCanonicalTableExpanded(true)`.
+  // Protects: leaving setup expands the table.
+  await app.navigate('hand');
+  if (app.call('callPlaybookStateBridge', 'getState')) {
+    app.call('callPlaybookStateBridge', 'resetHand');
+    app.call('resetCanonicalHandDraft');
+    app.call('renderCanonicalHandWorkspace');
+  }
+  assert.equal(app.byId('gtoMode').dataset.handStage, 'setup');
+  app.call('setCanonicalTableExpanded', false);
+  assert.ok(app.byId('table-wrapper').classList.contains('collapsed'));
+  await app.click('#handStartButton');
+  await app.settle(300);
+  assert.equal(app.byId('gtoMode').dataset.handStage, 'private-cards');
+  assert.equal(app.byId('table-wrapper').classList.contains('collapsed'), false);
+
+  // Was: `completed.hidden = !terminal` ordered before the dock's visible-main-
+  // stage query. Protects: at a terminal Hand the completed actions count as
+  // the dock's main stage, so the dock stays shown.
+  await app.pickCards('[data-card-set-edit="hand-seat-0"]', ['As', 'Kd']);
+  await app.click('#handDealHoleButton');
+  await app.settle(300);
+  await app.handAction('fold');
+  assert.equal(app.byId('gtoMode').dataset.handStage, 'complete');
+  assert.equal(app.byId('handCompletedSection').hidden, false);
+  assert.equal(app.byId('handActionSection').hidden, true);
+  assert.equal(app.byId('handStageDock').hidden, false);
 });
 
 test('canonical phase and actor transitions supply the live table stage without a second state authority', () => {
@@ -179,7 +192,19 @@ test('three-player Hand action context follows Hero, SB, and BB actors with each
       stackMilliBb: actor.currentStackMilliBb,
       legalPlayerId: bridge.getLegalActions().playerId,
     });
+    // Was: renderCanonicalLegalActions source (actorLabel + Stack, actor stack).
+    // Protects: the dock names the acting player and shows that actor's stack.
+    app.call('renderCanonicalLegalActions', state, bridge.getLegalActions());
+    const pageHeroId = app.call('callPlaybookStateBridge', 'getHeroPlayerId');
+    const actorLabel = app.call('canonicalPlayerLabel', actor, pageHeroId);
+    rendered.push({
+      stackLabel: app.byId('handActionStackLabel').textContent,
+      expectedStackLabel: `${actorLabel} · ${app.call('t', 'Stack')}`,
+      stack: app.byId('handActionHeroStack').textContent,
+      expectedStack: app.call('formatCanonicalBb', actor.currentStackMilliBb),
+    });
   };
+  const rendered = [];
 
   capture();
   state = bridge.applyAction(ACTION_TYPES.CALL);
@@ -194,19 +219,19 @@ test('three-player Hand action context follows Hero, SB, and BB actors with each
   assert.equal(contexts.every(({ playerId, legalPlayerId }) => playerId === legalPlayerId), true);
   assert.equal(state.phase, 'chance');
 
-  const legalRenderer = sourceBetween(
-    LOGIC,
-    'function renderCanonicalLegalActions(',
-    'function canonicalHandStatus(',
-  );
-  assert.match(legalRenderer, /const actorLabel = canonicalPlayerLabel\(actor, heroPlayerId\)/);
-  assert.match(legalRenderer, /handActionStackLabel[\s\S]*actorLabel[\s\S]*t\('Stack'\)/);
-  assert.match(legalRenderer, /formatCanonicalBb\(actor\.currentStackMilliBb\)/);
-  assert.doesNotMatch(legalRenderer, /formatCanonicalBb\(hero\.currentStackMilliBb\)/);
-  assert.doesNotMatch(HTML, /aria-label="Hero decision context"/);
+  for (const entry of rendered) {
+    assert.equal(entry.stackLabel, entry.expectedStackLabel);
+    assert.equal(entry.stack, entry.expectedStack);
+  }
+  // The SB and BB stacks differ from Hero's: the dock never shows Hero's stack
+  // for another actor.
+  assert.notEqual(rendered[1].stack, rendered[0].stack);
+  assert.notEqual(rendered[2].stack, rendered[0].stack);
+  assert.equal(indexDocument().querySelector('[aria-label="Hero decision context"]'), null);
+  app.call('renderCanonicalHandWorkspace');
 });
 
-test('action dock renders only canonical legal options and keeps amount-to presets plus custom sizing', () => {
+test('action dock renders only canonical legal options and keeps amount-to presets plus custom sizing', async () => {
   const { bridge, controller } = createHandBridge('core-flow-sizing');
   bridge.dealObservedHoleCards({ [controller.getHeroPlayerId()]: ['As', 'Kd'] });
   const spec = bridge.getLegalActions();
@@ -219,26 +244,70 @@ test('action dock renders only canonical legal options and keeps amount-to prese
   assert.equal(raised.currentBetMilliBb, spec.raise.minToMilliBb);
   assert.equal(raised.actionHistory.at(-1).submittedAction.amountToMilliBb, spec.raise.minToMilliBb);
 
-  const legalRenderer = sourceBetween(
-    LOGIC,
-    'function renderCanonicalLegalActions(',
-    'function canonicalHandStatus(',
-  );
-  assert.match(legalRenderer, /\['fold', spec\.fold\].*\['check', spec\.check\].*\['call', spec\.call\]/s);
-  assert.match(legalRenderer, /\['bet', spec\.bet\].*\['raise', spec\.raise\].*\['all_in', spec\.allIn\]/s);
-  assert.match(legalRenderer, /filter\(\(\[, option\]\) => option\?\.available\)/);
-  assert.match(legalRenderer, /chooseCanonicalSizedAction\(type, option\)/);
-  assert.doesNotMatch(legalRenderer, /potMilliBb\s*[*/+-]|stackBb\s*[*/+-]|Math\.(?:round|floor|ceil)/);
+  // Was: renderCanonicalLegalActions / chooseCanonicalSizedAction source and
+  // the sizing markup. Protects: legal options render in fold, check, call,
+  // bet, raise, all-in order and only when available; Bet/Raise open sizing
+  // with spec-only bounds and min/max amount-to presets; committing submits
+  // the typed amount-to through the bridge.
+  await app.startHand(['As', 'Kd']);
+  const pageSpec = app.call('callPlaybookStateBridge', 'getLegalActions');
+  const order = ['fold', 'check', 'call', 'bet', 'raise', 'all_in'];
+  const specKey = { all_in: 'allIn' };
+  const renderedTypes = () => app.$$('#handLegalActions [data-canonical-action]')
+    .map((button) => button.dataset.canonicalAction);
+  assert.deepEqual(renderedTypes(), order.filter((type) => pageSpec[specKey[type] || type]?.available));
 
-  assert.match(HTML, /id="handSizingMinPreset"[^>]*data-hand-sizing-preset="min"/);
-  assert.match(HTML, /id="handSizingMaxPreset"[^>]*data-hand-sizing-preset="max"/);
-  assert.match(HTML, /id="handActionAmountBb"[^>]*type="number"/);
-  assert.match(LOGIC, /minimumPreset\.dataset\.amountToBb = String\(min\)/);
-  assert.match(LOGIC, /maximumPreset\.dataset\.amountToBb = String\(max\)/);
-  assert.match(LOGIC, /callPlaybookStateBridge\('applyAction', type, amountToBb\)/);
+  const pageState = app.call('callPlaybookStateBridge', 'getState');
+  const unavailable = { available: false };
+  const customSpec = {
+    playerId: pageSpec.playerId,
+    fold: unavailable,
+    check: { available: true },
+    call: { available: false, commitMilliBb: 0 },
+    bet: { available: true, minToMilliBb: 3_300, maxToMilliBb: 7_700 },
+    raise: unavailable,
+    allIn: { available: true, amountToMilliBb: 99_000 },
+  };
+  app.call('renderCanonicalLegalActions', pageState, customSpec);
+  assert.deepEqual(renderedTypes(), ['check', 'bet', 'all_in']);
+  const sized = app.spy(['chooseCanonicalSizedAction']);
+  await app.click('#handLegalActions [data-canonical-action="bet"]');
+  assert.equal(sized.count('chooseCanonicalSizedAction'), 1);
+  sized.restore();
+  // Bounds come from the spec alone (3.3-7.7 has no pot/stack relation).
+  assert.equal(app.byId('handActionAmountBb').min, '3.3');
+  assert.equal(app.byId('handActionAmountBb').max, '7.7');
+  assert.equal(app.byId('handSizingMinPreset').dataset.amountToBb, '3.3');
+  assert.equal(app.byId('handSizingMaxPreset').dataset.amountToBb, '7.7');
+  app.call('resetCanonicalHandDraft');
+  app.call('renderCanonicalHandWorkspace');
+
+  await app.click('#handLegalActions [data-canonical-action="raise"]');
+  const min = pageSpec.raise.minToMilliBb / 1000;
+  const max = pageSpec.raise.maxToMilliBb / 1000;
+  assert.equal(app.byId('handSizingMinPreset').dataset.amountToBb, String(min));
+  assert.equal(app.byId('handSizingMaxPreset').dataset.amountToBb, String(max));
+  await app.click('#handSizingMaxPreset');
+  assert.equal(app.byId('handActionAmountBb').value, String(max));
+  await app.click('#handSizingMinPreset');
+  assert.equal(app.byId('handActionAmountBb').value, String(min));
+  const bridgeCalls = app.spy(['callPlaybookStateBridge']);
+  await app.click('#handCommitSizedAction');
+  await app.settle(300);
+  bridgeCalls.restore();
+  assert.deepEqual(
+    bridgeCalls.calls.callPlaybookStateBridge.filter(([name]) => name === 'applyAction'),
+    [['applyAction', 'raise', min]],
+  );
+  assert.equal(app.call('callPlaybookStateBridge', 'getState').currentBetMilliBb, pageSpec.raise.minToMilliBb);
+
+  const doc = indexDocument();
+  assert.equal(doc.getElementById('handSizingMinPreset').getAttribute('data-hand-sizing-preset'), 'min');
+  assert.equal(doc.getElementById('handSizingMaxPreset').getAttribute('data-hand-sizing-preset'), 'max');
+  assert.equal(doc.getElementById('handActionAmountBb').getAttribute('type'), 'number');
 });
 
-test('leaving, returning, and repeated mode switches preserve the exact canonical Hand and controller', () => {
+test('leaving, returning, and repeated mode switches preserve the exact canonical Hand and controller', async () => {
   const { bridge, controller } = createHandBridge('core-flow-lifecycle');
   bridge.dealObservedHoleCards({ [controller.getHeroPlayerId()]: ['As', 'Kd'] });
   const handBeforeLeave = controller.getState();
@@ -254,15 +323,32 @@ test('leaving, returning, and repeated mode switches preserve the exact canonica
   }
 
   assert.deepEqual(controller.getHeroDecisionJournal(), journalBeforeLeave);
-  assert.equal((LOGIC.match(/installPlaybookStateSourceBridge/g) || []).length, 0);
-  assert.match(LOGIC, /renderCanonicalHandWorkspace\(\)/);
-  assert.doesNotMatch(
-    sourceBetween(LOGIC, 'function renderCanonicalHandStage(', 'function renderCanonicalPrivateDeal('),
-    /createCanonicalLiveController|installPlaybookStateSourceBridge|initializeHand\(/,
+  // Was: logic.js never names installPlaybookStateSourceBridge, calls
+  // renderCanonicalHandWorkspace, and the stage renderer never creates a
+  // controller or initializes a Hand. Protects: the page has one bridge,
+  // and leaving/returning to Hand re-renders without re-initializing it.
+  assert.equal(app.evaluate('typeof installPlaybookStateSourceBridge'), 'undefined');
+  await app.startHand(['As', 'Kd']);
+  const pageHand = app.call('callPlaybookStateBridge', 'getState');
+  const pageSourceId = app.call('callPlaybookStateBridge', 'getCanonicalHandSourceId');
+  assert.ok(pageHand && pageSourceId);
+  const probe = app.spy(['callPlaybookStateBridge', 'renderCanonicalHandWorkspace']);
+  for (let index = 0; index < 3; index += 1) {
+    await app.navigate('analyze');
+    await app.navigate('hand');
+  }
+  app.call('renderCanonicalHandStage', pageHand, null, null);
+  probe.restore();
+  assert.ok(probe.count('renderCanonicalHandWorkspace') > 0, 'returning to Hand re-renders the workspace');
+  assert.deepEqual(
+    probe.calls.callPlaybookStateBridge.filter(([name]) => name === 'initializeHand' || name === 'resetHand'),
+    [],
   );
+  assert.ok(app.call('callPlaybookStateBridge', 'getState') === pageHand);
+  assert.equal(app.call('callPlaybookStateBridge', 'getCanonicalHandSourceId'), pageSourceId);
 });
 
-test('completion exposes Review, Analysis, Replay, and Save through existing bounded handoffs', () => {
+test('completion exposes Review, Analysis, Replay, and Save through existing bounded handoffs', async () => {
   const { bridge, controller } = createHandBridge('core-flow-complete');
   bridge.dealObservedHoleCards({ [controller.getHeroPlayerId()]: ['As', 'Kd'] });
   const terminal = bridge.applyAction(ACTION_TYPES.FOLD);
@@ -271,32 +357,111 @@ test('completion exposes Review, Analysis, Replay, and Save through existing bou
   assert.equal(bridge.getHeroDecisionJournal().decisions.length, 1);
   assert.equal(bridge.createReplayProjectionViewModel().canPlayback, true);
 
+  // Was: button markup plus logic.js handler source. Protects: the four
+  // completion actions are plain buttons and hand off to the existing Replay,
+  // Analysis (completed-Hand Hero decision) and canonical Save paths.
+  const doc = indexDocument();
   for (const id of [
     'handCompletedReviewButton',
     'handCompletedAnalysisButton',
     'handCompletedReplayButton',
     'handCompletedSaveButton',
   ]) {
-    assert.match(HTML, new RegExp(`id="${id}"[^>]*type="button"`));
+    assert.equal(doc.getElementById(id).getAttribute('type'), 'button', `#${id} is type=button`);
   }
-  assert.match(LOGIC, /revealCanonicalHandHistory\(\{ replay: true \}\)/);
-  assert.match(LOGIC, /callPlaybookStateBridge\('startReplayPlayback'\)/);
-  assert.match(LOGIC, /scenarioInputFromHeroDecisionRecord\(record\)/);
-  assert.match(LOGIC, /reason: 'completed_hand_hero_decision'/);
-  assert.match(LOGIC, /\$\('#savedStudySaveButton'\)\?\.click\(\)/);
+
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('fold');
+  assert.equal(app.byId('handCompletedSection').hidden, false);
+
+  let canonicalSaveClicks = 0;
+  const countSave = () => { canonicalSaveClicks += 1; };
+  app.byId('savedStudySaveButton').addEventListener('click', countSave);
+  await app.click('#handCompletedSaveButton');
+  app.byId('savedStudySaveButton').removeEventListener('click', countSave);
+  assert.equal(canonicalSaveClicks, 1);
+
+  const replay = app.spy(['revealCanonicalHandHistory', 'callPlaybookStateBridge']);
+  await app.click('#handCompletedReplayButton');
+  replay.restore();
+  assert.deepEqual(replay.calls.revealCanonicalHandHistory, [[{ replay: true }]]);
+  assert.ok(replay.calls.callPlaybookStateBridge.some(([name]) => name === 'startReplayPlayback'));
+  app.call('callPlaybookStateBridge', 'cancelReplayPlayback');
+
+  const journal = app.call('callPlaybookStateBridge', 'getHeroDecisionJournal');
+  const analysis = app.spy(['scenarioInputFromHeroDecisionRecord', 'updateContext']);
+  await app.click('#handCompletedAnalysisButton');
+  await app.settle(300);
+  analysis.restore();
+  assert.equal(analysis.count('scenarioInputFromHeroDecisionRecord'), 1);
+  assert.ok(analysis.calls.scenarioInputFromHeroDecisionRecord[0][0] === journal.decisions.at(-1));
+  assert.equal(
+    analysis.calls.updateContext.find(([, resolution]) => resolution?.reason === 'completed_hand_hero_decision')?.[1]?.status,
+    'available',
+  );
 });
 
-test('desktop hierarchy, localization, RTL, and secondary disclosures remain structural', () => {
-  assert.match(CSS, /CORE-FLOW-001B: canonical Hand live stage/);
-  assert.match(CSS, /data-hand-stage]:not\(\[data-hand-stage="setup"\]\) \.playbook-workspace/);
-  assert.match(CSS, /@media \(max-width: 1100px\)[\s\S]*?\.playbook-decision-workspace[\s\S]*?order: 1/);
-  assert.match(CSS, /@media \(max-width: 1100px\)[\s\S]*?\.playbook-context-rail[\s\S]*?order: 2/);
-  assert.match(CSS, /data-hand-stage="private-cards"\] \.playbook-context-rail[\s\S]*?order: 1/);
-  assert.match(CSS, /data-hand-stage="private-cards"\] \.playbook-decision-workspace[\s\S]*?order: 2/);
-  assert.match(CSS, /\[dir="rtl"\] \.hand-live-stage-header/);
-  assert.match(CSS, /\[dir="rtl"\] \.hand-stage-dock/);
-  assert.match(CSS, /\.hand-disclosure > summary/);
-  assert.match(CSS, /\.hand-inline-disclosure > summary/);
+test('desktop hierarchy, localization, RTL, and secondary disclosures remain structural', async () => {
+  await app.startHand(['As', 'Kd']);
+  const gtoMode = app.byId('gtoMode');
+  assert.equal(gtoMode.dataset.handStage, 'action');
+  const workspace = app.$('#gtoMode .playbook-workspace');
+  const rail = app.$('#gtoMode .playbook-context-rail');
+  const decision = app.$('#gtoMode .playbook-decision-workspace');
+  const note = app.$('#gtoMode .playbook-hand-head .panel-note');
+  assert.ok(note, 'the Hand head has a panel note');
+
+  // Was: the CORE-FLOW-001B block comment and the live-stage workspace rule.
+  // Protects: a non-setup Hand stage compacts the Hand head; setup does not.
+  assert.equal(css.cascaded(note, 'display', { width: 1920 }), 'none');
+  gtoMode.dataset.handStage = 'setup';
+  assert.notEqual(css.cascaded(note, 'display', { width: 1920 }), 'none');
+  gtoMode.dataset.handStage = 'action';
+
+  // Was: ≤1100px decision workspace order 1, context rail order 2.
+  // Protects: on narrow layouts the live decision comes before the rail.
+  assert.equal(css.cascaded(decision, 'order', { width: 1100 }), '1');
+  assert.equal(css.cascaded(rail, 'order', { width: 1100 }), '2');
+
+  // SOURCE-SHAPE: the private-cards (and reveal) stage override that puts
+  // the rail first at ≤1100px is declared but loses the cascade to the more
+  // specific generic live-stage rule ([1,4,0] over [1,3,0]); asserting the
+  // effective order would lock in that defect (register TEST-HYGIENE-001-F11).
+  for (const [selector, order] of [
+    ['#gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-context-rail', '1'],
+    ['#gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-decision-workspace', '2'],
+  ]) {
+    assert.equal(css.declared(selector, 'order', { width: 1100 }), order);
+  }
+
+  // Was: [dir="rtl"] .hand-live-stage-header / .hand-stage-dock rules.
+  // Protects: the current-stage accent edge flips to the inline start in RTL.
+  const header = app.byId('handLiveStageHeader');
+  const step = app.$('#handStageDock .is-current-hand-step');
+  assert.ok(step, 'the dock marks the current Hand step');
+  const html = app.document.documentElement;
+  const previousDir = html.getAttribute('dir');
+  try {
+    html.setAttribute('dir', 'ltr');
+    assert.match(css.cascaded(header, 'box-shadow'), /^inset 3px 0 0 /);
+    html.setAttribute('dir', 'rtl');
+    assert.match(css.cascaded(header, 'box-shadow'), /^inset -3px 0 0 /);
+    assert.ok(
+      css.matchingRules(step).some((rule) => rule.selectors.includes('[dir="rtl"] .hand-stage-dock .is-current-hand-step')),
+      'the RTL current-step rule applies in RTL',
+    );
+  } finally {
+    if (previousDir === null) html.removeAttribute('dir');
+    else html.setAttribute('dir', previousDir);
+  }
+
+  // Was: .hand-disclosure > summary / .hand-inline-disclosure > summary rules.
+  // Protects: both disclosure summaries in the page are styled.
+  for (const selector of ['.hand-disclosure > summary', '.hand-inline-disclosure > summary']) {
+    const summary = app.$(selector);
+    assert.ok(summary, `${selector} exists`);
+    assert.ok(css.matchingRules(summary).some((rule) => rule.selectors.includes(selector)), `${selector} is styled`);
+  }
 
   for (const key of [
     'Hand setup',

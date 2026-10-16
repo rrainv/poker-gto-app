@@ -3,38 +3,41 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-import {
+
+import { StyleSheetModel, appStyleSheet, bootApp, freshIndexDocument, precedes, strategyProviderProbe, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: the live Analyze workspace in the booted app (spies, a
+// provider probe, the cascade on rendered elements) and the parsed document.
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+const translations = read('../app/src/locales/product-translations.js');
+const verdictModule = read('../app/src/application/analyze-verdict.mjs');
+const markup = freshIndexDocument();
+const css = appStyleSheet();
+const W = { width: 1920 };
+const probe = strategyProviderProbe();
+const app = await bootApp({ width: 1920, beforeScripts: probe.beforeScripts });
+// Imported after boot: both modules self-install page bridges.
+const {
   ANALYZE_VERDICT_SCHEMA_VERSION,
   VERDICT_CLOSE_MARGIN,
   VERDICT_MEANINGFUL_SHARE,
   describeAnalyzeVerdict,
-} from '../app/src/application/analyze-verdict.mjs';
-import {
-  DECISION_FACING_KINDS,
-  describeDecisionFacing,
-  formatDecisionFacing,
-} from '../app/src/application/decision-facing-summary.mjs';
-
-const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
-const html = read('../app/index.html');
-const css = read('../app/styles.css');
-const logic = read('../app/src/core/logic.js');
-const translations = read('../app/src/locales/product-translations.js');
-const verdictModule = read('../app/src/application/analyze-verdict.mjs');
-
-const sectionStart = css.indexOf('/* ANALYZE-COMPOSITION-001: Analyze composition');
-assert.ok(sectionStart > 0, 'Analyze composition CSS section must exist');
-const analyzeCss = css.slice(sectionStart);
-const rootBlock = css.slice(css.indexOf(':root {'), css.indexOf('\n}\n', css.indexOf(':root {')));
-const decision = html.slice(html.indexOf('id="recommendation"'), html.indexOf('id="handLiveStageHeader"'));
-const rail = html.slice(html.indexOf('id="playbookSpotPanel"'), html.indexOf('id="playbookHandWorkspace"'));
-
-function sourceBetween(source, start, end) {
-  const from = source.indexOf(start);
-  const to = source.indexOf(end, from + start.length);
-  assert.ok(from >= 0 && to > from, `missing source slice ${start} -> ${end}`);
-  return source.slice(from, to);
-}
+} = await import('../app/src/application/analyze-verdict.mjs');
+await import('../app/src/application/decision-facing-summary.mjs');
+await app.navigate('analyze');
+await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+const $ = (selector) => app.$(selector);
+const cascaded = (selector, property, options = W) => css.cascaded(typeof selector === 'string' ? $(selector) : selector, property, options);
+const root = () => app.document.documentElement;
+// SOURCE-SHAPE: two stylesheet policies have no runtime observable and stay
+// lints over the parsed stylesheet: "no product text below 12px outside the
+// listed art/glyph surfaces" and "the Analyze section adds no decorative
+// borders, provenance colour or !important, and uses the accent only on
+// the listed components".
+const rawCss = read('../app/styles.css');
+const analyzeSheet = new StyleSheetModel(rawCss.slice(rawCss.indexOf('/* ANALYZE-COMPOSITION-001: Analyze composition')));
+const wholeSheet = new StyleSheetModel(rawCss);
 
 const result = (rows) => ({
   schemaVersion: 'strategy-result/v1',
@@ -85,25 +88,41 @@ test('verdict dominance reads existing StrategyResult data only and never change
   assert.equal(describeAnalyzeVerdict(null).kind, 'unavailable');
   assert.equal(describeAnalyzeVerdict({ actions: [] }).kind, 'unavailable');
   assert.doesNotMatch(verdictModule, /strategyProvider|resolve\(|import /, 'no strategy authority or dependency');
-  const moduleAt = html.indexOf('<script type="module" src="src/application/analyze-verdict.mjs"></script>');
-  assert.ok(moduleAt > 0 && moduleAt < html.indexOf('<script src="src/core/logic.js'), 'the module registers before logic.js runs');
+  const scripts = markup.querySelectorAll('script[src]');
+  const verdict = scripts.find((node) => node.getAttribute('src') === 'src/application/analyze-verdict.mjs');
+  assert.equal(verdict?.getAttribute('type'), 'module');
+  assert.ok(precedes(verdict, scripts.find((node) => node.getAttribute('src').split('?')[0] === 'src/core/logic.js')), 'the module registers before logic.js runs');
 });
 
 test('the verdict renders in sentence case, primary color, display size; close mixes are smaller and say so', () => {
-  const render = sourceBetween(logic, 'function renderAnalyzeVerdict(strategyResult)', '// Technical source id/version');
-  assert.match(render, /window\.RiverlineAnalyzeVerdict\?\.describe\(strategyResult\)/);
-  assert.match(render, /t\('\{first\} or \{second\}'/);
-  assert.match(render, /t\('Close mix · \{first\} \{firstShare\} · \{second\} \{secondShare\}'/);
-  assert.match(render, /element\.textContent = t\(verdict\.primary\.label\)/);
-  assert.match(render, /strategyResultPresentationActions\(strategyResult\)/, 'close shares match the mix card');
-  assert.doesNotMatch(logic, /\$\('#bestAction'\)\)? ?\$\('#bestAction'\)\.textContent = t\(profile\.best\)/);
-  assert.doesNotMatch(logic, /bestAction\.textContent = t\(profile\.best\)/);
-  assert.match(decision, /id="bestAction" data-verdict-kind="dominant"/);
-  assert.match(decision, /id="bestActionClose" hidden/);
-  assert.match(analyzeCss, /#bestAction \{[^}]*color: var\(--text-primary\);[^}]*font: var\(--weight-display\) var\(--t-display\)\/var\(--t-display-line\)[^}]*text-transform: none;/s);
-  assert.match(analyzeCss, /#bestAction\[data-verdict-kind="close"\] \{[^}]*font-size: var\(--t-verdict-close\)/s);
-  assert.match(rootBlock, /--t-verdict-close: 1\.75rem;/);
-  assert.doesNotMatch(decision, /id="streetLabel"[^>]*text-transform/, 'the street eyebrow is sentence case');
+  const initial = markup.getElementById('bestAction');
+  assert.equal(initial.dataset.verdictKind, 'dominant');
+  assert.equal(markup.getElementById('bestActionClose').hidden, true);
+  const best = $('#bestAction');
+  const close = $('#bestActionClose');
+  // Dominant: the sentence-case action label.
+  const dominant = result([['3-Bet', 'raise', 0.7], ['Call', 'call', 0.2], ['Fold', 'fold', 0.1]]);
+  app.call('renderAnalyzeVerdict', dominant);
+  assert.equal(best.textContent, app.call('t', '3-Bet'));
+  assert.equal(best.dataset.verdictKind, 'dominant');
+  assert.equal(close.hidden, true);
+  // Close mix: "first or second" with the same shares as the mix card.
+  const mixed = result([['3-Bet', 'raise', 0.50125], ['Call', 'call', 0.399375], ['Fold', 'fold', 0.099375]]);
+  app.call('renderAnalyzeVerdict', mixed);
+  assert.equal(best.dataset.verdictKind, 'close');
+  assert.equal(best.textContent, app.call('t', '{first} or {second}', { first: app.call('t', '3-Bet'), second: app.call('t', 'Call') }));
+  assert.equal(close.hidden, false);
+  const shares = app.call('strategyResultPresentationActions', mixed).map((entry) => `${entry.value}%`);
+  for (const share of shares.slice(0, 2)) assert.ok(close.textContent.includes(share), `${close.textContent} has ${share}`);
+  // Styling: primary colour, display type, no upper-casing; close is smaller.
+  best.dataset.verdictKind = 'dominant';
+  assert.equal(cascaded(best, 'color'), 'var(--text-primary)');
+  assert.match(cascaded(best, 'font'), /^var\(--weight-display\) var\(--t-display\)\/var\(--t-display-line\)/);
+  assert.equal(cascaded(best, 'text-transform'), 'none');
+  best.dataset.verdictKind = 'close';
+  assert.equal(cascaded(best, 'font-size'), 'var(--t-verdict-close)');
+  assert.equal(css.cascaded(root(), '--t-verdict-close'), '1.75rem');
+  assert.doesNotMatch(markup.getElementById('streetLabel')?.getAttribute('style') || '', /text-transform/, 'the street eyebrow is sentence case');
   for (const key of ['{first} or {second}', 'Close mix · {first} {firstShare} · {second} {secondShare}']) {
     assert.ok(translations.includes(`['${key}',`), `${key} has RU/HE drafts`);
   }
@@ -113,27 +132,65 @@ test('the verdict renders in sentence case, primary color, display size; close m
 // Source badge once; status line and provenance
 // ---------------------------------------------------------------------------
 
-test('the source badge appears once: the body repeats a source only when it differs (reference)', () => {
-  assert.equal((html.match(/data-variant="source"/g) || []).length, 1, 'one header source badge');
-  assert.match(decision, /id="sourceBadge" hidden/);
-  const updateContext = sourceBetween(logic, 'async function updateContext(reason', 'let equityCalculationGeneration');
-  assert.match(updateContext, /sourceBadge\.hidden = !isReference;/);
-  const refresh = sourceBetween(logic, 'function refreshLocalizedPlaybookRuntime()', 'if (playbookSurfaceIsVisible(\'matrix\'))');
-  assert.match(refresh, /\$\('#sourceBadge'\)\.hidden = !isReference;/);
-  assert.match(sourceBetween(logic, 'function renderUnavailableStrategy(resolution)', 'function '), /\$\('#sourceBadge'\)\.hidden = true;/);
-  assert.match(analyzeCss, /#sourceBadge\[hidden\] \{ display: none; \}/);
+test('the source badge appears once: the body repeats a source only when it differs (reference)', async () => {
+  assert.equal(markup.querySelectorAll('[data-variant="source"]').length, 1, 'one header source badge');
+  assert.equal(markup.getElementById('sourceBadge').hidden, true);
+  const badge = $('#sourceBadge');
+  // A heuristic (non-reference) result never repeats its source in the body.
+  badge.hidden = false;
+  await app.call('updateContext');
+  await app.settle(200);
+  assert.notEqual(app.window.app.strategyResult?.source, 'reference_pack');
+  assert.equal(badge.hidden, true);
+  badge.hidden = false;
+  app.call('refreshLocalizedPlaybookRuntime');
+  assert.equal(badge.hidden, true);
+  badge.hidden = false;
+  app.call('renderUnavailableStrategy', { mode: 'scenario', reason: 'invalid_input' });
+  assert.equal(badge.hidden, true);
+  assert.equal(cascaded(badge, 'display'), 'none');
+  await app.call('updateContext');
+  await app.settle(200);
 });
 
-test('no status line above the workspace; the authority meaning stays live and in Provenance', () => {
-  assert.match(html, /<p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite"/);
-  assert.match(analyzeCss, /#playbookModeStatus \{[^}]*position: absolute;[^}]*clip: rect\(0 0 0 0\);/s, 'visually hidden in Analyze only (Hand keeps it)');
-  const status = sourceBetween(logic, 'function renderPlaybookModeStatus(resolution)', '// ANALYZE-COMPOSITION-001: verdict dominance');
-  assert.match(status, /\$\('#playbookModeProvenance'\)/);
-  assert.match(decision, /<details id="analysisProvenanceDisclosure" class="ui-disclosure analyze-provenance">[\s\S]*id="playbookModeProvenance"[\s\S]*id="strategyMeta"/);
-  const meta = sourceBetween(logic, 'function renderStrategyMeta(claimPolicy)', '// Collapsed rail disclosures');
-  assert.match(meta, /version\.className = 'technical-id';/, 'monospace only for the technical source id inside Provenance');
-  assert.match(analyzeCss, /#strategyMeta \.technical-id \{[^}]*font-family: var\(--font-mono\)/s);
-  assert.doesNotMatch(logic, /analysisProvenanceDisclosure'\)\.innerHTML|analysisProvenanceDisclosure.*replaceChildren/, 'static disclosure keeps its open state across language switches');
+test('no status line above the workspace; the authority meaning stays live and in Provenance', async () => {
+  const status = markup.getElementById('playbookModeStatus');
+  assert.equal(status.localName, 'p');
+  assert.ok(status.classList.contains('playbook-mode-status'));
+  assert.equal(status.getAttribute('role'), 'status');
+  assert.equal(status.getAttribute('aria-live'), 'polite');
+  // Visually hidden in Analyze only (Hand keeps it).
+  assert.equal(cascaded('#playbookModeStatus', 'position'), 'absolute');
+  assert.equal(cascaded('#playbookModeStatus', 'clip'), 'rect(0 0 0 0)');
+  $('#gtoMode').dataset.productDestination = 'hand';
+  assert.notEqual(cascaded('#playbookModeStatus', 'clip'), 'rect(0 0 0 0)');
+  $('#gtoMode').dataset.productDestination = 'analyze';
+  // The authority meaning lands in Provenance.
+  const provenance = $('#playbookModeProvenance');
+  provenance.textContent = '';
+  app.call('renderPlaybookModeStatus', app.window.app.playbookResolution);
+  assert.ok(text(provenance));
+  const disclosure = markup.getElementById('analysisProvenanceDisclosure');
+  assert.equal(disclosure.localName, 'details');
+  assert.ok(disclosure.classList.contains('ui-disclosure') && disclosure.classList.contains('analyze-provenance'));
+  assert.ok(disclosure.querySelector('#playbookModeProvenance') && disclosure.querySelector('#strategyMeta'));
+  assert.ok(precedes(disclosure.querySelector('#playbookModeProvenance'), disclosure.querySelector('#strategyMeta')));
+  // The technical source id is the only monospace text.
+  const technical = $('#strategyMeta .technical-id');
+  assert.ok(technical, 'Provenance shows the technical source id');
+  assert.equal(technical.localName, 'code');
+  assert.equal(cascaded(technical, 'font-family'), 'var(--font-mono)');
+  // The static disclosure keeps its node and open state across language switches.
+  const live = $('#analysisProvenanceDisclosure');
+  live.open = true;
+  const child = live.firstElementChild;
+  for (const language of ['ru', 'en']) {
+    app.window.setLanguage(language);
+    await app.settle(50);
+  }
+  assert.equal(live.open, true);
+  assert.ok(live.firstElementChild === child);
+  live.open = false;
 });
 
 // ---------------------------------------------------------------------------
@@ -141,54 +198,86 @@ test('no status line above the workspace; the authority meaning stays live and i
 // ---------------------------------------------------------------------------
 
 test('Analyze has exactly two containers: one Spot rail panel and one Result panel', () => {
-  assert.match(analyzeCss, /\.playbook-workspace \{[^}]*grid-template-columns: var\(--analyze-rail-width\) minmax\(0, 1fr\);/s);
-  assert.match(analyzeCss, /\.playbook-spot-panel \{[^}]*border: 1px solid var\(--border-default\);[^}]*border-radius: var\(--radius-panel\);/s);
-  assert.match(analyzeCss, /\.playbook-decision-workspace \{[^}]*border: 1px solid var\(--border-default\);[^}]*border-radius: var\(--radius-panel\);/s);
-  assert.match(analyzeCss, /\.playbook-support-rail \{ display: none; \}/);
-  for (const inner of ['#recommendation', ':is\\(\\.range-matrix-panel, \\.range-comparison-panel\\)', '#playbookDecisionPathPanel']) {
-    assert.match(analyzeCss, new RegExp(`${inner} \\{[^}]*background: none;[^}]*border: 0;`, 's'), `${inner} is a section, not a box`);
+  assert.equal(cascaded('#gtoMode .playbook-workspace', 'grid-template-columns'), 'var(--analyze-rail-width) minmax(0, 1fr)');
+  for (const selector of ['.playbook-spot-panel', '#gtoMode .playbook-decision-workspace']) {
+    assert.equal(cascaded(selector, 'border'), '1px solid var(--border-default)', selector);
+    assert.equal(cascaded(selector, 'border-radius'), 'var(--radius-panel)', selector);
   }
-  assert.equal((rail.match(/class="panel /g) || []).length, 1, 'the Spot rail is one panel');
+  assert.equal(cascaded('.playbook-support-rail', 'display'), 'none');
+  for (const selector of ['#recommendation', '.range-matrix-panel', '.range-comparison-panel', '#playbookDecisionPathPanel']) {
+    assert.equal(cascaded(selector, 'background'), 'none', `${selector} is a section, not a box`);
+    assert.equal(cascaded(selector, 'border'), '0', `${selector} is a section, not a box`);
+  }
+  const spot = markup.getElementById('playbookSpotPanel');
+  assert.equal([spot, ...spot.querySelectorAll('*')].filter((node) => node.classList?.contains('panel')).length, 1, 'the Spot rail is one panel');
   for (const id of ['scenarioCardsPanel', 'sharedControls', 'scenarioConfigurationPanel', 'analyzeHandContext']) {
-    assert.match(rail, new RegExp(`id="${id}" class="playbook-spot-section`), `${id} is a rail section`);
+    assert.ok(markup.getElementById(id).classList.contains('playbook-spot-section'), `${id} is a rail section`);
   }
-  assert.match(rail, /id="playbookStrategyAdjustment" class="ui-disclosure playbook-spot-disclosure"/);
-  assert.match(rail, /id="playbookGameAccounting" class="ui-disclosure playbook-spot-disclosure"/);
+  for (const id of ['playbookStrategyAdjustment', 'playbookGameAccounting']) {
+    const disclosure = markup.getElementById(id);
+    assert.ok(disclosure.classList.contains('ui-disclosure') && disclosure.classList.contains('playbook-spot-disclosure'), id);
+  }
 });
 
 test('the Spot rail keeps every control, the readiness/numeric-entry ids and order Cards > Action > Table', () => {
-  const order = ['data-slots="hero"', 'data-slots="board"', 'data-slots="dead"', 'id="heroPos"', 'id="lastAction"', 'id="facingSizeNum"', 'id="potSizeNum"', 'id="playersNum"', 'id="stackMode"', 'id="stackNum"', 'id="tightnessSlider"', 'id="oppTightnessSlider"', 'id="rakeMode"', 'id="toggleAdvanced"', 'id="anteNum"', 'id="straddle"'];
-  let last = -1;
-  for (const marker of order) {
-    const at = rail.indexOf(marker);
-    assert.ok(at > last, `${marker} in order`);
-    last = at;
-  }
-  assert.match(rail, /class="playbook-spot-head playbook-randomize-head"[\s\S]*id="scenarioRandomizeButton"/, 'randomize is a quiet rail-header control');
-  assert.doesNotMatch(html, /id="sharedControls" class="playbook-betting-context"/, 'the center Betting context strip is gone');
+  const spot = markup.getElementById('playbookSpotPanel');
+  const order = ['[data-slots="hero"]', '[data-slots="board"]', '[data-slots="dead"]', '#heroPos', '#lastAction', '#facingSizeNum', '#potSizeNum', '#playersNum', '#stackMode', '#stackNum', '#tightnessSlider', '#oppTightnessSlider', '#rakeMode', '#toggleAdvanced', '#anteNum', '#straddle']
+    .map((selector) => spot.querySelector(selector));
+  order.forEach((node, index) => assert.ok(node, `control ${index}`));
+  order.slice(1).forEach((node, index) => assert.ok(precedes(order[index], node), `${node.id || node.dataset.slots} in order`));
+  const head = spot.querySelector('.playbook-spot-head.playbook-randomize-head');
+  assert.ok(head?.querySelector('#scenarioRandomizeButton'), 'randomize is a quiet rail-header control');
+  assert.equal(markup.getElementById('sharedControls').classList.contains('playbook-betting-context'), false, 'the center Betting context strip is gone');
 });
 
 test('Result header: view tabs on the start side, Save spot (secondary) and View all hands (quiet) on the end', () => {
-  const nav = html.slice(html.indexOf('<nav id="playbookAnalysisNavigation"'), html.indexOf('</nav>', html.indexOf('<nav id="playbookAnalysisNavigation"')));
-  assert.match(nav, /id="playbookAnalysisTabs" class="sub-tabs ui-tabs" role="tablist"[\s\S]*class="playbook-result-actions"[\s\S]*id="savedStudySaveButton" class="ui-button ui-button--secondary[\s\S]*id="openCharts"/);
-  assert.match(nav, /class="ui-button playbook-view-all-hands" data-variant="quiet"/);
-  assert.match(analyzeCss, /#playbookAnalysisTabs \.ui-tab:is\(\.active, \[aria-selected="true"\]\) \{[^}]*border-block-end-color: var\(--accent-primary\);/s);
-  assert.match(analyzeCss, /\.playbook-result-actions \{[^}]*order: 2;[^}]*margin-inline-start: auto;/s);
+  const nav = markup.getElementById('playbookAnalysisNavigation');
+  assert.equal(nav.localName, 'nav');
+  const tabs = nav.querySelector('#playbookAnalysisTabs');
+  assert.ok(tabs.classList.contains('sub-tabs') && tabs.classList.contains('ui-tabs'));
+  assert.equal(tabs.getAttribute('role'), 'tablist');
+  const actions = nav.querySelector('.playbook-result-actions');
+  assert.ok(precedes(tabs, actions));
+  const save = actions.querySelector('#savedStudySaveButton');
+  assert.ok(save.classList.contains('ui-button') && save.classList.contains('ui-button--secondary'));
+  assert.ok(actions.querySelector('#openCharts'));
+  assert.ok(precedes(save, actions.querySelector('#openCharts')));
+  assert.equal(nav.querySelector('.ui-button.playbook-view-all-hands').dataset.variant, 'quiet');
+  const active = $('#playbookAnalysisTabs .ui-tab.active, #playbookAnalysisTabs .ui-tab[aria-selected="true"]');
+  assert.equal(cascaded(active, 'border-block-end-color'), 'var(--accent-primary)');
+  assert.equal(cascaded('.playbook-result-actions', 'order'), '2');
+  assert.equal(cascaded('.playbook-result-actions', 'margin-inline-start'), 'auto');
 });
 
 test('the street stepper replaces the Action path rail at every width', () => {
-  const init = sourceBetween(logic, 'function initActionPathPresentation()', 'function renderUnavailableActionPath');
-  assert.match(init, /applyActionPathPresentation\(true\)/);
-  assert.doesNotMatch(init, /matchMedia/);
-  assert.match(analyzeCss, /#playbookCompactActionPathMount \{[^}]*order: 2;/s);
-  assert.match(analyzeCss, /#playbookDecisionPathPanel \.path-progress \{[^}]*flex-direction: row;/s);
-  assert.match(analyzeCss, /#playbookDecisionPathPanel \.path-step\.active \.path-node \{[^}]*background: var\(--accent-primary\);/s, 'the active step carries the accent');
+  const matchMedia = app.window.matchMedia;
+  let mediaQueries = 0;
+  app.window.matchMedia = (...args) => { mediaQueries += 1; return matchMedia(...args); };
+  const spy = app.spy(['applyActionPathPresentation']);
+  try {
+    app.call('initActionPathPresentation');
+    assert.deepEqual(spy.calls.applyActionPathPresentation, [[true]]);
+    assert.equal(mediaQueries, 0, 'not width-dependent');
+  } finally {
+    spy.restore();
+    app.window.matchMedia = matchMedia;
+  }
+  assert.equal(cascaded('#playbookCompactActionPathMount', 'order'), '2');
+  const progress = $('#playbookDecisionPathPanel .path-progress');
+  assert.ok(progress);
+  assert.equal(cascaded(progress, 'flex-direction'), 'row');
+  const node = $('#playbookDecisionPathPanel .path-step.active .path-node');
+  assert.ok(node, 'an active step is rendered');
+  assert.equal(cascaded(node, 'background'), 'var(--accent-primary)', 'the active step carries the accent');
 });
 
-test('the Spot table is a collapsed section of the Result panel; Hand keeps its table open', () => {
-  assert.match(logic, /const playbookTableExpandedByDestination = \{ hand: true, analyze: false \};/);
-  assert.match(sourceBetween(logic, 'function applyPlaybookDestinationPresentation(', 'function syncPlaybookNavigationDestination('), /setCanonicalTableExpanded\(tableExpanded\)/);
-  assert.match(analyzeCss, /\.playbook-table-toggle \{[^}]*order: 4;/s);
+test('the Spot table is a collapsed section of the Result panel; Hand keeps its table open', async () => {
+  assert.equal($('#table-wrapper').classList.contains('collapsed'), true, 'collapsed in Analyze');
+  await app.navigate('hand');
+  assert.equal($('#table-wrapper').classList.contains('collapsed'), false, 'open in Hand');
+  await app.navigate('analyze');
+  assert.equal($('#table-wrapper').classList.contains('collapsed'), true);
+  assert.equal(cascaded('.playbook-table-toggle', 'order'), '4');
 });
 
 // ---------------------------------------------------------------------------
@@ -196,14 +285,10 @@ test('the Spot table is a collapsed section of the Result panel; Hand keeps its 
 // ---------------------------------------------------------------------------
 
 function factFunctions() {
-  const source = sourceBetween(logic, '// Facing reads the canonical facing class', 'function updateMetrics()');
-  const context = {
-    window: { RiverlineDecisionFacing: { kinds: DECISION_FACING_KINDS, describe: describeDecisionFacing, format: formatDecisionFacing } },
-    t: (key, values = {}) => ({ 'facing.price.unavailable': 'price unavailable' }[key] || String(key).replace(/\{(\w+)\}/g, (m, k) => values[k] ?? m)),
+  return {
+    facing: (...args) => app.call('analyzeFacingFact', ...args),
+    toCall: (...args) => app.call('analyzeToCallFact', ...args),
   };
-  vm.createContext(context);
-  vm.runInContext(`${source}; this.facing = analyzeFacingFact; this.toCall = analyzeToCallFact;`, context);
-  return context;
 }
 
 test('fact grid: facing and to-call wording follows DECISION_CONTEXT_SPEC §10 without inventing a price', () => {
@@ -215,70 +300,173 @@ test('fact grid: facing and to-call wording follows DECISION_CONTEXT_SPEC §10 w
   assert.equal(facing(ctx({ aggressionCount: 0, limperCount: 0 }, { callAmountBb: 0 }), 0), 'Option');
   assert.equal(facing(ctx({ aggressionCount: 0 }, { street: 'flop', callAmountBb: 0 }), 0), 'Check available');
   assert.equal(toCall(null), '-');
-  assert.equal(toCall(ctx({ aggressionCount: 1 })), 'price unavailable', 'Scenario never fabricates a price');
+  assert.equal(toCall(ctx({ aggressionCount: 1 })), app.call('t', 'facing.price.unavailable'), 'Scenario never fabricates a price');
   assert.equal(toCall(ctx({ aggressionCount: 1 }, { callAmountBb: 6 })), '6.0 bb');
   assert.equal(toCall(ctx({ aggressionCount: 1 }, { callAmountBb: 20, heroStackBb: 20 })), '20.0 bb · All-in');
 });
 
-test('fact grid: one clean table with To call; labels muted, values 15/600 and never truncated', () => {
-  const ids = ['mPosition', 'mPot', 'mFacing', 'mToCall', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'];
-  let last = -1;
-  for (const id of ids) {
-    const at = decision.indexOf(`id="${id}"`);
-    assert.ok(at > last, `${id} in the fact grid order`);
-    last = at;
-  }
-  assert.match(logic, /mToCall: analyzeToCallFact\(context\)/);
-  assert.match(analyzeCss, /\.analyze-facts \.metric span \{[^}]*color: var\(--text-muted\);[^}]*font: var\(--weight-label\) var\(--t-label\)/s);
-  assert.match(analyzeCss, /\.analyze-facts \.metric b \{[^}]*overflow: visible;[^}]*color: var\(--text-primary\);[^}]*font: var\(--weight-value\) var\(--t-value\)\/var\(--t-value-line\)[^}]*text-overflow: clip;[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;[^}]*unicode-bidi: plaintext;/s);
-  assert.match(rootBlock, /--t-value: 0\.9375rem;/);
-  assert.match(rootBlock, /--weight-value: 650;/);
+test('fact grid: one clean table with To call; labels muted, values 15/600 and never truncated', async () => {
+  const recommendation = markup.getElementById('recommendation');
+  const ids = ['mPosition', 'mPot', 'mFacing', 'mToCall', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'].map((id) => markup.getElementById(id));
+  ids.forEach((node) => assert.ok(recommendation.contains(node), node.id));
+  ids.slice(1).forEach((node, index) => assert.ok(precedes(ids[index], node), `${node.id} in the fact grid order`));
+  await app.call('updateContext');
+  await app.settle(200);
+  assert.equal(text($('#mToCall')), app.call('analyzeToCallFact', app.window.app.decisionContext));
+  const label = $('.analyze-facts .metric span');
+  const value = $('.analyze-facts .metric b');
+  assert.equal(cascaded(label, 'color'), 'var(--text-muted)');
+  assert.match(cascaded(label, 'font'), /^var\(--weight-label\) var\(--t-label\)/);
+  for (const [property, expected] of [
+    ['overflow', 'visible'], ['color', 'var(--text-primary)'],
+    ['text-overflow', 'clip'], ['white-space', 'normal'], ['overflow-wrap', 'anywhere'], ['unicode-bidi', 'plaintext'],
+  ]) assert.equal(cascaded(value, property), expected, property);
+  assert.match(cascaded(value, 'font'), /^var\(--weight-value\) var\(--t-value\)\/var\(--t-value-line\)/);
+  assert.equal(css.cascaded(root(), '--t-value'), '0.9375rem');
+  assert.equal(css.cascaded(root(), '--weight-value'), '650');
 });
 
 // ---------------------------------------------------------------------------
 // Explain inline
 // ---------------------------------------------------------------------------
 
-test('Explain is inline: overline, Facts | Explain depth, three columns, Teach as a secondary action', () => {
-  assert.match(decision, /class="teacher-panel analyze-explain"[\s\S]*class="analyze-overline" data-i18n="Explain"[\s\S]*id="analyzeExplainFacts"[\s\S]*id="toggleTeacher"[^>]+aria-expanded="false"[^>]+aria-controls="teacherContent"[\s\S]*id="analysisTeachDecision" class="ui-button ui-button--secondary/);
-  assert.match(logic, /function syncExplainDepthControls\(\) \{[\s\S]*?aria-pressed', String\(expanded\)\)[\s\S]*?aria-pressed', String\(!expanded\)\)/);
-  assert.match(analyzeCss, /#teacherContent \{[^}]*max-height: none;[^}]*overflow: visible;/s, 'no inner scrollbar');
-  assert.match(analyzeCss, /#teacherContent \.analysis-explanation \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/s);
-  assert.match(analyzeCss, /border-inline-start: 1px solid var\(--border-subtle\);/, 'columns separated by thin rules');
+test('Explain is inline: overline, Facts | Explain depth, three columns, Teach as a secondary action', async () => {
+  const panel = markup.querySelector('.teacher-panel.analyze-explain');
+  const ordered = ['.analyze-overline[data-i18n="Explain"]', '#analyzeExplainFacts', '#toggleTeacher', '#analysisTeachDecision'].map((selector) => panel.querySelector(selector));
+  ordered.forEach((node, index) => assert.ok(node, `explain part ${index}`));
+  ordered.slice(1).forEach((node, index) => assert.ok(precedes(ordered[index], node)));
+  const toggle = markup.getElementById('toggleTeacher');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(toggle.getAttribute('aria-controls'), 'teacherContent');
+  assert.ok(markup.getElementById('analysisTeachDecision').classList.contains('ui-button--secondary'));
+  // Facts | Explain is one pressed pair that follows the disclosure state.
+  const facts = $('#analyzeExplainFacts');
+  const explain = $('#toggleTeacher');
+  if ($('#teacherContent').style.display === 'block') await app.click(explain);
+  assert.equal(facts.getAttribute('aria-pressed'), 'true');
+  assert.equal(explain.getAttribute('aria-pressed'), 'false');
+  await app.click(explain);
+  assert.equal(explain.getAttribute('aria-pressed'), 'true');
+  assert.equal(facts.getAttribute('aria-pressed'), 'false');
+  // No inner scrollbar; three explanation columns separated by thin rules.
+  assert.equal(cascaded('#teacherContent', 'max-height'), 'none', 'no inner scrollbar');
+  assert.equal(cascaded('#teacherContent', 'overflow'), 'visible');
+  const explanation = $('#teacherContent .analysis-explanation');
+  assert.ok(explanation, 'the inline explanation renders');
+  assert.equal(cascaded(explanation, 'grid-template-columns'), 'repeat(3, minmax(0, 1fr))');
+  const separated = [...explanation.children].filter((child) => cascaded(child, 'border-inline-start') === '1px solid var(--border-subtle)');
+  assert.ok(separated.length >= 1, 'columns separated by thin rules');
+  await app.click(explain);
 });
 
 // ---------------------------------------------------------------------------
 // Range matrix
 // ---------------------------------------------------------------------------
 
-test('Range matrix: legible shared action colors, distinct unavailable cells, hover/focus inspector', () => {
-  assert.match(analyzeCss, /\.range-matrix-panel \.hand-cell\[data-mix-state="pure"\] \{ --matrix-action-tint: 52%; \}/);
-  assert.match(analyzeCss, /\.range-matrix-panel \.hand-cell\[data-mix-state="mixed"\] \{ --matrix-action-tint: 34%; \}/);
-  assert.match(analyzeCss, /\.range-matrix-panel \.hand-cell\[data-state="unavailable"\] \{[^}]*border-style: dashed;/s);
-  assert.match(css, /\.range-matrix-panel \.hand-cell\[data-state="available"\] \{\s*background: color-mix\(in srgb, var\(--matrix-dominant-action\) var\(--matrix-action-tint\), var\(--surface-interactive\)\);/);
-  for (const event of ['pointerover', 'focusin', 'focusout', 'keydown']) assert.match(logic, new RegExp(`grid\\.addEventListener\\('${event}'`));
-  assert.match(logic, /grid\.addEventListener\('focusin', \(event\) => renderMatrixCellInspector\(event\.target\.closest\('\.hand-cell'\)\)\)/);
-  assert.match(html, /data-matrix-state="removed"[\s\S]*Removed by known cards/);
+test('Range matrix: legible shared action colors, distinct unavailable cells, hover/focus inspector', async () => {
+  app.evaluate('app.matrixModel = null');
+  app.call('renderChart');
+  const cell = $('#strategyGrid .hand-cell');
+  const original = { ...cell.dataset };
+  try {
+    cell.dataset.state = 'available';
+    cell.dataset.mixState = 'pure';
+    assert.equal(cascaded(cell, '--matrix-action-tint'), '52%');
+    assert.equal(cascaded(cell, 'background'), 'color-mix(in srgb, var(--matrix-dominant-action) var(--matrix-action-tint), var(--surface-interactive))');
+    cell.dataset.mixState = 'mixed';
+    assert.equal(cascaded(cell, '--matrix-action-tint'), '34%');
+    cell.dataset.state = 'unavailable';
+    assert.equal(cascaded(cell, 'border-style'), 'dashed');
+  } finally {
+    Object.assign(cell.dataset, original);
+  }
+  // Pointer and keyboard focus both drive the cell inspector.
+  const spy = app.spy(['renderMatrixCellInspector']);
+  try {
+    const target = app.$$('#strategyGrid .hand-cell')[5];
+    target.dispatchEvent(new app.window.MouseEvent('pointerover', { bubbles: true }));
+    target.dispatchEvent(new app.window.FocusEvent('focusin', { bubbles: true }));
+    assert.ok(spy.calls.renderMatrixCellInspector.filter(([node]) => node === target).length >= 2);
+    spy.reset();
+    target.dispatchEvent(new app.window.FocusEvent('focusout', { bubbles: true }));
+    await app.key(target, 'ArrowRight');
+    assert.ok(spy.count('renderMatrixCellInspector') >= 1, 'focusout/keyboard keep the inspector in sync');
+  } finally {
+    spy.restore();
+  }
+  const removed = markup.querySelector('[data-matrix-state="removed"]');
+  assert.ok(removed);
+  assert.match(text(removed.parentElement), /Removed by known cards/);
 });
 
 // ---------------------------------------------------------------------------
 // Hand context
 // ---------------------------------------------------------------------------
 
-test('Hand context: exact decision facts read-only with the existing route back; editing becomes a Scenario', () => {
-  assert.match(rail, /id="analyzeHandContext" class="playbook-spot-section analyze-hand-context" hidden/);
-  assert.match(rail, /id="analyzeHandContextReturn"[\s\S]*id="analyzeHandContextEdit"[^>]*aria-expanded="false"/);
-  assert.match(analyzeCss, /\[data-analyze-context="hand"\]:not\(\[data-analyze-hand-editing="true"\]\) :is\(#scenarioCardsPanel, #sharedControls, #scenarioConfigurationPanel, \.playbook-spot-disclosure\) \{\s*display: none;/);
-  const completed = sourceBetween(logic, 'async function openCanonicalHandDecisionInAnalysis(', 'function bindCanonicalHandWorkspace()');
-  assert.match(completed, /setAnalyzeHandContext\(\{[\s\S]*returnDestination: 'hand',[\s\S]*returnLabelKey: 'Back to Hand'/);
-  const fullHand = sourceBetween(logic, 'async function openFullHandDecisionInAnalysis()', 'function abortFullHandTraining()');
-  assert.match(fullHand, /setAnalyzeHandContext\(\{[\s\S]*returnDestination: 'training',[\s\S]*returnLabelKey: 'Back to Training'/);
-  const update = sourceBetween(logic, 'async function updateContext(reason', 'let equityCalculationGeneration');
-  assert.match(update, /if \(!resolutionOverride\s*&& typeof analyzeHandContext !== 'undefined'\s*&& analyzeHandContext\) setAnalyzeHandContext\(null\);/);
-  assert.match(logic, /analyzeHandContextReturn'\)\.addEventListener\('click', \(\) => \{\s*if \(analyzeHandContext\?\.returnDestination\) navigateToProductDestination\(analyzeHandContext\.returnDestination\);/);
-  const renderer = sourceBetween(logic, 'function renderAnalyzeHandContext()', 'function renderCanonicalDecisionCards(');
-  assert.doesNotMatch(renderer, /strategyProvider|resolve\(|calculateEquity/, 'presentation only');
-  assert.match(logic, /t\(isHandMode\(\) \|\| \(typeof analyzeHandContext !== 'undefined' && analyzeHandContext\) \? 'Hand' : 'Scenario'\)/);
+test('Hand context: exact decision facts read-only with the existing route back; editing becomes a Scenario', async () => {
+  const section = markup.getElementById('analyzeHandContext');
+  assert.ok(section.classList.contains('analyze-hand-context'));
+  assert.equal(section.hidden, true);
+  const back = markup.getElementById('analyzeHandContextReturn');
+  const edit = markup.getElementById('analyzeHandContextEdit');
+  assert.ok(precedes(back, edit));
+  assert.equal(edit.getAttribute('aria-expanded'), 'false');
+  // In a Hand context the Scenario controls are hidden until editing.
+  const gto = $('#gtoMode');
+  gto.dataset.analyzeContext = 'hand';
+  try {
+    for (const selector of ['#scenarioCardsPanel', '#sharedControls', '#scenarioConfigurationPanel', '.playbook-spot-disclosure']) {
+      assert.equal(cascaded(selector, 'display'), 'none', selector);
+    }
+    gto.dataset.analyzeHandEditing = 'true';
+    assert.notEqual(cascaded('#sharedControls', 'display'), 'none');
+  } finally {
+    delete gto.dataset.analyzeContext;
+    delete gto.dataset.analyzeHandEditing;
+  }
+  // A completed Hand decision opens in Analyze with the route back to Hand.
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('fold');
+  const spy = app.spy(['setAnalyzeHandContext']);
+  try {
+    const resolves = await probe.count(async () => {
+      await app.call('openCanonicalHandDecisionInAnalysis', 0);
+      await app.settle(300);
+    });
+    const context = spy.calls.setAnalyzeHandContext.map(([value]) => value).find(Boolean);
+    assert.equal(context.returnDestination, 'hand');
+    assert.equal(context.returnLabelKey, 'Back to Hand');
+    assert.ok(resolves.length <= 1, 'one resolution for the opened decision');
+    // The Hand context labels the header context "Hand"; Back returns to Hand.
+    spy.reset();
+    const renders = await probe.count(() => { app.call('renderAnalyzeHandContext'); });
+    assert.equal(renders.length, 0, 'presentation only');
+    await app.click('#analyzeHandContextReturn');
+    await app.settle(200);
+    assert.equal(app.$('.riverline-shell').dataset.activeDestination ?? app.$('#gtoMode').dataset.productDestination, 'hand');
+    // A fresh Scenario update clears the Hand context.
+    await app.navigate('analyze');
+    app.call('setAnalyzeHandContext', { returnDestination: 'hand', returnLabelKey: 'Back to Hand' });
+    spy.reset();
+    await app.call('updateContext');
+    assert.deepEqual(spy.calls.setAnalyzeHandContext.at(-1), [null]);
+  } finally {
+    spy.restore();
+  }
+  // Full Hand Training decisions route back to Training.
+  await app.training.playFullHand();
+  const full = app.spy(['setAnalyzeHandContext']);
+  try {
+    await app.call('openFullHandDecisionInAnalysis');
+    await app.settle(300);
+    const context = full.calls.setAnalyzeHandContext.map(([value]) => value).find(Boolean);
+    assert.equal(context?.returnDestination, 'training');
+    assert.equal(context?.returnLabelKey, 'Back to Training');
+  } finally {
+    full.restore();
+    app.call('setAnalyzeHandContext', null);
+    await app.navigate('analyze');
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -289,39 +477,51 @@ test('global type scale tokens are the mockup sizes', () => {
   for (const [name, value] of Object.entries({
     '--t-body': '0.875rem', '--t-small': '0.78125rem', '--t-label': '0.6875rem', '--t-heading': '0.9375rem',
     '--t-title': '1.25rem', '--t-display': '2.5rem', '--t-value': '0.9375rem',
-  })) assert.match(rootBlock, new RegExp(`${name}: ${value.replace('.', '\\.')};`), name);
-  assert.match(rootBlock, /--text-micro-size: var\(--t-small\);/, 'the old 11px product text rides on small');
-  assert.match(rootBlock, /--t-hero: var\(--t-display\);/);
+  })) assert.equal(css.cascaded(root(), name), value, name);
+  assert.equal(css.cascaded(root(), '--text-micro-size'), 'var(--t-small)', 'the old 11px product text rides on small');
+  assert.equal(css.cascaded(root(), '--t-hero'), 'var(--t-display)');
 });
 
 test('no product text below 12px except overline labels, card faces, table art and matrix glyphs', () => {
   const excluded = /hand-cell|card|deck|table-|poker-table|poker-amount|matrix|range-grid|range-cell|range-category-legend|swatch|color-previews|personal-hand-map|path-node|calibration-status-legend|dealer|chip/;
   const offenders = [];
-  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    for (const match of body.matchAll(/font(?:-size)?:[^;]*?(\d*\.?\d+)(px|rem)\b/g)) {
-      const px = Number(match[1]) * (match[2] === 'rem' ? 16 : 1);
-      if (px >= 12 || px < 4) continue;
-      const clean = selector.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-      if (excluded.test(clean)) continue;
-      if (/text-transform:\s*uppercase/.test(body) && px >= 11) continue;
-      offenders.push(`${clean.slice(-60)} → ${match[0]}`);
+  for (const rule of wholeSheet.rules) {
+    const selector = rule.selectors.join(', ');
+    const uppercase = rule.declarations.some(({ property, value }) => property === 'text-transform' && /uppercase/.test(value));
+    for (const { property, value } of rule.declarations) {
+      if (property !== 'font' && property !== 'font-size') continue;
+      for (const match of value.matchAll(/(\d*\.?\d+)(px|rem)\b/g)) {
+        const px = Number(match[1]) * (match[2] === 'rem' ? 16 : 1);
+        if (px >= 12 || px < 4) continue;
+        if (excluded.test(selector)) continue;
+        if (uppercase && px >= 11) continue;
+        offenders.push(`${selector.slice(-60)} → ${property}: ${value}`);
+      }
     }
   }
   assert.deepEqual(offenders, []);
-  for (const [, , body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    if (/var\(--text-micro-size\)/.test(body)) assert.doesNotMatch(body, /text-transform:\s*uppercase/, 'overlines use --t-label');
+  for (const rule of wholeSheet.rules) {
+    if (rule.declarations.some(({ value }) => /var\(--text-micro-size\)/.test(value))) {
+      assert.ok(!rule.declarations.some(({ property, value }) => property === 'text-transform' && /uppercase/.test(value)), `overlines use --t-label (${rule.selectors.join(', ')})`);
+    }
   }
 });
 
 test('no decorative borders or color in the Analyze section', () => {
-  assert.doesNotMatch(analyzeCss, /border-(?:inline-start|left|top|block-start):\s*[2-9]px/);
-  assert.doesNotMatch(analyzeCss, /border[^:;]*:[^;]*var\(--provenance\)/);
-  assert.doesNotMatch(analyzeCss, /!important/);
-  assert.doesNotMatch(decision, /style="[^"]*border/);
-  assert.doesNotMatch(html.slice(html.indexOf('<section id="gtoMode"'), html.indexOf('<template id="rangeCalibrationTemplate"')), /border-left: 4px/);
-  assert.doesNotMatch(rail, /id="(?:opp)?tightnessLabel" style=/, 'no decorative label colors');
-  // Accent only on the active step, selection underline and slider/primary components.
-  const accentLines = analyzeCss.split('\n').filter((line) => line.includes('--accent-primary'));
-  // Slider thumbs use the accent hover step (slider fill is an allowed accent use).
-  assert.ok(accentLines.every((line) => /border-block-end-color|box-shadow|background: var\(--accent-primary(?:-hover)?\)|border-color: var\(--accent-primary\)/.test(line)), accentLines.join('\n'));
+  for (const rule of analyzeSheet.rules) {
+    for (const { property, value, important } of rule.declarations) {
+      const where = `${rule.selectors.join(', ')} { ${property}: ${value} }`;
+      assert.ok(!important, `no !important: ${where}`);
+      if (/^border-(?:inline-start|left|top|block-start)(?:-width)?$/.test(property)) assert.doesNotMatch(value, /(?<![.\d])[2-9]px/, where);
+      if (property.startsWith('border')) assert.doesNotMatch(value, /var\(--provenance\)/, where);
+      if (value.includes('--accent-primary')) {
+        assert.ok(/border-block-end-color|box-shadow|^background$|border-color/.test(property) && (property !== 'background' || /^var\(--accent-primary(?:-hover)?\)$/.test(value)), where);
+      }
+    }
+  }
+  const decision = markup.getElementById('recommendation');
+  assert.ok(![decision, ...decision.querySelectorAll('[style]')].some((node) => /border/.test(node.getAttribute?.('style') || '')));
+  const gto = markup.getElementById('gtoMode');
+  assert.ok(![...gto.querySelectorAll('[style]')].some((node) => /border-left:\s*4px/.test(node.getAttribute('style'))));
+  assert.equal(markup.querySelector('#tightnessLabel[style], #opptightnessLabel[style], #oppTightnessLabel[style]'), null, 'no decorative label colors');
 });
