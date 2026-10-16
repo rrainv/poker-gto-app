@@ -74,7 +74,7 @@ test('analysis navigation selects, reveals, and focuses its actual destination',
     assert.equal(app.byId('chartView').style.display, 'block');
     assert.equal(app.byId('contextView').style.display, 'none');
     assert.deepEqual(app.byId('chartView')._scrolledIntoView, { behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
-    assert.equal(app.document.activeElement, chartTab);
+    assert.ok(app.document.activeElement === chartTab);
   }
   app.environment.media.reducedMotion = false;
 });

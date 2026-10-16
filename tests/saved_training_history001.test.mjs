@@ -840,7 +840,7 @@ test('modules stay DOM-free/pure where required and logic.js only wires and rout
     mounts[0].options.captureScope();
   }));
   assert.equal(mounts.length, 1);
-  assert.equal(mounts[0].section, page.byId('savedLibrarySection'));
+  assert.ok(mounts[0].section === page.byId('savedLibrarySection'));
   assert.deepEqual(scopes, ['training_memory']);
   // Owner changes reset the library, then the history view.
   const order = [];

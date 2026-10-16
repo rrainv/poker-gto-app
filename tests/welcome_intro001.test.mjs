@@ -314,7 +314,7 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
   assert.equal(app.call('welcomeOrientationIsVisible'), true);
   const live = app.$('.welcome-job-card');
   live.focus();
-  assert.equal(app.document.activeElement, live);
+  assert.ok(app.document.activeElement === live);
   assert.match(css.cascaded(live, 'outline', { states: ['focus-visible'] }), /solid/);
   assert.doesNotMatch(css.cascaded(live, 'outline') || '', /solid/, 'pointer focus draws no ring');
   const preference = app.$('.welcome-preference');

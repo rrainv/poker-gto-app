@@ -57,6 +57,16 @@ import {
   createMemoryTrainingMemoryDatabase,
 } from '../app/src/training-memory/indexeddb-storage.mjs';
 
+// TEST-HYGIENE-001: page-level checks boot the app lazily (once per process).
+let bootedPage = null;
+async function bootedApp() {
+  if (!bootedPage) {
+    const { bootApp } = await import('./helpers/app-under-test.mjs');
+    bootedPage = await bootApp();
+  }
+  return bootedPage;
+}
+
 function clock(start = '2026-08-26T08:00:00.000Z') {
   let tick = Date.parse(start);
   return () => new Date(tick += 1000);
@@ -661,7 +671,7 @@ test('Full Hand decisions share one session replay authority and reference exact
     'insufficient_canonical_dimensions');
 });
 
-test('live Full Hand Memory presentation is embargoed until terminal Review without rewriting evidence', () => {
+test('live Full Hand Memory presentation is embargoed until terminal Review without rewriting evidence', async () => {
   const liveSession = Object.freeze({ mode: 'full_hand', status: 'active' });
   const completedSession = Object.freeze({ mode: 'full_hand', status: 'completed' });
   const ordinarySession = Object.freeze({ mode: 'focused', status: 'active' });
@@ -689,19 +699,43 @@ test('live Full Hand Memory presentation is embargoed until terminal Review with
   assert.equal(createTrainingMemoryPresentationGate(ordinarySession).feedbackEmbargoed, false);
   assert.deepEqual(frozenEvidence, before);
 
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const decisionRenderer = logic.slice(
-    logic.indexOf('function renderTrainingMemoryDecisionItem('),
-    logic.indexOf('async function populateTrainingMemorySessionDecisions('),
-  );
-  const sessionRenderer = logic.slice(
-    logic.indexOf('function renderTrainingMemorySessionItem('),
-    logic.indexOf('async function refreshTrainingMemoryPanel('),
-  );
-  assert.match(decisionRenderer, /presentationGate\.feedbackEmbargoed[\s\S]*Hidden until review[\s\S]*return item/);
-  assert.ok(decisionRenderer.indexOf('return item;') < decisionRenderer.indexOf("const chosen = document.createElement('span')"));
-  assert.match(sessionRenderer, /presentationGate\.revealSessionVerdict/g);
-  assert.match(logic, /visibleDueCount[\s\S]*revealReviewReasons/);
+  // TEST-HYGIENE-001: the page's Memory renderers run in the booted app
+  // instead of regex-matching logic.js.
+  const app = await bootedApp();
+  await app.training.start('focused');
+  const record = { id: 'memory-gate', status: 'answered', decisionContext: app.window.app.training.currentExercise.decisionContext,
+    userResponse: { action: { type: 'raise' } }, strategyEvidence: null, studyMetadata: {}, reviewState: { state: 'pending' } };
+  app.call('clearTrainingSessionState');
+  // An embargoed (live Full Hand) decision shows only the summary and the
+  // embargo notice; a completed one reveals the answer.
+  const embargoed = app.call('renderTrainingMemoryDecisionItem', record, { session: liveSession });
+  assert.match(embargoed.textContent, new RegExp(app.call('t', 'Hidden until review')));
+  assert.doesNotMatch(embargoed.textContent, new RegExp(app.call('t', 'Chosen action')));
+  const revealed = app.call('renderTrainingMemoryDecisionItem', record, { session: completedSession });
+  assert.match(revealed.textContent, new RegExp(app.call('t', 'Chosen action')));
+  assert.doesNotMatch(revealed.textContent, new RegExp(app.call('t', 'Hidden until review')));
+  // Session verdicts appear only when the gate reveals them.
+  const summary = { answeredCount: 3, reviewCount: 2, sourceIds: ['heuristic_preflop'], truthSummary: null };
+  const verdict = app.call('t', '{answered} answered; {review} review', { answered: 3, review: 2 });
+  const live = app.call('renderTrainingMemorySessionItem', { session: { ...liveSession, id: 'live', startedAt: '2026-09-01T00:00:00.000Z' }, summary });
+  const done = app.call('renderTrainingMemorySessionItem', { session: { ...completedSession, id: 'done', startedAt: '2026-09-01T00:00:00.000Z' }, summary });
+  assert.ok(!live.textContent.includes(verdict));
+  assert.ok(done.textContent.includes(verdict));
+  // Due reviews from the embargoed presentation session are not counted.
+  const bridge = app.window.callTrainingMemoryBridge;
+  const training = app.window.app.training;
+  const previous = training.memoryPresentationSessionPromise;
+  app.window.callTrainingMemoryBridge = async (method) => (method === 'listDueReview'
+    ? [{ record: { ...record, sessionId: 'live-session' } }, { record: { ...record, id: 'other', sessionId: 'older' } }]
+    : []);
+  training.memoryPresentationSessionPromise = Promise.resolve({ ...liveSession, id: 'live-session' });
+  try {
+    await app.call('refreshTrainingMemoryPanel');
+    assert.equal(app.byId('trainingMemoryDueBadge').textContent, '1');
+  } finally {
+    app.window.callTrainingMemoryBridge = bridge;
+    training.memoryPresentationSessionPromise = previous;
+  }
 });
 
 test('abandoning Full Hand preserves answered evidence without fabricating completion', async () => {
@@ -774,22 +808,60 @@ test('history queries are indexed/bounded and do not resolve strategy at startup
   assert.equal(counter.calls, callsAfterGeneration);
 });
 
-test('Training Memory UI is lazy, semantic, localized, RTL-safe, and keeps Saved separate', () => {
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+test('Training Memory UI is lazy, semantic, localized, RTL-safe, and keeps Saved separate', async () => {
+  // TEST-HYGIENE-001: markup is parsed, styles are read through the cascade
+  // and the panel behaviour runs in the booted app.
+  const { appStyleSheet, indexDocument } = await import('./helpers/app-under-test.mjs');
+  const markup = indexDocument();
+  const css = appStyleSheet();
   const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
-
-  assert.match(html, /id="trainingMemoryPanel"/);
-  assert.match(html, /id="trainingMemoryList"[^>]*aria-labelledby=/);
-  assert.match(html, /role="tablist"/);
-  assert.match(html, /role="tabpanel"/);
-  assert.match(logic, /handleTrainingMemoryTabKey/);
-  assert.match(logic, /if \(event\.currentTarget\.open\) void refreshTrainingMemoryPanel\(\)/);
-  assert.doesNotMatch(logic, /callSavedStudyBridge\([^\n]*Training Memory/);
-  assert.match(logic, /cards\.dir = 'ltr'/);
-  assert.match(css, /padding-inline-start/);
-  assert.match(css, /:focus-visible/);
+  assert.ok(markup.getElementById('trainingMemoryPanel'));
+  assert.ok(markup.getElementById('trainingMemoryList').getAttribute('aria-labelledby'));
+  const panel = markup.getElementById('trainingMemoryPanel');
+  assert.ok(panel.querySelector('[role="tablist"]'));
+  assert.ok(panel.querySelector('[role="tabpanel"]'));
+  const app = await bootedApp();
+  await app.navigate('training');
+  // Opening the panel loads it lazily; Saved study is never queried.
+  const live = app.byId('trainingMemoryPanel');
+  live.open = false;
+  const spy = app.spy(['refreshTrainingMemoryPanel', 'callSavedStudyBridge']);
+  try {
+    live.open = true;
+    live.dispatchEvent(new app.window.Event('toggle'));
+    await app.settle(200);
+    assert.equal(spy.count('refreshTrainingMemoryPanel'), 1);
+    assert.equal(spy.count('callSavedStudyBridge'), 0);
+  } finally {
+    spy.restore();
+  }
+  // Arrow keys move between the Memory tabs, mirrored in RTL.
+  const tabs = app.$$('[data-memory-view]');
+  assert.ok(tabs.length >= 2);
+  tabs[0].focus();
+  await app.key(tabs[0], 'ArrowRight');
+  assert.equal(app.document.activeElement?.dataset.memoryView, tabs[1].dataset.memoryView);
+  app.document.documentElement.dir = 'rtl';
+  try {
+    await app.key(tabs[1], 'ArrowLeft');
+    assert.equal(app.document.activeElement?.dataset.memoryView, tabs[(2 % tabs.length)]?.dataset.memoryView ?? tabs[0].dataset.memoryView);
+  } finally {
+    app.document.documentElement.dir = 'ltr';
+  }
+  await app.key(tabs[1], 'Home');
+  assert.equal(app.document.activeElement?.dataset.memoryView, tabs[0].dataset.memoryView);
+  // Card summaries are LTR islands; rows use logical padding and visible focus.
+  const row = app.call('trainingMemoryDecisionSummary', { decisionContext: { heroCards: ['As', 'Kd'], board: [], street: 'preflop', heroPosition: 'BTN' } });
+  assert.equal(row.querySelector('.training-memory-cards').dir, 'ltr');
+  const item = markup.createElement('li');
+  item.className = 'training-memory-item';
+  markup.getElementById('trainingMemoryList').appendChild(item);
+  try {
+    assert.ok(css.matchingRules(item).some((rule) => rule.declarations.some(({ property }) => property.startsWith('padding-inline'))) || css.cascaded(item, 'padding-inline-start') !== undefined);
+  } finally {
+    item.remove();
+  }
+  assert.ok(css.cascaded(tabs[0], 'outline', { states: ['focus-visible'] }) || css.cascaded(tabs[0], 'box-shadow', { states: ['focus-visible'] }));
   assert.match(i18n, /trainingMemoryTranslations\.ru/);
   assert.match(i18n, /trainingMemoryTranslations\.he/);
   assert.match(i18n, /"Training Memory": "\\u0418/);

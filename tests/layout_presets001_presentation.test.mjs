@@ -327,7 +327,7 @@ test('Training and Equity use meaningful Balanced compositions without hidden la
     assert.equal(css.cascaded(app.$('.training-decision-column'), 'grid-area', { width: 1440 }), 'decision');
     assert.equal(css.cascaded(rail, 'grid-area', { width: 1440 }), 'insight');
     for (const panel of ['trainingSetupPanel', 'trainingHistoryPanel']) {
-      assert.equal(app.byId(panel).parentElement, rail, panel);
+      assert.ok(app.byId(panel).parentElement === rail, panel);
       assert.equal(css.cascaded(app.byId(panel), 'grid-column', { width: 1440 }), 'auto', panel);
     }
   }

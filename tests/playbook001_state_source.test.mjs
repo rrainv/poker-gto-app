@@ -13,12 +13,18 @@ import {
   handModeCompatibility,
   resolvePlaybookDecisionContext,
 } from '../app/src/application/playbook-state-source.mjs';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
+import { bootApp, indexDocument, precedes, strategyProviderProbe } from './helpers/app-under-test.mjs';
 
 const require = createRequire(import.meta.url);
 const legacy = require('./qa002_adapters.js');
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: logic.js / index.html assertions are behavioural: both
+// Playbook modes run in the booted app (spies, a provider probe, storage
+// observation) and markup is parsed. The bootstrap source is outside scope.
+const probe = strategyProviderProbe();
+const page = await bootApp({ beforeScripts: probe.beforeScripts });
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
+const markup = indexDocument();
 const PRODUCT_BOOTSTRAP = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
   'utf8',
@@ -420,54 +426,125 @@ test('product browser bridge owns a separate persistent canonical controller and
   assert.ok(experienceTypes.includes('chips_committed'));
 });
 
-test('mode UI defaults to Scenario, is semantic, keyboard-native, and does not persist mode', () => {
-  assert.ok(
-    HTML.indexOf('src/application/playbook-mode-bootstrap.mjs')
-      < HTML.indexOf('src/core/logic.js'),
-    'canonical Playbook bridge must load before classic orchestration',
-  );
-  assert.match(HTML, /id="playbookModeControl"[^>]+role="group"[^>]+aria-label=/);
-  assert.match(HTML, /id="playbookScenarioMode"[^>]+type="button"[^>]+aria-pressed="true"/);
-  assert.match(HTML, /id="playbookHandMode"[^>]+type="button"[^>]+aria-pressed="false"/);
-  assert.match(HTML, /id="playbookModeStatus"[^>]+role="status"[^>]+aria-live="polite"/);
-  assert.doesNotMatch(`${LOGIC}\n${PRODUCT_BOOTSTRAP}`, /localStorage\.(getItem|setItem)\([^)]*playbookMode/i);
+test('mode UI defaults to Scenario, is semantic, keyboard-native, and does not persist mode', async () => {
+  const scripts = markup.querySelectorAll('script[src]');
+  const script = (path) => scripts.find((node) => node.getAttribute('src').split('?')[0] === path);
+  assert.ok(precedes(script('src/application/playbook-mode-bootstrap.mjs'), script('src/core/logic.js')),
+    'canonical Playbook bridge must load before classic orchestration');
+  const control = markup.getElementById('playbookModeControl');
+  assert.equal(control.getAttribute('role'), 'group');
+  assert.ok(control.getAttribute('aria-label'));
+  for (const [id, pressed] of [['playbookScenarioMode', 'true'], ['playbookHandMode', 'false']]) {
+    const button = markup.getElementById(id);
+    assert.equal(button.localName, 'button');
+    assert.equal(button.getAttribute('type'), 'button');
+    assert.equal(button.getAttribute('aria-pressed'), pressed);
+  }
+  const status = markup.getElementById('playbookModeStatus');
+  assert.equal(status.getAttribute('role'), 'status');
+  assert.equal(status.getAttribute('aria-live'), 'polite');
+  // Switching modes never reads or writes a persisted mode.
+  const storage = page.window.localStorage;
+  const touched = [];
+  const original = { getItem: storage.getItem, setItem: storage.setItem };
+  storage.getItem = function (key) { touched.push(key); return original.getItem.call(this, key); };
+  storage.setItem = function (key, value) { touched.push(key); return original.setItem.call(this, key, value); };
+  try {
+    await page.navigate('analyze');
+    await page.call('requestPlaybookMode', 'hand');
+    await page.settle(200);
+    await page.call('requestPlaybookMode', 'scenario');
+    await page.settle(200);
+  } finally {
+    Object.assign(storage, original);
+  }
+  assert.deepEqual(touched.filter((key) => /playbookMode/i.test(key)), []);
+  assert.doesNotMatch(PRODUCT_BOOTSTRAP, /localStorage\.(getItem|setItem)\([^)]*playbookMode/i);
 });
 
-test('Hand presentation is one-way, disables scenario facts, and guards direct card edits', () => {
-  assert.match(LOGIC, /PLAYBOOK_SCENARIO_CONTROL_IDS[\s\S]+control\.disabled = handMode/);
-  assert.match(LOGIC, /data-playbook-canonical-display disabled/);
-  assert.match(LOGIC, /isHandMode\(\)[\s\S]+PLAYBOOK_DECISION_CARD_GROUPS\.includes\(group\)/);
-  assert.match(LOGIC, /savedPlaybookScenarioPresentation = capturePlaybookScenarioPresentation\(\)/);
-  assert.match(LOGIC, /restorePlaybookScenarioPresentation\(savedPlaybookScenarioPresentation\)/);
+test('Hand presentation is one-way, disables scenario facts, and guards direct card edits', async () => {
+  await page.navigate('analyze');
+  await page.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  page.byId('stack').value = '137';
+  page.byId('stackNum').value = '137';
+  const scenario = page.call('capturePlaybookScenarioPresentation');
+  await page.call('requestPlaybookMode', 'hand');
+  await page.settle(200);
+  // Scenario facts are disabled while the canonical Hand owns them.
+  for (const id of page.evaluate('PLAYBOOK_SCENARIO_CONTROL_IDS')) {
+    const control = page.byId(id);
+    if (control) assert.equal(control.disabled, true, id);
+  }
+  for (const slot of page.$$('[data-playbook-canonical-display]')) assert.equal(slot.disabled, true);
+  // Direct edits of decision cards are refused in Hand mode.
+  page.call('openPicker', 'hero', 0);
+  assert.equal(page.window.app.picker, null);
+  // Returning to Scenario restores the captured presentation.
+  await page.call('requestPlaybookMode', 'scenario');
+  await page.settle(200);
+  assert.deepEqual(page.call('capturePlaybookScenarioPresentation'), scenario);
   assert.doesNotMatch(PRODUCT_BOOTSTRAP, /setHeroHoleCards|setBoardCards|groupCards/);
 });
 
-test('both modes converge on one StrategyProvider and StrategyResult rendering path', () => {
-  const updateStart = LOGIC.indexOf("async function updateContext(reason = 'Context updated')");
-  const updateEnd = LOGIC.indexOf('let equityCalculationGeneration = 0;', updateStart);
-  assert.ok(updateEnd > updateStart);
-  const update = LOGIC.slice(updateStart, updateEnd);
-  assert.equal((update.match(/strategyProvider\.resolve\(decisionContext\)/g) || []).length, 1);
-  assert.equal((update.match(/strategyResultToLegacyProfile\(strategyResult\)/g) || []).length, 1);
-  assert.doesNotMatch(LOGIC, /scenarioActionProfile|handActionProfile/);
-  assert.match(update, /playbookResolution\.decisionContext/);
+test('both modes converge on one StrategyProvider and StrategyResult rendering path', async () => {
+  for (const name of ['scenarioActionProfile', 'handActionProfile']) assert.equal(page.evaluate(`typeof ${name}`), 'undefined', name);
+  const once = async (label) => {
+    const spy = page.spy(['strategyResultToLegacyProfile']);
+    try {
+      const resolved = await probe.count(async () => {
+        await page.call('updateContext');
+        await page.settle(200);
+      });
+      assert.equal(resolved.length, 1, `${label}: one resolution`);
+      assert.equal(resolved[0], page.window.app.playbookResolution.decisionContext, `${label}: the resolved Playbook DecisionContext`);
+      assert.ok(spy.calls.strategyResultToLegacyProfile.some(([result]) => result === page.window.app.strategyResult), `${label}: one StrategyResult path`);
+    } finally {
+      spy.restore();
+    }
+  };
+  await page.navigate('analyze');
+  await page.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  await once('scenario');
+  await page.startHand(['As', 'Kd']);
+  await page.call('requestPlaybookMode', 'hand');
+  await page.settle(200);
+  await once('hand');
+  await page.call('requestPlaybookMode', 'scenario');
+  await page.settle(200);
   assert.match(PRODUCT_BOOTSTRAP,
     /resolveDecisionContext\(scenarioInput\)\s*\{\s*return modeController\.resolve\(\{ scenarioInput \}\)/);
 });
 
 test('product Hand path has one canonical controller and no dev shadow path', () => {
   assert.match(PRODUCT_BOOTSTRAP, /createCanonicalLiveController/);
-  assert.doesNotMatch(`${HTML}\n${LOGIC}\n${PRODUCT_BOOTSTRAP}`,
+  assert.doesNotMatch(PRODUCT_BOOTSTRAP,
     /canonical-live-bootstrap|canonical-hand-harness|decision-context-shadow|RiverlineCanonicalDev|canonicalDevHarness/);
+  for (const node of markup.querySelectorAll('script[src]')) {
+    assert.doesNotMatch(node.getAttribute('src'), /canonical-live-bootstrap|canonical-hand-harness|decision-context-shadow/);
+  }
+  for (const name of ['RiverlineCanonicalDev', 'canonicalDevHarness']) assert.equal(page.evaluate(`typeof ${name}`), 'undefined', name);
 });
 
-test('dependency and scope boundaries remain intact', () => {
+test('dependency and scope boundaries remain intact', async () => {
   const domainFiles = fs.readdirSync(new URL('../shared/poker-domain/', import.meta.url));
   for (const file of domainFiles) {
     const source = fs.readFileSync(new URL(`../shared/poker-domain/${file}`, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /app\/src|logic\.js|window\.|document\./, file);
   }
   assert.doesNotMatch(PRODUCT_BOOTSTRAP, /Equity|Training|calculateEquity|trainingMode/);
-  assert.doesNotMatch(LOGIC.match(/function syncCanonicalDecisionDisplay[\s\S]*?\r?\n}\r?\n/)?.[0] || '',
-    /applyAction|initializeHand|createAction/);
+  // Syncing the canonical display reads the decision only; it never acts.
+  await page.startHand(['As', 'Kd']);
+  await page.call('requestPlaybookMode', 'hand');
+  await page.settle(200);
+  const context = page.window.app.decisionContext;
+  assert.ok(context, 'a canonical decision is available');
+  const spy = page.spy(['callPlaybookStateBridge']);
+  try {
+    page.call('syncCanonicalDecisionDisplay', context);
+    assert.deepEqual(spy.calls.callPlaybookStateBridge.map(([name]) => name).filter((name) => /applyAction|initializeHand|createAction/.test(name)), []);
+  } finally {
+    spy.restore();
+    await page.call('requestPlaybookMode', 'scenario');
+    await page.settle(200);
+  }
 });

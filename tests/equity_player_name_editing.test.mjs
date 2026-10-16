@@ -30,7 +30,7 @@ test('player names use an in-place label/input editor with commit, cancel, and b
   await app.click(label);
   assert.equal(label.hidden, true);
   assert.equal(input.hidden, false);
-  assert.equal(app.document.activeElement, input);
+  assert.ok(app.document.activeElement === input);
   assert.equal(selected, 1, 'editing selects the current name');
 
   input.value = '  Villain  ';

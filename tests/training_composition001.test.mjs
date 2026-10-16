@@ -61,7 +61,7 @@ test('setup is a single disclosure that compacts on start and Adjust Drill reope
   assert.equal(app.byId('trainingSetupPanel').open, false, 'starting compacts the setup');
   await app.click('#trainingAdjustDrill');
   assert.equal(app.byId('trainingSetupPanel').open, true);
-  assert.equal(app.document.activeElement, app.byId('trainingStreet'), 'Adjust Drill focuses the first drill control');
+  assert.ok(app.document.activeElement === app.byId('trainingStreet'), 'Adjust Drill focuses the first drill control');
   app.call('clearTrainingSessionState');
   assert.equal(workspace().dataset.trainingState, 'idle');
   assert.equal(app.byId('trainingSetupPanel').open, true, 'idle reopens setup');
@@ -156,7 +156,7 @@ test('Focused and Full Hand retain their canonical controls within the shared co
   await app.click('[data-training-session-mode="full_hand"]');
   assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, true);
   await app.click('#trainingAdjustDrill');
-  assert.equal(app.document.activeElement, app.byId('trainingHeroPos'), 'Full Hand setup focuses Hero position');
+  assert.ok(app.document.activeElement === app.byId('trainingHeroPos'), 'Full Hand setup focuses Hero position');
   for (const id of ['trainingFullHandTableMount', 'trainingFullHandTimeline']) assert.ok(trainingMarkup.querySelector(`#${id}`), id);
   const node = workspace();
   node.dataset.trainingFullHandPhase = 'live';

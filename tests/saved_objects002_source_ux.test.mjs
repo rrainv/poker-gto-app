@@ -297,30 +297,100 @@ test('repository failure is surfaced and rapid clicks never start duplicate writ
   await assert.rejects(second, /quota failed/);
 });
 
-test('source UX is explicit, accessible, localized, cancel-safe, and isolated from compute authorities', () => {
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+test('source UX is explicit, accessible, localized, cancel-safe, and isolated from compute authorities', async () => {
+  // TEST-HYGIENE-001: markup is parsed, styles are read through the cascade,
+  // and placement / editor behaviour runs in the booted app, instead of
+  // regex-matching index.html / logic.js / styles.css.
+  const { appStyleSheet, bootApp, indexDocument, precedes, text } = await import('./helpers/app-under-test.mjs');
+  const markup = indexDocument();
+  const css = appStyleSheet();
+  const app = await bootApp();
   const translations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
   const controller = fs.readFileSync(new URL('../app/src/application/saved-study-object-source-controller.mjs', import.meta.url), 'utf8');
 
-  assert.match(html, /id="savedStudySaveButton"[\s\S]*?aria-describedby="savedStudySourceStatus"/);
-  const globalWorkflow = html.match(/class="playbook-state-source"[\s\S]*?id="togglePlaybookContext"/)?.[0] || '';
-  assert.doesNotMatch(globalWorkflow, /savedStudySourceActions|savedStudySaveButton/);
-  assert.match(html, /id="handStateSection"[\s\S]*?id="handSavedStudyActionMount"/);
-  assert.match(html, /id="handReplayControls"[\s\S]*?id="replaySavedStudyActionMount"/);
-  assert.match(html, /id="sharedControls"[\s\S]*?id="scenarioSavedStudyActionMount"[\s\S]*?id="savedStudySourceActions"/);
-  assert.match(logic, /function placeSavedStudySourceActions[\s\S]*?projection\?\.readOnly[\s\S]*?replaySavedStudyActionMount[\s\S]*?handSavedStudyActionMount[\s\S]*?appendChild\(actions\)/);
-  assert.match(css, /\.saved-study-action-mount:empty[\s\S]*?\.saved-study-source-actions/);
-  assert.match(css, /\.saved-study-source-actions \[hidden\] \{ display: none; \}/);
-  assert.match(html, /id="savedStudyForm"[\s\S]*?role="dialog"[\s\S]*?aria-modal="true"/);
-  assert.match(html, /savedStudyTitle[\s\S]*?savedStudyNote[\s\S]*?savedStudyTags[\s\S]*?savedStudyReviewLater[\s\S]*?savedStudyMistake/);
-  assert.match(html, /id="savedStudyArchiveConfirmation"[\s\S]*?Confirm archive[\s\S]*?Keep saved item/);
-  assert.match(logic, /\['savedStudyCancelButton', 'savedStudyCloseButton'\][\s\S]*?closeSavedStudyEditor/);
-  assert.doesNotMatch(logic.match(/function closeSavedStudyEditor\(\)[\s\S]*?\n}/)?.[0] || '', /updateAnnotations|archiveCurrent/);
-  assert.match(logic, /event\.key === 'Escape'/);
-  assert.match(logic, /event\.key !== 'Tab'/);
-  assert.match(css, /\[dir="rtl"\][\s\S]*?hand-seat-row|margin-inline-end/);
+  assert.equal(markup.getElementById('savedStudySaveButton').getAttribute('aria-describedby'), 'savedStudySourceStatus');
+  const globalWorkflow = markup.querySelector('.playbook-state-source');
+  assert.equal(globalWorkflow.querySelector('#savedStudySourceActions, #savedStudySaveButton'), null);
+  assert.ok(precedes(markup.getElementById('handStateSection'), markup.getElementById('handSavedStudyActionMount')));
+  assert.ok(precedes(markup.getElementById('handReplayControls'), markup.getElementById('replaySavedStudyActionMount')));
+  assert.ok(precedes(markup.getElementById('sharedControls'), markup.getElementById('scenarioSavedStudyActionMount')));
+  assert.ok(markup.getElementById('savedStudySourceActions').parentElement === markup.getElementById('scenarioSavedStudyActionMount'));
+  // The one action group moves to the mount for the current workflow.
+  const actions = () => app.byId('savedStudySourceActions');
+  await app.startHand(['As', 'Kd']);
+  app.call('placeSavedStudySourceActions');
+  assert.equal(actions().parentElement.id, 'handSavedStudyActionMount');
+  app.call('placeSavedStudySourceActions', { readOnly: true, viewerContext: { kind: 'live_hand' } });
+  assert.equal(actions().parentElement.id, 'replaySavedStudyActionMount');
+  app.call('placeSavedStudySourceActions', { readOnly: true, viewerContext: { kind: 'saved_hand' } });
+  assert.equal(actions().hidden, true, 'a saved-hand viewer offers no save action');
+  await app.call('requestPlaybookMode', 'scenario');
+  await app.settle(200);
+  app.call('placeSavedStudySourceActions');
+  assert.equal(actions().parentElement.id, 'scenarioSavedStudyActionMount');
+  assert.equal(actions().hidden, false);
+  // Empty mounts collapse; hidden actions inside the group stay hidden.
+  const emptyMount = markup.getElementById('handSavedStudyActionMount');
+  assert.equal(emptyMount.children.length, 0);
+  assert.equal(css.cascaded(emptyMount, 'display'), 'none');
+  const hiddenAction = markup.querySelector('#savedStudySourceActions [hidden]');
+  assert.ok(hiddenAction);
+  assert.equal(css.cascaded(hiddenAction, 'display'), 'none');
+  // The editor is an accessible modal dialog with fields in reading order and
+  // an explicit archive confirmation.
+  const form = markup.getElementById('savedStudyForm');
+  assert.equal(form.getAttribute('role'), 'dialog');
+  assert.equal(form.getAttribute('aria-modal'), 'true');
+  const fields = ['savedStudyTitle', 'savedStudyNote', 'savedStudyTags', 'savedStudyReviewLater', 'savedStudyMistake'].map((id) => markup.getElementById(id));
+  fields.slice(1).forEach((field, index) => assert.ok(precedes(fields[index], field), field.id));
+  const confirmation = markup.getElementById('savedStudyArchiveConfirmation');
+  assert.match(text(confirmation), /Confirm archive[\s\S]*Keep saved item/);
+  // Cancel, Close and Escape close the editor without writing; Tab is trapped.
+  const bridge = app.window.callSavedStudyBridge;
+  const writes = [];
+  app.window.callSavedStudyBridge = async (method, ...args) => { writes.push(method); return null; };
+  const object = { id: 'saved-ux', kind: 'spot', revision: 1, lifecycle: { state: 'active' }, source: {}, payload: {},
+    annotations: { title: 'Saved', note: '', tags: [], reviewState: 'none', classifications: [] } };
+  const modal = app.byId('savedStudyModal');
+  try {
+    for (const close of [
+      () => app.click('#savedStudyCancelButton'),
+      () => app.click('#savedStudyCloseButton'),
+      () => app.key(modal, 'Escape'),
+    ]) {
+      app.call('openSavedStudyEditor', object);
+      assert.equal(modal.hidden, false);
+      await close();
+      await app.settle(50);
+      assert.equal(modal.hidden, true);
+    }
+    assert.deepEqual(writes.filter((method) => /updateAnnotations|archiveCurrent/.test(method)), []);
+    app.call('openSavedStudyEditor', object);
+    await app.settle(100);
+    const focusable = app.call('savedStudyDialogFocusableElements');
+    const active = () => app.document.activeElement?.id;
+    focusable.at(-1).focus();
+    await app.key(modal, 'Tab');
+    assert.equal(active(), focusable[0].id, 'Tab wraps to the first control');
+    focusable[0].focus();
+    await app.key(modal, 'Tab', { shiftKey: true });
+    assert.equal(active(), focusable.at(-1).id, 'Shift+Tab wraps to the last control');
+    app.call('closeSavedStudyEditor');
+  } finally {
+    app.window.callSavedStudyBridge = bridge;
+  }
+  // RTL mirrors the actor marker with logical sides.
+  const row = markup.createElement('div');
+  row.className = 'hand-seat-row is-actor';
+  markup.getElementById('handSeatList').appendChild(row);
+  const ltrShadow = css.cascaded(row, 'box-shadow');
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try {
+    assert.notEqual(css.cascaded(row, 'box-shadow'), ltrShadow);
+  } finally {
+    markup.documentElement.removeAttribute('dir');
+    row.remove();
+  }
   for (const key of ['Save hand', 'Save spot', 'Saved', 'Edit saved item', 'Review later', 'Save changes', 'Archive failed']) {
     assert.match(translations, new RegExp(`"${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'u'));
   }

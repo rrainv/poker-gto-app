@@ -291,7 +291,7 @@ test('compact dice/settings UI replaces rejected permanent controls', async () =
   live.open = true;
   await page.key(live.querySelector('summary'), 'Escape');
   assert.equal(live.open, false);
-  assert.equal(page.document.activeElement, live.querySelector('summary'));
+  assert.ok(page.document.activeElement === live.querySelector('summary'));
 });
 
 test('settings, feedback, and accessible names have EN/RU/HE entries', () => {

@@ -17,14 +17,26 @@ const rangeCalibrationTranslationsSource = fs.readFileSync(path.join(repoRoot, '
 const homeTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-translations.js'), 'utf8');
 const homeGameTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-game-translations.js'), 'utf8');
 const welcomeTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/welcome-translations.js'), 'utf8');
-const logicSource = fs.readFileSync(path.join(repoRoot, 'app/src/core/logic.js'), 'utf8');
+// TEST-HYGIENE-001: logic.js / index.html / styles.css assertions are
+// behavioural: the page's language and strategy-message paths run in a booted
+// app (booted lazily, once, with a provider probe), markup is parsed, and the
+// LTR islands are read through the cascade.
+let booted = null;
+async function bootedApp() {
+  if (!booted) {
+    const { bootApp, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+    const probe = strategyProviderProbe();
+    booted = { app: await bootApp({ beforeScripts: probe.beforeScripts }), probe };
+  }
+  return booted;
+}
+const { appStyleSheet, indexDocument, precedes } = await import('./helpers/app-under-test.mjs');
+const markup = indexDocument();
 const themeSource = fs.readFileSync(path.join(repoRoot, 'app/src/application/presentation-theme.mjs'), 'utf8');
 const heuristicStrategySource = fs.readFileSync(path.join(repoRoot, 'app/src/strategy/heuristic-strategy.mjs'), 'utf8');
 const strategyBootstrapSource = fs.readFileSync(path.join(repoRoot, 'app/src/application/strategy-provider-bootstrap.mjs'), 'utf8');
 const teacherSource = fs.readFileSync(path.join(repoRoot, 'app/src/ui/teacher.js'), 'utf8');
 const renderedAuditSource = fs.readFileSync(path.join(repoRoot, 'tests/tooling/audit_rendered_i18n.cjs'), 'utf8');
-const html = fs.readFileSync(path.join(repoRoot, 'app/index.html'), 'utf8');
-const css = fs.readFileSync(path.join(repoRoot, 'app/styles.css'), 'utf8');
 const require = createRequire(import.meta.url);
 const { buildAudit, findCrossLocaleScriptContamination } = require('./tooling/audit_i18n.cjs');
 
@@ -133,8 +145,11 @@ test('Russian Clear is semantically distinct from Fold and Equity uses the canon
   assert.equal(audit.semantic.russianClear, 'Очистить');
   assert.equal(audit.semantic.russianFold, 'Пас');
   assert.equal(audit.semantic.russianClearDistinctFromFold, true);
-  assert.match(html, /data-card-clear-command="clear_board"[^>]*data-i18n="Clear"/);
-  assert.match(html, /data-card-clear-command="clear_dead_set"[^>]*data-i18n="Clear"/);
+  for (const command of ['clear_board', 'clear_dead_set']) {
+    const controls = markup.querySelectorAll(`[data-card-clear-command="${command}"]`);
+    assert.ok(controls.length > 0, command);
+    for (const control of controls) assert.equal(control.dataset.i18n, 'Clear', command);
+  }
 });
 
 test('language changes update the live static DOM, persistence, direction, and event lifecycle', () => {
@@ -194,10 +209,26 @@ test('legacy Correct label remains translatable without authorizing a Training v
   }
 });
 
-test('live language switching owns a dynamic rerender hook without triggering hidden strategy work', () => {
-  assert.match(logicSource, /riverline:languagechange/);
-  assert.match(logicSource, /refreshLocalizedRuntime/);
-  assert.doesNotMatch(logicSource, /riverline:languagechange[\s\S]{0,500}schedulePlaybookUpdate/);
+test('live language switching owns a dynamic rerender hook without triggering hidden strategy work', async () => {
+  const { app, probe } = await bootedApp();
+  await app.navigate('analyze');
+  // (refreshLocalizedRuntime is bound directly to the event; the Training
+  // refresh it always runs is observable through its global name.)
+  const spy = app.spy(['refreshLocalizedTrainingRuntime', 'schedulePlaybookUpdate', 'updateContext']);
+  try {
+    const resolves = await probe.count(async () => {
+      for (const language of ['ru', 'he', 'en']) {
+        app.window.setLanguage(language);
+        await app.settle(100);
+      }
+    });
+    assert.equal(spy.count('refreshLocalizedTrainingRuntime'), 3, 'each switch re-renders localized runtime');
+    assert.equal(spy.count('schedulePlaybookUpdate'), 0);
+    assert.equal(spy.count('updateContext'), 0);
+    assert.equal(resolves.length, 0, 'no hidden strategy work');
+  } finally {
+    spy.restore();
+  }
 });
 
 test('structured Analysis and residual renderer messages resolve in Russian and Hebrew', () => {
@@ -229,15 +260,30 @@ test('structured Analysis and residual renderer messages resolve in Russian and 
   }
 });
 
-test('unavailable StrategyResult data stays locale-neutral and both visible message surfaces localize from one authority', () => {
+test('unavailable StrategyResult data stays locale-neutral and both visible message surfaces localize from one authority', async () => {
   const candidate = resolveHeuristicStrategy({ heroCards: [], street: 'preflop' });
   assert.equal(candidate.explanation, 'Choose two hero cards to calculate a heuristic strategy.');
   assert.deepEqual(candidate.warnings, [candidate.explanation]);
   assert.doesNotMatch(heuristicStrategySource, /translate\s*[),=]/);
   assert.doesNotMatch(strategyBootstrapSource, /\btranslate\b/);
-  assert.doesNotMatch(logicSource, /createProvider\(\{[\s\S]{0,160}translate\s*:/);
-  assert.match(logicSource, /function localizedStrategyExplanation/);
-  assert.match(logicSource, /warning === result\.explanation \? localizedStrategyExplanation\(result\)/);
+  // The page creates its providers without a translator, and renders the
+  // unavailable explanation through its one localization helper.
+  const { app, probe } = await bootedApp();
+  assert.ok(probe.providerOptions.length > 0);
+  for (const options of probe.providerOptions) assert.equal(Object.hasOwn(options ?? {}, 'translate'), false);
+  assert.equal(app.evaluate('typeof localizedStrategyExplanation'), 'function');
+  app.window.setLanguage('ru');
+  const spy = app.spy(['localizedStrategyExplanation']);
+  try {
+    const warnings = app.call('localizedStrategyWarnings', candidate);
+    assert.equal(spy.count('localizedStrategyExplanation'), 1, 'the explanation warning uses the one helper');
+    assert.deepEqual(warnings, [app.call('localizedStrategyExplanation', candidate)]);
+    assert.match(warnings[0], /[\u0400-\u04FF]{2,}/u);
+    assert.equal(app.call('strategyResultToLegacyProfile', candidate).reason, warnings[0]);
+  } finally {
+    spy.restore();
+    app.window.setLanguage('en');
+  }
 
   const runtime = createRuntime();
   runtime.context.window.setLanguage('ru');
@@ -303,7 +349,7 @@ test('theme display names and Equity seed placeholder localize without changing 
     assert.notEqual(placeholder, 'Generated automatically');
     assert.match(placeholder, language === 'ru' ? /[\u0400-\u04FF]{2,}/u : /[\u0590-\u05FF]{2,}/u);
   }
-  assert.match(html, /id="equitySeed"[^>]*data-i18n-placeholder="Generated automatically"/);
+  assert.equal(markup.getElementById('equitySeed').dataset.i18nPlaceholder, 'Generated automatically');
   for (const id of ['midnight', 'graphite', 'daylight']) {
     assert.match(themeSource, new RegExp(`id: '${id}'`));
   }
@@ -335,13 +381,33 @@ test('Analysis renderer consumes structured keys and rendered audit covers live 
 });
 
 test('Hebrew uses component-level LTR islands for invariant poker data', () => {
-  assert.match(css, /\.i18n-ltr-isolate[^}]*direction:\s*ltr[^}]*unicode-bidi:\s*isolate/);
-  assert.match(css, /\[dir="rtl"\][^{]*\.equity-board-order[^}]*direction:\s*ltr/);
-  assert.match(css, /\[dir="rtl"\][^{]*\.strategy-grid[^}]*direction:\s*ltr/);
-  assert.match(css, /\[dir="rtl"\][^{]*\.poker-data-token[^}]*direction:\s*ltr/);
-  assert.match(css, /\[dir="rtl"\][^{]*\.control-value[^}]*direction:\s*ltr[^}]*unicode-bidi:\s*isolate/);
-  const flop = html.indexOf('data-equity-street="flop"');
-  const turn = html.indexOf('data-equity-street="turn"');
-  const river = html.indexOf('data-equity-street="river"');
-  assert.ok(flop >= 0 && flop < turn && turn < river, 'Equity street DOM order must remain Flop → Turn → River');
+  const css = appStyleSheet();
+  const probes = [];
+  const probeElement = (className, host = markup.body) => {
+    const element = markup.createElement('span');
+    element.className = className;
+    host.appendChild(element);
+    probes.push(element);
+    return element;
+  };
+  const isolate = probeElement('i18n-ltr-isolate');
+  const islands = [
+    markup.querySelector('.equity-board-order') || probeElement('equity-board-order', markup.getElementById('equityMode')),
+    markup.getElementById('strategyGrid'),
+    probeElement('poker-data-token'),
+    markup.querySelector('.control-value') || probeElement('control-value'),
+  ];
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try {
+    assert.equal(css.cascaded(isolate, 'direction'), 'ltr');
+    assert.equal(css.cascaded(isolate, 'unicode-bidi'), 'isolate');
+    for (const island of islands) assert.equal(css.cascaded(island, 'direction'), 'ltr', island.className || island.id);
+    assert.equal(css.cascaded(islands[3], 'unicode-bidi'), 'isolate');
+  } finally {
+    markup.documentElement.removeAttribute('dir');
+    probes.forEach((element) => element.remove());
+  }
+  const streets = ['flop', 'turn', 'river'].map((street) => markup.querySelector(`[data-equity-street="${street}"]`));
+  assert.ok(streets.every(Boolean));
+  assert.ok(precedes(streets[0], streets[1]) && precedes(streets[1], streets[2]), 'Equity street DOM order must remain Flop → Turn → River');
 });

@@ -34,14 +34,14 @@ test('one Action Path panel and renderer move between full and compact mounts', 
   assert.ok(markup.getElementById('playbookActionPathRailMount').contains(staticPanel));
   assert.equal(app.$$('#playbookDecisionPathPanel').length, 1);
   assert.equal(app.$$('#pathList').length, 1);
-  assert.equal(panel().parentElement, compactMount());
+  assert.ok(panel().parentElement === compactMount());
   const before = panel();
   app.call('applyActionPathPresentation', false);
   assert.equal(panel(), before, 'the panel is moved, not recreated');
-  assert.equal(panel().parentElement, app.byId('playbookActionPathRailMount'));
+  assert.ok(panel().parentElement === app.byId('playbookActionPathRailMount'));
   app.call('applyActionPathPresentation', true);
   assert.equal(panel(), before);
-  assert.equal(panel().parentElement, compactMount());
+  assert.ok(panel().parentElement === compactMount());
   assert.equal(app.evaluate('typeof renderPath'), 'function');
 });
 
@@ -59,7 +59,7 @@ test('the street stepper uses the compact mount at every width (ANALYZE-COMPOSIT
   }
   assert.equal(mediaQueries, 0, 'presentation does not depend on viewport queries');
   assert.equal(panel().dataset.actionPathPresentation, 'compact');
-  assert.equal(panel().parentElement, compactMount());
+  assert.ok(panel().parentElement === compactMount());
   assert.ok(panel().classList.contains('is-expanded'), 'every step shows its context');
   // Constrained desktop: the collapsed stepper is a four-column progression.
   panel().classList.remove('is-expanded');

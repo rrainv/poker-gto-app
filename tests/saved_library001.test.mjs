@@ -596,7 +596,7 @@ test('logic.js keeps only wiring and routing; Home Recent keeps its own six-item
   try {
     page.call('mountSavedLibraryWorkspace');
     assert.equal(mounts.length, 1);
-    assert.equal(mounts[0].section, page.byId('savedLibrarySection'));
+    assert.ok(mounts[0].section === page.byId('savedLibrarySection'));
     mounts[0].options.captureScope();
     assert.deepEqual(scopes, ['saved_study_objects']);
   } finally {

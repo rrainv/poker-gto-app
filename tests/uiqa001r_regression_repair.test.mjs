@@ -2,41 +2,59 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import {
+import { StyleSheetModel, appStyleSheet, bootApp, freshIndexDocument, precedes } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: parsed markup, the cascade on the parsed document, and the
+// Training solution renderer in the booted app.
+const app = await bootApp({ width: 1920 });
+// Imported after boot: these module graphs self-install page bridges.
+const {
   CARD_GEOMETRY,
   CARD_PRESENTATION_STORAGE_KEY,
   CARD_RANK_GEOMETRY,
   cardFaceMarkup,
   createCardPresentationController,
   tableCardSvgMarkup,
-} from '../app/src/application/card-presentation.mjs';
-
-import {
-  createProductionPickerHarness,
-  delegatedCardSlotClick,
-} from './uiqa001r_card_picker_adapter.mjs';
-
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+} = await import('../app/src/application/card-presentation.mjs');
+const { createProductionPickerHarness, delegatedCardSlotClick } = await import('./uiqa001r_card_picker_adapter.mjs');
+const markup = freshIndexDocument();
+const css = appStyleSheet();
+const W = { width: 1920 };
+const probe = (className, host = markup.body, tag = 'div') => {
+  const element = markup.createElement(tag);
+  element.className = className;
+  host.appendChild(element);
+  return element;
+};
+// SOURCE-SHAPE: "the UI-QA-001 repair block names no poker/solver authority"
+// is a scope lint over the block as authored (parsed); styles have no runtime
+// observable for which concepts their selectors mention.
+const repairSheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  return new StyleSheetModel(raw.slice(raw.indexOf('UI-QA-001: responsive shell')));
+})();
 const preflop = fs.readFileSync(new URL('../app/src/strategy/preflop-heuristic.mjs', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 
-const repairCss = css.slice(css.indexOf('UI-QA-001: responsive shell'));
-const playbookHtml = html.slice(html.indexOf('id="gtoMode"'), html.indexOf('id="trainingMode"'));
-const trainingHtml = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
-const equityHtml = html.slice(html.indexOf('id="equityMode"'), html.indexOf('id="infoMode"'));
 
 test('card-set preview geometry reserves full-size cards, stable gaps, padding, and visible edges', () => {
-  const boardEditorRule = css.match(/^\.board-card-set-editor\s*\{[^}]*\}/ms)?.[0] || '';
-  assert.match(css, /\.card-set-picker-context\s*\{[^}]*padding:\s*var\(--space-4\) var\(--space-5\)/s);
-  assert.match(css, /\.card-set-picker-cards\s*\{[^}]*gap:\s*var\(--space-4\)[^}]*padding:\s*var\(--space-2\)[^}]*overflow:\s*visible/s);
-  assert.match(css, /\.card-set-picker-card\s*\{[^}]*flex:\s*0 0 var\(--card-size-standard-width\)[^}]*height:\s*var\(--card-size-standard-height\) !important/s);
-  assert.match(css, /\.private-hand-set-editor\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*overflow:\s*visible/s);
-  assert.match(css, /\.equity-hand-editor-cards\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*overflow:\s*visible/s);
-  assert.match(boardEditorRule, /gap:\s*var\(--space-2\)/);
-  assert.match(boardEditorRule, /padding:\s*0/);
-  assert.doesNotMatch(boardEditorRule, /overflow:/);
+  const context = markup.querySelector('.card-set-picker-context');
+  assert.equal(css.cascaded(context, 'padding', W), 'var(--space-4) var(--space-5)');
+  const cards = markup.querySelector('.card-set-picker-cards');
+  assert.deepEqual(['gap', 'padding', 'overflow'].map((property) => css.cascaded(cards, property, W)), ['var(--space-4)', 'var(--space-2)', 'visible']);
+  const card = probe('card-set-picker-card', cards);
+  assert.equal(css.cascaded(card, 'flex', W), '0 0 var(--card-size-standard-width)');
+  assert.equal(css.cascaded(card, 'height', W), 'var(--card-size-standard-height)');
+  for (const className of ['private-hand-set-editor', 'equity-hand-editor-cards']) {
+    const editor = probe(className);
+    assert.equal(css.cascaded(editor, 'gap', W), 'var(--space-3)', className);
+    assert.equal(css.cascaded(editor, 'overflow', W), 'visible', className);
+  }
+  const board = probe('board-card-set-editor');
+  assert.equal(css.cascaded(board, 'gap', W), 'var(--space-2)');
+  assert.equal(css.cascaded(board, 'padding', W), '0');
+  assert.ok(!css.rulesFor('.board-card-set-editor').some((rule) => rule.declarations.some(({ property }) => property.startsWith('overflow'))));
 });
 
 test('root rank preference no longer consumes delegated Playbook card clicks', () => {
@@ -231,65 +249,109 @@ test('DESIGN-005 card proportions remain canonical and full 10 uses shared rank 
   assert.match(tableTen, /table-card-rank--ten/);
   assert.match(tableTen, /data-card-rank-width="wide"/);
   assert.match(tableTen, /scale\(0\.82 1\)/);
-  assert.match(css, /--card-size-slot-width:\s*48px/);
-  assert.match(css, /--card-size-slot-height:\s*68px/);
-  assert.match(css, /--card-rank-ten-scale-x:\s*\.82/);
+  assert.equal(css.cascaded(markup.documentElement, '--card-size-slot-width'), '48px');
+  assert.equal(css.cascaded(markup.documentElement, '--card-size-slot-height'), '68px');
+  assert.equal(css.cascaded(probe('riverline-card'), '--card-rank-ten-scale-x'), '.82');
 });
 
 test('sidebar collapse control remains in-flow with reserved accessible geometry', () => {
-  assert.match(repairCss, /\.rail-collapse-button\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/);
-  assert.match(repairCss, /\.is-sidebar-collapsed \.rail-collapse-button\s*\{[^}]*position:\s*static/);
-  assert.doesNotMatch(repairCss, /\.is-sidebar-collapsed \.rail-collapse-button\s*\{[^}]*inset-inline/);
-  const brand = html.slice(html.indexOf('<div class="rail-brand">'), html.indexOf('</div>', html.indexOf('id="sidebarCollapseBtn"')) + 6);
-  assert.match(brand, /id="sidebarCollapseBtn"/);
+  const button = markup.getElementById('sidebarCollapseBtn');
+  assert.ok(button.closest('.rail-brand'), 'the control lives in the rail brand row');
+  assert.ok(button.classList.contains('rail-collapse-button'));
+  // (Superseded: the 44px square from UI-QA-001 was reduced to 28x30 by the
+  // later rail rule; it still exceeds the 24px WCAG 2.2 AA target minimum.)
+  assert.equal(css.cascaded(button, 'width', W), '28px');
+  assert.equal(css.cascaded(button, 'height', W), '30px');
+  const shell = markup.querySelector('.riverline-shell');
+  shell.classList.add('is-sidebar-collapsed');
+  try {
+    assert.equal(css.cascaded(button, 'position', W), 'static');
+    for (const property of ['inset-inline', 'inset-inline-start', 'inset-inline-end']) assert.equal(css.cascaded(button, property, W), undefined, property);
+  } finally {
+    shell.classList.remove('is-sidebar-collapsed');
+  }
 });
 
 test('Betting Context is a coherent six-column two-row structural grid', () => {
   // ANALYZE-COMPOSITION-001: the center Betting context strip became the Spot rail Action section
   // (position + prior action pair, then the facing/pot slider rows).
-  assert.match(playbookHtml, /id="sharedControls"[\s\S]*?class="playbook-field-pair"[\s\S]*?class="fields playbook-context-sliders"/);
-  // ANALYZE-COMPOSITION-001 amendment 2 removed the strip's dead grid CSS; the live sliders rule stays.
-  assert.doesNotMatch(css, /\.playbook-context-grid\b|\.playbook-context-primary\b/);
-  assert.match(repairCss, /\.playbook-context-sliders\s*\{\s*display:\s*contents/);
-  assert.match(repairCss, /\.playbook-context-sliders > \.field\s*\{[^}]*grid-column:\s*span 3/);
+  const shared = markup.getElementById('sharedControls');
+  const pair = shared.querySelector('.playbook-field-pair');
+  const sliders = shared.querySelector('.fields.playbook-context-sliders');
+  assert.ok(pair && sliders);
+  assert.ok(precedes(pair, sliders));
+  // ANALYZE-COMPOSITION-001 amendment 2 removed the strip's dead grid CSS.
+  for (const className of ['playbook-context-grid', 'playbook-context-primary']) assert.deepEqual(css.rulesMentioning(`.${className}`), [], className);
+  // (Superseded: display: contents / span-3 fields from UI-QA-001 became the
+  // Spot rail's own one-column slider grid.)
+  assert.equal(css.cascaded(sliders, 'display', W), 'grid');
+  assert.equal(css.cascaded(sliders.querySelector(':scope > .field'), 'grid-column', W), 'span 1');
 });
 
 test('table viewBox reserves seat extrema and expanded wrapper does not clip', () => {
   assert.match(table, /viewBox="0 0 1000 650"/);
-  assert.match(repairCss, /\.table-wrapper\s*\{[^}]*overflow:\s*visible/);
-  assert.match(repairCss, /#visual-table-container\s*\{[^}]*overflow:\s*visible/);
-  assert.match(repairCss, /\.table-wrapper\.collapsed\s*\{[^}]*height:\s*0[^}]*overflow:\s*hidden/);
+  const wrapper = markup.querySelector('.table-wrapper');
+  assert.equal(css.cascaded(wrapper, 'overflow', W), 'visible');
+  assert.equal(css.cascaded(markup.getElementById('visual-table-container'), 'overflow', W), 'visible');
+  // Collapsing removes the table's space and clips it. (Superseded: height 0
+  // became an animated max-height 0 with deferred visibility.)
+  wrapper.classList.add('collapsed');
+  try {
+    assert.deepEqual(['max-height', 'overflow', 'visibility'].map((property) => css.cascaded(wrapper, property, W)), ['0', 'hidden', 'hidden']);
+  } finally {
+    wrapper.classList.remove('collapsed');
+  }
 });
 
 test('Equity reads as Players to Board and Calculation to Hand Analysis', () => {
-  const players = equityHtml.indexOf('class="panel equity-player-panel"');
-  const center = equityHtml.indexOf('class="equity-center-column"');
-  const cards = equityHtml.indexOf('class="panel equity-cards-panel"');
-  const controls = equityHtml.indexOf('class="panel equity-controls-panel');
-  const analysis = equityHtml.indexOf('id="equityHandAnalysis"');
-  assert.ok(players < center && center < cards && cards < controls && controls < analysis);
-  assert.match(repairCss, /\.equity-workspace\s*\{[^}]*grid-template-columns:/);
-  assert.match(repairCss, /\.equity-center-column\s*\{[^}]*display:\s*grid/);
-  assert.match(equityHtml, /id="equityDecreasePlayers"[\s\S]*id="equityIncreasePlayers"/);
+  const equity = markup.getElementById('equityMode');
+  const order = [
+    equity.querySelector('.panel.equity-player-panel'),
+    equity.querySelector('.equity-center-column'),
+    equity.querySelector('.panel.equity-cards-panel'),
+    equity.querySelector('.panel.equity-controls-panel'),
+    equity.querySelector('#equityHandAnalysis'),
+  ];
+  assert.ok(order.every(Boolean));
+  order.slice(1).forEach((node, index) => assert.ok(precedes(order[index], node), node.className || node.id));
+  assert.ok(css.cascaded(equity.querySelector('.equity-workspace'), 'grid-template-columns', W));
+  assert.equal(css.cascaded(equity.querySelector('.equity-center-column'), 'display', W), 'grid');
+  assert.ok(precedes(markup.getElementById('equityDecreasePlayers'), markup.getElementById('equityIncreasePlayers')));
 });
 
-test('Training keeps stacked probabilities and removes the circular reference wheel', () => {
-  assert.match(trainingHtml, /id="trainingFrequencyStack"/);
-  assert.match(trainingHtml, /id="trainingFrequencyRows"/);
-  assert.doesNotMatch(trainingHtml, /id="trainingWheel"|training-wheel-secondary/);
-  const solution = logic.match(/function showTrainingSolution\(solution\)[\s\S]*?\n\}/)?.[0] ?? '';
-  assert.match(solution, /Array\.isArray\(solution\)/);
-  assert.match(solution, /action:\s*entry\.action/);
-  assert.doesNotMatch(solution, /actionsList\.reduce|act\.pct\s*=/);
-  assert.match(logic, /function strategyResultPresentationActions\(result\)/);
-  assert.match(solution, /renderFrequencyStack/);
-  assert.doesNotMatch(solution, /conic-gradient|trainingWheel/);
+test('Training keeps stacked probabilities and removes the circular reference wheel', async () => {
+  const training = markup.getElementById('trainingMode');
+  assert.ok(training.querySelector('#trainingFrequencyStack'));
+  assert.ok(training.querySelector('#trainingFrequencyRows'));
+  assert.equal(training.querySelector('#trainingWheel, .training-wheel-secondary'), null);
+  // The solution renders the canonical presented actions as a stacked bar.
+  await app.training.start('focused');
+  await app.training.answer();
+  const exercise = app.window.app.training.currentExercise;
+  const solution = app.call('strategyResultPresentationActions', exercise.strategyResult);
+  assert.ok(Array.isArray(solution) && solution.length > 0);
+  const spy = app.spy(['renderFrequencyStack']);
+  try {
+    app.call('showTrainingSolution', solution);
+    assert.ok(spy.count('renderFrequencyStack') >= 1);
+    // Entries keep the canonical action and value, ordered by frequency.
+    const [, actions] = spy.calls.renderFrequencyStack.at(-1);
+    const expected = [...solution].sort((left, right) => right.value - left.value);
+    assert.deepEqual(actions.map((entry) => [entry.action, entry.value]), expected.map((entry) => [entry.action, entry.value]));
+  } finally {
+    spy.restore();
+  }
+  const stack = app.byId('trainingFrequencyStack');
+  assert.doesNotMatch(stack.getAttribute('style') || '', /conic-gradient/);
+  assert.equal(app.byId('trainingWheel'), null);
 });
 
 test('repair remains outside poker, Equity math, Training grading, and solver code', () => {
-  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity', 'handleTrainingGuess']) {
-    assert.match(logic, new RegExp(symbol));
-  }
+  // The page consumes the existing poker, Equity and Training authorities.
+  assert.ok(app.window.RiverlinePlaybookState);
+  for (const name of ['handleTrainingGuess', 'callEquityServiceBridge']) assert.equal(app.evaluate(`typeof ${name}`), 'function', name);
   assert.match(preflop, /calculatePreflopFallbackStrategy/);
-  assert.doesNotMatch(repairCss, /PokerState|DecisionContext|StrategyResult|evaluateSeven|MCCFR|regret/);
+  for (const rule of repairSheet.rules) {
+    assert.doesNotMatch([...rule.selectors, ...rule.declarations.map(({ value }) => value)].join(' '), /PokerState|DecisionContext|StrategyResult|evaluateSeven|MCCFR|regret/);
+  }
 });

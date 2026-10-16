@@ -374,7 +374,7 @@ test('B: Edit decision inputs focuses the first field the readiness message name
   try {
     await app.click('#analysisEditInputs');
     assert.equal(spy.count('focusScenarioReadinessField'), 1);
-    assert.equal(app.document.activeElement, pot);
+    assert.ok(app.document.activeElement === pot);
     assert.deepEqual(scrolls, [{ block: 'center', behavior: 'instant' }]);
     assert.deepEqual(focuses, [{ preventScroll: true }]);
   } finally {

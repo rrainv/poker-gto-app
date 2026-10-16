@@ -336,7 +336,7 @@ test('private-hand commits avoid Board and Dead rebuilds and dense picker update
     // Selecting a card updates only that deck control and keeps focus on it.
     await app.click('[data-deck-card="As"]');
     assert.deepEqual(spy.calls.updateDeckCardStates.map(([cards]) => Array.from(cards)), [['As']]);
-    assert.equal(app.document.activeElement, app.$('[data-deck-card="As"]'));
+    assert.ok(app.document.activeElement === app.$('[data-deck-card="As"]'));
     await app.click('[data-deck-card="Ah"]');
     spy.reset();
     await app.click('#cardSetPickerApply');
@@ -435,7 +435,7 @@ test('the stale banner is global, explanatory, and absent from current analysis'
   assert.equal(banners[0].getAttribute('role'), 'status');
   assert.equal(text(banners[0].querySelector('strong')), 'Analysis is out of date');
   assert.equal(text(banners[0].querySelector('span')), 'Inputs changed. Recalculate to update these results.');
-  assert.equal(banners[0].parentElement, stale, 'the banner is global, not per player');
+  assert.ok(banners[0].parentElement === stale, 'the banner is global, not per player');
   for (const player of stale.querySelectorAll('.equity-player-analysis')) assert.doesNotMatch(text(player), /out of date/);
 });
 

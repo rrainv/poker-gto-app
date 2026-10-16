@@ -51,7 +51,7 @@ test('the card picker builds its deck only while open and detaches it on close',
     assert.ok(selected.classList.contains('is-selected'));
     assert.equal(selected.getAttribute('aria-pressed'), 'true');
     assert.equal(selected.disabled, false);
-    assert.equal(app.document.activeElement, selected, 'focus follows the selected deck card');
+    assert.ok(app.document.activeElement === selected, 'focus follows the selected deck card');
 
     // Empty or invalid updates are no-ops.
     app.call('updateDeckCardStates', []);
@@ -87,25 +87,25 @@ test('picker keeps focus in the draft deck and restores it to the originating se
   // editor that opened the picker.
   await app.click(heroEditor());
   const firstEnabled = app.$('#deck button:not([disabled])');
-  assert.equal(app.document.activeElement, firstEnabled);
+  assert.ok(app.document.activeElement === firstEnabled);
   app.call('selectCard', 'Qh');
-  assert.equal(app.document.activeElement, app.$('#deck [data-deck-card="Qh"]'));
+  assert.ok(app.document.activeElement === app.$('#deck [data-deck-card="Qh"]'));
   app.call('selectCard', 'Qs');
   await app.click('#cardSetPickerApply');
-  assert.equal(app.document.activeElement, heroEditor(), 'apply restores focus to the set editor');
+  assert.ok(app.document.activeElement === heroEditor(), 'apply restores focus to the set editor');
 
   await app.click(heroEditor());
-  assert.equal(app.document.activeElement, app.$('#deck [data-deck-card="Qh"]'), 'reopen focuses the drafted card');
+  assert.ok(app.document.activeElement === app.$('#deck [data-deck-card="Qh"]'), 'reopen focuses the drafted card');
   await app.click('#cardSetPickerCancel');
   assert.equal(app.byId('cardModal').classList.contains('show'), false);
-  assert.equal(app.document.activeElement, heroEditor(), 'cancel restores focus to the set editor');
+  assert.ok(app.document.activeElement === heroEditor(), 'cancel restores focus to the set editor');
 
   // Focus outside the picker is not stolen on close.
   await app.click(heroEditor());
   const outside = app.byId('openSettings');
   outside.focus();
   app.call('closePicker');
-  assert.equal(app.document.activeElement, outside);
+  assert.ok(app.document.activeElement === outside);
 });
 
 test('targeted picker cleanup leaves Matrix caching and postflop zero-cell behavior intact', async () => {
