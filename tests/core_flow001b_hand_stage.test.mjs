@@ -426,7 +426,7 @@ test('desktop hierarchy, localization, RTL, and secondary disclosures remain str
   // SOURCE-SHAPE: the private-cards (and reveal) stage override that puts
   // the rail first at ≤1100px is declared but loses the cascade to the more
   // specific generic live-stage rule ([1,4,0] over [1,3,0]); asserting the
-  // effective order would lock in that defect (register TEST-HYGIENE-001-F11).
+  // effective order would lock in that defect (register TEST-HYGIENE-001-F04).
   for (const [selector, order] of [
     ['#gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-context-rail', '1'],
     ['#gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-decision-workspace', '2'],
