@@ -4,23 +4,44 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { mountSavedLibrary } from '../app/src/application/saved-library-workspace.mjs';
-import { mountSavedTrainingHistory } from '../app/src/application/saved-training-history-workspace.mjs';
-import { createHomeSavedItem } from '../app/src/application/home-view-model.mjs';
-import { createSavedStudyPreviewFacts } from '../app/src/application/saved-study-preview-facts.mjs';
-import {
+import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
+import { appStyleSheet, bootApp, freshIndexDocument, precedes } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: parsed markup, the cascade, and the page wiring in the booted
+// app with stubbed bridges. Booting installs the page's fake timers: Node's
+// are kept for the fake-DOM workspace tests.
+const nodeSetImmediate = globalThis.setImmediate;
+const page = await bootApp();
+// Imported after boot: several of these modules self-install page bridges.
+const { mountSavedLibrary } = await import('../app/src/application/saved-library-workspace.mjs');
+const { mountSavedTrainingHistory } = await import('../app/src/application/saved-training-history-workspace.mjs');
+const { createHomeSavedItem } = await import('../app/src/application/home-view-model.mjs');
+const { createSavedStudyPreviewFacts } = await import('../app/src/application/saved-study-preview-facts.mjs');
+const {
   savedItemAutoTitle,
   savedItemFactGrid,
   savedItemMetaFacts,
   savedItemTitle,
-} from '../app/src/application/saved-item-presentation.mjs';
-import { trainingMemoryContextSummary } from '../app/src/application/training-memory-row-format.mjs';
-import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
+} = await import('../app/src/application/saved-item-presentation.mjs');
+const { trainingMemoryContextSummary } = await import('../app/src/application/training-memory-row-format.mjs');
+const markup = freshIndexDocument();
+const css = appStyleSheet();
+const probe = (className, host = markup.body, tag = 'div', attributes = {}) => {
+  const element = markup.createElement(tag);
+  element.className = className;
+  for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+  host.appendChild(element);
+  return element;
+};
+/** Temporarily replace a frozen page bridge with an overriding copy. */
+async function withBridge(name, overrides, callback) {
+  const descriptor = Object.getOwnPropertyDescriptor(page.window, name);
+  Object.defineProperty(page.window, name, { ...descriptor, value: overrides === null ? undefined : Object.freeze({ ...descriptor.value, ...overrides }) });
+  try { return await callback(); } finally { Object.defineProperty(page.window, name, descriptor); }
+}
 
-const [html, css, logic, library, history, bootstrap, sourceController, tutorialBootstrap] = await Promise.all([
-  '../app/index.html',
-  '../app/styles.css',
-  '../app/src/core/logic.js',
+const [library, history, bootstrap, sourceController, tutorialBootstrap] = await Promise.all([
   '../app/src/application/saved-library-workspace.mjs',
   '../app/src/application/saved-training-history-workspace.mjs',
   '../app/src/application/saved-study-object-bootstrap.mjs',
@@ -38,7 +59,7 @@ const interpolate = (key, parameters) => {
   const template = FACING_EN[key] ?? key;
   return parameters ? template.replace(/\{(\w+)\}/g, (_, name) => String(parameters[name])) : template;
 };
-const settle = () => new Promise((resolve) => setImmediate(resolve));
+const settle = () => new Promise((resolve) => nodeSetImmediate(resolve));
 
 function handObject({ id, title = null, phase = 'betting', potMilliBb = 1500, heroActions = 1, board = [] } = {}) {
   const actionHistory = Array.from({ length: heroActions }, (_, index) => ({ sequence: index, playerId: 'Hero' }));
@@ -117,11 +138,30 @@ function mountLibrary(objects, extra = {}) {
 // ---------------------------------------------------------------- composition
 
 test('one toolbar row holds view tabs, search, chips, selects, Mistakes toggle, Clear and the result count', async () => {
-  assert.doesNotMatch(html, /id="homeSavedOverview"|id="savedLibraryTitle"|data-i18n="Library"/,
+  assert.equal(markup.querySelector('#homeSavedOverview, #savedLibraryTitle, [data-i18n="Library"]'), null,
     'the duplicated "Saved Hands & Spots" and "Library" title panels are gone');
-  const section = html.slice(html.indexOf('id="savedLibrarySection"'), html.indexOf('</section>', html.indexOf('id="savedLibrarySection"')));
-  assert.match(section, /class="saved-toolbar panel" data-saved-toolbar>\s*<div class="saved-view-toggle" data-saved-view-toggle[\s\S]*?data-saved-library-controls[\s\S]*?data-saved-training-controls hidden><\/div>\s*<\/div>/);
-  assert.match(logic, /visibleSections = normalizedDestination === 'saved'\s*\? \['library'\]/);
+  const toolbar = markup.querySelector('#savedLibrarySection [data-saved-toolbar]');
+  assert.ok(toolbar.classList.contains('saved-toolbar') && toolbar.classList.contains('panel'));
+  assert.ok(toolbar.firstElementChild.matches('.saved-view-toggle[data-saved-view-toggle]'));
+  assert.ok(toolbar.querySelector('[data-saved-library-controls]'));
+  const trainingControls = toolbar.lastElementChild;
+  assert.ok(trainingControls.matches('[data-saved-training-controls]'));
+  assert.equal(trainingControls.hidden, true);
+  assert.equal(trainingControls.children.length, 0);
+  // The Saved destination shows only the library section of Home.
+  await page.navigate('saved');
+  const homeSections = {
+    overview: page.byId('homeAccountOverview'),
+    guest: page.byId('homeGuestAccount'),
+    continue: page.byId('homeContinueContent')?.closest('.home-section'),
+    review: page.byId('homeReviewContent')?.closest('.home-section'),
+    recent: page.byId('homeRecentContent')?.closest('.home-section'),
+    library: page.byId('savedLibrarySection'),
+    other: page.byId('homeOtherTitle')?.closest('.home-section'),
+  };
+  assert.deepEqual(Object.entries(homeSections).filter(([, node]) => node && !node.hidden).map(([key]) => key), ['library']);
+  await page.navigate('home');
+  assert.equal(page.byId('savedLibrarySection').hidden, true);
 
   const f = mountLibrary([handObject({ id: 'h1' }), spotObject({ id: 's1' })]);
   f.controller.show();
@@ -139,7 +179,7 @@ test('one toolbar row holds view tabs, search, chips, selects, Mistakes toggle, 
   assert.equal(mistakes.getAttribute('aria-pressed'), 'false');
   assert.equal(controls.children[3].textContent, 'Showing all 2');
   assert.equal(controls.children[3].getAttribute('role'), 'status');
-  assert.match(css, /\.saved-library-status \{[\s\S]*?margin-inline-start: auto/);
+  assert.equal(css.cascaded(probe('saved-library-status', markup.getElementById('savedLibrarySection')), 'margin-inline-start'), 'auto');
 });
 
 test('rows are dense: mini cards in an LTR island, title, meta, state badges and updated time', async () => {
@@ -157,7 +197,9 @@ test('rows are dense: mini cards in an LTR island, title, meta, state badges and
   assert.match(copy.textContent, /K♠J♠ · BTN · River/);
   assert.match(states.className, /saved-row-states/);
   assert.equal(time.textContent, 'today');
-  assert.match(css, /\.saved-poker-preview--row \{\s*direction: ltr;/);
+  const rowPreview = probe('saved-poker-preview saved-poker-preview--row', markup.getElementById('savedLibrarySection'));
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try { assert.equal(css.cascaded(rowPreview, 'direction'), 'ltr'); } finally { markup.documentElement.removeAttribute('dir'); }
 });
 
 test('keyboard: Up/Down/Home/End move selection and focus, Enter opens, Escape closes the inspector', async () => {
@@ -209,10 +251,14 @@ test('selecting a row never rebuilds or moves the list; the inspector column is 
   f.key(before[1], 'ArrowUp');
   assert.deepEqual([...list.childNodes], before, 'same row nodes, same order: the list did not move');
   assert.equal(inspector.dataset.savedInspectorState, 'selected');
-  assert.match(css, /\.saved-split \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) var\(--saved-inspector-width\);[\s\S]*?align-items: start;/);
-  assert.match(css, /--saved-inspector-width: clamp\(380px, 30vw, 560px\)/);
-  assert.match(css, /\.saved-inspector \{\s*position: sticky;/);
-  assert.match(css, /#homeMode\[data-product-destination="saved"\] \{ overflow-y: visible;/,
+  const split = probe('saved-split', markup.getElementById('savedLibrarySection'));
+  assert.equal(css.cascaded(split, 'grid-template-columns', { width: 1920 }), 'minmax(0, 1fr) var(--saved-inspector-width)');
+  assert.equal(css.cascaded(split, 'align-items', { width: 1920 }), 'start');
+  assert.equal(css.cascaded(split, '--saved-inspector-width', { width: 1920 }), 'clamp(380px, 30vw, 560px)');
+  assert.equal(css.cascaded(probe('saved-inspector', split), 'position', { width: 1920 }), 'sticky');
+  const home = markup.getElementById('homeMode');
+  home.dataset.productDestination = 'saved';
+  assert.equal(css.cascaded(home, 'overflow-y', { width: 1920 }), 'visible',
     'the non-scrolling mode view must not capture the sticky inspector');
 });
 
@@ -242,8 +288,36 @@ test('inspector: title, kind badge, cards, fact grid, note, tags, review state; 
   f.dom.dispatch(f.row('s'), 'click');
   assert.equal(inspector.querySelector('[data-saved-library-review]'), null, 'Spots have no duplicate Analyze action');
   assert.equal(inspector.querySelector('[data-saved-library-open]').textContent, 'Open spot');
-  assert.match(logic, /async function openHomeSavedItem\(id, control, \{ handReview = 'auto' \} = \{\}\)/);
-  assert.match(logic, /handReview === 'open'\s*\|\| \(handReview === 'auto' && hasDecisions && callPlaybookStateBridge\('getCompletedHandResult'\)\)/);
+  // The page opens Review for a saved Hand only when asked, or by default
+  // when the Hand is complete and has Hero decisions.
+  const homeBridge = page.window.callHomeBridge;
+  const playbookBridge = page.window.callPlaybookStateBridge;
+  const openReview = page.window.openCanonicalHandReview;
+  let reviews = 0;
+  let journal = null;
+  let completed = null;
+  page.window.callHomeBridge = async (method) => (method === 'openSavedItem' ? { kind: 'hand', object: { payload: {} } } : homeBridge(method));
+  page.window.callPlaybookStateBridge = (method, ...args) => (method === 'getHeroDecisionJournal' ? journal
+    : method === 'getCompletedHandResult' ? completed : playbookBridge(method, ...args));
+  page.window.openCanonicalHandReview = () => { reviews += 1; };
+  try {
+    for (const [options, decisions, done, expected] of [
+      [undefined, true, true, 1], [undefined, true, false, 0], [undefined, false, true, 0],
+      [{ handReview: 'open' }, false, false, 1], [{ handReview: 'none' }, true, true, 0],
+    ]) {
+      reviews = 0;
+      journal = { decisions: decisions ? [{ decisionId: 'd1' }] : [] };
+      completed = done ? { status: 'complete' } : null;
+      await page.call('openHomeSavedItem', 'saved-hand', null, options);
+      assert.equal(reviews, expected, JSON.stringify({ options, decisions, done }));
+    }
+  } finally {
+    page.window.callHomeBridge = homeBridge;
+    page.window.callPlaybookStateBridge = playbookBridge;
+    page.window.openCanonicalHandReview = openReview;
+    playbookBridge('closeSavedHand');
+    await page.navigate('home');
+  }
 });
 
 test('a reload after an edit keeps the selection and returns focus to the same inspector control', async () => {
@@ -282,16 +356,24 @@ test('Archive is labelled Archive, is danger-quiet, confirms first and archives 
   await settle();
   assert.deepEqual(f.archived, ['a']);
   assert.deepEqual(f.rows().map((node) => node.dataset.savedSelectId), ['b'], 'the archived item leaves the list');
-  assert.equal(f.dom.document.activeElement, f.row('b'), 'focus moves to the neighbouring row');
-  assert.match(css, /\.ui-button\[data-variant="danger"\]\[data-emphasis="quiet"\] \{\s*background: transparent;\s*border-color: transparent;/);
+  assert.ok(f.dom.document.activeElement === f.row('b'), 'focus moves to the neighbouring row');
+  const quiet = probe('ui-button', markup.body, 'button', { 'data-variant': 'danger', 'data-emphasis': 'quiet' });
+  assert.equal(css.cascaded(quiet, 'background'), 'transparent');
+  assert.equal(css.cascaded(quiet, 'border-color'), 'transparent');
   assert.match(sourceController, /async archiveById\(id, \{ expectedRevision = null \} = \{\}\) \{[\s\S]*?application\.archive\(id[\s\S]*?objectCache\.delete\(key\)/);
   assert.match(bootstrap, /'archiveCurrent', 'archiveById'\]/);
-  assert.match(logic, /async function archiveSavedLibraryItem\(id\)[\s\S]*?archiveById\(id, \{ expectedRevision: object\.revision \}\)/);
+  // The page archives by id with the revision it just read.
+  const archives = [];
+  await withBridge('RiverlineSavedStudyObjects', {
+    getById: async (id) => ({ id, revision: 7 }),
+    archiveById: async (...args) => { archives.push(args); },
+  }, () => page.call('archiveSavedLibraryItem', 'saved-a'));
+  assert.deepEqual(archives, [['saved-a', { expectedRevision: 7 }]]);
 });
 
 // ---------------------------------------------------------------- titles and facts
 
-test('auto-titles come only from stored preview facts; missing facts are omitted, never invented', () => {
+test('auto-titles come only from stored preview facts; missing facts are omitted, never invented', async () => {
   assert.equal(savedItemAutoTitle({ kind: 'hand', heroCards: ['Ks', 'Js'], heroPosition: 'BTN', street: 'river' }), 'K♠J♠ · BTN · River');
   assert.equal(savedItemAutoTitle({ kind: 'spot', heroCards: ['Ks', 'Js'], heroPosition: 'BTN', aggressorPosition: 'BB', street: 'river' }),
     'K♠J♠ · BTN vs BB · River');
@@ -308,7 +390,16 @@ test('auto-titles come only from stored preview facts; missing facts are omitted
   const spot = createHomeSavedItem(spotObject({ id: 's' }));
   assert.equal(spot.aggressorPosition, 'BB', 'the aggressor comes from the frozen DecisionContext');
   assert.equal(savedItemTitle(spot), 'K♠J♠ · BTN vs BB · River');
-  assert.match(logic, /function homeSavedItemTitle\(item\) \{\s*return window\.RiverlineSavedItemPresentation\.title\(item, t\);/);
+  // The page's titles are the shared presentation's titles.
+  const calls = [];
+  const presentation = page.window.RiverlineSavedItemPresentation;
+  await withBridge('RiverlineSavedItemPresentation', {
+    title: (...args) => { calls.push(args); return presentation.title(...args); },
+  }, () => page.call('homeSavedItemTitle', spot));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], spot);
+  assert.equal(calls[0][1], page.window.t);
+  assert.equal(page.call('homeSavedItemTitle', spot), page.window.RiverlineSavedItemPresentation.title(spot, page.window.t));
 });
 
 test('a user title always wins over the auto-title', async () => {
@@ -335,7 +426,9 @@ test('completed saved Hands never show "Pot 0 bb" (QA-SWEEP-024); live Hands kee
   assert.deepEqual(savedItemFactGrid(doneItem).map((fact) => fact.key), ['players', 'position', 'street', 'stack', 'result', 'origin']);
   assert.match(savedItemMetaFacts(createHomeSavedItem(handObject({ id: 'live' }))).join(' · '), /Pot 1\.5 bb/);
   assert.doesNotMatch(savedItemMetaFacts({ kind: 'spot', potBb: 0 }).join(' '), /Pot 0/);
-  assert.match(logic, /if \(Number\.isFinite\(item\.potBb\)\) facts\.push/, 'Home Recent reads the same omitted pot');
+  // Home Recent reads the same omitted pot.
+  assert.doesNotMatch(page.call('homeSavedItemFacts', doneItem).join(' '), /Pot/);
+  assert.match(page.call('homeSavedItemFacts', createHomeSavedItem(handObject({ id: 'live', potMilliBb: 4500 }))).join(' '), /Pot/);
 });
 
 // ---------------------------------------------------------------- Training history
@@ -442,13 +535,23 @@ test('Training history keyboard browsing coalesces the Saved lookup to the row t
   assert.equal(f.controller.getState().expandedId, null);
 });
 
-test('the Saved library mounts even when the Saved bridge installs after init (QA-SAVED-COMPOSITION-003)', () => {
+test('the Saved library mounts even when the Saved bridge installs after init (QA-SAVED-COMPOSITION-003)', async () => {
   assert.match(bootstrap, /value: bridge, writable: false,\s*\}\);[\s\S]*?dispatchEvent\(new CustomEvent\('riverline:savedstudybridgeready'\)\)[\s\S]*?return bridge;/);
-  assert.match(logic, /addEventListener\('riverline:savedstudybridgeready', \(\) => \{\s*if \(!savedLibraryController\) mountSavedLibraryWorkspace\(\);/);
-  assert.match(logic, /function syncSavedLibraryVisibility\(\) \{[\s\S]*?if \(!savedLibraryController\) mountSavedLibraryWorkspace\(\);\s*if \(!savedLibraryController\) return;/);
-  const mount = logic.slice(logic.indexOf('function mountSavedLibraryWorkspace()'), logic.indexOf('function renderHomeContinue'));
-  assert.match(mount, /if \(!section \|\| !window\.RiverlineSavedLibrary \|\| !window\.RiverlineSavedStudyObjects\) return;/,
-    'an early mount without the bridge returns before syncing visibility, so the lazy mount cannot recurse');
+  page.evaluate('savedLibraryController?.dispose(); savedLibraryController = null');
+  // Without the Saved bridge an early mount returns without recursing.
+  await withBridge('RiverlineSavedStudyObjects', null, async () => {
+    page.call('syncSavedLibraryVisibility');
+    page.call('mountSavedLibraryWorkspace');
+    assert.equal(page.evaluate('savedLibraryController'), null);
+  });
+  // The bridge-ready event mounts it once the bridge exists.
+  page.window.dispatchEvent(new page.window.CustomEvent('riverline:savedstudybridgeready'));
+  await page.settle(50);
+  assert.ok(page.evaluate('savedLibraryController'));
+  // A later visibility sync also mounts lazily.
+  page.evaluate('savedLibraryController?.dispose(); savedLibraryController = null');
+  page.call('syncSavedLibraryVisibility');
+  assert.ok(page.evaluate('savedLibraryController'));
 });
 
 test('Saved composition keeps ownership, bounds and invalidation; it adds no load path', () => {
@@ -457,7 +560,10 @@ test('Saved composition keeps ownership, bounds and invalidation; it adds no loa
   assert.doesNotMatch(library, /getById|updateAnnotations|localStorage|indexedDB|StrategyProvider|calculateEquity/);
   assert.match(library, /subscribeLocalMutations\(\(\) => invalidate\(\)\)/);
   assert.doesNotMatch(history, /updateStudyMetadata|markReviewed|snooze|localStorage|indexedDB/);
-  assert.match(html, /saved-item-presentation\.mjs[\s\S]*?saved-library-workspace\.mjs[\s\S]*?src\/core\/logic\.js/);
+  const scripts = markup.querySelectorAll('script[src]');
+  const script = (path) => scripts.find((node) => node.getAttribute('src').split('?')[0] === path);
+  assert.ok(precedes(script('src/application/saved-item-presentation.mjs'), script('src/application/saved-library-workspace.mjs')));
+  assert.ok(precedes(script('src/application/saved-library-workspace.mjs'), script('src/core/logic.js')));
   assert.match(tutorialBootstrap, /'saved-library-ready': \(\) => elementShown\('#savedLibrarySection'\)/,
     'the Saved tour precondition follows the library, not the removed overview panel');
 });

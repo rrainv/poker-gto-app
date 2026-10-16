@@ -1,17 +1,41 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
 import { createHomeSavedItem } from '../app/src/application/home-view-model.mjs';
 import { createSavedStudyPreviewFacts } from '../app/src/application/saved-study-preview-facts.mjs';
 import { filterSavedLibraryItems, savedLibraryKindCounts } from '../app/src/application/saved-library-query.mjs';
-import { mountSavedLibrary } from '../app/src/application/saved-library-workspace.mjs';
 import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
+import { StyleSheetModel, appStyleSheet, bootApp, freshIndexDocument, precedes, text } from './helpers/app-under-test.mjs';
 
-const [html, css, logic, modelSource, previewSource, translations, library, sharedPreview] = await Promise.all([
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-  readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: parsed markup, the cascade, and the page wiring in the booted
+// app. Workspace-module sources are outside this ticket. Booting installs the
+// page's fake timers; Node's are kept for the fake-DOM workspace tests.
+const nodeTimers = { setTimeout: globalThis.setTimeout, setImmediate: globalThis.setImmediate, clearTimeout: globalThis.clearTimeout };
+const page = await bootApp();
+// Imported after boot: the workspace module self-installs its page bridge.
+const { mountSavedLibrary } = await import('../app/src/application/saved-library-workspace.mjs');
+const markup = freshIndexDocument();
+const css = appStyleSheet();
+const probe = (className, host = markup.body, attributes = {}) => {
+  const element = markup.createElement('div');
+  element.className = className;
+  for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+  host.appendChild(element);
+  return element;
+};
+// SOURCE-SHAPE: "the Saved block adds no clipping (overflow hidden/clip) and
+// no Saved-specific card sizes" is a policy lint over the Saved block as
+// authored (parsed, not regex-matched).
+const savedSheet = (() => {
+  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  const start = raw.indexOf('.saved-library-layout');
+  return new StyleSheetModel(raw.slice(start, raw.indexOf('.home-dashboard-grid[data-product-destination="saved"] {', start)));
+})();
+
+const [modelSource, previewSource, translations, library, sharedPreview] = await Promise.all([
   readFile(new URL('../app/src/application/home-view-model.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/saved-study-preview-facts.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/home-translations.js', import.meta.url), 'utf8'),
@@ -147,12 +171,15 @@ test('unknown future Saved kinds remain unsupported and are never projected as S
 // Retargeted by SAVED-COMPOSITION-002: the 440px card grid became dense rows beside a
 // reserved inspector column (the review §C list + inspector). Detail stays on request.
 test('Saved defaults to a dense list beside a reserved inspector and expands detail only on request', () => {
-  assert.match(html, /id="savedLibrarySection"[\s\S]*?data-saved-library-body/);
+  assert.ok(markup.querySelector('#savedLibrarySection [data-saved-library-body]'));
   assert.match(library, /const layout = el\('div', 'saved-library-layout saved-split'\);[\s\S]*?const list = el\('div', 'saved-list'\);[\s\S]*?layout\.append\(listSurface, detail\)/);
-  assert.match(css, /\.saved-split \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) var\(--saved-inspector-width\)/);
+  assert.equal(css.cascaded(probe('saved-split', markup.getElementById('savedLibrarySection')), 'grid-template-columns', { width: 1920 }), 'minmax(0, 1fr) var(--saved-inspector-width)');
   // SHELL-001: Saved uses the one shared canvas frame (no per-workspace frame override).
-  assert.doesNotMatch(css, /#homeMode\[data-product-destination="saved"\][^{]*\{[^}]*--workspace-frame-max/);
-  assert.match(css, /--workspace-frame-standard:\s*var\(--canvas-max\)/);
+  const home = markup.getElementById('homeMode');
+  const inner = probe('saved-frame-probe', home);
+  const frame = (destination) => { home.dataset.productDestination = destination; return css.cascaded(inner, '--workspace-frame-max', { width: 1920 }); };
+  assert.equal(frame('saved'), frame('home'));
+  assert.equal(css.cascaded(markup.documentElement, '--workspace-frame-standard'), 'var(--canvas-max)');
   assert.match(library, /let expandedId = null/);
   assert.match(library, /if \(!model\.results\.some[\s\S]*?expandedId = null/);
   assert.doesNotMatch(library, /expandedId = (?:model\.results|items)\[0\]\.id/);
@@ -168,10 +195,19 @@ test('Saved defaults to a dense list beside a reserved inspector and expands det
 });
 
 test('hover and keyboard focus share a viewport-aware preview owned outside the clipping workspace', () => {
-  assert.ok(html.indexOf('id="savedQuickPreviewOverlay"') > html.indexOf('</div> <!-- /.shell -->'));
-  assert.match(css, /\.saved-library-quick-preview\s*\{[\s\S]*?position:\s*fixed/);
-  assert.match(css, /\.saved-library-quick-preview\[hidden\]\s*\{\s*display:\s*none/);
-  assert.doesNotMatch(css, /saved-library-item:is\(:hover, :focus-visible\)[\s\S]*saved-library-quick-preview/);
+  const overlay = markup.getElementById('savedQuickPreviewOverlay');
+  assert.equal(overlay.closest('.shell'), null, 'the overlay lives outside the clipping workspace');
+  assert.ok(precedes(markup.querySelector('.shell'), overlay));
+  const quick = probe('saved-library-quick-preview', overlay);
+  assert.equal(css.cascaded(quick, 'position'), 'fixed');
+  quick.hidden = true;
+  assert.equal(css.cascaded(quick, 'display'), 'none');
+  quick.hidden = false;
+  // Hover/focus on a row never reveals a CSS-only preview inside it.
+  const item = probe('saved-library-item', markup.getElementById('savedLibrarySection'));
+  const nested = probe('saved-library-quick-preview', item);
+  const resting = css.cascaded(nested, 'display');
+  for (const state of ['hover', 'focus-visible']) assert.equal(css.cascaded(nested, 'display', { states: [state], stateElement: item }), resting, state);
   const itemRenderer = library.slice(library.indexOf('function createItemElement'), library.indexOf('function itemTruth'));
   assert.doesNotMatch(itemRenderer, /saved-library-quick-preview/);
   assert.match(library, /function positionPreview[\s\S]*?getBoundingClientRect[\s\S]*?view\.innerWidth[\s\S]*?view\.innerHeight[\s\S]*?useAbove/);
@@ -185,7 +221,8 @@ test('hover and keyboard focus share a viewport-aware preview owned outside the 
   assert.match(library, /event\.key !== 'Escape'[\s\S]*?hidePreview\(\)[\s\S]*?closeInspector\(\)/);
   assert.match(library, /data-saved-detail-close[\s\S]*?closeInspector\(\)/);
   assert.match(`${library}\n${sharedPreview}`, /dataset\.savedPreviewDerivation = item\.derivation/);
-  assert.match(css, /saved-preview-derivation="scenario"[\s\S]*?border-style: dashed/);
+  const scenarioPreview = probe('saved-poker-preview', markup.getElementById('savedLibrarySection'), { 'data-saved-preview-derivation': 'scenario' });
+  assert.equal(css.cascaded(scenarioPreview, 'border-style'), 'dashed');
 });
 
 // The quick-preview exit handler is now a mounted-controller closure, so these
@@ -193,7 +230,7 @@ test('hover and keyboard focus share a viewport-aware preview owned outside the 
 test('Saved pointerout is inert when no quick-preview owner exists', async () => {
   const f = mountQuickPreviewLibrary([savedObject('hand', handPayload(['As', 'Kh']), 'h1')]);
   f.controller.show();
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => nodeTimers.setImmediate(resolve));
   f.overlay.hidden = false;
   const search = f.section.querySelector('[data-saved-library-search]');
   assert.doesNotThrow(() => f.dom.dispatch(search, 'pointerout', { relatedTarget: null }));
@@ -203,7 +240,7 @@ test('Saved pointerout is inert when no quick-preview owner exists', async () =>
 test('Saved focusout is inert when no quick-preview owner exists', async () => {
   const f = mountQuickPreviewLibrary([savedObject('hand', handPayload(['As', 'Kh']), 'h1')]);
   f.controller.show();
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => nodeTimers.setImmediate(resolve));
   f.overlay.hidden = false;
   const search = f.section.querySelector('[data-saved-library-search]');
   assert.doesNotThrow(() => f.dom.dispatch(search, 'focusout', { relatedTarget: null }));
@@ -213,7 +250,7 @@ test('Saved focusout is inert when no quick-preview owner exists', async () => {
 test('Saved quick-preview exit still dismisses the active owner', async () => {
   const f = mountQuickPreviewLibrary([savedObject('hand', handPayload(['As', 'Kh']), 'h1')]);
   f.controller.show();
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => nodeTimers.setImmediate(resolve));
   const owner = f.section.querySelector('[data-saved-select-id="h1"]');
   f.dom.dispatch(owner, 'pointerover');
   assert.equal(f.overlay.hidden, false);
@@ -224,7 +261,7 @@ test('Saved quick-preview exit still dismisses the active owner', async () => {
 test('All, Hands, and Spots remain visible and filter actual bounded Saved objects truthfully', async () => {
   const f = mountQuickPreviewLibrary([]);
   f.controller.show();
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => nodeTimers.setImmediate(resolve));
   const categories = descendants(f.section).filter((node) => node.dataset.savedCategory);
   assert.deepEqual(categories.map((node) => node.dataset.savedCategory), ['all', 'hands', 'spots']);
   for (const category of ['all', 'hands', 'spots']) {
@@ -248,48 +285,108 @@ test('All, Hands, and Spots remain visible and filter actual bounded Saved objec
 });
 
 test('Saved cards consume shared presentation sizes without Saved clipping hacks', () => {
-  const savedCssStart = css.indexOf('.saved-library-layout');
-  const savedCssEnd = css.indexOf('.home-dashboard-grid[data-product-destination="saved"] {', savedCssStart);
-  const savedCss = css.slice(savedCssStart, savedCssEnd);
-  assert.match(logic, /getCardPresentation: \(\) => window\.RiverlineCardPresentation/);
+  // The page hands the library the shared card presentation.
+  const descriptor = Object.getOwnPropertyDescriptor(page.window, 'RiverlineSavedLibrary');
+  const mounts = [];
+  Object.defineProperty(page.window, 'RiverlineSavedLibrary', { ...descriptor, value: Object.freeze({
+    ...descriptor.value,
+    mount(section, options) { mounts.push(options); return descriptor.value.mount(section, options); },
+  }) });
+  try {
+    page.call('mountSavedLibraryWorkspace');
+  } finally {
+    Object.defineProperty(page.window, 'RiverlineSavedLibrary', descriptor);
+  }
+  assert.ok(mounts[0].getCardPresentation() === page.window.RiverlineCardPresentation);
+  assert.equal(page.evaluate('typeof savedCardPresentation'), 'undefined');
   assert.match(`${library}\n${sharedPreview}`, /presentation\.appendCardFaceContents/);
   assert.match(`${library}\n${sharedPreview}`, /variant === 'detail' \? 'compact' : variant === 'quick' \? 'result' : 'mini'/);
-  assert.doesNotMatch(`${logic}\n${library}\n${sharedPreview}`, /suit: \{ c:|data\.tone|savedCardPresentation/);
-  assert.doesNotMatch(savedCss, /overflow:\s*(?:hidden|clip)/);
-  assert.doesNotMatch(savedCss, /\.saved-preview-card\s*\{[^}]*inline-size|\.saved-preview-card\s*\{[^}]*block-size/s);
+  assert.doesNotMatch(`${library}\n${sharedPreview}`, /suit: \{ c:|data\.tone|savedCardPresentation/);
+  for (const rule of savedSheet.rules) {
+    for (const { property, value } of rule.declarations) {
+      if (property.startsWith('overflow')) assert.doesNotMatch(value, /hidden|clip/, rule.selectors.join(', '));
+    }
+    if (rule.selectors.includes('.saved-preview-card')) {
+      for (const { property } of rule.declarations) assert.ok(!['inline-size', 'block-size'].includes(property), property);
+    }
+  }
 });
 
-test('empty, Guest, type, note, and locale truth remain explicit without fabricated study facts', () => {
+test('empty, Guest, type, note, and locale truth remain explicit without fabricated study facts', async () => {
   assert.match(library, /Saved Hands and Spots you intentionally keep will appear here\./);
-  assert.match(logic, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode/);
-  assert.match(logic, /Guest data does not sync\./);
+  // A Guest Home states what stays on the device and that it does not sync.
+  await page.navigate('home');
+  await page.call('refreshHomeWorkspace');
+  await page.settle(300);
+  const homeText = text(page.byId('homeMode'));
+  assert.match(homeText, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode/);
+  assert.match(homeText, /Guest data does not sync\./);
   assert.match(library, /item\.note[\s\S]*?Study note/);
   assert.match(library, /item\.kind === 'hand' \? 'Hand' : item\.kind === 'spot' \? 'Spot'/);
-  assert.match(logic, /facts\.push\(`\$\{t\('Updated'\)\} \$\{recency\}`\)/);
+  // Home rows say when an item was updated, from its stored timestamp only.
+  const updated = page.call('homeSavedItemFacts', { kind: 'hand', updatedAt: new Date(Date.now() - 60_000).toISOString() });
+  const recency = page.call('homeRecency', new Date(Date.now() - 60_000).toISOString());
+  assert.ok(recency);
+  assert.deepEqual(updated, [`${page.call('t', 'Updated')} ${recency}`]);
+  assert.deepEqual(page.call('homeSavedItemFacts', { kind: 'hand' }), [], 'no timestamp, no recency');
   assert.doesNotMatch(`${modelSource}\n${library}`, /mastery|EV loss|solver correctness|progress percentage|resolveStrategy|calculateEquity/iu);
   for (const key of ['Stored poker preview', 'Open Hand', 'Open Spot', 'Study note', 'Unknown card', 'Updated', 'View details', 'Close details']) {
     assert.equal((translations.match(new RegExp(`'${key}'`, 'g')) || []).length >= 2, true, key);
   }
 });
 
-test('identity invalidation clears private Saved presentation before a late owner load can render', () => {
-  const clearStart = logic.indexOf('function clearSavedOwnerPresentation');
-  const clearEnd = logic.indexOf('async function refreshHomeWorkspace', clearStart);
-  const clear = logic.slice(clearStart, clearEnd);
-  assert.match(clear, /\+\+homeRefreshSequence/);
-  assert.match(clear, /homeRecentContent[\s\S]*?replaceChildren/);
-  // Saved library detail/preview/query clearing is owned by the controller (behavior-tested in saved_library001).
-  assert.match(clear, /savedLibraryController\?\.ownerChanged\(\)/);
-  assert.match(library, /ownerChanged\(\) \{[\s\S]*?expandedId = null;[\s\S]*?hidePreview\(\);[\s\S]*?render\(\);/);
-  assert.match(clear, /activeSavedSpotContext = null/);
-  assert.match(clear, /closeSavedHand/);
-  assert.match(clear, /closeSavedStudyEditor/);
-
-  const scheduleStart = logic.indexOf('function scheduleHomeRefresh');
-  const scheduleEnd = logic.indexOf('function restoreSavedSpotPresentation', scheduleStart);
-  const schedule = logic.slice(scheduleStart, scheduleEnd);
-  assert.ok(schedule.indexOf('clearSavedOwnerPresentation()') < schedule.indexOf('setTimeout'), 'owner data clears before delayed reload');
-  assert.match(logic, /sequence !== homeRefreshSequence \|\| activeWorkspaceMode\(\) !== 'home'/);
-  assert.match(logic, /riverline:identitychange[\s\S]*?scheduleHomeRefresh\(\{ clearPrivateState: true \}\)/);
-  assert.match(logic, /riverline:authchange[\s\S]*?scheduleHomeRefresh\(\{ clearPrivateState: true \}\)/);
+test('identity invalidation clears private Saved presentation before a late owner load can render', async () => {
+  await page.navigate('home');
+  await page.settle(300);
+  page.byId('homeRecentContent').replaceChildren(page.document.createElement('article'));
+  page.evaluate('activeSavedSpotContext = { private: true }');
+  const object = { id: 'owner-a', kind: 'spot', revision: 1, lifecycle: { state: 'active' }, source: {}, payload: {},
+    annotations: { title: 'A', note: '', tags: [], reviewState: 'none', classifications: [] } };
+  page.call('openSavedStudyEditor', object);
+  const sequence = page.evaluate('homeRefreshSequence');
+  const controller = page.evaluate('savedLibraryController');
+  let ownerChanged = 0;
+  page.window.__wrappedLibrary = Object.create(controller, { ownerChanged: { value: (...args) => { ownerChanged += 1; return controller.ownerChanged(...args); } } });
+  page.evaluate('savedLibraryController = window.__wrappedLibrary');
+  const playbook = page.window.callPlaybookStateBridge;
+  const calls = [];
+  page.window.callPlaybookStateBridge = (method, ...args) => {
+    calls.push(method);
+    if (method === 'createReplayProjectionViewModel') return { viewerContext: { kind: 'saved_hand' } };
+    if (method === 'closeSavedHand') return null;
+    return playbook(method, ...args);
+  };
+  const spy = page.spy(['closeSavedStudyEditor']);
+  try {
+    page.call('clearSavedOwnerPresentation');
+  } finally {
+    spy.restore();
+    page.window.callPlaybookStateBridge = playbook;
+    page.window.__wrappedLibrary = controller;
+    page.evaluate('savedLibraryController = window.__wrappedLibrary');
+    delete page.window.__wrappedLibrary;
+  }
+  assert.equal(page.evaluate('homeRefreshSequence'), sequence + 1);
+  assert.equal(page.byId('homeRecentContent').children.length, 0);
+  assert.equal(ownerChanged, 1);
+  assert.equal(page.evaluate('activeSavedSpotContext'), null);
+  assert.ok(calls.includes('closeSavedHand'));
+  assert.equal(spy.count('closeSavedStudyEditor'), 1);
+  assert.equal(page.byId('savedStudyModal').hidden, true);
+  // Identity and auth owner changes clear private state synchronously, before
+  // the delayed reload.
+  const refresh = page.spy(['scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'refreshHomeWorkspace']);
+  try {
+    page.window.dispatchEvent(new page.window.CustomEvent('riverline:identitychange', { detail: { reason: 'identity_activated' } }));
+    assert.ok(refresh.calls.scheduleHomeRefresh.some(([options]) => options?.clearPrivateState === true));
+    assert.ok(refresh.count('clearSavedOwnerPresentation') >= 1, 'cleared synchronously');
+    assert.equal(refresh.count('refreshHomeWorkspace'), 0, 'the reload is deferred');
+    refresh.reset();
+    page.window.dispatchEvent(new page.window.CustomEvent('riverline:authchange', { detail: { status: 'guest', signedIn: false, ownerKey: 'visual-knowledge-owner' } }));
+    assert.ok(refresh.calls.scheduleHomeRefresh.some(([options]) => options?.clearPrivateState === true));
+    await page.settle(300);
+    assert.ok(refresh.count('refreshHomeWorkspace') >= 1);
+  } finally {
+    refresh.restore();
+  }
 });

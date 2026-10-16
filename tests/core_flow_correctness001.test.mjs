@@ -18,8 +18,14 @@ import {
 } from '../shared/poker-domain/index.js';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
 import { createHomeGameApplication } from '../app/src/application/home-game-service.mjs';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
 import { createPlaybookScenarioInput } from '../app/src/application/playbook-state-source.mjs';
+import { appStyleSheet, bootApp, indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / logic.js / styles.css assertions are
+// behavioural: parsed markup, the cascade, and the Hand flow in the booted app.
+const page = await bootApp();
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
 
 const HOLE_DECK = Object.freeze([
   'As', 'Kh', 'Qd', 'Jc', 'Ts', '9h', '8d', '7c', '6s', '5h',
@@ -315,13 +321,11 @@ test('cash-out correction preserves the original and supports atomic replacement
 });
 
 test('core-flow controls are discoverable, localized, keyboard-aware, and remain consumers of canonical rules', async () => {
-  const [html, logic, bridge, bootstrap, service, css, productTranslations, homeGameTranslations] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
+  const markup = indexDocument();
+  const [bridge, bootstrap, service, productTranslations, homeGameTranslations] = await Promise.all([
     readFile(new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-service.mjs', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/home-game-translations.js', import.meta.url), 'utf8'),
   ]);
@@ -333,24 +337,70 @@ test('core-flow controls are discoverable, localized, keyboard-aware, and remain
     'handCompletedSaveButton',
     'handCompletedNewHandButton',
   ]) {
-    assert.match(html, new RegExp(`id="${id}"[^>]*type="button"`));
+    assert.equal(markup.getElementById(id).getAttribute('type'), 'button', id);
   }
-  assert.match(html, /id="handCompletedReviewButton"[^>]*class="[^"]*ui-button--primary[^"]*"/);
+  assert.ok(markup.getElementById('handCompletedReviewButton').classList.contains('ui-button--primary'));
   // SHELL-001 one accent action per view: Review hand (above) leads the
   // completion card; Start new hand stays available as a secondary action.
-  assert.match(html, /id="handCompletedNewHandButton"[^>]*class="[^"]*ui-button--secondary[^"]*"[^>]*data-i18n="Start new hand"/);
+  const newHand = markup.getElementById('handCompletedNewHandButton');
+  assert.ok(newHand.classList.contains('ui-button--secondary'));
+  assert.equal(newHand.dataset.i18n, 'Start new hand');
   for (const id of ['handCompletedAnalysisButton', 'handCompletedReplayButton', 'handCompletedSaveButton']) {
-    assert.match(html, new RegExp(`id="${id}"[^>]*class="[^"]*ui-button--secondary[^"]*"`));
+    assert.ok(markup.getElementById(id).classList.contains('ui-button--secondary'), id);
   }
-  assert.match(logic, /function prepareCanonicalNewHand\(\)[\s\S]*callPlaybookStateBridge\('prepareNewHand'\)[\s\S]*handStartButton/);
+  // Start new hand transitions a finished hand to fresh setup.
+  await page.startHand(['As', 'Kd']);
+  await page.handAction('fold');
+  const spy = page.spy(['callPlaybookStateBridge']);
+  try {
+    await page.click('#handCompletedNewHandButton');
+    await page.settle(300);
+    assert.ok(spy.calls.callPlaybookStateBridge.some(([name]) => name === 'prepareNewHand'));
+  } finally {
+    spy.restore();
+  }
+  assert.equal(page.call('callPlaybookStateBridge', 'getState'), null);
+  assert.equal(page.byId('handStartButton').hidden, false);
   assert.match(bridge, /prepareNewHand\(\)[\s\S]*phase !== 'terminal'[\s\S]*canonicalController\.reset\(\)[\s\S]*canonicalHandSourceId = null[\s\S]*replayController\.clear\(\)/);
 
-  assert.match(logic, /function isPrivateHandCardSetGroup[\s\S]*group\.startsWith\('hand-seat-'\)/);
-  assert.match(logic, /kind: 'private_hand'[\s\S]*requiredCount: 2[\s\S]*draft: definition\.committed\.slice\(\)/);
-  assert.match(logic, /function applyCardSetPicker[\s\S]*replaceCardSetTarget\(picker, picker\.draft\.slice\(\)\)/);
-  assert.match(logic, /function handleCardPickerKeydown\(event\)[\s\S]*event\.key === 'Escape'[\s\S]*event\.key !== 'Tab'/);
-  assert.match(logic, /event\.stopPropagation\(\)[\s\S]*closePicker\(\)/);
-  assert.match(logic, /knownOpponentsOpen[\s\S]*root\.querySelector\('\.hand-known-opponents'\)[\s\S]*knownOpponents\.open = knownOpponentsOpen/);
+  // Seat hands edit as two-card private sets with a copied draft, and apply
+  // replaces the target with a copy of the draft.
+  for (const group of ['hero', 'hand-seat-0', 'hand-seat-3']) assert.equal(page.call('isPrivateHandCardSetGroup', group), true, group);
+  await page.click('#handStartButton');
+  await page.settle(300);
+  await page.click('[data-card-set-edit="hand-seat-0"]');
+  const picker = page.window.app.picker;
+  assert.equal(picker.kind, 'private_hand');
+  assert.equal(picker.requiredCount, 2);
+  await page.click('[data-deck-card="As"]');
+  await page.click('[data-deck-card="Kd"]');
+  const draft = picker.draft;
+  const replace = page.spy(['replaceCardSetTarget']);
+  try {
+    await page.click('#cardSetPickerApply');
+    assert.deepEqual(Array.from(replace.calls.replaceCardSetTarget[0][1]), Array.from(draft));
+    assert.ok(replace.calls.replaceCardSetTarget[0][1] !== draft, 'a copy of the draft');
+  } finally {
+    replace.restore();
+  }
+  // Escape closes the picker without reaching document-level shortcuts.
+  await page.click('[data-card-set-edit="hand-seat-0"]');
+  let leaked = 0;
+  const listener = (event) => { if (event.key === 'Escape') leaked += 1; };
+  page.document.addEventListener('keydown', listener);
+  try {
+    await page.key('#cardModal', 'Escape');
+  } finally {
+    page.document.removeEventListener('keydown', listener);
+  }
+  assert.equal(page.window.app.picker, null);
+  assert.equal(leaked, 0, 'Escape stops at the picker');
+  // An opened known-opponents disclosure stays open across re-renders.
+  const known = page.$('.hand-known-opponents');
+  assert.ok(known, 'the deal step offers optional known opponents');
+  known.open = true;
+  page.call('renderCanonicalHandWorkspace');
+  assert.equal(page.$('.hand-known-opponents').open, true);
 
   assert.match(bootstrap, /correctionEligibleCashOut\(bundle, participant\.playerId\)[\s\S]*Correct cash-out[\s\S]*openCorrectionEditor\(cashOut, bundle\)/);
   assert.match(bootstrap, /function correctionEligibleEntries\(bundle\)[\s\S]*ledgerHistory\.items\.filter\(\(item\) => !item\.corrected\)/);
@@ -361,7 +411,11 @@ test('core-flow controls are discoverable, localized, keyboard-aware, and remain
   assert.match(service, /note: note \? `Replacement: \$\{note\}` : null/);
   assert.doesNotMatch(service, /Replacement entry|No reason supplied/);
   assert.match(bootstrap, /confirmDialog\.querySelectorAll\('\[data-home-game-was-disabled="false"\]'\)[\s\S]*control\.disabled = false/);
-  assert.match(css, /\.home-game-final-state-actions\s*\{[^}]*display:\s*flex/);
+  const finalActions = markup.createElement('div');
+  finalActions.className = 'home-game-final-state-actions';
+  markup.body.appendChild(finalActions);
+  assert.equal(appStyleSheet().cascaded(finalActions, 'display'), 'flex');
+  finalActions.remove();
   assert.match(homeGameTranslations, /'Correct cash-out': 'Исправить кэшаут'/);
   assert.match(homeGameTranslations, /'Correct cash-out': 'תיקון פדיון'/);
   assert.match(homeGameTranslations, /'Correct entries': 'Исправить записи'/);
@@ -371,18 +425,20 @@ test('core-flow controls are discoverable, localized, keyboard-aware, and remain
   assert.match(productTranslations, /"Start new hand": "Начать новую раздачу"/);
   assert.match(productTranslations, /"Start new hand": "התחלת יד חדשה"/);
 
-  assert.match(html, /data-i18n="Raise to">Raise to</);
-  assert.match(html, /data-i18n="Total for this street">Total for this street</);
-  const legalRenderer = logic.slice(
-    logic.indexOf('function renderCanonicalLegalActions('),
-    logic.indexOf('function canonicalHandStatus('),
-  );
-  assert.doesNotMatch(legalRenderer, /lastFullRaiseIncrementMilliBb|currentBetMilliBb\s*\+/);
-  const sizingConsumer = logic.slice(
-    logic.indexOf('function chooseCanonicalSizedAction('),
-    logic.indexOf('function applyCanonicalHandAction('),
-  );
-  assert.match(sizingConsumer, /option\.minToMilliBb/);
-  assert.match(sizingConsumer, /option\.maxToMilliBb/);
-  assert.doesNotMatch(sizingConsumer, /lastFullRaiseIncrementMilliBb|currentBetMilliBb\s*\+/);
+  for (const label of ['Raise to', 'Total for this street']) {
+    assert.ok(markup.querySelectorAll(`[data-i18n="${label}"]`).some((node) => node.textContent === label), label);
+  }
+  // Sizing bounds are the canonical spec's own min/max, not re-derived.
+  await page.startHand(['As', 'Kd']);
+  const state = page.call('callPlaybookStateBridge', 'getState');
+  page.call('renderCanonicalLegalActions', state, {
+    fold: { available: true }, check: { available: false }, call: { available: true, commitMilliBb: 500 },
+    bet: { available: false }, raise: { available: true, minToMilliBb: 3300, maxToMilliBb: 8800, lastFullRaiseIncrementMilliBb: 99000 },
+    allIn: { available: false },
+  });
+  await page.click('#handLegalActions [data-canonical-action="raise"]');
+  assert.match(page.byId('handActionAmountBounds').textContent, /^3\.3[–-]8\.8 bb total$/);
+  assert.equal(Number(page.byId('handActionAmountBb').min), 3.3);
+  assert.equal(Number(page.byId('handActionAmountBb').max), 8.8);
+  page.call('renderCanonicalHandWorkspace');
 });

@@ -37,7 +37,23 @@ const motionSource = fs.readFileSync(
   new URL('../app/src/application/experience-motion.mjs', import.meta.url),
   'utf8',
 );
+// SOURCE-SHAPE (TEST-HYGIENE-001): "logic.js never calls SoundFX.play* or
+// physical foley (playPokerAction/playChip/playCardDeal/emitPokerAction)
+// directly" is a call-site lint: SoundFX is a frozen lexical const in the page,
+// so direct calls cannot be intercepted at runtime. Everything else from
+// logic.js / index.html / styles.css is checked in the booted app, the parsed
+// document and the cascade.
 const logicSource = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// Booting installs the page's fake timers: the audio harnesses keep Node's.
+const nodeSetTimeout = globalThis.setTimeout;
+let bootedPage = null;
+async function bootedApp() {
+  if (!bootedPage) {
+    const { bootApp } = await import('./helpers/app-under-test.mjs');
+    bootedPage = await bootApp();
+  }
+  return bootedPage;
+}
 const rendererSource = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const playbookSource = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
@@ -51,8 +67,8 @@ const replaySource = fs.readFileSync(
   new URL('../app/src/application/replay-projection-controller.mjs', import.meta.url),
   'utf8',
 );
-const htmlSource = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const cssSource = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+const { appStyleSheet, indexDocument, precedes } = await import('./helpers/app-under-test.mjs');
+const markup = indexDocument();
 const i18nSource = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
 const tablePresentationSource = fs.readFileSync(
   new URL('../app/src/application/table-presentation.mjs', import.meta.url),
@@ -422,7 +438,7 @@ function createAudioHarness({
     },
     URL,
     ArrayBuffer,
-    setTimeout,
+    setTimeout: nodeSetTimeout,
     window: audioAvailable ? {
       AudioContext,
       location: { href: 'http://riverline.test/app/index.html' },
@@ -728,7 +744,16 @@ test('user-start events silently prepare one audio context before delayed presen
   assert.equal(replayResult.prepared, true);
   assert.equal(replay.contextCount(), 1);
   assert.equal(replay.envelopes.length, 0, 'Replay Play preparation must stay silent');
-  assert.match(logicSource, /startFullHandTraining[\s\S]*emitStudyExperience\('session_started'/);
+  // Starting a Full Hand session announces the study session.
+  const app = await bootedApp();
+  const spy = app.spy(['emitStudyExperience']);
+  try {
+    await app.training.start('full_hand');
+    assert.ok(spy.calls.emitStudyExperience.some(([type]) => type === 'session_started'));
+  } finally {
+    spy.restore();
+    app.call('clearTrainingSessionState');
+  }
 });
 
 test('ordinary Training action labels produce one canonical study meaning and never physical foley', async () => {
@@ -872,17 +897,65 @@ test('visible poker-action bridge preserves Fold, Call, Bet, Raise, and All-in p
     const result = await audio.sound.consumeExperienceEvent(event);
     assert.equal(result.cueName, [...expected.values()][index][1]);
   }
-  assert.doesNotMatch(logicSource, /emitTrainingActionExperience|emitPokerAction/);
-  assert.match(logicSource, /handleTrainingGuess[\s\S]*renderTrainingEvaluationSummary[\s\S]*emitTrainingDecisionResultExperience/);
-  assert.match(logicSource, /emitTrainingDecisionResultExperience[\s\S]*emitTrainingDecisionResult/);
-  assert.match(logicSource, /handleFullHandTrainingGuess[\s\S]*dispatchFullHandTrainingTable\(result\.snapshot/);
+  // In the app: an answer renders its summary, then emits one study result
+  // through the experience authority; Full Hand answers re-dispatch the table.
+  const app = await bootedApp();
+  for (const name of ['emitTrainingActionExperience', 'emitPokerAction']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  const descriptor = Object.getOwnPropertyDescriptor(app.window, 'RiverlineExperienceEvents');
+  const results = [];
+  Object.defineProperty(app.window, 'RiverlineExperienceEvents', { ...descriptor, value: Object.freeze({
+    ...descriptor.value,
+    emitTrainingDecisionResult(...args) { results.push(args); return descriptor.value.emitTrainingDecisionResult(...args); },
+  }) });
+  const spy = app.spy(['renderTrainingEvaluationSummary', 'emitTrainingDecisionResultExperience', 'dispatchFullHandTrainingTable']);
+  try {
+    await app.training.start('focused');
+    spy.reset();
+    await app.training.answer();
+    const order = spy.sequence.filter((name) => name !== 'dispatchFullHandTrainingTable');
+    assert.ok(order.indexOf('renderTrainingEvaluationSummary') >= 0);
+    assert.ok(order.indexOf('renderTrainingEvaluationSummary') < order.indexOf('emitTrainingDecisionResultExperience'));
+    assert.equal(spy.count('emitTrainingDecisionResultExperience'), 1);
+    assert.equal(results.length, 1);
+    app.call('clearTrainingSessionState');
+    await app.training.start('full_hand');
+    for (let round = 0; round < 40 && app.$('.training-workspace').dataset.trainingState !== 'ready'; round += 1) await app.settle(500);
+    spy.reset();
+    await app.training.answer();
+    await app.settle(500);
+    const snapshot = app.window.app.training.fullHandSnapshot;
+    assert.ok(spy.calls.dispatchFullHandTrainingTable.some(([dispatched]) => dispatched === snapshot || dispatched?.handSeed === snapshot?.handSeed));
+  } finally {
+    spy.restore();
+    Object.defineProperty(app.window, 'RiverlineExperienceEvents', descriptor);
+    app.call('clearTrainingSessionState');
+  }
 });
 
-test('Calibration and Matrix poker labels cannot enter the physical foley path', () => {
-  assert.match(logicSource, /calibration/i);
-  assert.match(logicSource, /matrix/i);
-  assert.equal((logicSource.match(/emitTrainingDecisionResultExperience\(/g) || []).length, 2,
-    'the helper definition and ordinary Training submission are the only study-result references');
+test('Calibration and Matrix poker labels cannot enter the physical foley path', async () => {
+  // In the app, Matrix and Calibration interactions emit no study result or
+  // poker experience event.
+  const app = await bootedApp();
+  const descriptor = Object.getOwnPropertyDescriptor(app.window, 'RiverlineExperienceEvents');
+  const emitted = [];
+  const authority = descriptor.value;
+  Object.defineProperty(app.window, 'RiverlineExperienceEvents', { ...descriptor, value: Object.freeze(Object.fromEntries(
+    Object.entries(authority).map(([name, value]) => [name, typeof value === 'function' ? (...args) => { emitted.push(name); return value(...args); } : value]),
+  )) });
+  try {
+    await app.navigate('analyze');
+    await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+    emitted.length = 0;
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+    for (const cell of app.$$('#strategyGrid .hand-cell').slice(0, 3)) await app.click(cell);
+    await app.navigate('personal-strategy');
+    await app.settle(200);
+    assert.deepEqual(emitted.filter((name) => /PokerAction|TrainingDecisionResult/.test(name)), []);
+  } finally {
+    Object.defineProperty(app.window, 'RiverlineExperienceEvents', descriptor);
+  }
+  // (SOURCE-SHAPE call-site lint, see the file header.)
   assert.doesNotMatch(logicSource, /emitPokerAction|playPokerAction|playChip|playCardDeal/);
 });
 
@@ -920,11 +993,11 @@ test('Settings preview invokes the exact production cue renderer and respects Po
     assert.deepEqual(studyPreview.envelopes, studyProduction.envelopes, `${cueName} preview uses production rendering`);
     assert.equal(studyPreview.sampleStarts.length, 0);
   }
-  assert.equal((htmlSource.match(/data-audio-preview-cue=/g) || []).length, 13);
+  assert.equal(markup.querySelectorAll('[data-audio-preview-cue]').length, 13);
   assert.match(soundSource, /button\.onclick = \(\) => authority\.previewCue\(button\.dataset\.audioPreviewCue\)/);
 });
 
-test('integration uses the semantic boundary across Hand, Replay, Training, and table motion', () => {
+test('integration uses the semantic boundary across Hand, Replay, Training, and table motion', async () => {
   assert.match(playbookSource, /createPokerWorldExperienceEvents/);
   assert.match(playbookSource, /origin:\s*EXPERIENCE_EVENT_ORIGINS\.LIVE/);
   assert.match(playbookSource, /origin:\s*EXPERIENCE_EVENT_ORIGINS\.REPLAY_PLAYBACK/);
@@ -944,10 +1017,25 @@ test('integration uses the semantic boundary across Hand, Replay, Training, and 
   assert.match(rendererSource, /livePrivateDeal \? player\.cards\.map/);
   assert.match(rendererSource, /: liveBoardDealCards/);
   assert.doesNotMatch(rendererSource, /SoundFX/);
+  // (SOURCE-SHAPE call-site lint, see the file header.)
   assert.equal((logicSource.match(/SoundFX\.play/g) || []).length, 0);
-  assert.match(logicSource, /emitTrainingDecisionResultExperience/);
-  assert.doesNotMatch(logicSource, /emitTrainingActionExperience|emitPokerAction/);
-  assert.match(logicSource, /emitStudyExperience\('review_decision_selected'/);
+  const app = await bootedApp();
+  assert.equal(app.evaluate('typeof emitTrainingDecisionResultExperience'), 'function');
+  for (const name of ['emitTrainingActionExperience', 'emitPokerAction']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
+  // Selecting a Review decision is a study event.
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('fold');
+  await app.click('#handCompletedReviewButton');
+  await app.settle(300);
+  assert.ok(app.window.app.handReview.model?.decisions?.length >= 1);
+  const spy = app.spy(['emitStudyExperience']);
+  try {
+    app.call('selectActiveHandReviewDecision', 0);
+    assert.ok(spy.calls.emitStudyExperience.some(([type]) => type === 'review_decision_selected'));
+  } finally {
+    spy.restore();
+    app.call('closeActiveHandReview', { returnToEndpoint: false });
+  }
   assert.match(replaySource, /next\(\)[\s\S]*selectionDirection = 'direct_step'/);
   assert.match(replaySource, /advancePlayback\(\)[\s\S]*selectionDirection = 'playback'/);
   assert.doesNotMatch(`${experienceSource}\n${motionSource}\n${rendererSource}`,
@@ -957,18 +1045,32 @@ test('integration uses the semantic boundary across Hand, Replay, Training, and 
 test('settings, copy, tokens, and reduced-motion CSS expose the bounded system', () => {
   for (const id of [
     'audioSettingsSwitch', 'audioMasterVolume', 'audioPokerSwitch', 'audioStudySwitch',
-  ]) assert.match(htmlSource, new RegExp(`id="${id}"`));
-  for (const token of [
-    '--motion-instant: 1ms', '--motion-fast-semantic: 110ms',
-    '--motion-normal-semantic: 170ms', '--motion-poker-settle: 240ms',
-  ]) assert.match(cssSource, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(cssSource, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.table-chip-flight/);
-  assert.match(cssSource, /\.table-chip-flight[\s\S]*pointer-events:\s*none/);
+  ]) assert.ok(markup.getElementById(id), id);
+  const css = appStyleSheet();
+  for (const [token, value] of [
+    ['--motion-instant', '1ms'], ['--motion-fast-semantic', '110ms'],
+    ['--motion-normal-semantic', '170ms'], ['--motion-poker-settle', '240ms'],
+  ]) assert.equal(css.cascaded(markup.documentElement, token), value, token);
+  // Chip flights never take pointer input and stop moving under reduced motion.
+  const flight = markup.createElement('div');
+  flight.className = 'table-chip-flight';
+  markup.getElementById('visual-table-container').appendChild(flight);
+  try {
+    assert.equal(css.cascaded(flight, 'pointer-events'), 'none');
+    const reduced = ['animation', 'transition', 'display'].map((property) => css.cascaded(flight, property, { reducedMotion: true }));
+    const normal = ['animation', 'transition', 'display'].map((property) => css.cascaded(flight, property));
+    assert.notDeepEqual(reduced, normal, 'reduced motion changes the chip flight');
+  } finally {
+    flight.remove();
+  }
   assert.doesNotMatch(soundSource, /new Audio\(|\.mp3|\.wav|casino|reward|victory/i);
   assert.match(tablePresentationSource, /geometryDirection:\s*'poker_ltr'/);
   assert.equal((i18nSource.match(/"Sound enabled":/g) || []).length, 3);
   assert.equal((i18nSource.match(/"Table \/ Poker sounds":/g) || []).length, 3);
   assert.equal((i18nSource.match(/"Study \/ UI feedback":/g) || []).length, 3);
   assert.equal((i18nSource.match(/"Preview sounds":/g) || []).length, 3);
-  assert.match(htmlSource, /src="src\/core\/AudioFoleyManifest\.js" defer[\s\S]*src="src\/core\/SoundFX\.js" defer/);
+  const scripts = markup.querySelectorAll('script[src]');
+  const script = (path) => scripts.find((node) => node.getAttribute('src').split('?')[0] === path);
+  for (const path of ['src/core/AudioFoleyManifest.js', 'src/core/SoundFX.js']) assert.ok(script(path).hasAttribute('defer'), path);
+  assert.ok(precedes(script('src/core/AudioFoleyManifest.js'), script('src/core/SoundFX.js')));
 });
