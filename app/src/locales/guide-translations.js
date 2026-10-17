@@ -118,7 +118,7 @@
     'Settings and access': 'הגדרות וגישה',
     'Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.': 'התאימו מראה, שמע ותנועה, שפה ונתוני חשבון. המדריך זמין לאורחים; התחברות לבדה אינה מבטיחה סנכרון ענן או גיבוי.',
     'Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.': 'היסטוריית האימונים בשמורים מציגה החלטות שעניתם עליהן באימונים במכשיר הזה. פתחו החלטה כאותו ספוט או כספוט דומה, או שמרו אותה כספוט. היסטוריית האימונים אינה מסונכרנת.',
-    'Open Analyze': 'פתיחת ניתוח', 'Open Saved': 'פתיחת שמורים', 'Open Home Game': 'פתח ערב פוקר',
+    'Open Analyze': 'פתח ניתוח', 'Open Saved': 'פתח שמורים', 'Open Home Game': 'פתח ערב פוקר',
   };
 
   Object.assign(ru, {
