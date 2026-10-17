@@ -42,7 +42,7 @@ From the Manager's M1 plan (2026-10-15). The top unfinished row is next.
 | ANALYZE-ACCEPT | Owner accepts or corrects the Analyze composition work, then commit | docs reset | human | S | Done (2026-10-15): accepted, committed `4e3e11a` (COMMIT-001) |
 | TRUTH-FIXES-001 | Heuristic comparisons never graded as mistakes; one provenance indicator on Analyze; hide strategy sliders; honest spot table; reject 0 buy-in; 650 weights | docs reset | T1 | M | Built, committed `51c115d`; awaiting owner acceptance (TRAINING-GRADE-TRUTH-001, OWNER-12, OWNER-17 partial, OWNER-19 partial, HG-004) |
 | AGENT-POLICY-001 | Multi-agent work policy in AGENTS.md (isolated worktrees/branches, risk-tier cross-agent review, report path) | docs reset | T0 | S | Done on `argon/m1-batch-1` (2026-10-18) |
-| MOCKUP-ASSETS-001 | Real card backs, icons, table measurements for the design kit | none | T0 | S | Can run any time |
+| MOCKUP-ASSETS-001 | Real card backs, icons, table measurements for the design kit | none | T0 | S | Done on `argon/m1-batch-1` (2026-10-18) |
 
 ### Phase 1: design decisions on the PC (before any screen build; mockups only, no code)
 
