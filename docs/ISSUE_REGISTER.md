@@ -58,7 +58,7 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | QA-SHELL-007 | QA | Home tour step 1 uses Guest wording for signed-in users; empty context lines | P3 | Open | M2 | Home redesign |
 | QA-SHELL-008 | QA | Layouts under 820 px unchecked | P3 | Open | Later | Mobile out of scope; desktop minimum 1366×768 |
 | DS-FOUNDATION-005 | QA (= QA-DS-FOUNDATION-005) | Un-migrated component families (shell nav, Hand legal-action buttons, fact strips, Personal/Training tabs, Equity fields, Settings choice cards); ~225 literal font sizes | P2 | Open | M1 (per screen) | DS-COMPONENTS-V4 |
-| DS-CSS-DEBT | QA (= QA-DS-FOUNDATION-006, QA-ANALYZE-COMPOSITION-003) | 44 `!important` in retired legacy theme blocks; ~710 relocated surface lines at the end of `styles.css`; inline `<style>` in `index.html`; legacy Analyze rules kept for old tests; preset colours duplicated in CSS and theme JS (guarded by a test) | P3 | Open | M1 | |
+| DS-CSS-DEBT | QA (= QA-DS-FOUNDATION-006, QA-ANALYZE-COMPOSITION-003) | `CLEANUP-PREP-001` removed 106 redundant `!important` declarations (including all 44 in retired legacy theme blocks; 167 remain), replaced 48 exact-match colours/fallbacks with `:root` tokens, and fixed F04/F06; remaining: ~710 relocated surface lines at the end of `styles.css`, inline `<style>` in `index.html`, legacy Analyze rules kept for old tests, preset colours duplicated in CSS and theme JS (guarded by a test) | P3 | Open | M1 | CLEANUP-PREP-001 (partial) |
 | MOTION-DEBT | audio recon | Two competing CSS duration scales; no in-app reduced-motion toggle | P3 | Open | M1 | MOTION-001 |
 
 ## C. Screen-specific findings

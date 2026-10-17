@@ -415,6 +415,26 @@ export function bindAuthenticationUi(browserWindow, service, gate) {
   void service.initialize().then(renderAndPublish);
 }
 
+const SUPABASE_UMD_SRC = 'node_modules/@supabase/supabase-js/dist/umd/supabase.js';
+
+function ensureSupabaseUmdScript(browserWindow) {
+  if (typeof browserWindow?.supabase?.createClient === 'function') return Promise.resolve(true);
+  const doc = browserWindow?.document;
+  if (typeof doc?.createElement !== 'function' || typeof doc?.head?.appendChild !== 'function') {
+    return Promise.resolve(false);
+  }
+  const existing = doc.querySelector?.(`script[src="${SUPABASE_UMD_SRC}"]`);
+  if (existing) return Promise.resolve(typeof browserWindow?.supabase?.createClient === 'function');
+  return new Promise((resolve) => {
+    const script = doc.createElement('script');
+    script.src = SUPABASE_UMD_SRC;
+    script.defer = true;
+    script.onload = () => resolve(typeof browserWindow?.supabase?.createClient === 'function');
+    script.onerror = () => resolve(false);
+    doc.head.appendChild(script);
+  });
+}
+
 export async function installAuthenticationBridge(browserWindow, options = {}) {
   if (!browserWindow?.RiverlineAccountIdentity) return null;
   const config = options.config ?? await resolveRiverlineAuthConfig(browserWindow);
@@ -423,6 +443,9 @@ export async function installAuthenticationBridge(browserWindow, options = {}) {
   let profileRepository = options.profileRepository ?? null;
   if (config && (!providerAdapter || !profileRepository)) {
     try {
+      if (!client && !options.clientFactory && typeof browserWindow?.supabase?.createClient !== 'function') {
+        await ensureSupabaseUmdScript(browserWindow);
+      }
       client ??= getRiverlineSupabaseBrowserClient({
         browserWindow,
         config,
