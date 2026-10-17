@@ -49,7 +49,7 @@ test('the Hand/Scenario mode switch lives only in the header and only for Hand a
 
 test('the source badge appears only where strategy content is shown', () => {
   const rule = (state) => shouldShowSourceBadge(state);
-  assert.equal(rule({ destination: 'analyze' }), true);
+  assert.equal(rule({ destination: 'analyze' }), false, 'Analyze names its source above the verdict');
   assert.equal(rule({ destination: 'hand' }), false, 'never during live Hand play');
   assert.equal(rule({ destination: 'hand', handReviewOpen: true }), true);
   assert.equal(rule({ destination: 'training' }), false, 'no badge before an answer');
@@ -84,7 +84,7 @@ test('the context line joins already-rendered facts for the active workspace onl
   assert.equal(elements['#workspaceTitle'].textContent, 't:Analyze');
   assert.equal(elements['#workspaceContext'].hidden, true, 'no facts yet for Analyze');
   assert.equal(elements['#workspaceModeSwitch'].hidden, false);
-  assert.equal(elements['#strategySourceStatus'].hidden, false);
+  assert.equal(elements['#strategySourceStatus'].hidden, true, 'Analyze shows provenance above the verdict only');
   header.activate('hand', { titleKey: 'Hand', descriptionKey: 'Hand help' });
   assert.equal(elements['#workspaceContext'].hidden, false);
   const facts = elements['#workspaceContext'].children.filter((child) => typeof child === 'object');

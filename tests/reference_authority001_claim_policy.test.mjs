@@ -496,8 +496,8 @@ test('legacy comparison distance and heuristic probabilities remain descriptive 
     chosenActionType,
     strategyResult: gradingResult,
   }));
-  assert.deepEqual(grades.map((entry) => entry.grade), ['optimal', 'acceptable', 'mistake']);
-  assert.deepEqual(grades.map((entry) => entry.comparisonAccepted), [true, true, false]);
+  assert.deepEqual(grades.map((entry) => entry.grade), [null, null, null]);
+  assert.deepEqual(grades.map((entry) => entry.comparison), ['matches', 'close', 'differs']);
   assert.deepEqual(grades.map((entry) => entry.accepted), [false, false, false]);
   assert.deepEqual(grades.map((entry) => entry.scoreDelta), [0, 0, 0]);
 

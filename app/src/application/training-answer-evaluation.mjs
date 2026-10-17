@@ -75,12 +75,14 @@ export function evaluateTrainingAnswer({
   const chosenProbability = best ? mapped?.probability ?? 0 : null;
   const bestProbability = best?.probability ?? null;
   const probabilityGap = Math.max(0, bestProbability - chosenProbability);
-  const grade = !best ? null : probabilityGap <= OPTIMAL_PROBABILITY_GAP
-    ? 'optimal'
+  // Descriptive distance from the source's mix only. It is never a grade:
+  // 'mistake' is reserved for a normative assessment (NORTH_STAR §2).
+  const comparison = !best ? null : probabilityGap <= OPTIMAL_PROBABILITY_GAP
+    ? 'matches'
     : chosenProbability > 0
       && probabilityGap <= ACCEPTABLE_PROBABILITY_GAP + Number.EPSILON
-      ? 'acceptable'
-      : 'mistake';
+      ? 'close'
+      : 'differs';
   const action = { type: chosenActionType, amountBb: Number.isSafeInteger(chosenAction?.amountToMilliBb)
     ? chosenAction.amountToMilliBb / 1000 : chosenAction?.amountBb ?? null };
   const truth = historicalEvidence
@@ -91,8 +93,7 @@ export function evaluateTrainingAnswer({
   return deepFreeze({
     schemaVersion: TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION,
     truth,
-    comparisonAccepted: grade !== null && grade !== 'mistake',
-    comparisonGrade: grade,
+    comparison,
     exerciseId,
     chosenAction: { type: chosenActionType },
     mappedStrategyAction: mapped,
@@ -104,7 +105,7 @@ export function evaluateTrainingAnswer({
     },
     grade: truth.state === 'normative_assessment'
       ? accepted ? 'optimal' : truth.outcome === 'unsupported' && truth.claims.mistake ? 'mistake' : null
-      : grade,
+      : null,
     accepted,
     scoreDelta: accepted ? 1 : 0,
     explanationData: {

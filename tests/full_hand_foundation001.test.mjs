@@ -263,7 +263,8 @@ test('strategy and Training grading are opt-in and resolve exactly once per requ
   assert.equal(providerInvocations, 1);
   assert.equal(evaluated.evaluation.source, STRATEGY_SOURCES.HEURISTIC_PREFLOP);
   assert.equal(evaluated.evaluation.strategyResult.modelVersion, 'focused-test-only');
-  assert.equal(evaluated.evaluation.answerEvaluation.grade, 'mistake');
+  assert.equal(evaluated.evaluation.answerEvaluation.grade, null);
+  assert.equal(evaluated.evaluation.answerEvaluation.comparison, 'differs');
   assert.equal(Object.isFrozen(evaluated.evaluation), true);
   assert.strictEqual(
     session.evaluateHeroDecision({ decisionOrdinal: 0, strategyProvider: provider }),

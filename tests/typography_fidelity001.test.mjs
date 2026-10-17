@@ -22,8 +22,8 @@ const block = (selector) => {
 test('weight roles: body 400, controls/labels/values 600, headings 650, titles 700, section titles 750, display 800', () => {
   for (const [name, value] of Object.entries({
     '--weight-regular': '400', '--weight-medium': '500', '--weight-strong': '600', '--weight-bold': '700', '--weight-heavy': '800',
-    '--weight-body': 'var(--weight-regular)', '--weight-control': 'var(--weight-strong)', '--weight-value': 'var(--weight-strong)',
-    '--weight-label': 'var(--weight-strong)', '--weight-heading': '650', '--weight-title': 'var(--weight-bold)',
+    '--weight-body': 'var(--weight-regular)', '--weight-control': '650', '--weight-value': '650',
+    '--weight-label': '650', '--weight-heading': '650', '--weight-title': 'var(--weight-bold)',
     '--weight-section-title': '750', '--weight-display': 'var(--weight-heavy)',
   })) assert.match(root, new RegExp(`${name}: ${value.replace(/[()]/g, '\\$&')};`), name);
   assert.match(css, /\.t-hero \{ font: var\(--weight-display\)/);

@@ -408,6 +408,7 @@
     "Scenario-only control; ignored while the canonical hand is authoritative.": "Параметр только для сценария; игнорируется, пока источником истины служит каноническая раздача.",
     "Seat {number}": "Место {number}",
     "Seats, stacks, cards, and current action": "Места, стеки, карты и текущее действие",
+    "Approximate Scenario view · only the facts you entered": "Приблизительный вид сценария · только введённые факты",
     "Seed": "Сид",
     "Seed must be a whole number from 0 through 4,294,967,295.": "Сид должен быть целым числом от 0 до 4 294 967 295.",
     "Seed placed in the field. Copy it from there.": "Сид помещён в поле. Скопируйте его оттуда.",
@@ -940,6 +941,7 @@
     "Scenario-only control; ignored while the canonical hand is authoritative.": "פקד לתרחיש בלבד; מתעלמים ממנו כשהיד הקנונית היא מקור הסמכות.",
     "Seat {number}": "מושב {number}",
     "Seats, stacks, cards, and current action": "מושבים, סטאקים, קלפים והפעולה הנוכחית",
+    "Approximate Scenario view · only the facts you entered": "תצוגת תרחיש משוערת · רק העובדות שהוזנו",
     "Seed": "סיד",
     "Seed must be a whole number from 0 through 4,294,967,295.": "הסיד חייב להיות מספר שלם בין 0 ל‑4,294,967,295.",
     "Seed placed in the field. Copy it from there.": "הסיד הוכנס לשדה. העתק אותו משם.",
@@ -1964,6 +1966,8 @@ Object.assign(he, {
 
   Object.assign(ru, {
     'Heuristic baseline': 'Эвристический ориентир',
+    'Estimated': 'Оценочно',
+    'Heuristic guidance, not yet verified against references.': 'Эвристика, ещё не проверенная по эталонам.',
     'Matches heuristic baseline': 'Совпадает с эвристическим ориентиром',
     'Close to heuristic baseline': 'Близко к эвристическому ориентиру',
     'Differs from heuristic baseline': 'Отличается от эвристического ориентира',
@@ -1994,6 +1998,8 @@ Object.assign(he, {
   });
   Object.assign(he, {
     'Heuristic baseline': 'קו בסיס היוריסטי',
+    'Estimated': 'משוער',
+    'Heuristic guidance, not yet verified against references.': 'הכוונה היוריסטית, שטרם אומתה מול מקורות ייחוס.',
     'Matches heuristic baseline': 'תואם לקו הבסיס ההיוריסטי',
     'Close to heuristic baseline': 'קרוב לקו הבסיס ההיוריסטי',
     'Differs from heuristic baseline': 'שונה מקו הבסיס ההיוריסטי',

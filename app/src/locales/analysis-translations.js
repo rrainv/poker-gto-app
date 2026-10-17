@@ -4,7 +4,7 @@
   const en = {
     'analysis.headline.available': 'Why this action?',
     'analysis.headline.unavailable': 'Analysis unavailable',
-    'analysis.summary.recommendation': '{action} leads at {probability}. Source: {source}.',
+    'analysis.summary.recommendation': '{action} leads at {probability}.',
     'analysis.unavailable.missing_hero_cards': 'Select two Hero cards to explain this decision.',
     'analysis.unavailable.waiting_for_board': 'Complete the board cards required for this street.',
     'analysis.unavailable.hero_not_actor': 'The canonical hand is waiting for another player to act.',
@@ -186,6 +186,7 @@
     'table.a11y.boardEmpty': 'Board not dealt',
     'table.a11y.boardCards': 'Board {cards}',
     'table.a11y.scenario': 'Lossy Scenario table presentation',
+    'table.stackUnknown': 'Stack unknown in this Scenario',
     'replay.title': 'Hand replay',
     'replay.subtitle': 'Canonical hand events',
     'replay.a11y.timeline': 'Read-only canonical hand-event timeline',
@@ -246,7 +247,7 @@
 
   const ru = {
     'analysis.headline.available': 'Почему это действие?', 'analysis.headline.unavailable': 'Анализ недоступен',
-    'analysis.summary.recommendation': 'Чаще всего — {action}: {probability}. Источник: {source}.',
+    'analysis.summary.recommendation': 'Чаще всего — {action}: {probability}.',
     'analysis.unavailable.missing_hero_cards': 'Выберите две карты Hero, чтобы объяснить это решение.',
     'analysis.unavailable.waiting_for_board': 'Добавьте карты борда, необходимые для этой улицы.',
     'analysis.unavailable.hero_not_actor': 'Каноническая раздача ожидает хода другого игрока.',
@@ -336,6 +337,7 @@
     'table.a11y.cardsKnown': 'Карты известны', 'table.a11y.cardsKnownValue': 'Карты: {cards}', 'table.a11y.cardsHidden': 'Карты скрыты',
     'table.a11y.cardsUndealt': 'Карты не розданы', 'table.a11y.boardEmpty': 'Борд не роздан',
     'table.a11y.boardCards': 'Борд: {cards}', 'table.a11y.scenario': 'Упрощённое представление стола сценария',
+    'table.stackUnknown': 'Стек в этом сценарии неизвестен',
     'replay.title': 'Повтор раздачи', 'replay.subtitle': 'Канонические события раздачи',
     'replay.a11y.timeline': 'Каноническая хронология событий раздачи только для чтения',
     'replay.street.preflop': 'Префлоп', 'replay.street.flop': 'Флоп', 'replay.street.turn': 'Тёрн', 'replay.street.river': 'Ривер', 'replay.street.showdown': 'Шоудаун',
@@ -373,7 +375,7 @@
 
   const he = {
     'analysis.headline.available': 'למה הפעולה הזו?', 'analysis.headline.unavailable': 'הניתוח אינו זמין',
-    'analysis.summary.recommendation': '{action} היא הפעולה בתדירות הגבוהה ביותר: {probability}. מקור: {source}.',
+    'analysis.summary.recommendation': '{action} היא הפעולה בתדירות הגבוהה ביותר: {probability}.',
     'analysis.unavailable.missing_hero_cards': 'בחרו שני קלפים ל-Hero כדי להסביר את ההחלטה.',
     'analysis.unavailable.waiting_for_board': 'השלימו את קלפי הבורד הנדרשים לרחוב הזה.',
     'analysis.unavailable.hero_not_actor': 'היד הקנונית ממתינה לפעולה של שחקן אחר.',
@@ -463,6 +465,7 @@
     'table.a11y.cardsKnown': 'הקלפים ידועים', 'table.a11y.cardsKnownValue': 'קלפים: {cards}', 'table.a11y.cardsHidden': 'הקלפים מוסתרים',
     'table.a11y.cardsUndealt': 'הקלפים טרם חולקו', 'table.a11y.boardEmpty': 'הבורד טרם חולק',
     'table.a11y.boardCards': 'בורד: {cards}', 'table.a11y.scenario': 'תצוגת שולחן מצומצמת של תרחיש',
+    'table.stackUnknown': 'הסטאק אינו ידוע בתרחיש זה',
     'replay.title': 'הילוך חוזר של היד', 'replay.subtitle': 'אירועים קנוניים של היד',
     'replay.a11y.timeline': 'ציר זמן קנוני של אירועי היד, לקריאה בלבד',
     'replay.street.preflop': 'פרה-פלופ', 'replay.street.flop': 'פלופ', 'replay.street.turn': 'טרן', 'replay.street.river': 'ריבר', 'replay.street.showdown': 'שואודאון',

@@ -123,15 +123,15 @@ Nothing renders below 12 px except overline labels. Excluded: card faces, table 
 | Role | Target (owner: 650 for labels, controls and fact values) | Code today |
 |---|---|---|
 | `--weight-body` (prose, row meta, typed inputs) | 400 | 400 |
-| `--weight-control` (buttons, chips, selects, tabs, segments, nav items, disclosure summaries) | **650** | 600 |
-| `--weight-label` (field and overline labels, fact keys, `<strong>`) | **650** | 600 |
-| `--weight-value` (fact values, tiles) | **650** | 600 |
+| `--weight-control` (buttons, chips, selects, tabs, segments, nav items, disclosure summaries) | **650** | 650 |
+| `--weight-label` (field and overline labels, fact keys, `<strong>`) | **650** | 650 |
+| `--weight-value` (fact values, tiles) | **650** | 650 |
 | `--weight-heading` (`h1`–`h6`, panel titles in Style v4) | 650 | 650 |
 | `--weight-title` (`.t-title`, list row titles, current nav item) | 700 | 700 |
 | `--weight-section-title` (workspace header, section/inspector titles) | 750 | 750 |
 | `--weight-display` (verdict, display values) | 800 | 800 |
 
-The 600 → 650 change is TRUTH-FIXES-001. Surface CSS uses no literal weights: it maps to these roles. Card faces, table art, matrix cells and swatches keep theirs.
+The 600 → 650 change landed in TRUTH-FIXES-001. Surface CSS uses no literal weights: it maps to these roles. Card faces, table art, matrix cells and swatches keep theirs.
 
 **Hierarchy** comes from colour role as well as size. Control text keeps its component's role. Verdicts are sentence case in primary text colour; action colour lives in the mix card. Action text roles (`--action-*-text`) remain for action-named text.
 

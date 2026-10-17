@@ -6040,8 +6040,13 @@ function localizedStrategyWarnings(result) {
 
 
 // evaluateHand removed
+// OWNER-12: adjustment sliders are hidden until the M3 adjustment engine exists.
+// Stored tightness values stay intact but do not reach the strategy path.
+const STRATEGY_ADJUSTMENT_ENABLED = false;
+
 function readHeuristicOptions() {
 
+  if (!STRATEGY_ADJUSTMENT_ENABLED) return { playStyle: 0, opponentStyle: 0 };
   const playStyle = Number(app.settings && app.settings.tightness);
   const opponentStyle = Number(app.settings && app.settings.oppTightness);
 
@@ -6939,6 +6944,9 @@ function renderAnalyzeTruth(strategyResult) {
       heading.textContent = t(presentation.sourceLabel);
     }
   }
+  // One provenance indicator per surface (OWNER-19): source + confidence tier above the verdict.
+  const tier = $('#strategyTier');
+  if (tier) tier.hidden = truth.state !== 'heuristic_comparison';
   const note = $('#strategyTruthNote');
   if (note) { note.dataset.i18n = presentation.description; note.textContent = t(presentation.description); }
   const rec = $('#recommendation');
@@ -7260,11 +7268,15 @@ function renderPlaybookTableProjection() {
     ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
   const parsedBoard = decisionContext.board.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) }));
   const parsedHero = decisionContext.heroCards.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) }));
+  // OWNER-17: the lossy Scenario knows Hero's stack only in Hero-stack mode;
+  // every other stack renders as unknown, never as a copied number.
+  const heroStackKnown = decisionContext.stackMode === 'hero' && Number.isFinite(Number(decisionContext.stackBb));
   const scenarioPlayers = Array.from({ length: activePlayers }, (_, seat) => ({
     seat,
     name: seat === 0 ? 'Hero' : sortedPos[(heroIdx + seat) % activePlayers] || `P${seat + 1}`,
     isHero: seat === 0,
-    stackBb: Number(decisionContext.stackBb),
+    stackBb: seat === 0 && heroStackKnown ? Number(decisionContext.stackBb) : null,
+    stackUnknown: !(seat === 0 && heroStackKnown),
   }));
 
   window.dispatchEvent(new CustomEvent('gameStateUpdate', {
@@ -14583,7 +14595,8 @@ function handleTrainingGuess(userAction) {
     app.training.stats.correct += evaluation.scoreDelta;
     app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
     app.training.bestStreak = Math.max(app.training.bestStreak || 0, app.training.stats.streak);
-    app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
+    // Only normative assessments carry a grade; heuristic comparisons never count as wrong.
+    if (evaluation.grade) app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
   }
   const feedbackSemantics = truthPresentation(evaluation.truth).tone === 'neutral' ? 'comparison' : evaluation.truth.state;
   updateTrainingStats();

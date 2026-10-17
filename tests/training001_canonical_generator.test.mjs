@@ -315,7 +315,8 @@ test('mixed StrategyResult distance is descriptive and grants no correctness or 
     exerciseId: 'mixed', chosenActionType: 'call', strategyResult: result,
   });
   assert.equal(acceptable.schemaVersion, TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION);
-  assert.equal(acceptable.grade, 'acceptable');
+  assert.equal(acceptable.grade, null);
+  assert.equal(acceptable.comparison, 'close');
   assert.equal(acceptable.accepted, false);
   assert.equal(acceptable.explanationData.evAvailable, false);
   assert.equal(acceptable.explanationData.chosenEvBb, null);
@@ -323,13 +324,15 @@ test('mixed StrategyResult distance is descriptive and grants no correctness or 
   const optimal = evaluateTrainingAnswer({
     exerciseId: 'mixed', chosenActionType: 'raise', strategyResult: result,
   });
-  assert.equal(optimal.grade, 'optimal');
+  assert.equal(optimal.grade, null);
+  assert.equal(optimal.comparison, 'matches');
   assert.equal(optimal.accepted, false);
 
   const mistake = evaluateTrainingAnswer({
     exerciseId: 'mixed', chosenActionType: 'fold', strategyResult: result,
   });
-  assert.equal(mistake.grade, 'mistake');
+  assert.equal(mistake.grade, null);
+  assert.equal(mistake.comparison, 'differs');
   assert.equal(mistake.accepted, false);
 });
 

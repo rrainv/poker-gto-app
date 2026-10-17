@@ -40,7 +40,7 @@ From the Manager's M1 plan (2026-10-15). The top unfinished row is next.
 | WIP-BACKUP-001 | Uncommitted Analyze work backed up on a wip branch | none | T0 | S | Done: `wip/analyze-composition-2026-10` @ `956ca6e` (unaccepted backup) |
 | DOCS-RESET-001 | Compact agent docs: AGENTS, NORTH_STAR, STATE, ISSUE_REGISTER, TERMINOLOGY, DESIGN_SYSTEM (merging Design Language v2) + invariant ledger | backup | T0 | L | Done and accepted (2026-10-15): committed `d1c826e` |
 | ANALYZE-ACCEPT | Owner accepts or corrects the Analyze composition work, then commit | docs reset | human | S | Done (2026-10-15): accepted, committed `4e3e11a` (COMMIT-001) |
-| TRUTH-FIXES-001 | Hide strategy sliders, honest spot table, reject 0 buy-in, 650 weights | docs reset | T1 | M | Waiting |
+| TRUTH-FIXES-001 | Heuristic comparisons never graded as mistakes; one provenance indicator on Analyze; hide strategy sliders; honest spot table; reject 0 buy-in; 650 weights | docs reset | T1 | M | Built, uncommitted; awaiting owner acceptance (TRAINING-GRADE-TRUTH-001, OWNER-12, OWNER-17 partial, OWNER-19 partial, HG-004) |
 | MOCKUP-ASSETS-001 | Real card backs, icons, table measurements for the design kit | none | T0 | S | Can run any time |
 
 ### Phase 1: design decisions on the PC (before any screen build; mockups only, no code)
@@ -156,7 +156,6 @@ Decisions the owner (or Manager) still has to make. Mockup-derived items are des
 | D-16 | Baseline for 30–60 bb multiway home play: how to reference-check (may stay Estimated); exact "Verified" tolerances per spot type (worker proposes, owner approves) | NORTH_STAR §3, §13 |
 | D-17 | Open-source vs closed (keeps AGPL out until decided) | NORTH_STAR §3.4, §13 |
 | D-18 | Pre-dependency versions of screens (an M1/M2 screen never relies on an M3 feature); Manager handles per redesign ticket | NORTH_STAR §13 |
-| D-19 | HE "Hero" as הירו (sheet) vs Latin `Hero` (old invariant). (The Analyze workspace name part is resolved; see below) | [TERMINOLOGY](TERMINOLOGY.md#applying-this-sheet-code-still-differs) |
 | D-20 | Historical pilot-era Training Memory records (2026-09 HRC pilot): zero affected records found on the owner's origins; field-path control not run. Close, or run the control | NORTH_STAR §2; RET-REFERENCE-PACK-001 |
 | D-22 | Older carried-over product questions: Training `Not sure` behaviour; Training-evidence opt-in placement/default; default comparison source; Home Game settlement preference (fewest transfers first per NORTH_STAR §7.9); username login before release; card-outcome preview touch/click semantics | archived PRODUCT_BACKLOG §14 |
 
@@ -166,7 +165,7 @@ Decisions the owner (or Manager) still has to make. Mockup-derived items are des
 |---|---|
 | D-01 | Tickets committed but never formally accepted (SHELL-001, DS-FOUNDATION-001, SAVED-*, DECISION-INPUT-TRUTH-001, LANGUAGE-SWITCH-EVENT-001, HOMEGAME-LEDGER-INPUT-001, token tuning) are treated as accepted for now; the M1 owner design pass catches remaining issues |
 | D-14 | Style v4 values win: panel radius 16 px, panel padding 22 px, content max width ~1640 px, buttons 40 px (44–48 px for the main action). Recorded in [DESIGN_SYSTEM](project/DESIGN_SYSTEM.md) |
-| D-19 (part) | Analyze workspace name: RU «Анализ», HE «ניתוח». Recorded in [TERMINOLOGY](TERMINOLOGY.md#applying-this-sheet-code-still-differs); the HE Hero question stays open |
+| D-19 | Analyze workspace name: RU «Анализ», HE «ניתוח». Hebrew "Hero" = «הירו»; Russian keeps Latin "Hero", as in [TERMINOLOGY](TERMINOLOGY.md#applying-this-sheet-code-still-differs). String changes are done in I18N-TERMS-001 |
 | D-21 | Analyze work accepted; committed in order Analyze `4e3e11a`, then docs reset `d1c826e` (backup `956ca6e` superseded) |
 
 Answered and recorded in NORTH_STAR (not open): verdict states, confidence tier names, Equity input types, streaks dropped, achievements reopened, Table rules naming, data-safety staging, 650 weights.

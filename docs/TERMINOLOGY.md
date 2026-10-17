@@ -137,7 +137,7 @@ Checked 2026-10-15 by search in `app/src/locales/`; the code follows the older s
 | RU range | диапазон | рендж (≈100 uses) and диапазон (≈135 uses) mixed | old guide chose рендж; `tests/l10n001_native_terminology.test.mjs` accepts /рендж\|стартов/ for the matrix label |
 | RU value | валью | велью | |
 | RU C-bet | си-бет | контбет | |
-| HE Hero | הירו | `Hero` kept Latin as an invariant token | the sheet wins; confirm with the owner |
+| HE Hero | הירו (owner decision D-19, closed 2026-10-15); RU keeps Latin "Hero" | `Hero` kept Latin as an invariant token | the sheet wins; string changes in I18N-TERMS-001 |
 | Analyze workspace | RU «Анализ», HE «ניתוח» (owner decision D-19, 2026-10-15) | RU «Разбор», HE «ניתוח» (old house style) | RU label to change in code; HE already matches |
 
 The M1 bar is "complete and natural enough"; native-level polish comes later (NORTH_STAR §7.17).

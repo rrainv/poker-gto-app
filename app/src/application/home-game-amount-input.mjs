@@ -7,6 +7,7 @@ export const HOME_GAME_INPUT_MESSAGES = Object.freeze({
   INVALID: 'Enter a valid amount.',
   POSITIVE: 'Enter an amount greater than zero.',
   REPLACEMENT_POSITIVE: 'Enter an amount greater than zero, or leave it empty to only reverse the entry.',
+  BUY_IN_POSITIVE: 'Enter a buy-in greater than zero, or leave it empty.',
   CHIPS: 'Enter a whole chip count.',
 });
 

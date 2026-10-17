@@ -1014,11 +1014,17 @@ class TableRenderer {
       if (name) name.textContent = playerState?.name || (isHero ? tableMessage('Hero', 'Hero') : `P${i + 1}`);
       if (position) position.textContent = '';
       this.paintSeatPortrait(seat, playerState || {});
-      if (stack) this.setPokerAmount(stack, {
-        value: Number.isFinite(playerState?.stackBb) ? playerState.stackBb : '',
-        unit: Number.isFinite(playerState?.stackBb) ? 'bb' : '',
-        ariaHidden: true,
-      });
+      if (stack) {
+        const stackUnknown = playerState?.stackUnknown === true;
+        this.setPokerAmount(stack, {
+          value: Number.isFinite(playerState?.stackBb) ? playerState.stackBb : stackUnknown ? '?' : '',
+          unit: Number.isFinite(playerState?.stackBb) ? 'bb' : '',
+          ariaHidden: true,
+        });
+        stack.dataset.stackUnknown = String(stackUnknown);
+        if (stackUnknown) stack.title = tableMessage('table.stackUnknown', 'Stack unknown in this Scenario');
+        else stack.removeAttribute('title');
+      }
       if (status) status.setAttribute('hidden', '');
       if (contribution) contribution.setAttribute('hidden', '');
       if (contributionLane) contributionLane.setAttribute('hidden', '');

@@ -201,7 +201,8 @@ test('DecisionRecord v1 freezes exact canonical state and comparative source tru
   assert.equal(record.strategyEvidence.strategyResult.sourceDescriptor.family, 'heuristic');
   assert.equal(record.strategyEvidence.claimPolicy.trainingSemantics, 'unavailable');
   assert.equal(record.strategyEvidence.comparisonState, TRAINING_COMPARISON_STATES.UNAVAILABLE);
-  assert.equal(record.strategyEvidence.internalEvaluation.grade, 'mistake');
+  assert.equal(record.strategyEvidence.internalEvaluation.grade, null);
+  assert.equal(record.strategyEvidence.internalEvaluation.comparison, 'differs');
   assert.equal(Object.hasOwn(record, 'accuracy'), false);
   assert.equal(Object.hasOwn(record, 'correct'), false);
   assert.equal(Object.hasOwn(record, 'mistake'), false);
@@ -331,7 +332,8 @@ test('accepted reference without an assessment policy stays a frozen comparison'
     currentExercise: normativeExercise,
   });
 
-  assert.equal(answered.strategyEvidence.internalEvaluation.grade, 'mistake');
+  assert.equal(answered.strategyEvidence.internalEvaluation.grade, null);
+  assert.equal(answered.strategyEvidence.internalEvaluation.comparison, 'differs');
   assert.equal(answered.strategyEvidence.comparisonState, 'differs_from_reference');
   assert.equal(answered.strategyEvidence.claimPolicy.trainingSemantics, 'comparative');
   assert.equal(answered.strategyEvidence.claimPolicy.claims.accuracy, false);

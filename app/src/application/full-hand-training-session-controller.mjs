@@ -173,11 +173,12 @@ function normalizeHeroAction(actionInput, heroPlayerId) {
   return createAction(heroPlayerId, actionInput.type, amountToMilliBb);
 }
 
-function gradeCounts(decisions) {
-  const counts = { optimal: 0, acceptable: 0, mistake: 0 };
+// Descriptive distance from the source's mix; never a correctness count.
+function comparisonCounts(decisions) {
+  const counts = { matches: 0, close: 0, differs: 0 };
   for (const decision of decisions) {
-    const grade = decision.evaluation?.answerEvaluation?.grade;
-    if (Object.hasOwn(counts, grade)) counts[grade] += 1;
+    const comparison = decision.evaluation?.answerEvaluation?.comparison;
+    if (Object.hasOwn(counts, comparison)) counts[comparison] += 1;
   }
   return deepFreeze(counts);
 }
@@ -203,6 +204,7 @@ function createReview({ journal, replaySource, botDecisionJournal, completedHand
     legalActions: decision.legalActions,
     strategyResult: decision.evaluation?.strategyResult ?? null,
     grade: decision.evaluation?.answerEvaluation?.grade ?? null,
+    comparison: decision.evaluation?.answerEvaluation?.comparison ?? null,
     evaluation: decision.evaluation,
     opponentPractice,
   }));
@@ -278,7 +280,7 @@ function initialSnapshot() {
     currentDecision: null,
     answeredDecisions: [],
     lastEvaluation: null,
-    gradeCounts: { optimal: 0, acceptable: 0, mistake: 0 },
+    comparisonCounts: { matches: 0, close: 0, differs: 0 },
     completedHandResult: null,
     automatedCompletedHandResult: null,
     botDecisionJournal: null,
@@ -286,7 +288,7 @@ function initialSnapshot() {
     replaySource: null,
     summary: {
       decisionsAnswered: 0,
-      gradeCounts: { optimal: 0, acceptable: 0, mistake: 0 },
+      comparisonCounts: { matches: 0, close: 0, differs: 0 },
       chosenActions: [],
       replayReferences: [],
     },
@@ -384,7 +386,7 @@ export function createFullHandTrainingSessionController({
     const answeredDecisions = journal.decisions.filter((decision) => (
       decision.chosenAction !== null && decision.evaluation !== null
     ));
-    const counts = gradeCounts(answeredDecisions);
+    const counts = comparisonCounts(answeredDecisions);
     const currentDecision = currentDecisionOrdinal === null
       ? null
       : journal.decisions[currentDecisionOrdinal] ?? null;
@@ -415,7 +417,7 @@ export function createFullHandTrainingSessionController({
       currentDecision,
       answeredDecisions,
       lastEvaluation,
-      gradeCounts: counts,
+      comparisonCounts: counts,
       completedHandResult,
       automatedCompletedHandResult,
       botDecisionJournal,
@@ -423,7 +425,7 @@ export function createFullHandTrainingSessionController({
       replaySource,
       summary: {
         decisionsAnswered: answeredDecisions.length,
-        gradeCounts: counts,
+        comparisonCounts: counts,
         chosenActions: answeredDecisions.map((decision) => decision.chosenAction),
         replayReferences: answeredDecisions.map(
           (decision) => decision.occurrence.replayPoint,

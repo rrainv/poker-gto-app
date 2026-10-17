@@ -1217,7 +1217,8 @@ export function createAnalysisExplanation({
   };
   const summary = reason
     ? summaryValues.reason
-    : formatAnalysisTemplate('{action} leads at {probability}. Source: {source}.', summaryValues);
+    // Provenance is shown once per surface (above the verdict); details live in Provenance & limitations.
+    : formatAnalysisTemplate('{action} leads at {probability}.', summaryValues);
 
   return deepFreeze({
     schemaVersion: ANALYSIS_EXPLANATION_SCHEMA_VERSION,

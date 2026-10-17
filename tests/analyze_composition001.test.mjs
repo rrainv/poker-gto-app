@@ -232,7 +232,7 @@ test('fact grid: one clean table with To call; labels muted, values 15/600 and n
   assert.match(analyzeCss, /\.analyze-facts \.metric span \{[^}]*color: var\(--text-muted\);[^}]*font: var\(--weight-label\) var\(--t-label\)/s);
   assert.match(analyzeCss, /\.analyze-facts \.metric b \{[^}]*overflow: visible;[^}]*color: var\(--text-primary\);[^}]*font: var\(--weight-value\) var\(--t-value\)\/var\(--t-value-line\)[^}]*text-overflow: clip;[^}]*white-space: normal;[^}]*overflow-wrap: anywhere;[^}]*unicode-bidi: plaintext;/s);
   assert.match(rootBlock, /--t-value: 0\.9375rem;/);
-  assert.match(rootBlock, /--weight-value: var\(--weight-strong\);/);
+  assert.match(rootBlock, /--weight-value: 650;/);
 });
 
 // ---------------------------------------------------------------------------

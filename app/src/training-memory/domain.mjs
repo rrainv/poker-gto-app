@@ -482,6 +482,10 @@ export function validateTrainingSessionRecord(record) {
   return record;
 }
 
+const LEGACY_COMPARISON_BY_GRADE = Object.freeze({
+  optimal: 'matches', acceptable: 'close', mistake: 'differs',
+});
+
 function gradeComparisonState(evaluation, claimPolicy) {
   if (claimPolicy?.availability !== 'available') {
     return claimPolicy?.coverage?.kind === 'unsupported'
@@ -492,14 +496,16 @@ function gradeComparisonState(evaluation, claimPolicy) {
   const permitsComparativeGrade = claimPolicy?.claims?.comparative_grading === true
     || claimPolicy?.claims?.normative_grading === true;
   if (!permitsComparativeGrade) return TRAINING_COMPARISON_STATES.UNAVAILABLE;
-  const comparisonGrade = evaluation.comparisonGrade ?? evaluation.grade;
-  if (comparisonGrade === 'optimal' && claimPolicy?.claims?.reference_match === true) {
+  // Descriptive comparison only; legacy evaluations carried it as comparisonGrade.
+  const comparison = evaluation.comparison
+    ?? LEGACY_COMPARISON_BY_GRADE[evaluation.comparisonGrade ?? evaluation.grade] ?? null;
+  if (comparison === 'matches' && claimPolicy?.claims?.reference_match === true) {
     return TRAINING_COMPARISON_STATES.MATCHES_REFERENCE;
   }
-  if (comparisonGrade === 'acceptable' && claimPolicy?.claims?.reference_deviation === true) {
+  if (comparison === 'close' && claimPolicy?.claims?.reference_deviation === true) {
     return TRAINING_COMPARISON_STATES.CLOSE_TO_REFERENCE;
   }
-  if (comparisonGrade === 'mistake' && claimPolicy?.claims?.reference_deviation === true) {
+  if (comparison === 'differs' && claimPolicy?.claims?.reference_deviation === true) {
     return TRAINING_COMPARISON_STATES.DIFFERS_FROM_REFERENCE;
   }
   return TRAINING_COMPARISON_STATES.UNAVAILABLE;

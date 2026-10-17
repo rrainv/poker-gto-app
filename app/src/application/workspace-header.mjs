@@ -25,7 +25,8 @@ export function shouldShowSourceBadge({
   personalComparisonOpen = false,
 } = {}) {
   switch (destination) {
-    case 'analyze': return true;
+    // Analyze names its source once, above the verdict (OWNER-19).
+    case 'analyze': return false;
     case 'hand': return handReviewOpen === true;
     case 'training': return trainingFeedbackShown === true || trainingFullHandPhase === 'review';
     case 'personal-strategy': return personalComparisonOpen === true;

@@ -638,7 +638,7 @@
                 </div>
                 <label id="homeGameGuestRoster" class="ui-field" for="homeGamePlayerNames"><span data-i18n="Temporary players">Temporary players</span><textarea id="homeGamePlayerNames" class="control-input" rows="5" placeholder="Dana&#10;Alex&#10;Maya" data-i18n-placeholder="One player per line"></textarea><small data-i18n="One player per line; seats follow this order.">One player per line; seats follow this order.</small></label>
                 <fieldset class="home-game-fieldset"><legend data-i18n="Blinds (optional)">Blinds (optional)</legend><div class="home-game-blinds"><label class="ui-field" for="homeGameSmallBlind"><span data-i18n="Small blind">Small blind</span><input id="homeGameSmallBlind" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="ui-field" for="homeGameBigBlind"><span data-i18n="Big blind">Big blind</span><input id="homeGameBigBlind" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="ui-field" for="homeGameAnte"><span data-i18n="Ante">Ante</span><input id="homeGameAnte" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label></div></fieldset>
-                <label class="ui-field" for="homeGameInitialBuyIn"><span data-i18n="Initial buy-in per player">Initial buy-in per player</span><input id="homeGameInitialBuyIn" class="control-input" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
+                <label class="ui-field" for="homeGameInitialBuyIn"><span data-i18n="Initial buy-in per player">Initial buy-in per player</span><input id="homeGameInitialBuyIn" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label>
                 <label class="home-game-check"><input id="homeGameSaveGroup" type="checkbox"><span data-i18n="Save Group">Save Group</span></label>
                 <label class="ui-field" for="homeGameGroupName"><span data-i18n="Group name">Group name</span><input id="homeGameGroupName" class="control-input" type="text" maxlength="100" disabled placeholder="Friday Game" data-i18n-placeholder="Friday Game"></label>
                 <button id="homeGameCreateButton" class="ui-button ui-button--primary" type="submit" disabled data-i18n="Start session">Start session</button>
@@ -861,7 +861,8 @@
               </div>
             </section>
 
-            <details id="playbookStrategyAdjustment" class="ui-disclosure playbook-spot-disclosure">
+            <!-- OWNER-12: hidden until the M3 adjustment engine exists; handlers and stored values stay dormant. -->
+            <details id="playbookStrategyAdjustment" class="ui-disclosure playbook-spot-disclosure" hidden>
               <summary><span data-i18n="Strategy adjustment">Strategy adjustment</span><small id="playbookStrategyAdjustmentSummary" class="playbook-spot-disclosure-meta"></small></summary>
               <div class="fields">
                 <div class="field full">
@@ -1032,7 +1033,7 @@
               <!-- ANALYZE-COMPOSITION-001: verdict block (eyebrow, verdict, summary, honest limits) beside the strategy mix card. -->
               <div class="recommend-top analyze-verdict">
                 <div class="analyze-verdict-copy">
-                  <div class="eyebrow"><span id="strategyTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span> · <span id="streetLabel" data-i18n="Preflop">Preflop</span></div>
+                  <div class="eyebrow"><span id="strategyTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span><span id="strategyTier"> · <span id="strategyTierLabel" data-i18n="Estimated" title="Heuristic guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="streetLabel" data-i18n="Preflop">Preflop</span></div>
                   <div class="action-name" id="bestAction" data-verdict-kind="dominant">Open</div>
                   <div class="action-sizing" id="bestSizing" hidden></div>
                   <p class="analyze-verdict-close" id="bestActionClose" hidden></p>
@@ -1139,7 +1140,7 @@
           </section>
 
           <div class="playbook-table-toggle">
-          <span class="playbook-table-label" data-playbook-scenario><strong data-i18n="Spot table">Spot table</strong><small data-i18n="Seats, stacks, cards, and current action">Seats, stacks, cards, and current action</small></span>
+          <span class="playbook-table-label" data-playbook-scenario><strong data-i18n="Spot table">Spot table</strong><small data-i18n="Approximate Scenario view · only the facts you entered">Approximate Scenario view · only the facts you entered</small></span>
           <span class="playbook-table-label" data-playbook-hand hidden><strong data-i18n="Hand table">Hand table</strong><small data-i18n="Canonical cards, stacks, contributions, and actor">Canonical cards, stacks, contributions, and actor</small></span>
           <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button" aria-expanded="true" aria-controls="table-wrapper" data-i18n="Collapse Table">Collapse Table</button>
           </div>

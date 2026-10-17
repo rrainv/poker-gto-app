@@ -1041,8 +1041,11 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     event.preventDefault();
     // These amounts are optional: empty means none, but invalid text never
     // becomes zero and blocks the session from starting.
+    // HG-004: a typed initial buy-in of 0 is rejected inline; empty means none.
     const [buyIn, smallBlind, bigBlind, ante] = optionalFormAmounts.map((input) => {
-      const result = readHomeGameAmount(input, { minorUnit: 2, required: false, minimumMinor: 0 });
+      const result = readHomeGameAmount(input, input === refs.buyIn
+        ? { minorUnit: 2, required: false, minimumMinor: 1, belowMinimumMessage: HOME_GAME_INPUT_MESSAGES.BUY_IN_POSITIVE }
+        : { minorUnit: 2, required: false, minimumMinor: 0 });
       setFormFieldError(input, result.ok ? null : result.messageKey);
       return result;
     });

@@ -347,7 +347,7 @@ test('legal answer grades once, applies once, and automatically resumes the same
   assert.equal(answered.decision.chosenAction.type, ACTION_TYPES.RAISE);
   assert.strictEqual(answered.decision.evaluation.answerEvaluation, answered.evaluation);
   assert.equal(answered.snapshot.summary.decisionsAnswered, 1);
-  assert.equal(answered.snapshot.gradeCounts.optimal, 1);
+  assert.equal(answered.snapshot.comparisonCounts.matches, 1);
   assert.equal(Object.isFrozen(answered.decision.evaluation), true);
 
   const duplicate = await controller.answer(
@@ -419,7 +419,7 @@ test('one continuous Hand reaches flop/turn/river and canonical showdown with im
       decision.replayPoint.eventSequence >= 0
       && decision.chosenAction !== null
       && decision.strategyResult !== null
-      && decision.grade !== null
+      && decision.comparison !== null
     )),
     true,
   );

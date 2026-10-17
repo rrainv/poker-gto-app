@@ -40,13 +40,13 @@
   --weight-strong: 600;
   --weight-bold: 700;
   --weight-heavy: 800;
-  /* Weight roles (the mockups): body/prose 400; controls 600; field and overline
-     labels 600; fact values 600; headings 650; titles 700; workspace and section
-     titles 750; verdict and display numbers 800. */
+  /* Weight roles (NORTH_STAR §8): body/prose 400; controls, field and overline
+     labels and fact values 650 (owner preference); headings 650; titles 700;
+     workspace and section titles 750; verdict and display numbers 800. */
   --weight-body: var(--weight-regular);
-  --weight-control: var(--weight-strong);
-  --weight-label: var(--weight-strong);
-  --weight-value: var(--weight-strong);
+  --weight-control: 650;
+  --weight-label: 650;
+  --weight-value: 650;
   --weight-heading: 650;
   --weight-title: var(--weight-bold);
   --weight-section-title: 750;

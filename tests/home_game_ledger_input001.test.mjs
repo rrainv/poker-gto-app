@@ -542,6 +542,28 @@ test('New Session optional amounts reject invalid text inline and never start a 
   assert.equal(current.transactions.length, 0, 'an empty optional initial buy-in means no buy-in, never an invented amount');
 });
 
+test('HG-004: a typed initial buy-in of 0 is rejected inline and starts no session', async () => {
+  const mounted = mountWorkspace();
+  await settle();
+  mounted.get('homeGamePlayerNames').value = 'Ann\nBen';
+  const buyIn = mounted.get('homeGameInitialBuyIn');
+  for (const zero of ['0', '0.00']) {
+    buyIn.value = zero;
+    mounted.get('homeGameNewSessionForm').dispatch('submit');
+    await settle();
+    assert.equal(mounted.workspace.getState().current, null, `${zero} must not start a session`);
+    assert.equal(inlineError(buyIn), 'Enter a buy-in greater than zero, or leave it empty.');
+    assert.equal(mounted.document.activeElement, buyIn);
+  }
+  type(buyIn, '50');
+  assert.equal(inlineError(buyIn), null);
+  mounted.get('homeGameNewSessionForm').dispatch('submit');
+  await settle();
+  const current = mounted.workspace.getState().current;
+  assert.equal(current.session.status, 'active');
+  assert.deepEqual(current.transactions.map((entry) => [entry.type, entry.amountMinor]), [['buy_in', 5000], ['buy_in', 5000]]);
+});
+
 test('Guest hides account-only controls and states that sessions are not kept after reload', async () => {
   const mounted = mountWorkspace();
   await settle();
