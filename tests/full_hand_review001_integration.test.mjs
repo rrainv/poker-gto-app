@@ -125,7 +125,10 @@ test('shared runtime uses canonical journals, exact Replay seeks, provider cache
     await app.navigate('hand');
     if (app.byId('handReviewSurface').hidden) app.call('openCanonicalHandReview');
     await app.click('#handReviewSaveSpot');
-    await app.settle(500);
+    // The save path awaits a real dynamic import(); settle until it lands
+    // (bounded) instead of a fixed tick budget that loses under load.
+    const savedSpot = () => spy.calls.callSavedStudyBridge.some(([method]) => method === 'saveReviewedDecisionSpot');
+    for (let round = 0; round < 40 && !savedSpot(); round += 1) await app.settle(100);
     assert.ok(spy.calls.callSavedStudyBridge.some(([method]) => method === 'saveReviewedDecisionSpot'), JSON.stringify(spy.calls.callSavedStudyBridge.map(([method]) => method)));
   } finally {
     spy.restore();

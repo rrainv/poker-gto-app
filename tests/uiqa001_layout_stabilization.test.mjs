@@ -248,7 +248,7 @@ test('Settings expose clearer switches, aligned solver icon, and persisted T ver
   const toggle = probe('<button class="ui-switch"><b></b></button>');
   assert.equal(css.cascaded(toggle, 'color'), 'var(--text-secondary)');
   assert.equal(css.cascaded(toggle.firstElementChild, 'background'), 'currentColor');
-  // (TEST-HYGIENE-F09: nothing renders .solver-import-btn any more; its icon
+  // (TEST-HYGIENE-001-F09: nothing renders .solver-import-btn any more; its icon
   // rule is kept aligned.)
   const icon = probe('<button class="solver-import-btn"><span class="button-icon"></span></button>').firstElementChild;
   assert.equal(css.cascaded(icon, 'width'), '18px');

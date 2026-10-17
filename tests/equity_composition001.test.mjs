@@ -262,7 +262,7 @@ test('legacy Equity-local evaluation and rejected duplicate result presentation 
   assert.equal(equityMarkup.querySelector('.equity-output-stack, .equity-result-tile, .equity-comparison-hand, #equityScenarioContext'), null);
   assert.doesNotMatch(text(equityMarkup), /generic Complete/i);
   // (Older rules still target .equity-player-results; the product never
-  // renders it — TEST-HYGIENE-F07 dead CSS.)
+  // renders it — TEST-HYGIENE-001-F07 dead CSS.)
   assert.equal(app.$('#equityMode .equity-player-results, #equityMode .equity-comparison-hand'), null);
 });
 

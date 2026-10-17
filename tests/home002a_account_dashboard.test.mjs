@@ -164,7 +164,7 @@ test('Home v2 UI is responsive, accessible, coalesced, and remains a lightweight
   assert.equal(overview.querySelector('#homeSyncStatus').getAttribute('aria-live'), 'polite');
   assert.match(text(markup.body), /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode\. Guest data does not sync\./);
   assert.ok(markup.querySelector('[data-home-destination="review_mistakes"]'));
-  // The overview spans the dashboard. Superseded (TEST-HYGIENE-F03): the
+  // The overview spans the dashboard. Superseded (TEST-HYGIENE-001-F03): the
   // two-column "overview overview" areas are overridden by the Home canvas
   // rule, so the product dashboard is a single full-width column.
   const grid = markup.querySelector('.home-dashboard-grid');

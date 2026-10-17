@@ -148,7 +148,7 @@ test('large desktop columns remain compact and 1024 desktop stacks primary conte
 });
 
 test('stacked Hand shows the context rail first while private cards or reveals are chosen', {
-  todo: 'TEST-HYGIENE-F04: the [data-hand-stage]:not([data-hand-stage="setup"]) rule outranks the private-cards/reveal exception',
+  todo: 'TEST-HYGIENE-001-F04: the [data-hand-stage]:not([data-hand-stage="setup"]) rule outranks the private-cards/reveal exception',
 }, async () => {
   // Protects (PREMIUM-LAYOUT-001): at <=1100px the private-card and reveal
   // stages lead with the context rail. Currently defeated by specificity.
