@@ -97,6 +97,8 @@ Further hand, draw and board vocabulary kept from the old style guide (no confli
 | Game night (Home Game workspace, user-facing) | Покерный вечер | ערב פוקר |
 | Private table (no rake) (Table rules preset) | Частный стол (без рейка) | שולחן פרטי (בלי רייק) |
 
+Game night is only the workspace name. Where "home game" means a type of game (the "Loose (Home Game / ClubGG)" play style, the "Home game" environment option, the "Home Game with Friends" placeholder), use RU «домашняя игра», HE «משחק ביתי» (owner decision, 2026-10-17).
+
 Notes: «раздача» is a played hand, «рука» means hole cards. «Круг» / «סבב» is how players describe going once around the table; «орбита» is rare in Russian.
 
 ## Conventions (decided)
