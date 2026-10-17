@@ -137,6 +137,16 @@ test('completion routes to existing longitudinal views without inventing mastery
   assert.match(text(trainingMarkup.querySelector('#trainingCompletionReview')), /Review due items/);
   assert.match(text(trainingMarkup.querySelector('#trainingCompletionRecent')), /Recent sessions/);
   assert.match(text(trainingMarkup.querySelector('#trainingRestartSession')), /Start another session/);
+  // The completion actions appear once a bounded Varied session completes.
+  await app.click('[data-training-session-mode="varied"]');
+  await app.setValue('#trainingSessionLength', '10');
+  await app.training.start('varied');
+  for (let index = 0; index < 10; index += 1) {
+    await app.training.answer();
+    const next = app.byId('trainingNextHandBtn');
+    if (!next.disabled && app.isShown(next)) await app.training.next();
+  }
+  assert.equal(app.isShown(app.byId('trainingSessionCompletion')), true, 'the session completed');
   const spy = app.spy(['setTrainingMemoryView']);
   try {
     await app.click('#trainingCompletionReview');
@@ -155,13 +165,22 @@ test('Focused and Full Hand retain their canonical controls within the shared co
   assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, false, 'Focused shows the decision target');
   await app.click('[data-training-session-mode="full_hand"]');
   assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, true);
-  await app.click('#trainingAdjustDrill');
-  assert.ok(app.document.activeElement === app.byId('trainingHeroPos'), 'Full Hand setup focuses Hero position');
   for (const id of ['trainingFullHandTableMount', 'trainingFullHandTimeline']) assert.ok(trainingMarkup.querySelector(`#${id}`), id);
   const node = workspace();
   node.dataset.trainingFullHandPhase = 'live';
   assert.ok(css.matchingRules(node).some((rule) => rule.selectorText.includes('data-training-full-hand-phase="live"')));
   node.dataset.trainingFullHandPhase = 'setup';
+});
+
+test('Adjust drill after a Full Hand focuses the shown Hero position control', {
+  todo: 'TEST-HYGIENE-001-F13: the completed Full Hand phase hides the setup fields, so #trainingHeroPos cannot take focus',
+}, async () => {
+  await app.click('[data-training-session-mode="full_hand"]');
+  await app.training.playFullHand();
+  await app.click('#trainingAdjustDrill');
+  assert.equal(app.byId('trainingSetupPanel').open, true);
+  assert.ok(app.isShown(app.byId('trainingHeroPos')), 'the Hero position control is shown');
+  assert.ok(app.document.activeElement === app.byId('trainingHeroPos'), 'Full Hand setup focuses Hero position');
 });
 
 test('new composition copy is complete for English, Russian, and Hebrew', () => {

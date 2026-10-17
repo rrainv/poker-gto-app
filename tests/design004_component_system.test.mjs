@@ -115,7 +115,8 @@ test('remaining switches expose labels and pressed states without replacing beha
   }
   const off = probe('<button class="ui-switch" aria-pressed="false"><b></b></button>');
   assert.equal(cascaded(off.firstElementChild, 'transform'), 'translateX(0)');
-  // The running toggle keeps aria-pressed in sync.
+  // The running toggle (in Analyze) keeps aria-pressed in sync.
+  await app.navigate('analyze');
   const toggle = app.byId('toggleAdvanced');
   const before = toggle.getAttribute('aria-pressed');
   await app.click(toggle);

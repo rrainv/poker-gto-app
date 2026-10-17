@@ -354,6 +354,7 @@ export class StyleSheetModel {
       }
       if (compareRank(rank, best.rank) >= 0) best = { declaration, rank };
     };
+    let bestRule = null;
     const matched = new Map();
     for (const entry of this._candidates(element, this._propertyIndex(property))) {
       if ((entry.pseudoElement || null) !== (options.pseudoElement || null)) continue;
@@ -364,7 +365,10 @@ export class StyleSheetModel {
     }
     for (const [rule, ruleSpecificity] of matched) {
       for (const declaration of rule.declarations) {
-        if (propertyMatches(declaration.property, property, dir)) consider(declaration, [...ruleSpecificity, rule.order]);
+        if (!propertyMatches(declaration.property, property, dir)) continue;
+        const before = best;
+        consider(declaration, [...ruleSpecificity, rule.order]);
+        if (best !== before) bestRule = rule;
       }
     }
     const inline = !options.pseudoElement && element.style?.getPropertyValue?.(property);
@@ -372,6 +376,7 @@ export class StyleSheetModel {
       return inline;
     }
     if (best) {
+      if (options.explain) options.explain.rule = bestRule;
       const value = expandShorthand(best.declaration, property, dir);
       if (value === 'inherit' && element.parentElement) return this.cascaded(element.parentElement, property, { ...options, pseudoElement: null });
       return value;

@@ -128,6 +128,7 @@ test('the range matrix remains a dense 13 by 13 LTR poker matrix', () => {
 });
 
 test('matrix selection and hover use bounded non-color emphasis without zoom', async () => {
+  await app.click('.sub-tab[data-gto-view="chart"]');
   const cell = app.$$('#strategyGrid .hand-cell').find((node) => node.getAttribute('aria-pressed') === 'false');
   await app.click(cell);
   const selected = app.$('#strategyGrid .hand-cell[aria-pressed="true"]');

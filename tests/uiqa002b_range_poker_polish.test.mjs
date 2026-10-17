@@ -118,9 +118,10 @@ test('matrix selection, inspector, and unavailable states remain explicit', asyn
   freshChart();
   assert.ok(app.$('#selectedMix .matrix-inspector-unavailable'));
   await app.click('#gtoMode [data-card-set-edit="board"]');
+  // Clearing the board applies at once and closes the picker.
   await app.click('#cardSetPickerClear');
-  await app.click('#cardSetPickerApply');
   await app.settle(200);
+  assert.equal(app.window.app.picker, null, 'Clear closed the picker');
   assert.equal(freshChart().length, 169, 'preflop again');
 });
 

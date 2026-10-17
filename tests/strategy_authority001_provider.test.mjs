@@ -248,9 +248,10 @@ test('provenance remains provider-owned across presentation consumers', async ()
   assert.doesNotMatch(JSON.stringify(app.call('strategyResultPresentationActions', result)), /MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE/);
   // Matrix provenance summarises the provider's claim policy.
   await app.click('#gtoMode [data-card-set-edit="board"]');
+  // Clearing the board applies at once and closes the picker.
   await app.click('#cardSetPickerClear');
-  await app.click('#cardSetPickerApply');
   await app.settle(200);
+  assert.equal(app.window.app.picker, null, 'Clear closed the picker');
   const spy = app.spy(['strategyPolicySummary', 'strategySourceDisplayLabel']);
   try {
     app.evaluate('app.matrixModel = null');

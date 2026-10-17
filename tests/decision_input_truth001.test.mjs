@@ -117,8 +117,13 @@ test('A: HTML slider-pair bounds match the field table used by these tests', () 
   }
 });
 
-test('A: every slider-pair field keeps intermediate text exactly and commits only valid parses', async () => {
+test('A: every slider-pair field keeps intermediate text exactly and commits only valid parses', async (t) => {
+  // Ante lives in the Advanced rules disclosure: open it as the user would.
+  const advanced = app.byId('toggleAdvanced');
+  if (!advanced.classList.contains('on')) await app.click(advanced);
+  t.after(async () => { if (advanced.classList.contains('on')) await app.click(advanced); });
   for (const field of SLIDER_FIELDS) {
+    assert.ok(app.isShown(app.byId(field.numberId)), `${field.numberId} is shown`);
     const harness = sliderHarness(field.rangeId, field.numberId);
     const initial = harness.range.value;
     try {

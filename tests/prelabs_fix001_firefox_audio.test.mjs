@@ -202,10 +202,12 @@ test('audio remains event-owned with no hover, slider, Matrix, progress, or tab 
     spy.reset();
     app.dispatch(app.$('.mode-nav-item[data-navigation-id="training"]'), new app.window.MouseEvent('mouseover', { bubbles: true }));
     await app.setValue('#players', '7');
+    await app.click('.sub-tab[data-gto-view="chart"]');
     app.call('renderChart');
     await app.click(app.$('#strategyGrid .hand-cell'));
-    const tab = app.$$('.sub-tabs [role="tab"]').find((node) => node.getAttribute('aria-selected') !== 'true');
-    if (tab) await app.click(tab);
+    const tab = app.$$('.sub-tabs [role="tab"]').find((node) => node.getAttribute('aria-selected') !== 'true' && app.isShown(node));
+    assert.ok(tab, 'another view tab is offered');
+    await app.click(tab);
     assert.equal(spy.total(), 0, JSON.stringify(spy.sequence));
     // One decision result per Training answer; one comparison event per hint.
     await app.training.start('focused');

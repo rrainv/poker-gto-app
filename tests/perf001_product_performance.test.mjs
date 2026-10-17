@@ -248,12 +248,15 @@ test('theme changes and retained animations no longer trigger strategy or forced
   }
   const spy = app.spy(['updateContext']);
   try {
-    // A theme change re-renders no strategy.
+    // A theme change (in Settings) re-renders no strategy.
+    await app.click('#openSettings');
     const swatch = app.$('#themeSwatchGrid button[aria-pressed="false"]');
+    const themeId = swatch.dataset.themeId;
     await app.click(swatch);
-    assert.equal(app.document.documentElement.dataset.theme, swatch.dataset.themeId, 'the theme changed');
+    assert.equal(app.document.documentElement.dataset.theme, themeId, 'the theme changed');
     assert.equal(spy.count('updateContext'), 0, 'theme changes do not update strategy');
     await app.click('#themeSwatchGrid button[data-theme-id="midnight"]');
+    await app.click('#closeSettingsModal');
     // Hot paths perform no forced layout reads.
     reads.length = 0;
     app.call('renderAllCards');

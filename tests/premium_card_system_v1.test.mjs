@@ -258,6 +258,7 @@ test('full-ten is presentation-only: the canonical Hand keeps its T cards', asyn
   };
   assert.deepEqual(heroCards(), ['Th', '9h']);
   const previous = app.evaluate('app.settings.cardRankStyle');
+  await app.click('#openSettings');
   try {
     await app.click('button[data-card-rank-style="full-ten"]');
     assert.equal(app.evaluate('app.settings.cardRankStyle'), 'full-ten');
@@ -266,6 +267,7 @@ test('full-ten is presentation-only: the canonical Hand keeps its T cards', asyn
     assert.equal(app.call('cardMarkup', 'Th').includes('>10<'), true);
   } finally {
     await app.click(`button[data-card-rank-style="${previous}"]`);
+    await app.click('#closeSettingsModal');
   }
   assert.deepEqual(heroCards(), ['Th', '9h']);
 });
@@ -474,7 +476,9 @@ test('major workspaces consume the shared face and back renderers', async () => 
   await app.startHand(['As', 'Kd']);
   assert.ok(app.$$('[data-slots="hero"] [data-card-size="slot"]').length > 0);
   assert.equal(app.$$('.hand-card-backs .riverline-card-back').length, 2);
-  await app.click('[data-card-set-edit="hand-seat-1"]');
+  // The card picker, opened from a shown editor (Analyze board).
+  await app.navigate('analyze');
+  await app.click('#gtoMode [data-card-set-edit="board"]');
   const deck = app.$$('[data-deck-card]');
   assert.equal(deck.length, 52);
   assert.ok(deck.every((card) => card.dataset.cardSize === 'picker' && card.classList.contains('riverline-card')));
@@ -494,8 +498,10 @@ test('picker accessibility, four-color semantics, RTL, and reduced motion remain
   // Was: renderDeck template text (suit rows, aria-pressed, disabled
   // unavailable cards, Select / unavailable labels). Protects: the picker
   // groups cards by suit and exposes selection and availability to AT.
-  await app.startHand(['As', 'Kd']);
-  await app.click('[data-card-set-edit="hand-seat-1"]');
+  // Hero holds As: opening the board picker shows it unavailable.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  await app.click('#gtoMode [data-card-set-edit="board"]');
   assert.deepEqual(app.$$('.deck-suit-row[data-picker-suit]').map((row) => row.dataset.pickerSuit), ['h', 's', 'd', 'c']);
   const deckCard = (card) => app.$(`[data-deck-card="${card}"]`);
   const unavailable = deckCard('As');

@@ -197,9 +197,8 @@ test('responsive, Compact, RTL, focus, and reduced-motion states are explicit', 
   const button = markup.createElement('button');
   button.className = 'hand-review-decision-button';
   surface.appendChild(button);
-  button.focus();
-  assert.equal(css.cascaded(button, 'outline-color', { states: ['focus-visible'] }), 'var(--border-focus)');
-  assert.equal(css.cascaded(button, 'outline-offset', { states: ['focus-visible'] }), '2px');
+  assert.equal(css.cascaded(button, 'outline-color', { states: ['focus-visible'], stateElement: button }), 'var(--border-focus)');
+  assert.equal(css.cascaded(button, 'outline-offset', { states: ['focus-visible'], stateElement: button }), '2px');
   // Reduced motion: review transitions/animations collapse and scrolling is instant.
   assert.match(css.cascaded(button, 'transition-duration', { reducedMotion: true }), /^(?:none|0\.001ms)$/);
   assert.match(css.cascaded(button, 'animation-duration', { reducedMotion: true }), /^(?:none|0\.001ms)$/);

@@ -353,7 +353,9 @@ function pseudoMatches(element, { name, argument }, context) {
     case 'enabled': return FORM_CONTROLS.has(element.localName) && !isDisabledControl(element);
     case 'focus': return element.ownerDocument?.activeElement === element;
     case 'focus-within': return Boolean(element.ownerDocument?.activeElement && element.contains(element.ownerDocument.activeElement));
-    case 'focus-visible': return Boolean(context.states?.has('focus-visible') && element.ownerDocument?.activeElement === element);
+    // A style probe names the state element explicitly; otherwise it is the focused element.
+    case 'focus-visible': return Boolean(context.states?.has('focus-visible')
+      && (context.stateElement ? context.stateElement === element : element.ownerDocument?.activeElement === element));
     case 'hover':
     case 'active':
     case 'visited':

@@ -550,11 +550,26 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       await harness.flush();
       return element;
     },
+    /** Which element (self or ancestor) hides `element`, and how. */
+    hiddenBy(element) {
+      const sheet = appStyleSheet();
+      for (let node = element; node?.nodeType === 1; node = node.parentNode) {
+        const where = node === element ? 'itself' : describe(node);
+        if (node.hasAttribute('hidden')) return `${where} has the hidden attribute`;
+        if (node.style.getPropertyValue('display') === 'none') return `${where} has inline display:none`;
+        const explain = {};
+        if (sheet.cascaded(node, 'display', { environment: environment.media, explain }) === 'none') {
+          const conditions = explain.rule?.conditions?.map((entry) => `@${entry.type} ${entry.query ?? ''}`).join(' ') || '';
+          return `${where} is display:none by "${explain.rule?.selectorText}"${conditions ? ` (${conditions.trim()})` : ''}`;
+        }
+      }
+      return 'visibility:hidden';
+    },
     /** Why a user could not click `element` (null when they could). */
     unclickableReason(element) {
       if (!element.isConnected) return 'not connected';
       if (element.closest('[inert]')) return 'inert';
-      if (!dom.isRendered(element)) return 'not shown';
+      if (!dom.isRendered(element)) return `not shown: ${harness.hiddenBy(element)}`;
       const modal = document.querySelectorAll('dialog[open]').find((dialog) => dialog._modal);
       if (modal && !modal.contains(element)) return 'behind an open modal dialog';
       return null;
@@ -633,7 +648,7 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         // dialog answers yes).
         const finished = current.phase === 'terminal' || current.terminal?.isTerminal === true;
         const newHand = harness.document.getElementById('handCompletedNewHandButton');
-        await harness.click(finished && newHand && !newHand.hidden ? newHand : '#handResetButton');
+        await harness.click(finished && newHand && harness.isShown(newHand) ? newHand : '#handResetButton');
         await harness.settle(300);
         if (harness.call('callPlaybookStateBridge', 'getState')) {
           harness.call('callPlaybookStateBridge', 'resetHand');
@@ -670,7 +685,12 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       async start(mode = 'focused') {
         if (harness.$('.riverline-shell').dataset.activeMode !== 'training') await harness.navigate('training');
         await harness.click(`[data-training-session-mode="${mode}"]`);
-        await harness.click('#trainingNewHand');
+        // While a Full Hand is live or complete, its own New Hand control
+        // replaces the setup one.
+        const newHand = ['trainingNewHand', 'trainingFullHandLiveNewHand', 'trainingFullHandNewHand']
+          .map((id) => harness.byId(id)).find((button) => harness.isShown(button));
+        if (!newHand) throw new Error('No shown Training New Hand control');
+        await harness.click(newHand);
         await harness.settle(500);
       },
       answerButtons() {
@@ -682,8 +702,11 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         const buttons = harness.training.answerButtons();
         const button = (type && buttons.find((candidate) => candidate.dataset.action === type)) || buttons[0];
         if (!button) throw new Error('No Training answer is available');
+        const fullHand = harness.$('.training-workspace')?.dataset.trainingFullHandPhase === 'live';
         await harness.click(button);
         await harness.settle(500);
+        // Strategy resolution can finish outside the fake clock under load.
+        if (!fullHand) await harness.waitFor(() => globalThis.app.training.currentEvaluation, 'the Training answer to be evaluated');
         return button.dataset.action;
       },
       async next() {

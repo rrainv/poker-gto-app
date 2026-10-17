@@ -387,6 +387,10 @@ test('completion exposes Review, Analysis, Replay, and Save through existing bou
   assert.deepEqual(replay.calls.revealCanonicalHandHistory, [[{ replay: true }]]);
   assert.ok(replay.calls.callPlaybookStateBridge.some(([name]) => name === 'startReplayPlayback'));
   app.call('callPlaybookStateBridge', 'cancelReplayPlayback');
+  // Replay hides the completion card; leaving Replay restores it.
+  assert.equal(app.isShown(app.byId('handCompletedSection')), false, 'Replay replaces the completion card');
+  await app.click('#handReplayLiveButton');
+  assert.equal(app.isShown(app.byId('handCompletedSection')), true, 'leaving Replay restores the completion card');
 
   const journal = app.call('callPlaybookStateBridge', 'getHeroDecisionJournal');
   const analysis = app.spy(['scenarioInputFromHeroDecisionRecord', 'updateContext']);

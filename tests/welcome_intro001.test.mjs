@@ -317,11 +317,20 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
   assert.ok(app.document.activeElement === live);
   assert.match(css.cascaded(live, 'outline', { states: ['focus-visible'] }), /solid/);
   assert.doesNotMatch(css.cascaded(live, 'outline') || '', /solid/, 'pointer focus draws no ring');
+  // A manually opened Welcome hides the remember preference (first run shows
+  // it); show it as first run does to check its focus ring.
   const preference = app.$('.welcome-preference');
-  app.$('#welcomeRememberChoice').focus();
-  assert.match(css.cascaded(preference, 'outline'), /solid var\(--border-focus\)/);
-  app.$('#welcomeRememberChoice').blur();
-  assert.equal(css.cascaded(preference, 'outline'), undefined);
+  assert.equal(preference.hidden, true, 'manual Welcome hides the preference');
+  preference.hidden = false;
+  try {
+    app.$('#welcomeRememberChoice').focus();
+    assert.equal(app.document.activeElement.id, 'welcomeRememberChoice');
+    assert.match(css.cascaded(preference, 'outline'), /solid var\(--border-focus\)/);
+    app.$('#welcomeRememberChoice').blur();
+    assert.equal(css.cascaded(preference, 'outline'), undefined);
+  } finally {
+    preference.hidden = true;
+  }
   const close = markup.querySelector('.welcome-close');
   assert.equal(close.hidden, true);
   assert.equal(css.cascaded(close, 'display'), 'none');

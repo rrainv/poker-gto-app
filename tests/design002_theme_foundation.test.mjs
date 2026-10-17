@@ -47,7 +47,9 @@ test('the document and presentation authority default to Riverline Midnight', as
   storage.setItem = (key, value) => { touched.push(key); return setItem.call(storage, key, value); };
   try {
     await app.click('#openSettings');
-    for (const swatch of app.$$('#themeSwatchGrid [data-theme-id], #themeSwatchGrid button').slice(0, 3)) await app.click(swatch);
+    // Choosing a theme re-renders the swatches: query each one afresh.
+    for (let index = 0; index < 3; index += 1) await app.click(app.$$('#themeSwatchGrid button')[index]);
+    await app.click('#closeSettingsModal');
   } finally {
     storage.getItem = getItem;
     storage.setItem = setItem;

@@ -117,6 +117,10 @@ test('details disclosure is localized, keyboard-native, and not globally persist
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
   assert.equal(toggle.getAttribute('aria-controls'), 'pathList');
   const live = app.byId('actionPathDetailsToggle');
+  // The Analyze composition always shows the path and hides the toggle; Hand offers it.
+  assert.equal(app.isShown(live), false, 'Analyze hides the details toggle');
+  await app.startHand(['As', 'Kd']);
+  assert.equal(app.isShown(live), true, 'Hand offers the details toggle');
   const writes = [];
   for (const store of [app.window.localStorage, app.window.sessionStorage]) {
     const setItem = store.setItem;
@@ -172,6 +176,8 @@ test('table physicality and card, chip, seat, dealer, and contribution hooks are
 test('responsive presentation code does not resolve strategy, Equity, Training, or poker accounting', async () => {
   // Protects: moving, rendering and toggling the Action Path does no strategy,
   // Equity, Training or canonical-state work.
+  // The toggle is offered in Hand (the previous test started a hand there).
+  if (app.$('.riverline-shell').dataset.activeMode !== 'hand') await app.navigate('hand');
   const spy = app.spy(['updateContext', 'calculateEquity', 'setEquityPending', 'callTrainingServiceBridge', 'callPlaybookStateBridge', 'renderChart']);
   try {
     app.call('applyActionPathPresentation', true);

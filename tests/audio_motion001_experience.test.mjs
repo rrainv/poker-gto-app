@@ -946,6 +946,7 @@ test('Calibration and Matrix poker labels cannot enter the physical foley path',
     await app.navigate('analyze');
     await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
     emitted.length = 0;
+    await app.click('.sub-tab[data-gto-view="chart"]');
     app.evaluate('app.matrixModel = null');
     app.call('renderChart');
     for (const cell of app.$$('#strategyGrid .hand-cell').slice(0, 3)) await app.click(cell);

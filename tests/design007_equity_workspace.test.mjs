@@ -306,8 +306,7 @@ test('responsive, theme-token, keyboard-focus, reduced-motion, and RTL safeguard
   }
   const button = markup.createElement('button');
   equityMarkup.appendChild(button);
-  button.focus();
-  assert.ok(css.matchingRules(button, { states: ['focus-visible'] }).some((rule) => rule.selectorText.includes('#equityMode button:focus-visible')));
+  assert.ok(css.matchingRules(button, { states: ['focus-visible'], stateElement: button }).some((rule) => rule.selectorText.includes('#equityMode button:focus-visible')));
   button.remove();
   const card = markup.createElement('div');
   card.className = 'equity-player-card';

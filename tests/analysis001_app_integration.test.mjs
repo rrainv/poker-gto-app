@@ -69,26 +69,30 @@ test('Playbook replaces the legacy HTML teacher with current contracts and trust
   } finally {
     spy.restore();
   }
-  // In Hand mode the authority is the canonical hand.
+  // In Hand mode the authority is the canonical hand. (Hand exposes no
+  // Analysis toggle; the panel's open state carries over from Analyze.)
+  await closeAnalysis();
   await app.startHand(['As', 'Kd']);
-  await openAnalysis();
   const hand = app.spy(['rangeAnalysisFactsForDecision']);
   try {
     app.call('renderPlaybookDecisionAnalysis', app.window.app.decisionContext, app.window.app.strategyResult, app.window.app.playbookResolution);
-    if (hand.count('rangeAnalysisFactsForDecision')) assert.equal(hand.calls.rangeAnalysisFactsForDecision.at(-1)[1], 'hand');
+    assert.ok(hand.count('rangeAnalysisFactsForDecision') >= 1, 'Hand analysis derives range facts');
+    assert.equal(hand.calls.rangeAnalysisFactsForDecision.at(-1)[1], 'hand');
   } finally {
     hand.restore();
   }
   assert.equal(app.evaluate('typeof generateTeacherText'), 'undefined');
-  await closeAnalysis();
   assert.doesNotMatch(teacher, /Math\.random|\bGTO\b|\bCFR\b|equilibrium|solver says/i);
 });
 
 test('Playbook unavailable states replace stale analysis', async () => {
   // A finished hand has no decision: stale analysis is cleared and the
   // reason rendered, without resolving a strategy.
-  await app.startHand(['As', 'Kd']);
+  // The Analysis panel is opened where its toggle is shown (Analyze); its
+  // open state carries into Hand.
+  await app.navigate('analyze');
   await openAnalysis();
+  await app.startHand(['As', 'Kd']);
   const spy = app.spy(['renderUnavailableStrategy', 'analysisUnavailableReasonForResolution', 'renderDecisionAnalysis']);
   try {
     await app.handAction('fold');
@@ -103,6 +107,7 @@ test('Playbook unavailable states replace stale analysis', async () => {
   } finally {
     spy.restore();
   }
+  await app.navigate('analyze');
   await closeAnalysis();
   for (const [reason, expected] of [
     ['canonical_hero_cards_unknown', 'missing_hero_cards'], ['canonical_hero_not_actor', 'hero_not_actor'],

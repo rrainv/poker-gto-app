@@ -102,8 +102,9 @@ test('clicks only reach shown, non-inert controls outside modals; disabled contr
   assert.equal(css.cascaded(host.querySelector('.equity-player-outs'), 'display'), 'none');
   const clicks = [];
   for (const button of host.querySelectorAll('button')) button.addEventListener('click', () => clicks.push(button.id));
-  await assert.rejects(app.click('#hClickHidden'), /not clickable \(not shown\)/);
-  await assert.rejects(app.click('#hClickCssHidden'), /not clickable \(not shown\)/);
+  await assert.rejects(app.click('#hClickHidden'), /not clickable \(not shown: itself has the hidden attribute\)/);
+  // The message names the hiding ancestor and the winning rule.
+  await assert.rejects(app.click('#hClickCssHidden'), /not clickable \(not shown: <div\.equity-player-outs> is display:none by "\.equity-player-outs"\)/);
   await assert.rejects(app.click('#hClickInert'), /not clickable \(inert\)/);
   await app.click('#hClickFieldset');
   await app.click('#hClickLegend');
