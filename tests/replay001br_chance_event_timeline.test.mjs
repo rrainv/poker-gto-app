@@ -263,11 +263,7 @@ test('renderer consumes projected event facts without reconstructing transitions
     cardVisibility: 'public_board', cards: [{ rank: 'T', suit: 's' }, { rank: '7', suit: 'h' }, { rank: '2', suit: 'd' }],
   };
   // Reads made by page code are limited to the projected event's own facts.
-  const reads = new Set();
-  const tracked = new Proxy(event, { get(target, key, receiver) {
-    if ((new Error().stack.split('\n')[2] || '').includes('core/logic.js')) reads.add(key);
-    return Reflect.get(target, key, receiver);
-  } });
+  const { proxy: tracked, reads } = page.trackReads(event);
   const document = page.document;
   const queries = { count: 0 };
   const originals = [document.querySelector, document.querySelectorAll];

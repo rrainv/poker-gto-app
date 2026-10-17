@@ -293,11 +293,13 @@ test('theme Settings copy is localized for EN RU HE and remains RTL-neutral', ()
   assert.match(translations, /Тема рабочей среды/);
   assert.match(translations, /ערכת נושא לסביבת העבודה/);
   assert.match(bootstrap, /riverline:languagechange/);
-  // SOURCE-SHAPE: the theme Settings section uses logical properties only — a
-  // policy lint over that section as authored (parsed, not regex-matched).
-  const raw = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
-  const themeCss = new StyleSheetModel(raw.slice(raw.indexOf('.theme-swatch-grid'), raw.indexOf('/* Tooltips, toasts')));
-  for (const rule of themeCss.rules) {
+  // Authoring policy (no rendered observable: mirrored layout cannot be
+  // measured without a layout engine): every rule styling the theme Settings
+  // controls uses logical properties only. Rules are selected from the parsed
+  // stylesheet by the theme controls' classes, not by a text slice.
+  const themeRules = appStyleSheet().rules.filter((rule) => rule.selectors.some((selector) => /\.theme-|\.riverline-color-picker/.test(selector)));
+  assert.ok(themeRules.length > 20, 'the theme Settings rules are found');
+  for (const rule of themeRules) {
     for (const { property } of rule.declarations) {
       assert.doesNotMatch(property, /^(?:margin-left|margin-right|padding-left|padding-right|left|right|direction)$/, `${rule.selectorText} ${property}`);
     }

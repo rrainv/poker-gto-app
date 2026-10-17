@@ -98,7 +98,8 @@ test('Playbook unavailable states replace stale analysis', async () => {
     assert.equal(app.window.app.strategyResult, null);
     assert.ok(spy.calls.analysisUnavailableReasonForResolution.some(([resolution]) => resolution === app.window.app.playbookResolution));
     const unavailable = spy.calls.renderDecisionAnalysis.at(-1)?.[1];
-    if (unavailable) assert.equal(unavailable.unavailableReason, 'terminal_hand');
+    assert.ok(unavailable, 'the terminal hand renders the unavailable analysis');
+    assert.equal(unavailable.unavailableReason, 'terminal_hand');
   } finally {
     spy.restore();
   }

@@ -21,7 +21,17 @@ import {
   EQUITY_WORKER_MESSAGES,
   createEquityWorkerMessageHandler,
 } from '../app/src/application/equity-worker-runtime.mjs';
-import { installEquityModeBridge } from '../app/src/application/equity-mode-bootstrap.mjs';
+// equity-mode-bootstrap installs the page's Equity bridge when it is first
+// evaluated, so it is imported only after the app has booted (with a window).
+let bootedPage = null;
+async function bootedApp() {
+  if (!bootedPage) {
+    const helpers = await import('./helpers/app-under-test.mjs');
+    const probe = helpers.strategyProviderProbe();
+    bootedPage = { ...helpers, probe, app: await helpers.bootApp({ beforeScripts: probe.beforeScripts }) };
+  }
+  return bootedPage;
+}
 
 const DECK = Object.freeze(
   [...CARD_RANKS].flatMap((rank) => [...CARD_SUITS].map((suit) => `${rank}${suit}`)),
@@ -469,7 +479,9 @@ test('controller converts worker-boundary and in-process exceptions into structu
   assert.equal(inProcessFailure.error.code, EQUITY_ERROR_CODES.INTERNAL_ERROR);
 });
 
-test('browser bridge exposes canonical estimate, calculate, cancel, status, and worker state operations', () => {
+test('browser bridge exposes canonical estimate, calculate, cancel, status, and worker state operations', async () => {
+  await bootedApp();
+  const { installEquityModeBridge } = await import('../app/src/application/equity-mode-bootstrap.mjs');
   const calls = [];
   const controller = {
     estimate(request) { calls.push(['estimate', request]); return { ok: true, combinations: 1 }; },
@@ -497,9 +509,9 @@ test('Equity production path imports canonical semantics and contains no random 
   // TEST-HYGIENE-001: the page's Equity path runs in the booted app (bridge
   // calls spied, Math.random trapped) and markup/styles are parsed, instead
   // of regex-matching logic.js / index.html / styles.css.
-  const { appStyleSheet, bootApp, indexDocument, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
-  const probe = strategyProviderProbe();
-  const app = await bootApp({ beforeScripts: probe.beforeScripts });
+  const { appStyleSheet, indexDocument, probe, app } = await bootedApp();
+  // The page installed its own Equity bridge.
+  assert.equal(typeof app.window.RiverlineEquity?.calculate, 'function');
   await app.navigate('equity');
   const [hero] = app.evaluate('app.equity.players.map(({ id }) => id)');
   await app.pickCards(`[data-equity-edit-hand="${hero}"]`, ['As', 'Kd']);

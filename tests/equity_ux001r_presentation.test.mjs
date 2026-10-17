@@ -111,3 +111,20 @@ test('1080p result density reclaims vertical space without shrinking cards or ty
   assert.equal(compact('.equity-scenario-context', 'padding'), 'var(--space-3)');
   assert.equal(compact('.equity-result-summary > div', 'padding'), 'var(--space-3) var(--space-4)');
 });
+
+test('the 1080p compact result density applies to the rendered Equity results', {
+  todo: 'TEST-HYGIENE-001-F01: the EQUITY-UX-001R compact block targets .equity-results-panel / .equity-scenario, which nothing renders',
+}, async () => {
+  // The guarantee the sheet-level checks above cannot give: the compact rules
+  // reach the live Equity result DOM after a calculation.
+  const [hero] = app.evaluate('app.equity.players.map(({ id }) => id)');
+  await app.pickCards(`[data-equity-edit-hand="${hero}"]`, ['As', 'Kd']);
+  await app.click('#calculate');
+  await app.waitFor(() => app.window.app.equity.lifecycle === 'complete', 'the Equity calculation');
+  const compactRules = css.rules.filter((rule) => rule.conditions.some((entry) => (
+    entry.type === 'media' && entry.query.replace(/\s+/g, ' ') === COMPACT_QUERY)));
+  for (const rule of compactRules) {
+    assert.ok(rule.selectors.some((selector) => app.$(selector)), `${rule.selectorText} matches rendered Equity results`);
+  }
+  assert.ok(app.$('.equity-scenario .training-readonly-card'), 'Equity scenario cards are rendered');
+});

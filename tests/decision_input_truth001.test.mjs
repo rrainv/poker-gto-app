@@ -24,11 +24,6 @@ import {
 import { validatePlaybookScenarioReadiness } from
   '../app/src/application/playbook-scenario-readiness.mjs';
 import {
-  DECISION_FACING_KINDS,
-  describeDecisionFacing,
-  formatDecisionFacing,
-} from '../app/src/application/decision-facing-summary.mjs';
-import {
   REPLAY_FRAME_OPERATIONS,
   createReplayProjectionController,
 } from '../app/src/application/replay-projection-controller.mjs';
@@ -46,6 +41,13 @@ const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const markup = indexDocument();
 const probe = strategyProviderProbe();
 const app = await bootApp({ beforeScripts: probe.beforeScripts });
+// decision-facing-summary installs window.RiverlineDecisionFacing when first
+// evaluated, so it is imported only after the app has booted.
+const {
+  DECISION_FACING_KINDS,
+  describeDecisionFacing,
+  formatDecisionFacing,
+} = await import('../app/src/application/decision-facing-summary.mjs');
 const page = () => app.window.app;
 const REPLAY_CONTROLLER = read('../app/src/application/replay-projection-controller.mjs');
 const FACING_MODULE = read('../app/src/application/decision-facing-summary.mjs');
@@ -499,17 +501,21 @@ test('C: Review and Training facing copy are consumers of the canonical projecti
   // Review copy is the canonical facing projection of the recorded context;
   // page code never reads the raw facing/call fields itself.
   const context = heroContext(act(dealtTable([100, 100, 100, 100]), ACTION_TYPES.RAISE, 3));
-  const reads = new Set();
-  const tracked = new Proxy(context, { get(target, key, receiver) {
-    if ((new Error().stack.split('\n')[2] || '').includes('core/logic.js')) reads.add(key);
-    return Reflect.get(target, key, receiver);
-  } });
+  const { proxy: tracked, reads } = app.trackReads(context);
+  // Positive control: the same tracker does see the projection module read the
+  // raw facts, so an empty logic.js read set is not a vacuous pass.
+  const moduleReads = app.trackReads(context, 'src/application/decision-facing-summary.mjs');
+  const expected = app.call('decisionFacingCopy', moduleReads.proxy, context.heroPosition);
+  assert.ok(moduleReads.reads.has('facingSizeBb') && moduleReads.reads.has('callAmountBb'), [...moduleReads.reads].map(String).join());
   const spy = app.spy(['decisionFacingCopy']);
   try {
-    const copy = app.call('reviewContextCopy', { durable: { decisionContext: tracked }, actor: { playerId: context.heroPlayerId } });
-    assert.ok(spy.count('decisionFacingCopy') >= 1);
+    const copy = app.call('reviewContextCopy', { durable: { decisionContext: tracked, heroPosition: context.heroPosition } });
+    assert.equal(spy.count('decisionFacingCopy'), 1);
     assert.equal(spy.calls.decisionFacingCopy[0][0], tracked);
-    assert.ok(String(copy ?? '').length >= 0);
+    assert.equal(typeof copy, 'string');
+    assert.ok(copy.length > 0 && copy !== app.call('t', 'Unavailable'), copy);
+    assert.equal(copy, expected);
+    assert.ok(copy.includes(context.heroPosition), copy);
   } finally {
     spy.restore();
   }

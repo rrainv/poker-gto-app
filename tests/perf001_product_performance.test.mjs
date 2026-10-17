@@ -173,11 +173,10 @@ test('ordinary Playbook updates invalidate hidden work instead of rendering ever
     // Opening the Matrix renders the dirty surface once.
     spy.reset();
     const tab = app.$('.sub-tab[data-gto-view="chart"]');
-    if (tab) {
-      await app.click(tab);
-      assert.equal(spy.count('renderChart'), 1);
-      await app.click(app.$('.sub-tab[data-gto-view="context"]') || tab);
-    }
+    assert.ok(tab, 'the Matrix tab exists');
+    await app.click(tab);
+    assert.equal(spy.count('renderChart'), 1);
+    await app.click(app.$('.sub-tab[data-gto-view="context"]') || tab);
   } finally {
     spy.restore();
   }

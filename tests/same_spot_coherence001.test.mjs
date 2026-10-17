@@ -14,7 +14,7 @@ const markup = indexDocument();
 const probe = strategyProviderProbe();
 const app = await bootApp({ beforeScripts: probe.beforeScripts });
 const training = () => app.window.app.training;
-const pageFunctions = (names) => names.filter((name) => app.evaluate(`typeof ${name}`) === 'function');
+const serviceCalls = (spy, method) => spy.calls.callTrainingServiceBridge.filter(([name]) => name === method);
 
 /** Answer one Focused decision, return to idle, and return its Memory record. */
 async function historicalRecord() {
@@ -56,9 +56,9 @@ test('Same Spot presentation is read-only and never impersonates Focused Drill',
   assert.ok(markup.querySelector('[data-i18n="Back to Training"]'));
   assert.doesNotMatch(text(markup.body), /Return to session/);
   const record = await historicalRecord();
-  const spy = app.spy(pageFunctions([
-    'setTrainingSessionMode', 'startPracticeSession', 'startTemporaryTrainingMemoryReviewSession', 'renderCanonicalTrainingExercise',
-  ]));
+  const spy = app.spy([
+    'setTrainingSessionMode', 'callTrainingServiceBridge', 'startTemporaryTrainingMemoryReviewSession', 'renderCanonicalTrainingExercise',
+  ]);
   try {
     const resolves = await probe.count(async () => {
       await app.call('openTrainingMemorySameSpot', record.id);
@@ -66,7 +66,7 @@ test('Same Spot presentation is read-only and never impersonates Focused Drill',
     });
     assert.equal(resolves.length, 0, 'no strategy is resolved for a Same Spot');
     assert.equal(spy.count('setTrainingSessionMode'), 0);
-    if (spy.calls.startPracticeSession) assert.equal(spy.count('startPracticeSession'), 0);
+    assert.deepEqual(serviceCalls(spy, 'startPracticeSession'), [], 'no planner session starts');
     assert.equal(spy.count('startTemporaryTrainingMemoryReviewSession'), 1);
     assert.equal(spy.calls.startTemporaryTrainingMemoryReviewSession[0][0].mode, 'review');
     assert.equal(spy.calls.renderCanonicalTrainingExercise[0][1].attemptKind, 'redrill');
@@ -205,12 +205,12 @@ for (const mode of ['varied', 'focused', 'full_hand']) {
 
 test('Same Spot never changes or starts a planner mode', async () => {
   const record = await historicalRecord();
-  const spy = app.spy(pageFunctions(['trainingSessionIsActive', 'callTrainingMemoryBridge', 'setTrainingSessionMode', 'startPracticeSession']));
+  const spy = app.spy(['trainingSessionIsActive', 'callTrainingMemoryBridge', 'setTrainingSessionMode', 'callTrainingServiceBridge']);
   try {
     await app.call('openTrainingMemorySameSpot', record.id);
     await app.settle(500);
     assert.equal(spy.count('setTrainingSessionMode'), 0);
-    if (spy.calls.startPracticeSession) assert.equal(spy.count('startPracticeSession'), 0);
+    assert.deepEqual(serviceCalls(spy, 'startPracticeSession'), [], 'no planner session starts');
     // The session gate runs before the Memory handoff is created.
     const createIndex = spy.sequence.findIndex((name, index) => name === 'callTrainingMemoryBridge' && spy.calls.callTrainingMemoryBridge[spy.sequence.slice(0, index).filter((entry) => entry === 'callTrainingMemoryBridge').length][0] === 'createSameSpot');
     assert.ok(spy.sequence.indexOf('trainingSessionIsActive') >= 0 && spy.sequence.indexOf('trainingSessionIsActive') < createIndex);

@@ -473,7 +473,8 @@ test('Hand presentation is one-way, disables scenario facts, and guards direct c
   // Scenario facts are disabled while the canonical Hand owns them.
   for (const id of page.evaluate('PLAYBOOK_SCENARIO_CONTROL_IDS')) {
     const control = page.byId(id);
-    if (control) assert.equal(control.disabled, true, id);
+    assert.ok(control, id);
+    assert.equal(control.disabled, true, id);
   }
   for (const slot of page.$$('[data-playbook-canonical-display]')) assert.equal(slot.disabled, true);
   // Direct edits of decision cards are refused in Hand mode.

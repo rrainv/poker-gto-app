@@ -78,7 +78,8 @@ test('orientation has no false selected workspace and dismissal restores sensibl
   }
   // The workspace canvas is not display:none'd behind the orientation.
   const canvas = app.$('.workspace-canvas');
-  if (canvas) assert.notEqual(css.cascaded(canvas, 'display'), 'none');
+  assert.ok(canvas, 'the workspace canvas exists');
+  assert.notEqual(css.cascaded(canvas, 'display'), 'none');
 
   const state = { decisionContext: app.window.app.decisionContext, strategyResult: app.window.app.strategyResult };
   const spy = app.spy(['requestPlaybookMode', 'calculateEquity', 'refreshHomeWorkspace']);

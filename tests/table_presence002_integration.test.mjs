@@ -162,10 +162,9 @@ test('theme, card, density, layout, RTL, and reduced-motion authorities remain c
   assert.equal(css.cascaded(table, 'direction'), 'ltr');
   root.setAttribute('dir', 'ltr');
   const unit = app.$('#visual-table-container .table-player-unit');
-  if (unit) {
-    const motion = css.cascaded(unit, 'transition', { reducedMotion: true }) ?? css.cascaded(unit, 'animation', { reducedMotion: true });
-    assert.match(motion || 'none', /none/);
-  }
+  assert.ok(unit, 'the table renders player units');
+  const motion = css.cascaded(unit, 'transition', { reducedMotion: true }) ?? css.cascaded(unit, 'animation', { reducedMotion: true });
+  assert.match(motion || 'none', /none/);
   const wrapper = app.byId('table-wrapper');
   assert.ok(wrapper.dataset.tableProjection);
   assert.equal(css.cascaded(wrapper, 'max-height'), 'none');

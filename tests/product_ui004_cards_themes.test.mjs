@@ -40,6 +40,8 @@ test('curated card faces, backs, and rank notation are independent presentation 
   for (const id of ['cardFaceStyleControl', 'cardBackStyleControl', 'cardRankStyleControl', 'fourColorDeckToggle']) {
     assert.ok(markup.getElementById(id), id);
   }
+  // Equity renders the unknown villain's hand as DOM card backs.
+  await app.navigate('equity');
   await app.click('#openSettings');
   const face = renderedFace('As');
   for (const style of Object.keys(CARD_FACE_STYLES)) {
@@ -53,12 +55,11 @@ test('curated card faces, backs, and rank notation are independent presentation 
   for (const style of Object.keys(CARD_BACK_STYLES)) {
     await app.click(`button[data-card-back-style="${style}"]`);
     assert.equal(root.dataset.cardBackStyle, style);
-    const back = app.$('#equityPlayers .poker-card-back') || app.$('.riverline-card-back:not([data-card-preview-back-style])');
-    if (back) {
-      const styled = css.matchingRules(back).some((rule) => rule.selectorText.includes(`data-card-back-style="${style}"`))
-        || css.matchingRules(back, { pseudoElement: 'after' }).some((rule) => rule.selectorText.includes(`data-card-back-style="${style}"`));
-      assert.ok(styled, `${style} backs are styled`);
-    }
+    const back = app.$('#equityPlayers .poker-card-back');
+    assert.ok(back, 'a card back is rendered');
+    const styled = css.matchingRules(back).some((rule) => rule.selectorText.includes(`data-card-back-style="${style}"`))
+      || css.matchingRules(back, { pseudoElement: 'after' }).some((rule) => rule.selectorText.includes(`data-card-back-style="${style}"`));
+    assert.ok(styled, `${style} backs are styled`);
   }
   face.remove();
   app.byId('settingsModal')?.classList.remove('show');

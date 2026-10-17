@@ -60,13 +60,25 @@ test('2, 6, and 10 players use one genuine two-column gallery with bounded verti
   assert.equal(equity().players.length, 10);
   app.call('setEquityPlayerCount', 1);
   assert.equal(equity().players.length, 2);
-  // Superseded: the 2-up, 654px vertically scrolling list became an auto-fit
-  // gallery; it still never scrolls horizontally, at any width.
+  // Superseded (design-system foundation 71b7ccb, after EQUITY-COMPOSITION-001R):
+  // the 2-up, 654px vertically scrolling list became an auto-fit gallery that
+  // grows with its tiles (the page scrolls; the old 654px rule is outranked by
+  // `#equityMode .equity-player-list`). Asserted explicitly so a change of the
+  // vertical-overflow model is noticed; owner confirmation is tracked in the
+  // register (TEST-HYGIENE-001-F11). It never scrolls horizontally.
   const list = app.$('.equity-player-list');
-  for (const width of [1920, 1440, 600]) {
-    assert.equal(css.cascaded(list, 'grid-template-columns', { width }), 'repeat(auto-fit, minmax(190px, 240px))', width);
-    assert.doesNotMatch(css.cascaded(list, 'overflow-x', { width }) || 'visible', /auto|scroll/, width);
+  for (const count of [2, 6, 10]) {
+    await setPlayerCount(count);
+    for (const width of [1920, 1440, 1366, 600]) {
+      const columns = css.cascaded(list, 'grid-template-columns', { width });
+      assert.match(columns, /^repeat\((?:auto-fit|\d+),/, `${count} players at ${width}`);
+      assert.equal(css.cascaded(list, 'max-block-size', { width }), 'none', `${count} players at ${width}`);
+      assert.equal(css.cascaded(list, 'overflow-y', { width }), 'visible', `${count} players at ${width}`);
+      assert.equal(css.cascaded(list, 'overflow-x', { width }), 'visible', `${count} players at ${width}`);
+    }
   }
+  await setPlayerCount(2);
+  assert.equal(css.cascaded(list, 'grid-template-columns'), 'repeat(auto-fit, minmax(190px, 240px))');
 });
 
 test('player tiles retain fixed geometry and one result footer through setup, running, completed, and stale states', async () => {
@@ -74,10 +86,15 @@ test('player tiles retain fixed geometry and one result footer through setup, ru
   // and footer tracks (28px head, 152px body, >=56px footer).
   const card = app.$('.equity-player-card');
   assert.match(css.cascaded(card, 'grid-template-rows'), /^28px 152px\b/);
-  // Superseded: a later Equity pass deliberately gives each tile a thin
-  // series-coloured top rule; the inline-start edge stays neutral.
+  // Superseded (71b7ccb): the original invariant forbade a series-coloured
+  // tile edge; the design-system pass gives each tile a thin series-coloured
+  // top rule (the old regex missed it because of the var() fallback form).
+  // The inline edges stay neutral. Owner confirmation: TEST-HYGIENE-001-F11.
   assert.equal(css.cascaded(card, 'border-block-start'), '2px solid var(--series-color, var(--accent-primary))');
-  assert.doesNotMatch(css.cascaded(card, 'border-inline-start') || '', /--series-color/);
+  assert.equal(css.cascaded(card, 'border-top'), css.cascaded(card, 'border-block-start'), 'the logical top edge is the physical top');
+  for (const edge of ['border-inline-start', 'border-inline-end', 'border-left', 'border-right', 'border-bottom']) {
+    assert.doesNotMatch(css.cascaded(card, edge) || '', /--series-color/, edge);
+  }
   assert.ok(card.querySelector('.equity-player-identity > i.series-marker'));
   // One footer per tile; setup state first.
   for (const tile of app.$$('#equityPlayers .equity-player-card')) assert.equal(tile.querySelectorAll('.equity-player-footer').length, 1);

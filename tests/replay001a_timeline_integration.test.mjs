@@ -146,11 +146,10 @@ test('street headings, ordered entries, Hero, amount, all-in, and current semant
   assert.ok(allIn.querySelector('.replay-all-in-status'));
   assert.ok(allIn.querySelector('.replay-action-amount'), 'amounted actions show their amount');
   const marker = root.querySelector('.replay-current-marker');
-  if (marker) {
-    assert.equal(marker.getAttribute('aria-current'), 'true');
-    assert.equal(marker.getAttribute('role'), 'status');
-    assert.equal(marker.getAttribute('aria-live'), 'polite');
-  }
+  assert.ok(marker, 'the current replay position is marked');
+  assert.equal(marker.getAttribute('aria-current'), 'true');
+  assert.equal(marker.getAttribute('role'), 'status');
+  assert.equal(marker.getAttribute('aria-live'), 'polite');
 });
 
 test('action families use semantic accents while text stays high contrast', () => {

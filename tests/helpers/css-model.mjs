@@ -344,6 +344,7 @@ export class StyleSheetModel {
   cascaded(element, property, options = {}) {
     const env = this.environment(options.environment || options);
     const context = { states: options.states ? new Set(options.states) : undefined, stateElement: options.stateElement, allowPseudoElements: Boolean(options.pseudoElement) };
+    const dir = directionOf(element);
     let best = null;
     const consider = (declaration, rank) => {
       if (!best) { best = { declaration, rank }; return; }
@@ -363,7 +364,7 @@ export class StyleSheetModel {
     }
     for (const [rule, ruleSpecificity] of matched) {
       for (const declaration of rule.declarations) {
-        if (propertyMatches(declaration.property, property)) consider(declaration, [...ruleSpecificity, rule.order]);
+        if (propertyMatches(declaration.property, property, dir)) consider(declaration, [...ruleSpecificity, rule.order]);
       }
     }
     const inline = !options.pseudoElement && element.style?.getPropertyValue?.(property);
@@ -371,7 +372,7 @@ export class StyleSheetModel {
       return inline;
     }
     if (best) {
-      const value = expandShorthand(best.declaration, property);
+      const value = expandShorthand(best.declaration, property, dir);
       if (value === 'inherit' && element.parentElement) return this.cascaded(element.parentElement, property, { ...options, pseudoElement: null });
       return value;
     }
@@ -407,13 +408,17 @@ export class StyleSheetModel {
       buckets.get(bucket).push(entry);
     };
     for (const rule of this.rules) {
-      if (property !== null && !rule.declarations.some((declaration) => propertyMatches(declaration.property, property))) continue;
+      // Either direction: the index is shared by LTR and RTL elements.
+      if (property !== null && !rule.declarations.some((declaration) => propertyMatches(declaration.property, property, 'ltr')
+        || propertyMatches(declaration.property, property, 'rtl'))) continue;
       for (const selector of rule.selectors) {
         let complex;
         try {
           [complex] = parseSelector(selector);
-        } catch {
-          continue;
+        } catch (error) {
+          // A skipped rule could hide the real cascade winner: report it.
+          throw new SyntaxError(`css-model cannot evaluate selector "${selector}" (${error.message}); `
+            + 'extend tests/helpers/selector-engine.mjs instead of skipping the rule', { cause: error });
         }
         const compound = complex.parts.at(-1).compound;
         const entry = { rule, selector, complex, pseudoElement: compound.pseudoElement, specificity: specificity(selector) };
@@ -464,12 +469,14 @@ function compareRank(left, right) {
 }
 
 const SHORTHANDS = {
-  'border-inline-start': ['border-inline'],
-  'border-inline-end': ['border-inline'],
-  'border-top': ['border'],
-  'border-bottom': ['border'],
-  'border-left': ['border'],
-  'border-right': ['border'],
+  'border-inline-start': ['border-inline', 'border'],
+  'border-inline-end': ['border-inline', 'border'],
+  'border-block-start': ['border-block', 'border'],
+  'border-block-end': ['border-block', 'border'],
+  'border-top': ['border', 'border-block'],
+  'border-bottom': ['border', 'border-block'],
+  'border-left': ['border', 'border-inline'],
+  'border-right': ['border', 'border-inline'],
   'padding-top': ['padding'], 'padding-bottom': ['padding'], 'padding-left': ['padding'], 'padding-right': ['padding'],
   'padding-inline-start': ['padding-inline', 'padding'], 'padding-inline-end': ['padding-inline', 'padding'],
   'padding-block-start': ['padding-block', 'padding'], 'padding-block-end': ['padding-block', 'padding'],
@@ -508,16 +515,47 @@ const ALIASES = {
   'max-width': 'max-inline-size', 'max-inline-size': 'max-width',
   'min-height': 'min-block-size', 'min-block-size': 'min-height',
   'max-height': 'max-block-size', 'max-block-size': 'max-height',
-  'padding-top': 'padding-block-start', 'padding-block-start': 'padding-top',
-  'padding-bottom': 'padding-block-end', 'padding-block-end': 'padding-bottom',
-  'margin-top': 'margin-block-start', 'margin-block-start': 'margin-top',
-  'margin-bottom': 'margin-block-end', 'margin-block-end': 'margin-bottom',
 };
 
-function propertyMatches(declared, wanted) {
-  if (declared === wanted || (SHORTHANDS[wanted] || []).includes(declared)) return true;
-  const alias = ALIASES[wanted];
-  return Boolean(alias && (declared === alias || (SHORTHANDS[alias] || []).includes(declared)));
+// Logical sides map to physical ones by direction (horizontal-tb writing mode):
+// block-start/end are top/bottom; inline-start/end are left/right in LTR and
+// right/left in RTL.
+const LOGICAL_SIDES = {
+  ltr: { 'block-start': 'top', 'block-end': 'bottom', 'inline-start': 'left', 'inline-end': 'right' },
+  rtl: { 'block-start': 'top', 'block-end': 'bottom', 'inline-start': 'right', 'inline-end': 'left' },
+};
+const SIDED = '(padding|margin|border|scroll-margin|scroll-padding)';
+
+/** Properties that share a value with `name` for an element in direction `dir`. */
+function equivalentProperties(name, dir = 'ltr') {
+  const sides = LOGICAL_SIDES[dir] || LOGICAL_SIDES.ltr;
+  const out = [];
+  if (ALIASES[name]) out.push(ALIASES[name]);
+  let match = name.match(new RegExp(`^${SIDED}-((?:block|inline)-(?:start|end))(-.+)?$`));
+  if (match) out.push(`${match[1]}-${sides[match[2]]}${match[3] || ''}`);
+  match = name.match(/^inset-((?:block|inline)-(?:start|end))$/);
+  if (match) out.push(sides[match[1]]);
+  match = name.match(new RegExp(`^${SIDED}-(top|bottom|left|right)(-.+)?$`));
+  const logicalOf = (side) => Object.keys(sides).find((key) => sides[key] === side);
+  if (match) out.push(`${match[1]}-${logicalOf(match[2])}${match[3] || ''}`);
+  if (/^(top|bottom|left|right)$/.test(name)) out.push(`inset-${logicalOf(name)}`);
+  return out;
+}
+
+function propertyMatches(declared, wanted, dir = 'ltr') {
+  for (const name of [wanted, ...equivalentProperties(wanted, dir)]) {
+    if (declared === name || (SHORTHANDS[name] || []).includes(declared)) return true;
+  }
+  return false;
+}
+
+/** Direction of an element from the nearest `dir` attribute (default LTR). */
+function directionOf(element) {
+  for (let current = element; current?.nodeType === 1; current = current.parentNode) {
+    const dir = current.getAttribute?.('dir');
+    if (dir === 'rtl' || dir === 'ltr') return dir;
+  }
+  return 'ltr';
 }
 
 function splitValue(value) {
@@ -544,22 +582,29 @@ function boxSide(parts, side) {
 }
 
 /** Extract the longhand value from a shorthand declaration when needed. */
-function expandShorthand(declaration, wanted) {
+function expandShorthand(declaration, wanted, dir = 'ltr') {
   if (declaration.property === wanted) return declaration.value;
+  // A logical/physical equivalent declares the same longhand.
+  if (equivalentProperties(wanted, dir).includes(declaration.property)) return declaration.value;
   const { property, value } = declaration;
   const parts = splitValue(value);
-  const sideOf = (name) => name.match(/-(top|bottom|left|right)$/)?.[1];
+  const sides = LOGICAL_SIDES[dir] || LOGICAL_SIDES.ltr;
+  // The physical side a longhand addresses (top/right/bottom/left), if any.
+  const physicalSide = (name) => {
+    const physical = name.match(/(?:^|-)(top|bottom|left|right)(?:-(?:color|style|width))?$/)?.[1];
+    if (physical) return physical;
+    const logical = name.match(/((?:block|inline)-(?:start|end))(?:-(?:color|style|width))?$/)?.[1];
+    return logical ? sides[logical] : null;
+  };
   if (property === 'padding' || property === 'margin' || property === 'inset') {
-    const physical = sideOf(wanted) || wanted;
-    if (['top', 'right', 'bottom', 'left'].includes(physical)) return boxSide(parts, physical);
-    if (/inline-start$/.test(wanted)) return boxSide(parts, 'left');
-    if (/inline-end$/.test(wanted)) return boxSide(parts, 'right');
-    if (/block-start$/.test(wanted)) return boxSide(parts, 'top');
-    if (/block-end$/.test(wanted)) return boxSide(parts, 'bottom');
+    const side = physicalSide(wanted);
+    if (side) return boxSide(parts, side);
   }
   if (/^(padding|margin|inset)-(inline|block)$/.test(property)) {
     const [start, end = start] = parts;
-    return /-start$/.test(wanted) ? start : end;
+    const side = physicalSide(wanted);
+    const logical = side ? Object.keys(sides).find((key) => sides[key] === side) : wanted;
+    return /-start$/.test(logical || wanted) ? start : end;
   }
   if (property === 'font' && ['font-weight', 'font-size', 'font-family', 'line-height', 'font-style'].includes(wanted)) {
     const isWeight = (token) => /^(\d{3}|bold|bolder|lighter|normal|var\(--weight[^)]*\))$/.test(token);

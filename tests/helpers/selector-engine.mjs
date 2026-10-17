@@ -233,6 +233,86 @@ function attributeMatches(element, { name, operator, value, insensitive }) {
 
 const FORM_CONTROLS = new Set(['button', 'input', 'select', 'textarea', 'optgroup', 'option', 'fieldset']);
 
+/**
+ * Whether a form control is disabled (HTML "actually disabled"): its own
+ * attribute, a disabled optgroup (options), or a disabled fieldset ancestor
+ * unless the control is inside that fieldset's first legend.
+ */
+export function isDisabledControl(element) {
+  if (!FORM_CONTROLS.has(element.localName)) return false;
+  if (element.hasAttribute('disabled')) return true;
+  if (element.localName === 'option') return element.parentNode?.localName === 'optgroup' && element.parentNode.hasAttribute('disabled');
+  if (element.localName === 'optgroup') return false;
+  for (let node = element.parentNode; node?.nodeType === 1; node = node.parentNode) {
+    if (node.localName !== 'fieldset' || !node.hasAttribute('disabled')) continue;
+    const legend = node.children.find((child) => child.localName === 'legend');
+    if (!legend || !legend.contains(element)) return true;
+  }
+  return false;
+}
+
+const UNVALIDATED_INPUT_TYPES = new Set(['hidden', 'button', 'reset', 'submit', 'image']);
+
+/** Whether a control is a candidate for constraint validation. */
+export function willValidate(element) {
+  if (!['input', 'select', 'textarea'].includes(element.localName)) return false;
+  if (element.localName === 'input' && UNVALIDATED_INPUT_TYPES.has(element.type)) return false;
+  if (isDisabledControl(element)) return false;
+  if (element.localName !== 'select' && element.hasAttribute('readonly')) return false;
+  return !element.closest('datalist');
+}
+
+/** The control's ValidityState (required, number range/step, pattern, email, custom). */
+export function validityOf(element) {
+  const state = {
+    valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false,
+    rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false,
+    customError: Boolean(element._validationMessage), valid: true,
+  };
+  if (!willValidate(element)) return state;
+  const type = element.localName === 'input' ? element.type : element.localName;
+  const value = String(element.value ?? '');
+  if (element.hasAttribute('required')) {
+    if (type === 'checkbox') state.valueMissing = !element.checked;
+    else if (type === 'radio') {
+      const scope = element.closest('form') || element.ownerDocument;
+      state.valueMissing = !scope.querySelectorAll('input[type="radio"]').some((peer) => peer.name === element.name && peer.checked);
+    } else state.valueMissing = value === '';
+  }
+  if (type === 'number' && value !== '') {
+    const number = Number(value);
+    if (!Number.isFinite(number)) state.badInput = true;
+    else {
+      const min = element.hasAttribute('min') ? Number(element.getAttribute('min')) : null;
+      const max = element.hasAttribute('max') ? Number(element.getAttribute('max')) : null;
+      if (Number.isFinite(min) && number < min) state.rangeUnderflow = true;
+      if (Number.isFinite(max) && number > max) state.rangeOverflow = true;
+      const step = element.getAttribute('step');
+      const size = step === null ? 1 : Number(step);
+      if (step !== 'any' && Number.isFinite(size) && size > 0) {
+        const steps = (number - (Number.isFinite(min) ? min : 0)) / size;
+        if (Math.abs(steps - Math.round(steps)) > 1e-9) state.stepMismatch = true;
+      }
+    }
+  }
+  if (type === 'email' && value !== '' && !/^[^\s@]+@[^\s@]+$/.test(value)) state.typeMismatch = true;
+  const pattern = element.getAttribute('pattern');
+  if (pattern !== null && value !== '' && ['text', 'search', 'url', 'tel', 'email', 'password'].includes(type)) {
+    let expression = null;
+    try { expression = new RegExp(`^(?:${pattern})$`, 'v'); } catch { expression = null; }
+    if (expression && !expression.test(value)) state.patternMismatch = true;
+  }
+  state.valid = !Object.entries(state).some(([key, flag]) => key !== 'valid' && flag);
+  return state;
+}
+
+function isInvalid(element) {
+  if (element.localName === 'form' || element.localName === 'fieldset') {
+    return element.querySelectorAll('input, select, textarea').some((control) => !validityOf(control).valid);
+  }
+  return willValidate(element) && !validityOf(element).valid;
+}
+
 function pseudoMatches(element, { name, argument }, context) {
   switch (name) {
     case 'not': return !matchesSelector(element, argument, context);
@@ -269,8 +349,8 @@ function pseudoMatches(element, { name, argument }, context) {
     }
     case 'empty': return element.childNodes.every((node) => node.nodeType === 8 || (node.nodeType === 3 && node.textContent === ''));
     case 'checked': return element.checked === true || (element.localName === 'option' && element.selected === true);
-    case 'disabled': return FORM_CONTROLS.has(element.localName) && element.disabled === true;
-    case 'enabled': return FORM_CONTROLS.has(element.localName) && element.disabled !== true;
+    case 'disabled': return isDisabledControl(element);
+    case 'enabled': return FORM_CONTROLS.has(element.localName) && !isDisabledControl(element);
     case 'focus': return element.ownerDocument?.activeElement === element;
     case 'focus-within': return Boolean(element.ownerDocument?.activeElement && element.contains(element.ownerDocument.activeElement));
     case 'focus-visible': return Boolean(context.states?.has('focus-visible') && element.ownerDocument?.activeElement === element);
@@ -286,9 +366,10 @@ function pseudoMatches(element, { name, argument }, context) {
     case 'placeholder-shown': return element.hasAttribute('placeholder') && !element.value;
     case 'required': return element.hasAttribute('required');
     case 'optional': return FORM_CONTROLS.has(element.localName) && !element.hasAttribute('required');
-    case 'invalid':
+    case 'invalid': return isInvalid(element);
+    case 'valid': return (willValidate(element) || ['form', 'fieldset'].includes(element.localName)) && !isInvalid(element);
+    // :user-invalid needs a user edit or submit attempt, which tests do not model.
     case 'user-invalid': return false;
-    case 'valid': return FORM_CONTROLS.has(element.localName);
     case 'read-only': return element.hasAttribute('readonly');
     case 'indeterminate': return element.indeterminate === true;
     case 'open': return element.hasAttribute('open');

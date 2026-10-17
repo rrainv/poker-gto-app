@@ -5,7 +5,7 @@
 // classList, style, events with capture/bubble, focus, form controls and
 // templates. It deliberately has no layout engine: geometry reads return zero.
 
-import { matchesSelector, parseSelector, matchesComplex } from './selector-engine.mjs';
+import { matchesSelector, parseSelector, matchesComplex, isDisabledControl, willValidate, validityOf } from './selector-engine.mjs';
 
 const VOID_ELEMENTS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
 const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
@@ -161,7 +161,14 @@ export class EventTarget {
     const inline = this[`on${event.type}`];
     if (phase !== 'capture' && typeof inline === 'function' && !Object.hasOwn(Object.getPrototypeOf(this), `on${event.type}`)) {
       event.currentTarget = this;
-      inline.call(this, event);
+      // Reported like listener errors (a browser reports both the same way).
+      try {
+        inline.call(this, event);
+      } catch (error) {
+        const reporter = globalThis.__miniDomErrors;
+        if (reporter) reporter.push(error);
+        else throw error;
+      }
     }
   }
   _eventParent() { return null; }
@@ -521,6 +528,32 @@ const BOOLEAN_REFLECTIONS = {
 };
 const ARIA_PROPERTIES = ['Label', 'Hidden', 'Expanded', 'Pressed', 'Selected', 'Checked', 'Current', 'Disabled', 'Live', 'Busy', 'Modal', 'Controls', 'Describedby', 'Labelledby', 'Valuenow', 'Valuemin', 'Valuemax', 'Valuetext', 'Orientation', 'Haspopup', 'Atomic', 'Sort', 'Level', 'Roledescription', 'Description', 'Invalid', 'Readonly', 'Required', 'Multiselectable', 'Placeholder', 'Keyshortcuts', 'Posinset', 'Setsize', 'Colcount', 'Rowcount', 'Colindex', 'Rowindex', 'Relevant'];
 
+// Interactive content: a click on it inside a label does not activate the label.
+function isInteractiveContent(element) {
+  return ['button', 'input', 'select', 'textarea', 'label', 'iframe', 'embed', 'object'].includes(element.localName)
+    || (element.localName === 'a' && element.hasAttribute('href'))
+    || (element.localName === 'summary' && element.parentNode?.localName === 'details');
+}
+
+/**
+ * Whether an element is rendered. In a booted page this asks the page's layout
+ * hook (hidden attribute, inline or stylesheet display:none) and, with
+ * ancestors, visibility:hidden; in a static document only the hidden attribute
+ * and inline display count. `ancestors: false` checks the element alone.
+ */
+export function isRendered(element, { ancestors = true } = {}) {
+  const view = element.ownerDocument?.defaultView;
+  if (typeof view?.__layoutRect === 'function' && element.isConnected) {
+    if (!ancestors) return view.__layoutRect.rendersSelf(element);
+    if (view.__layoutRect(element) === null) return false;
+    return view.getComputedStyle?.(element)?.visibility !== 'hidden';
+  }
+  for (let node = element; node?.nodeType === 1; node = ancestors ? node.parentNode : null) {
+    if (node.hidden || node.style?.getPropertyValue?.('display') === 'none') return false;
+  }
+  return true;
+}
+
 let uid = 0;
 const LOWER_NAMES = new Map();
 function lowerName(name) {
@@ -607,7 +640,7 @@ export class Element extends ParentMixin {
   set src(value) { this.setAttribute('src', value); }
   get value() {
     if (this.localName === 'select') {
-      const selected = this.options.find((option) => option.selected) || (this.multiple ? null : this.options.find((option) => !option.disabled));
+      const selected = this.options.find((option) => option.selected);
       return selected ? selected.value : '';
     }
     if (this.localName === 'option') return this.hasAttribute('value') ? this.getAttribute('value') : this.textContent.trim();
@@ -621,7 +654,11 @@ export class Element extends ParentMixin {
   }
   set value(next) {
     if (this.localName === 'select') {
-      for (const option of this.options) option._selected = option.value === String(next);
+      // As in browsers: the first option with that value is selected; an
+      // unknown value leaves no option selected (value '' / selectedIndex -1).
+      const match = this.options.find((option) => option.value === String(next)) ?? null;
+      for (const option of this.options) option._selected = option === match;
+      this._noSelection = !match;
       return;
     }
     if (this.localName === 'option') { this.setAttribute('value', next); return; }
@@ -648,22 +685,40 @@ export class Element extends ParentMixin {
       }
     }
   }
-  get selected() { return this._selected ?? this.hasAttribute('selected'); }
+  get selected() {
+    const select = this.localName === 'option' ? this.closest('select') : null;
+    if (select && !select.multiple) return select._selectedOption() === this;
+    return this._selected ?? this.hasAttribute('selected');
+  }
   set selected(next) {
     const select = this.closest('select');
     if (next && select && !select.multiple) for (const option of select.options) option._selected = false;
+    if (select) select._noSelection = false;
     this._selected = Boolean(next);
+  }
+  /**
+   * Single-select selectedness: an explicitly selected option, else the last
+   * `selected` attribute, else (unless a value matched nothing) the first
+   * non-disabled option, as browsers default it.
+   */
+  _selectedOption() {
+    const options = this.options;
+    const explicit = options.find((option) => option._selected === true);
+    if (explicit) return explicit;
+    if (this._noSelection) return null;
+    const attributed = options.filter((option) => option._selected === undefined && option.hasAttribute('selected')).at(-1);
+    return attributed ?? options.find((option) => !option.disabled) ?? null;
   }
   get options() { return this.localName === 'select' ? this.querySelectorAll('option') : undefined; }
   get selectedOptions() { return this.localName === 'select' ? this.options.filter((option) => option.selected) : undefined; }
   get selectedIndex() {
     if (this.localName !== 'select') return undefined;
-    const options = this.options;
-    const index = options.findIndex((option) => option.selected);
-    if (index >= 0) return index;
-    return this.multiple ? -1 : options.findIndex((option) => !option.disabled);
+    return this.options.findIndex((option) => option.selected);
   }
-  set selectedIndex(index) { this.options.forEach((option, position) => { option._selected = position === index; }); }
+  set selectedIndex(index) {
+    this.options.forEach((option, position) => { option._selected = position === index; });
+    this._noSelection = !this.options[index];
+  }
   get form() { return this.closest('form'); }
   get labels() { return this.id ? this.ownerDocument.querySelectorAll(`label[for="${this.id}"]`) : []; }
   get content() {
@@ -763,7 +818,8 @@ export class Element extends ParentMixin {
   get isContentEditable() { return this.getAttribute('contenteditable') === 'true' || this.getAttribute('contenteditable') === ''; }
   // Interaction ---------------------------------------------------------
   click() {
-    if (this.disabled && ['button', 'input', 'select', 'textarea'].includes(this.localName)) return;
+    // A disabled form control (own attribute or disabled fieldset) ignores click().
+    if (['button', 'input', 'select', 'textarea'].includes(this.localName) && isDisabledControl(this)) return;
     const toggles = this.localName === 'input' && ['checkbox', 'radio'].includes(this.type);
     const previous = this.checked;
     if (toggles) this.checked = this.type === 'radio' ? true : !previous;
@@ -779,10 +835,13 @@ export class Element extends ParentMixin {
       return;
     }
     if (!allowed) return;
-    if (this.localName === 'label') {
-      const control = this.getAttribute('for') ? this.ownerDocument.getElementById(this.getAttribute('for')) : this.querySelector('input, select, textarea, button');
-      if (control && control !== this) control.click();
-      return;
+    // Label activation: a click on a label, or on non-interactive content
+    // inside one, activates the labelled control.
+    const label = this.localName === 'label' ? this : (isInteractiveContent(this) ? null : this.closest('label'));
+    if (label) {
+      const control = label.getAttribute('for') ? label.ownerDocument.getElementById(label.getAttribute('for')) : label.querySelector('input, select, textarea, button');
+      if (control && control !== this && !control.contains(this)) control.click();
+      if (this.localName === 'label') return;
     }
     if (this.localName === 'summary' && this.parentNode?.localName === 'details') {
       this.parentNode.toggleAttribute('open');
@@ -796,6 +855,11 @@ export class Element extends ParentMixin {
   }
   requestSubmit(submitter = null) {
     const view = this.ownerDocument.defaultView;
+    // Interactive submission validates constraints first (unless novalidate).
+    if (!this.noValidate && !submitter?.hasAttribute?.('formnovalidate')) {
+      const invalid = this.querySelectorAll('input, select, textarea').filter((control) => !control.checkValidity());
+      if (invalid.length) return;
+    }
     this.dispatchEvent(new (view?.SubmitEvent || SubmitEvent)('submit', { bubbles: true, cancelable: true, submitter }));
   }
   submit() {}
@@ -807,9 +871,29 @@ export class Element extends ParentMixin {
     }
     this.dispatchEvent(new Event('reset', { bubbles: true }));
   }
+  /**
+   * Focusable area (as browsers): connected, rendered, not inert, not a
+   * disabled control, and focusable by element type or a tabindex attribute.
+   */
+  _isFocusable() {
+    if (!this.isConnected || this.closest('[inert]')) return false;
+    if (isDisabledControl(this)) return false;
+    const name = this.localName;
+    const focusableType = this.hasAttribute('tabindex')
+      || (['a', 'area'].includes(name) && this.hasAttribute('href'))
+      || ['button', 'select', 'textarea', 'iframe'].includes(name)
+      || (name === 'input' && this.type !== 'hidden')
+      || (name === 'summary' && this.parentNode?.localName === 'details' && this.parentNode.children.find((child) => child.localName === 'summary') === this)
+      || (['audio', 'video'].includes(name) && this.hasAttribute('controls'))
+      || this.isContentEditable;
+    if (!focusableType) return false;
+    return isRendered(this);
+  }
   focus(options = {}) {
     const document = this.ownerDocument;
     if (!this.isConnected || document.activeElement === this) return;
+    // Like browsers, focusing a non-focusable, hidden or disabled element does nothing.
+    if (this !== document.body && !this._isFocusable()) return;
     const previous = document.activeElement;
     if (previous && previous !== document.body) previous.blur({ relatedTarget: this });
     document._activeElement = this;
@@ -829,10 +913,22 @@ export class Element extends ParentMixin {
   select() {}
   setSelectionRange() {}
   setCustomValidity(message) { this._validationMessage = String(message); }
-  get validationMessage() { return this._validationMessage || ''; }
-  checkValidity() { return !this._validationMessage; }
+  get validationMessage() {
+    if (!willValidate(this)) return '';
+    if (this._validationMessage) return this._validationMessage;
+    return validityOf(this).valid ? '' : 'Constraints not satisfied';
+  }
+  get willValidate() { return willValidate(this); }
+  get validity() { return validityOf(this); }
+  checkValidity() {
+    if (this.localName === 'form' || this.localName === 'fieldset') {
+      return this.querySelectorAll('input, select, textarea').map((control) => control.checkValidity()).every(Boolean);
+    }
+    if (validityOf(this).valid) return true;
+    this.dispatchEvent(new Event('invalid', { cancelable: true }));
+    return false;
+  }
   reportValidity() { return this.checkValidity(); }
-  get validity() { return { valid: !this._validationMessage, customError: Boolean(this._validationMessage) }; }
   showModal() { this.setAttribute('open', ''); this._modal = true; }
   show() { this.setAttribute('open', ''); this._modal = false; }
   close(returnValue) {
@@ -1124,6 +1220,8 @@ export function visibleText(element) {
   if (element.nodeType === 3) return element.data;
   if (element.nodeType !== 1 && element.nodeType !== 11) return '';
   if (element.nodeType === 1 && (element.hidden || ['script', 'style', 'template'].includes(element.localName))) return '';
+  // Subtrees hidden by inline style or (in a booted page) the stylesheet are not visible.
+  if (element.nodeType === 1 && !isRendered(element, { ancestors: false })) return '';
   return element.childNodes.map(visibleText).join('');
 }
 

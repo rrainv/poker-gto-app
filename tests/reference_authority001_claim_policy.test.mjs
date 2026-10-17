@@ -539,15 +539,13 @@ test('Analysis, Training, and Matrix consume structured policy without adding au
   // strategy's actions, recommendation or probabilities.
   await app.training.start('focused');
   const exercise = app.window.app.training.currentExercise;
-  const read = new Set();
   // Only reads made directly by page code count; the claim-policy module may
   // inspect actions to derive capabilities.
-  const tracked = new Proxy(exercise.strategyResult, { get(target, key, receiver) {
-    const caller = new Error().stack.split('\n')[2] || '';
-    if (caller.includes('core/logic.js')) read.add(key);
-    return Reflect.get(target, key, receiver);
-  } });
+  const { proxy: tracked, reads: read } = app.trackReads(exercise.strategyResult);
   app.call('renderTrainingSource', { ...exercise, strategyResult: tracked });
+  // Positive control: page code does read the source facts it labels, so an
+  // empty read set cannot pass vacuously.
+  assert.ok(read.size > 0, 'renderTrainingSource reads some strategy facts directly');
   for (const key of ['actions', 'recommendation', 'probability']) assert.equal(read.has(key), false, `${key}: ${[...read].map(String)}`);
   // Answering renders the decision analysis for that exercise.
   const answerSpy = app.spy(['renderTrainingDecisionAnalysis']);

@@ -9,12 +9,22 @@
 
 import fs from 'node:fs';
 import vm from 'node:vm';
-import { pathToFileURL } from 'node:url';
+import { after } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import * as dom from './mini-dom.mjs';
 import { appStyleSheet } from './css-model.mjs';
 import { createFakeIndexedDB, IDBKeyRange } from './fake-indexeddb.mjs';
 
 const APP_ROOT = new URL('../../app/', import.meta.url);
+// Platform path of app/ with forward slashes: stack frames show either a file
+// URL (modules) or a platform path (classic scripts); both contain this once
+// backslashes are normalized.
+const APP_ROOT_PATH = fileURLToPath(APP_ROOT).replace(/\\/g, '/');
+
+/** Whether a stack frame line belongs to the given app file (e.g. 'src/core/logic.js'), on any platform. */
+export function frameIsAppFile(frame, appRelativePath) {
+  return String(frame || '').replace(/\\/g, '/').includes(`${APP_ROOT_PATH}${appRelativePath}`);
+}
 
 /* ----------------------------------------------------------- fake timers */
 
@@ -239,25 +249,28 @@ function installGlobals(target, { document, clock, storage, sessionStorage, envi
  * (self or ancestors). Sizes are nominal. Results are memoized per DOM version.
  */
 function layoutRect(document, environment) {
+  const selfCache = new WeakMap();
   const cache = new WeakMap();
+  // The element itself generates a box (ignoring ancestors).
+  const rendersSelf = (element) => {
+    if (!element || element.nodeType !== 1) return true;
+    const memo = selfCache.get(element);
+    if (memo && memo.version === document._version) return memo.value;
+    let value = !element.hasAttribute('hidden') && element.style.getPropertyValue('display') !== 'none';
+    if (value) value = appStyleSheet().cascaded(element, 'display', { environment: environment.media }) !== 'none';
+    selfCache.set(element, { version: document._version, value });
+    return value;
+  };
   const rendered = (element) => {
     if (!element || element.nodeType !== 1) return true;
     if (element === document.documentElement) return true;
     const memo = cache.get(element);
     if (memo && memo.version === document._version) return memo.value;
-    let value = element.isConnected && !element.hasAttribute('hidden') && element.style.getPropertyValue('display') !== 'none';
-    if (value) {
-      try {
-        value = appStyleSheet().cascaded(element, 'display', { environment: environment.media }) !== 'none';
-      } catch {
-        value = true;
-      }
-    }
-    if (value) value = rendered(element.parentNode);
+    const value = element.isConnected && rendersSelf(element) && rendered(element.parentNode);
     cache.set(element, { version: document._version, value });
     return value;
   };
-  return (element) => (rendered(element) ? { x: 0, y: 0, width: 120, height: 24 } : null);
+  return Object.assign((element) => (rendered(element) ? { x: 0, y: 0, width: 120, height: 24 } : null), { rendersSelf });
 }
 
 function canvasContext() {
@@ -315,6 +328,15 @@ let booted = null;
  *  - skipScripts: script srcs not to run
  *  - beforeScripts(window): hook to install fakes before scripts run
  *  - init: run DOMContentLoaded + the app's deferred init (default true)
+ *  - allowBootErrors: collect listener errors raised while booting in
+ *    `bootErrors` instead of failing the boot (for tests that assert on them)
+ *
+ * Errors thrown by page event listeners (which the mini DOM catches, as a
+ * browser reports them without stopping dispatch) fail the test: every
+ * harness interaction (click, setValue, key, dispatch, settle, flush,
+ * advance, waitFor) throws if new errors were raised, and a final check runs
+ * when the test file ends. A test that expects errors wraps the interaction in
+ * `app.expectErrors(async () => ...)`, which returns them.
  */
 export async function bootApp(options = {}) {
   if (booted) {
@@ -388,7 +410,7 @@ export async function bootApp(options = {}) {
     const code = fs.readFileSync(file, 'utf8');
     // Classic scripts' dynamic import() resolves through Node's default loader
     // (the same module instances the page's module scripts use).
-    vm.runInThisContext(code, { filename: file.pathname, importModuleDynamically: vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER });
+    vm.runInThisContext(code, { filename: fileURLToPath(file), importModuleDynamically: vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER });
   };
   for (const script of immediate) if (!skip.has(script.src)) runClassic(script.src);
   for (const script of deferred) {
@@ -397,7 +419,7 @@ export async function bootApp(options = {}) {
     // must not import a self-installing bootstrap before bootApp() (it would
     // have run without a window); import it after booting instead.
     try {
-      if (script.module) await import(pathToFileURL(new URL(script.src, APP_ROOT).pathname).href);
+      if (script.module) await import(new URL(script.src, APP_ROOT).href);
       else runClassic(script.src);
     } catch (error) {
       error.message = `${error.message}\n[bootApp] while loading ${script.src}. If a bridge is missing, the test file`
@@ -407,17 +429,35 @@ export async function bootApp(options = {}) {
   }
   document.readyState = 'interactive';
   const harness = createHarness({ document, clock, errors, consoleErrors, storage, environment, realDate });
-  if (options.init !== false) {
-    document.dispatchEvent(new dom.Event('DOMContentLoaded', { bubbles: true }));
-    document.readyState = 'complete';
-    globalThis.dispatchEvent(new dom.Event('load'));
-    await harness.settle();
+  const boot = async () => {
+    if (options.init !== false) {
+      document.dispatchEvent(new dom.Event('DOMContentLoaded', { bubbles: true }));
+      document.readyState = 'complete';
+      globalThis.dispatchEvent(new dom.Event('load'));
+      await harness.settle();
+    }
+  };
+  if (options.allowBootErrors) {
+    harness.bootErrors = await harness.expectErrors(boot);
+  } else {
+    await boot();
+    harness.checkErrors('while booting');
   }
+  // Last line of defence for errors raised outside harness interactions
+  // (e.g. timers advanced by the test's own code).
+  after(() => harness.checkErrors('by the end of the test file'));
   booted = harness;
   return harness;
 }
 
+function describe(element) {
+  const id = element.id ? `#${element.id}` : '';
+  const classes = [...(element.classList || [])].slice(0, 2).map((name) => `.${name}`).join('');
+  return `<${element.localName}${id}${classes}>`;
+}
+
 function createHarness({ document, clock, errors, consoleErrors, storage, environment }) {
+  let expecting = 0;
   const harness = {
     window: globalThis,
     document,
@@ -431,6 +471,27 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
     byId: (id) => document.getElementById(id),
     /** Evaluate an expression in the page's global scope (sees logic.js consts). */
     evaluate: (expression) => vm.runInThisContext(expression),
+    /**
+     * Throw if page listeners raised errors that no `expectErrors` consumed.
+     * The errors are cleared so one failure does not cascade into later tests.
+     */
+    checkErrors(context = 'during the last interaction') {
+      if (expecting || !errors.length) return;
+      const raised = errors.splice(0);
+      throw new Error(`page listener raised ${raised.length} uncaught error(s) ${context}:\n`
+        + raised.map((error) => `  ${error?.stack || error}`).join('\n'), { cause: raised[0] });
+    },
+    /** Run `fn` allowing page listener errors; returns the errors it raised. */
+    async expectErrors(fn) {
+      const before = errors.length;
+      expecting += 1;
+      try {
+        await fn();
+      } finally {
+        expecting -= 1;
+      }
+      return errors.splice(before);
+    },
     /** Call a page-global function (e.g. a logic.js function declaration). */
     call: (name, ...args) => {
       const fn = vm.runInThisContext(name);
@@ -447,6 +508,21 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       }
       clock.runFrames();
       await new Promise((resolve) => setImmediate(resolve));
+      harness.checkErrors();
+    },
+    /**
+     * Settle until `predicate()` is truthy, bounded by real time (work that
+     * resolves outside the fake clock, e.g. module-level async strategy
+     * resolution, can take longer under parallel test load). Throws on timeout.
+     */
+    async waitFor(predicate, description = 'condition', { timeoutMs = 10000, stepMs = 50 } = {}) {
+      const deadline = performance.now() + timeoutMs;
+      for (;;) {
+        const value = predicate();
+        if (value) return value;
+        if (performance.now() > deadline) throw new Error(`waitFor: timed out after ${timeoutMs}ms waiting for ${description}`);
+        await harness.settle(stepMs);
+      }
     },
     async flush() {
       for (let round = 0; round < 5; round += 1) {
@@ -454,14 +530,34 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         clock.runFrames();
         clock.advance(0);
       }
+      harness.checkErrors();
     },
-    advance(ms) { clock.advance(ms); clock.runFrames(); },
-    async click(target) {
+    advance(ms) { clock.advance(ms); clock.runFrames(); harness.checkErrors(); },
+    /**
+     * A user click. Like a pointer, it can only reach an element that is
+     * shown, not inert and not behind an open modal dialog; otherwise this
+     * throws (pass `{ force: true }` to dispatch anyway, e.g. to test a guard).
+     * A disabled control ignores the click, as in browsers.
+     */
+    async click(target, { force = false } = {}) {
       const element = typeof target === 'string' ? document.querySelector(target) : target;
       if (!element) throw new Error(`click: no element for ${target}`);
+      if (!force) {
+        const reason = harness.unclickableReason(element);
+        if (reason) throw new Error(`click: ${describe(element)} is not clickable (${reason})`);
+      }
       element.click();
       await harness.flush();
       return element;
+    },
+    /** Why a user could not click `element` (null when they could). */
+    unclickableReason(element) {
+      if (!element.isConnected) return 'not connected';
+      if (element.closest('[inert]')) return 'inert';
+      if (!dom.isRendered(element)) return 'not shown';
+      const modal = document.querySelectorAll('dialog[open]').find((dialog) => dialog._modal);
+      if (modal && !modal.contains(element)) return 'behind an open modal dialog';
+      return null;
     },
     async setValue(target, value, { events = ['input', 'change'] } = {}) {
       const element = typeof target === 'string' ? document.querySelector(target) : target;
@@ -506,6 +602,21 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         restore() { for (const name of names) globalThis[name] = originals[name]; },
       };
     },
+    /**
+     * Proxy `target` and record the property keys read directly (immediate
+     * caller frame) by the given app file. Callers should also assert a key
+     * the file is known to read, so an empty set cannot pass vacuously.
+     */
+    trackReads(target, appFile = 'src/core/logic.js') {
+      const reads = new Set();
+      const proxy = new Proxy(target, {
+        get(object, key, receiver) {
+          if (frameIsAppFile((new Error().stack || '').split('\n')[2], appFile)) reads.add(key);
+          return Reflect.get(object, key, receiver);
+        },
+      });
+      return { proxy, reads };
+    },
     /** Choose cards through the real card-set picker UI and apply them. */
     async pickCards(editTarget, cards) {
       await harness.click(editTarget);
@@ -546,12 +657,13 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       await harness.click(`[data-canonical-action="${type}"]`);
       await harness.settle(300);
     },
-    /** Whether an element and its ancestors are shown (hidden attribute / inline display). */
+    /**
+     * Whether an element is shown: connected, and neither it nor an ancestor
+     * is hidden (attribute, inline or stylesheet display:none) or
+     * visibility:hidden.
+     */
     isShown(node) {
-      for (let current = node; current?.nodeType === 1; current = current.parentNode) {
-        if (current.hidden || current.style.display === 'none') return false;
-      }
-      return Boolean(node);
+      return Boolean(node?.isConnected) && dom.isRendered(node);
     },
     training: {
       /** Choose a Training mode and start a session (confirming over an active one). */
@@ -599,7 +711,9 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
     },
     dispatch(target, event) {
       const element = typeof target === 'string' ? document.querySelector(target) : target;
-      return element.dispatchEvent(event);
+      const result = element.dispatchEvent(event);
+      harness.checkErrors();
+      return result;
     },
     visibleText: dom.visibleText,
   };

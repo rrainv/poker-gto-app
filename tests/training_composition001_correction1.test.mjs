@@ -132,10 +132,9 @@ test('Full Hand keeps one shared table and moves the one canonical action surfac
   assert.equal(node.dataset.trainingFullHandPhase, 'live');
   assert.equal(css.cascaded(node, 'grid-template-columns'), 'minmax(0, 1fr) minmax(380px, 410px)');
   const table = app.$('#trainingFullHandTableMount #visual-table-container');
-  if (table) {
-    assert.match(css.cascaded(table, 'inline-size'), /1320px/);
-    assert.match(css.cascaded(table, 'inline-size'), /100dvh/);
-  }
+  assert.ok(table, 'the Full Hand table is mounted');
+  assert.match(css.cascaded(table, 'inline-size'), /1320px/);
+  assert.match(css.cascaded(table, 'inline-size'), /100dvh/);
   assert.equal(css.cascaded(app.$('.training-full-hand-action-dock'), 'order'), '1');
 });
 

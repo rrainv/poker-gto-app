@@ -6,12 +6,14 @@ import { createPreflopRoleAuditFixtures } from './fixtures/preflop-role001-fixtu
 import { createStrategyProvider } from '../app/src/application/strategy-provider.mjs';
 import { resolveHeuristicStrategy } from '../app/src/strategy/heuristic-strategy.mjs';
 import { createAnalysisExplanation } from '../app/src/application/analysis-explanation.mjs';
-import { shouldShowSourceBadge } from '../app/src/application/workspace-header.mjs';
 import { bootApp, indexDocument } from './helpers/app-under-test.mjs';
 
 // TEST-HYGIENE-001: index.html / logic.js assertions are behavioural: parsed
 // markup and the booted app. Other module sources keep their existing checks.
 const app = await bootApp();
+// workspace-header installs window.RiverlineWorkspaceHeader when first
+// evaluated, so it is imported only after the app has booted.
+const { shouldShowSourceBadge } = await import('../app/src/application/workspace-header.mjs');
 const markup = indexDocument();
 await app.navigate('analyze');
 await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);

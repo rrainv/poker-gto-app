@@ -113,10 +113,9 @@ class FakeRequest extends EventTarget {
     this.onblocked = null;
   }
   _eventParent() { return this.transaction || null; }
+  // on<type> handler properties run through the mini DOM's dispatch.
   _fire(type, init = {}) {
     const event = Object.assign(new Event(type, { bubbles: type === 'error', cancelable: type === 'error' }), init);
-    const handler = this[`on${type}`];
-    if (typeof handler === 'function') this.addEventListener(type, handler, { once: true });
     this.dispatchEvent(event);
     return event;
   }
@@ -190,7 +189,11 @@ class FakeCursor {
     }
     this._request.transaction._deliver(this._request, () => this._request._fire('success'));
   }
-  continue() { this._request.transaction._pending += 1; this._advance(); }
+  continue() {
+    this._request.transaction._assertActive();
+    this._request.transaction._pending += 1;
+    this._advance();
+  }
   advance(count) { this._position += count - 1; this.continue(); }
   update(value) { return this.source._storeApi?.put(value) ?? this.source.put(value); }
   delete() { return (this.source._storeApi ?? this.source).delete(this.primaryKey); }
@@ -258,8 +261,11 @@ class FakeObjectStore {
       return primary;
     });
   }
-  put(value, key) { return this._write(value, key, true); }
-  add(value, key) { return this._write(value, key, false); }
+  put(value, key) { this._assertKeyArgument(key); return this._write(value, key, true); }
+  add(value, key) { this._assertKeyArgument(key); return this._write(value, key, false); }
+  _assertKeyArgument(key) {
+    if (key !== undefined && this._data().keyPath !== null) throw domError('DataError', 'An in-line key store does not take an explicit key');
+  }
   delete(query) {
     this._transaction._assertWritable();
     return this._transaction._request(this, () => {
@@ -324,6 +330,14 @@ class FakeTransaction extends EventTarget {
     this.durability = 'default';
     this._started = false;
     this._queue = [];
+    // As in browsers, a transaction is active only in the task that created it
+    // and while its request events dispatch (until control returns to the
+    // event loop). Requests made outside those windows throw
+    // TransactionInactiveError; an inactive transaction with no pending
+    // requests auto-commits.
+    this._activations = 1;
+    this._commitRequested = false;
+    macrotask(() => this._deactivate());
     // Real IndexedDB runs transactions with overlapping scopes in creation
     // order when either side writes; later ones wait (and queue requests).
     database._backing.transactions.push(this);
@@ -354,12 +368,22 @@ class FakeTransaction extends EventTarget {
     if (this._state !== 'active') throw domError('TransactionInactiveError', 'Transaction has finished');
     return new FakeObjectStore(this, name);
   }
+  _assertActive() {
+    if (this._state !== 'active') throw domError('TransactionInactiveError', 'Transaction has finished');
+    if (this._activations === 0 || this._commitRequested) {
+      throw domError('TransactionInactiveError', 'Transaction is not active (a request was made after control returned to the event loop)');
+    }
+  }
+  _deactivate() {
+    this._activations -= 1;
+    this._maybeCommit();
+  }
   _assertWritable() {
     if (this.mode === 'readonly') throw domError('ReadOnlyError', 'Read-only transaction');
-    if (this._state !== 'active') throw domError('TransactionInactiveError', 'Transaction has finished');
+    this._assertActive();
   }
   _request(source, operation) {
-    if (this._state !== 'active') throw domError('TransactionInactiveError', 'Transaction has finished');
+    this._assertActive();
     const request = new FakeRequest(source, this);
     this._pending += 1;
     const run = () => {
@@ -383,19 +407,23 @@ class FakeTransaction extends EventTarget {
   }
   _deliver(request, fire) {
     this._pending -= 1;
-    fire();
-    macrotask(() => this._maybeCommit());
+    this._activations += 1;
+    try {
+      fire();
+    } finally {
+      macrotask(() => this._deactivate());
+    }
   }
   _maybeCommit() {
     if (!this._started || this._state !== 'active' || this._pending > 0) return;
+    if (this._activations > 0 && !this._commitRequested) return;
     this._state = 'finished';
     this._snapshot.clear();
     this._fire('complete');
     this.db._transactionDone(this);
   }
+  // on<type> handler properties run through the mini DOM's dispatch.
   _fire(type) {
-    const handler = this[`on${type}`];
-    if (typeof handler === 'function') this.addEventListener(type, handler, { once: true });
     this.dispatchEvent(new Event(type, { bubbles: type === 'abort' }));
   }
   _abort(error) {
@@ -415,7 +443,11 @@ class FakeTransaction extends EventTarget {
     if (this._state !== 'active') throw domError('InvalidStateError', 'Transaction already finished');
     this._abort(domError('AbortError', 'Transaction aborted'));
   }
-  commit() { macrotask(() => this._maybeCommit()); }
+  commit() {
+    this._assertActive();
+    this._commitRequested = true;
+    macrotask(() => this._maybeCommit());
+  }
 }
 
 class FakeDatabase extends EventTarget {

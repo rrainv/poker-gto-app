@@ -156,16 +156,24 @@ test('Training cards are generated read-only projections and manual mutation pat
   assert.equal(app.window.app.picker ?? null, null, 'the real picker refuses Training cards');
 });
 
-test('canonical feedback retains source provenance and avoids unsupported GTO or solver claims', () => {
+test('canonical feedback retains source provenance and avoids unsupported GTO or solver claims', async () => {
   // Protects: feedback copy is the truth presentation of the evaluation and
   // never claims GTO/solver authority; Training shows a source element.
   const training = app.window.app.training;
-  if (training.currentEvaluation) {
-    const feedback = app.call('canonicalTrainingFeedback', training.currentEvaluation, training.currentStrategyResult);
-    const truth = app.call('truthPresentation', app.call('trainingTruth', training.currentEvaluation));
-    assert.equal(feedback.title, truth.title);
-    assert.doesNotMatch(`${feedback.title} ${feedback.text}`, /Riverline reference|Correct action|Mistake|\bGTO\b|\bsolver\b|Deep CFR/i);
-  }
+  // Answer a fresh spot so there is a live evaluation to present.
+  await app.click('#trainingNewHand');
+  await app.settle(500);
+  assert.equal(training.currentEvaluation, null, 'a fresh spot starts unanswered');
+  await app.training.answer();
+  const evaluation = await app.waitFor(() => training.currentEvaluation, 'the answer to be evaluated');
+  const truth = app.call('truthPresentation', app.call('trainingTruth', evaluation));
+  const expected = { title: app.call('t', truth.title), text: app.call('t', truth.description) };
+  assert.ok(expected.title, 'the truth presentation has a title');
+  assert.deepEqual(app.call('canonicalTrainingFeedback', evaluation, training.currentStrategyResult), expected);
+  // The rendered feedback is that presentation.
+  assert.equal(text(app.byId('feedbackTitle')), expected.title);
+  assert.equal(text(app.byId('feedbackText')), text({ textContent: expected.text }));
+  assert.doesNotMatch(`${expected.title} ${expected.text}`, /\bGTO\b|\bsolver\b|Deep CFR/i);
   for (const verdict of ['agreement', 'close', 'difference', 'unavailable']) {
     const feedback = app.call('canonicalTrainingFeedback', { truth: { verdict } }, null);
     assert.doesNotMatch(`${feedback.title} ${feedback.text}`, /\bGTO\b|\bsolver\b|Deep CFR/i);

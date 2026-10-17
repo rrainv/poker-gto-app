@@ -133,12 +133,13 @@ test('Play/Pause is localized, keyboard-native, truthful, focus-safe, and quiet 
     await app.click(playback);
     assert.ok(bridgeCalls(spy).includes('startReplayPlayback'));
     assert.equal(playback.getAttribute('aria-pressed'), 'true');
-    if (status) assert.equal(status.getAttribute('aria-live'), 'off', 'quiet while ticking');
+    assert.ok(status, 'the replay controls expose a live status');
+    assert.equal(status.getAttribute('aria-live'), 'off', 'quiet while ticking');
     spy.reset();
     await app.click(playback);
     assert.ok(bridgeCalls(spy).includes('pauseReplayPlayback'));
     assert.equal(playback.getAttribute('aria-pressed'), 'false');
-    if (status) assert.equal(status.getAttribute('aria-live'), 'polite');
+    assert.equal(status.getAttribute('aria-live'), 'polite');
   } finally {
     spy.restore();
   }
@@ -151,7 +152,7 @@ test('Play/Pause is localized, keyboard-native, truthful, focus-safe, and quiet 
   assert.ok(next.disabled, 'the end of Replay disables Next');
   const focused = app.document.activeElement;
   assert.ok(focused !== next, 'focus moved off the disabled control');
-  assert.ok(['handReplayPlaybackButton', 'handReplayPreviousButton', 'handReplayLiveButton'].includes(focused.id) || focused === app.document.body, focused.id);
+  assert.ok(['handReplayPlaybackButton', 'handReplayPreviousButton', 'handReplayLiveButton'].includes(focused.id), focused.id);
   for (const key of ['replay.control.play', 'replay.control.pause']) {
     assert.equal(
       (translations.match(new RegExp(`'${key.replaceAll('.', '\\.')}':`, 'g')) || []).length,

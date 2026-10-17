@@ -65,8 +65,9 @@ test('Training controls and feedback remain contract-honest', async () => {
     const views = spy.calls.callTrainingPresentationBridge.filter(([method]) => method === 'createViewModel');
     assert.ok(views.some(([, input]) => input === exercise));
     const answer = app.$$('#trainingGuessButtons button').find((button) => visible(button) && !button.disabled);
+    assert.equal(app.window.app.training.currentEvaluation, null, 'a fresh spot starts unanswered');
     await app.click(answer);
-    await app.settle(300);
+    await app.waitFor(() => app.window.app.training.currentEvaluation, 'the answer to be evaluated');
     assert.equal(bridgeCalls(spy, 'answer')[0][1], exercise.id);
   } finally {
     spy.restore();
@@ -143,9 +144,8 @@ test('Training layout is responsive, theme-tokenized, RTL-safe, and motion-safe'
   assert.ok(areas(1920));
   assert.notEqual(areas(1000), areas(1920), 'reflows at 1024px');
   const actionGrid = app.$('.training-action-grid');
-  if (actionGrid) {
-    assert.notEqual(css.cascaded(actionGrid, 'grid-template-columns', { width: 400 }), css.cascaded(actionGrid, 'grid-template-columns', { width: 1920 }));
-  }
+  assert.ok(actionGrid, 'the Training action grid is rendered');
+  assert.notEqual(css.cascaded(actionGrid, 'grid-template-columns', { width: 400 }), css.cascaded(actionGrid, 'grid-template-columns', { width: 1920 }));
   const raw = /#[0-9a-f]{3,8}\b|rgba?\(/i;
   for (const node of app.$$('#trainingMode *')) {
     for (const rule of css.matchingRules(node)) {

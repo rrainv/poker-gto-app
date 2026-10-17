@@ -231,7 +231,8 @@ test('D22: interaction states use motion tokens and focus-visible outlines', () 
   value.focus();
   assert.ok(css.cascaded(value.parentElement, 'border-color', { ...wide, states: ['focus-within'] }) || css.cascaded(value.parentElement, 'box-shadow', { ...wide, states: ['focus-within'] }), 'value box focus-within');
   const summary = analyze('summary');
-  if (summary) assert.ok(focused(summary), 'summary focus ring');
+  assert.ok(summary, 'the Analyze summary exists');
+  assert.ok(focused(summary), 'summary focus ring');
   const transitions = amendSheet.rules.flatMap((rule) => rule.declarations).filter(({ property }) => property === 'transition');
   assert.ok(transitions.some(({ value }) => value.startsWith('color var(--motion-fast) var(--ease-standard)')));
   for (const { value } of transitions) assert.doesNotMatch(value, /\d+ms/, 'durations come from motion tokens');

@@ -113,12 +113,11 @@ test('Range comparison dedicated selectors are authoritative and both change the
   assert.notEqual(villainChanged.villainStrongShare, heroChanged.villainStrongShare);
   // The Hero position control does not drive the comparison.
   const heroPos = app.byId('heroPos');
-  if (heroPos) {
-    const previous = heroPos.value;
-    await app.setValue(heroPos, [...heroPos.options].map((option) => option.value).find((value) => value !== previous), { events: ['change'] });
-    assert.equal(text(app.byId('heroRangeTitle')), 'Hero sample (UTG)');
-    await app.setValue(heroPos, previous, { events: ['change'] });
-  }
+  assert.ok(heroPos, 'the Hero position control exists');
+  const previous = heroPos.value;
+  await app.setValue(heroPos, [...heroPos.options].map((option) => option.value).find((value) => value !== previous), { events: ['change'] });
+  assert.equal(text(app.byId('heroRangeTitle')), 'Hero sample (UTG)');
+  await app.setValue(heroPos, previous, { events: ['change'] });
 });
 
 test('Range comparison is descriptive, limitation-labelled, and context-safe in Hand Mode', async () => {

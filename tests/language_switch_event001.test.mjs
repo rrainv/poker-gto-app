@@ -236,7 +236,7 @@ test('language refresh re-renders an open Training review from its existing mode
   const spy = app.spy([
     'refreshLocalizedTrainingRuntime', 'renderFullHandTrainingSnapshot', 'renderActiveHandReview', 'refreshActiveHandReviewModel', 'schedulePlaybookUpdate',
     'scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'clearTrainingMemoryOwnerPresentation',
-  ].filter((name) => app.evaluate(`typeof ${name}`) === 'function'));
+  ]);
   try {
     const resolves = await probe.count(async () => {
       for (const language of ['ru', 'he', 'en']) {
@@ -248,7 +248,7 @@ test('language refresh re-renders an open Training review from its existing mode
     assert.equal(spy.count('refreshLocalizedTrainingRuntime'), 3, 'every switch completes the localized refresh');
     assert.equal(spy.count('renderActiveHandReview'), 3, 'the open review re-renders');
     for (const name of ['refreshActiveHandReviewModel', 'schedulePlaybookUpdate', 'scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'clearTrainingMemoryOwnerPresentation']) {
-      if (spy.calls[name]) assert.equal(spy.count(name), 0, name);
+      assert.equal(spy.count(name), 0, name);
     }
   } finally {
     spy.restore();

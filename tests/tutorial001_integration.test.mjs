@@ -107,7 +107,8 @@ test('overlay uses design tokens, viewport bounds, RTL-safe logical properties, 
     assert.equal(css.cascaded(coachMark, 'max-height', environment), 'calc(100dvh - (var(--space-5) * 2))');
   }
   const back = coachMark.querySelector('.tutorial-actions [data-tutorial-action="back"]');
-  if (back) assert.equal(css.cascaded(back, 'margin-inline-end'), 'auto');
+  assert.ok(back, 'the coach mark offers Back');
+  assert.equal(css.cascaded(back, 'margin-inline-end'), 'auto');
   assert.ok(css.cascaded(coachMark.querySelector('.tutorial-actions'), 'margin-block-start'));
   for (const node of [spotlight, coachMark]) {
     assert.equal(css.cascaded(node, 'transition', { reducedMotion: true }), 'none');

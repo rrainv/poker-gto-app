@@ -560,8 +560,9 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
   assert.equal(page.evaluate('savedPlaybookScenarioPresentation'), null);
   assert.equal(page.evaluate('savedStudyCurrentObject'), null);
   assert.equal(page.evaluate('homeViewModel'), null);
-  if (library) assert.equal(ownerChanged.library, 1, 'Saved library private state clears with the owner');
-  if (history) assert.equal(ownerChanged.history, 1, 'Saved Training history view state and toggle reset with the owner');
+  assert.ok(library && history, 'both Saved controllers are mounted');
+  assert.equal(ownerChanged.library, 1, 'Saved library private state clears with the owner');
+  assert.equal(ownerChanged.history, 1, 'Saved Training history view state and toggle reset with the owner');
   assert.equal(app.playbookResolution.status, 'unavailable');
   assert.equal(app.handReview.savedDecisionIds.size, 0);
 });

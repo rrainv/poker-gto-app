@@ -74,6 +74,20 @@ test('motion language is tokenized, event-scoped, and avoids large animated tree
   for (const name of polishSheet.keyframes.keys()) assert.doesNotMatch(name, /bounce|spin|flash/i);
 });
 
+test('completed Equity results run the panel entrance', {
+  todo: 'TEST-HYGIENE-001-F07: the entrance rule targets .equity-player-results; the rendered result is .equity-player-footer',
+}, async () => {
+  // The original POLISH-FINAL-001 guarantee, on the live result element.
+  await app.navigate('equity');
+  const [hero] = app.evaluate('app.equity.players.map(({ id }) => id)');
+  await app.pickCards(`[data-equity-edit-hand="${hero}"]`, ['As', 'Kd']);
+  await app.click('#calculate');
+  await app.waitFor(() => app.window.app.equity.lifecycle === 'complete', 'the Equity calculation');
+  const result = app.$('#equityPlayers [data-result-state="complete"]');
+  assert.ok(result, 'a completed result is rendered');
+  assert.match(css.cascaded(result, 'animation') || '', /riverline-panel-enter/);
+});
+
 test('answer feedback remains semantic while correct and mistake states get calm emphasis', async () => {
   // Answering grades the feedback with the presentation tone and never keeps
   // a stale "accepted" flag.
@@ -99,31 +113,20 @@ test('reduced motion makes all nonessential animation and transition near-instan
   assert.equal(css.cascaded(any, 'transition-duration', reduced), '.01ms');
   const hint = probe('<div class="training-study-hint-content"><div class="analysis-study-hint"></div></div>').firstElementChild;
   assert.equal(css.cascaded(hint, 'animation', reduced), 'none');
-  // Revealing an Analyze view scrolls smoothly, or instantly under reduced motion.
-  await app.navigate('analyze');
+  // Opening Hand Review scrolls to it smoothly, or instantly under reduced motion.
+  await app.startHand(['As', 'Kd']);
+  await app.handAction('fold');
   const media = app.environment.media;
-  const reveal = async () => {
-    const tab = app.$$('.sub-tab[data-gto-view]').find((node) => node.getAttribute('aria-selected') !== 'true');
-    const view = tab.dataset.gtoView;
-    await app.click(tab);
-    const destination = view === 'context' ? app.byId('contextView') : app.byId(`${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
-    return destination._scrolledIntoView;
+  const surface = app.byId('handReviewSurface');
+  const open = (reducedMotion) => {
+    app.environment.media = { ...media, reducedMotion };
+    surface._scrolledIntoView = undefined;
+    assert.ok(app.call('openCanonicalHandReview'), 'the review opens');
+    return surface._scrolledIntoView;
   };
   try {
-    app.environment.media = { ...media, reducedMotion: false };
-    const smooth = await reveal();
-    app.environment.media = { ...media, reducedMotion: true };
-    const instant = await reveal();
-    if (smooth || instant) {
-      assert.equal(smooth?.behavior, 'smooth');
-      assert.equal(instant?.behavior, 'auto');
-    } else {
-      // Views revealed without scrolling: check the Hand Review scroll path.
-      await app.startHand(['As', 'Kd']);
-      await app.handAction('fold');
-      app.call('openCanonicalHandReview');
-      assert.equal(app.byId('handReviewSurface')._scrolledIntoView?.behavior, 'auto');
-    }
+    assert.deepEqual(open(false), { behavior: 'smooth', block: 'start' });
+    assert.deepEqual(open(true), { behavior: 'auto', block: 'start' });
   } finally {
     app.environment.media = media;
   }

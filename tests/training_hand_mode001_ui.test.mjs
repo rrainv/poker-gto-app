@@ -204,10 +204,8 @@ test('live pacing communicates actor, action, street, and the Hero boundary with
   assert.equal(observed.heroTurn.tableFlag, 'true');
   assert.match(observed.heroTurn.statusAnimation, /training-hero-status-pulse/);
   assert.equal(observed.heroTurn.statusAnimationReduced, 'none');
-  if (observed.heroTurn.seatAnimation) {
-    assert.match(observed.heroTurn.seatAnimation, /training-hero-seat-pulse/);
-    assert.equal(observed.heroTurn.seatAnimationReduced, 'none');
-  }
+  assert.match(observed.heroTurn.seatAnimation || '', /training-hero-seat-pulse/);
+  assert.equal(observed.heroTurn.seatAnimationReduced, 'none');
   assert.equal(css.cascaded(probeStatus(), 'transition', { reducedMotion: true }), 'none');
 });
 

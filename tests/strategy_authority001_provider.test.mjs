@@ -263,7 +263,8 @@ test('provenance remains provider-owned across presentation consumers', async ()
     await app.handAction('fold');
     app.call('openCanonicalHandReview');
     const decision = app.window.app.handReview.model?.selectedDecision;
-    if (decision?.strategyResult) assert.ok(spy.calls.strategySourceDisplayLabel.some(([argument]) => argument === decision.strategyResult));
+    assert.ok(decision?.strategyResult, 'the reviewed decision carries its strategy result');
+    assert.ok(spy.calls.strategySourceDisplayLabel.some(([argument]) => argument === decision.strategyResult));
   } finally {
     spy.restore();
   }
