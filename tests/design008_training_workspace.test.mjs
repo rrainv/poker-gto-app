@@ -72,11 +72,14 @@ test('Training controls and feedback remain contract-honest', async () => {
     spy.restore();
   }
   const { currentEvaluation: evaluation, currentStrategyResult: strategyResult } = app.window.app.training;
-  assert.ok(evaluation?.grade);
+  // TRUTH-FIXES-001: heuristic answers carry a neutral comparison, no grade.
+  assert.ok(evaluation, 'the answer was evaluated');
+  assert.equal(evaluation.grade, null);
+  assert.ok(['matches', 'close', 'differs'].includes(evaluation.comparison), evaluation.comparison);
   const truth = evaluation.truth;
   const title = app.call('trainingGradePresentation', evaluation.grade, strategyResult, evaluation);
   assert.equal(title, app.call('t', app.call('truthPresentation', truth).title));
-  assert.notEqual(title, evaluation.grade.charAt(0).toUpperCase() + evaluation.grade.slice(1));
+  for (const raw of ['Optimal', 'Acceptable', 'Mistake', 'Matches', 'Close', 'Differs']) assert.notEqual(title, raw);
   assert.ok(app.window.app.training.currentExercise.generationMetadata?.trainingConfig, 'replay uses the generation TrainingConfig');
   assert.equal(training.querySelector('[data-ev-bb]'), null);
   assert.doesNotMatch(text(app.byId('trainingMode')), /Expected value/);
