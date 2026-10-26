@@ -52,7 +52,7 @@ Pre-existing dirty files, untouched: `.codex/config.toml` (modified), `.claude/`
 
 ## Acceptance and amendment (2026-10-26)
 
-- The owner accepted the ticket. The acceptance message left the Firefox result as an unfilled placeholder, so no Firefox outcome is recorded here.
+- The owner accepted the ticket. The acceptance message left the Firefox result as an unfilled placeholder; the owner then confirmed **Firefox: both flows OK (owner, 2026-10-26)**, recorded in a docs-only follow-up commit.
 - Amendment: when the mode's own field is hidden, Adjust drill now focuses the pressed mode button (after a Full Hand: "Full Hand"), then falls back to the first shown setup control. When the field is shown, it still comes first (Focused → Street, Varied → Session length), as the existing `training_composition001` test "setup is a single disclosure… Adjust Drill reopens" requires.
 - Re-run: `node --check` on `logic.js` and the three test files OK. `node --test tests/training_f12_session_restart.test.mjs tests/training_varied_session001.test.mjs tests/training_composition001.test.mjs` passes 23/23 with 0 todo. `git diff --check` is clean. The browser was not re-checked after the amendment; the harness test covers the new target.
 - Committed and pushed to `codex/stabilization` with the owner's authorization. Only the seven ticket files were staged.
