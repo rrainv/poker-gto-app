@@ -1,5 +1,6 @@
 import { RIVERLINE_DISPLAY_NAME_MAX_LENGTH } from '../account-identity/index.mjs';
 import { createAccountIdentityService } from './account-identity-service.mjs';
+import { installDataSafetyController } from './data-safety.mjs';
 
 function translated(key) {
   return globalThis.t?.(key) ?? key;
@@ -105,6 +106,7 @@ export function installAccountIdentityBridge(browserWindow, options = {}) {
     value: bridge,
     writable: false,
   });
+  installDataSafetyController(browserWindow, { initialization });
   return bridge;
 }
 

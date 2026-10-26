@@ -47,6 +47,7 @@ From the Manager's M1 plan (2026-10-15). The top unfinished row is next.
 | CLEANUP-PREP-001 | Guard unbundled Supabase UMD script, replace exact-match CSS colours/fallbacks with `:root` tokens, remove 106 redundant `!important` rules, fix F04 and F06 (`DS-CSS-DEBT`) | none | T1 | S | Done on `argon/m1-batch-1` (2026-10-18) |
 | TRUTH-SURFACES-002 | Single provenance indicator per surface (Analyze, Training feedback, Hand Review, Personal Strategy comparison), 5% estimated mix rounding and <5% hiding, strict two-state verdict dominance rule (`QA-SHELL-004`, `OWNER-19`, `REVIEW-MATH-03`) | truth fixes | T1 | S | Done on `argon/m1-batch-2` (2026-10-26) |
 | DOMAIN-MATH-001 | Move pot-before-action, SPR, and MDF calculations out of UI code into `shared/poker-domain` selectors and carry numeric bet amounts in `training-presentation.mjs` instead of parsing localized display labels (`REPO-AUDIT-011`) | none | T1 | S | Done on `argon/m1-batch-2` (2026-10-26) |
+| DATA-SAFETY-001 | Request persistent storage (`navigator.storage.persist()`) once with honest `persisted` vs `temporary` status and iOS tab install/back-up note in Settings › Account & Data; strongly guard "Delete all data" with warning list and localized type-to-confirm (`DATA-SAFETY-M1`) | none | T1 | S | Done on `argon/m1-batch-2` (2026-10-26) |
 
 ### Phase 1: design decisions on the PC (before any screen build; mockups only, no code)
 

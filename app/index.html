@@ -2968,7 +2968,39 @@
           <dl class="account-profile-facts">
             <div><dt data-i18n="Study data">Study data</dt><dd data-i18n="Stored on this device">Stored on this device</dd></div>
             <div><dt id="settingsSyncHeading" data-i18n="Cloud sync is not enabled">Cloud sync is not enabled</dt><dd id="settingsSyncDescription" data-i18n="Study data is still stored locally. Signing in does not create a cloud backup.">Study data is still stored locally. Signing in does not create a cloud backup.</dd></div>
+            <div id="settingsStoragePersistenceRow">
+              <dt id="settingsStorageStatusHeading" data-i18n="Browser storage">Browser storage</dt>
+              <dd id="settingsStorageStatus" data-storage-status="temporary" data-i18n="Temporary browser storage">Temporary browser storage</dd>
+              <dd id="settingsStorageStatusDetail" data-i18n="Local data stays on this device during normal use, but the browser can clear temporary storage if device space runs low.">Local data stays on this device during normal use, but the browser can clear temporary storage if device space runs low.</dd>
+              <dd id="settingsStorageIosNote" data-i18n="In iPhone and iPad browser tabs, Safari may clear local data after 7 days without use. Add Riverline to the Home Screen or back up important work.">In iPhone and iPad browser tabs, Safari may clear local data after 7 days without use. Add Riverline to the Home Screen or back up important work.</dd>
+            </div>
           </dl>
+          <section id="settingsDeleteAllDataSection" class="settings-danger-zone" aria-labelledby="settingsDeleteAllDataHeading">
+            <div class="settings-danger-head">
+              <h4 id="settingsDeleteAllDataHeading" class="settings-subsection-title" data-i18n="Delete all data">Delete all data</h4>
+              <p id="settingsDeleteAllDataSummary" class="panel-note" data-i18n="Permanently remove all Riverline study data, game night records, and preferences stored in this browser.">Permanently remove all Riverline study data, game night records, and preferences stored in this browser.</p>
+            </div>
+            <button id="settingsDeleteAllDataOpen" class="ui-button ui-button--danger" type="button" aria-expanded="false" aria-controls="settingsDeleteAllDataGuard" data-i18n="Delete all data">Delete all data</button>
+            <div id="settingsDeleteAllDataGuard" class="settings-delete-guard" hidden>
+              <p id="settingsDeleteAllDataWarning" class="settings-delete-warning" data-i18n="This permanently deletes all local data in this browser and cannot be undone:">This permanently deletes all local data in this browser and cannot be undone:</p>
+              <ul id="settingsDeleteAllDataList" class="settings-delete-list">
+                <li data-i18n="Saved Hands and Saved Spots, including notes and tags">Saved Hands and Saved Spots, including notes and tags</li>
+                <li data-i18n="Personal Strategy setups, approaches, and Range Calibration history">Personal Strategy setups, approaches, and Range Calibration history</li>
+                <li data-i18n="Training Memory sessions, decision history, and review records">Training Memory sessions, decision history, and review records</li>
+                <li data-i18n="Home Game sessions, players, groups, and presets">Home Game sessions, players, groups, and presets</li>
+                <li data-i18n="Local profiles, custom themes, and device preferences">Local profiles, custom themes, and device preferences</li>
+              </ul>
+              <label class="settings-delete-confirm-field" for="settingsDeleteAllDataInput">
+                <span id="settingsDeleteAllDataPrompt" data-confirm-word="DELETE" data-i18n="Type DELETE to confirm">Type DELETE to confirm</span>
+                <input id="settingsDeleteAllDataInput" class="control-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" dir="auto" data-confirm-word="DELETE">
+              </label>
+              <div class="settings-delete-actions">
+                <button id="settingsDeleteAllDataConfirm" class="ui-button ui-button--destructive" type="button" disabled data-i18n="Permanently delete all data">Permanently delete all data</button>
+                <button id="settingsDeleteAllDataCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button>
+              </div>
+            </div>
+            <p id="settingsDeleteAllDataStatus" class="panel-note" role="status" aria-live="polite" hidden></p>
+          </section>
         </div>
 
         <div id="settingsPanelAudio" class="settings-group settings-panel settings-audio-group" role="tabpanel" aria-labelledby="settingsTabAudio" data-settings-panel="audio" hidden>
