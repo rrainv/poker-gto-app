@@ -10823,7 +10823,15 @@ function setTrainingSetupExpanded(expanded, { focus = false } = {}) {
   const selector = trainingSessionMode() === 'varied'
     ? '#trainingSessionLength'
     : trainingSessionMode() === 'full_hand' ? '#trainingHeroPos' : '#trainingStreet';
-  $(selector)?.focus({ preventScroll: false });
+  // A live or completed Full Hand hides the setup fields (F13): fall back to
+  // the pressed mode button, then the first control the drill setup still shows.
+  const shown = (node) => node && !node.disabled && node.getClientRects().length;
+  const target = [
+    $(selector),
+    setup.querySelector('[data-training-session-mode][aria-pressed="true"]'),
+    ...setup.querySelectorAll('.training-setup-fields :is(button, select, input)'),
+  ].find(shown);
+  target?.focus({ preventScroll: false });
 }
 
 function requestTrainingSessionModeChange(mode) {
@@ -12511,6 +12519,9 @@ async function openTrainingMemorySameSpot(recordId, handoff = null) {
     if (generation !== app.training.memoryGeneration || !result || !historicalRecord) return null;
     if (trainingSessionIsActive() || trainingSameSpotIsActive()) return null;
 
+    // A completed Varied session is not active, so Same Spot and Revisit can
+    // follow it; drop its completion state before showing the answers (F12).
+    clearTrainingSessionCompletion();
     callTrainingServiceBridge('beginSameSpot', {
       sourceDecisionRecordId: recordId,
     });
@@ -14393,7 +14404,10 @@ async function startConfiguredTrainingSession(options = {}) {
   const seed = variedSessionSeed(options);
   if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = '';
   setTrainingSetupExpanded(false);
+  // Full Hand clears completion itself, after folding a finished hand into
+  // Training Memory; every other configured start clears it here (F12).
   if (trainingSessionMode() === 'full_hand') return startFullHandTraining({ ...options, seed });
+  clearTrainingSessionCompletion();
   if (trainingSessionMode() === 'focused') {
     startTrainingMemorySession({
       mode: 'focused',
@@ -14408,7 +14422,6 @@ async function startConfiguredTrainingSession(options = {}) {
         stackBb: numericValue('#trainingStack', 30),
       },
     });
-    clearTrainingSessionCompletion();
     return newRandomTrainingHand({ seed });
   }
   try {

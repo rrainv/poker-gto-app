@@ -45,6 +45,7 @@ From the Manager's M1 plan (2026-10-15). The top unfinished row is next.
 | MOCKUP-ASSETS-001 | Real card backs, icons, table measurements for the design kit | none | T0 | S | Done on `argon/m1-batch-1` (2026-10-18) |
 | I18N-RESIDUE-001 | Finish RU/HE terminology alignment per TERMINOLOGY.md across `.mjs` language/strategy modules and locale catalogs (`I18N-TERMS-RESIDUE`) | none | T1 | S | Done on `argon/m1-batch-1` (2026-10-18) |
 | CLEANUP-PREP-001 | Guard unbundled Supabase UMD script, replace exact-match CSS colours/fallbacks with `:root` tokens, remove 106 redundant `!important` rules, fix F04 and F06 (`DS-CSS-DEBT`) | none | T1 | S | Done on `argon/m1-batch-1` (2026-10-18) |
+| TRAINING-F12-001 | Every Training start path clears session-completion state, so a new session after a completed Varied one can be answered (F12); Adjust drill after a Full Hand focuses a shown setup control (F13) | MERGE-001 | T1 | S | Done and accepted (owner, 2026-10-26): committed on `codex/stabilization` |
 
 ### Phase 1: design decisions on the PC (before any screen build; mockups only, no code)
 

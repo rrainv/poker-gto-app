@@ -172,15 +172,21 @@ test('Focused and Full Hand retain their canonical controls within the shared co
   node.dataset.trainingFullHandPhase = 'setup';
 });
 
-test('Adjust drill after a Full Hand focuses the shown Hero position control', {
-  todo: 'TEST-HYGIENE-001-F13: the completed Full Hand phase hides the setup fields, so #trainingHeroPos cannot take focus',
-}, async () => {
+test('Adjust drill after a Full Hand focuses the pressed mode button', async () => {
+  // TRAINING-F12-001 (F13): the completed Full Hand phase hides the setup
+  // fields, so focus moves to the pressed mode button, else the first control
+  // the drill setup still shows.
   await app.click('[data-training-session-mode="full_hand"]');
   await app.training.playFullHand();
   await app.click('#trainingAdjustDrill');
   assert.equal(app.byId('trainingSetupPanel').open, true);
-  assert.ok(app.isShown(app.byId('trainingHeroPos')), 'the Hero position control is shown');
-  assert.ok(app.document.activeElement === app.byId('trainingHeroPos'), 'Full Hand setup focuses Hero position');
+  assert.equal(app.isShown(app.byId('trainingHeroPos')), false, 'the completed phase hides Hero position');
+  const active = app.document.activeElement;
+  assert.notEqual(active, app.document.body, 'focus does not fall to <body>');
+  assert.ok(app.byId('trainingSetupPanel').contains(active), 'focus stays in the drill setup');
+  assert.ok(app.isShown(active), 'the focused control is shown');
+  assert.equal(active, app.$('[data-training-session-mode="full_hand"]'), 'the pressed Full Hand button takes focus');
+  assert.equal(active.getAttribute('aria-pressed'), 'true');
 });
 
 test('new composition copy is complete for English, Russian, and Hebrew', () => {
