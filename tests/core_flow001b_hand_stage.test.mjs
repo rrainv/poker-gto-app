@@ -427,16 +427,12 @@ test('desktop hierarchy, localization, RTL, and secondary disclosures remain str
   assert.equal(css.cascaded(decision, 'order', { width: 1100 }), '1');
   assert.equal(css.cascaded(rail, 'order', { width: 1100 }), '2');
 
-  // SOURCE-SHAPE: the private-cards (and reveal) stage override that puts
-  // the rail first at ≤1100px is declared but loses the cascade to the more
-  // specific generic live-stage rule ([1,4,0] over [1,3,0]); asserting the
-  // effective order would lock in that defect (register TEST-HYGIENE-001-F04).
-  for (const [selector, order] of [
-    ['#gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-context-rail', '1'],
-    ['#gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-decision-workspace', '2'],
-  ]) {
-    assert.equal(css.declared(selector, 'order', { width: 1100 }), order);
-  }
+  // Protects: the private-cards stage puts the rail first at ≤1100px
+  // (TEST-HYGIENE-001-F04, fixed by CLEANUP-PREP-001).
+  gtoMode.dataset.handStage = 'private-cards';
+  assert.equal(css.cascaded(rail, 'order', { width: 1100 }), '1');
+  assert.equal(css.cascaded(decision, 'order', { width: 1100 }), '2');
+  gtoMode.dataset.handStage = 'action';
 
   // Was: [dir="rtl"] .hand-live-stage-header / .hand-stage-dock rules.
   // Protects: the current-stage accent edge flips to the inline start in RTL.

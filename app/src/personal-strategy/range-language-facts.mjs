@@ -289,7 +289,7 @@ const regionLabel = (id, language) => FAMILY_LABELS[id]?.[['en', 'ru', 'he'].ind
   ?? LABELS[language][Object.keys(REGIONS).indexOf(id)] ?? id;
 export const personalRangeRegionLabel = (id, language = 'en') => regionLabel(id, languageOf(language));
 const ACTIONS = { en: { fold: 'Fold', call: 'Call', check: 'Check', raise: 'Raise', bet: 'Bet', all_in: 'All-in' },
-  ru: { fold: 'Фолд', call: 'Колл', check: 'Чек', raise: 'Рейз', bet: 'Ставка', all_in: 'Олл-ин' },
+  ru: { fold: 'Пас', call: 'Колл', check: 'Чек', raise: 'Рейз', bet: 'Ставка', all_in: 'Олл-ин' },
   he: { fold: 'פולד', call: 'קול', check: 'צ׳ק', raise: 'רייז', bet: 'הימור', all_in: 'אול־אין' } };
 const actionLabel = (type, language) => ACTIONS[language][type] ?? '-';
 const say = (language, en, ru, he) => ({ en, ru, he })[language];
@@ -408,7 +408,7 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en', withP
       `Среди полностью заданных классов рук вы предпочитаете продолжение с большим числом рук региона «${regionLabel(more.id, language)}», чем региона «${regionLabel(less.id, language)}».`,
       `במחלקות הידיים שהוגדרו במלואן, סימנתם המשך מועדף ביותר ${regionLabel(more.id, language)} מאשר ${regionLabel(less.id, language)}.`));
   } else { kind = 'precision'; push(say(language, 'Overall suited-versus-offsuit participation remains unresolved; unasked hands are not assumed to fold.',
-    'Общая частота продолжения с одномастными и разномастными руками пока не определена; неотвеченные руки не считаются фолдами.',
+    'Общая частота продолжения с одномастными и разномастными руками пока не определена; неотвеченные руки не считаются пасами.',
     'תדירות ההמשך הכוללת בסוטד לעומת אוף־סוט עדיין לא נקבעה; ידיים שלא נשאלו אינן נחשבות לפולד.')); }
   kind = 'precision';
   if (facts.regions.some((r) => r.dominantOnlyClasses)) push(say(language,
@@ -430,7 +430,7 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en', withP
 export function renderPersonalRangeComparison(comparison, { language = 'en', leftName = 'A', rightName = 'B' } = {}) {
   language = languageOf(language);
   if (!comparison.compatible) return freeze([language === 'ru' ? 'Контексты решений несовместимы; сравнение диапазонов недоступно.'
-    : language === 'he' ? 'הקשרי ההחלטה אינם תואמים; השוואת הטווחים אינה זמינה.' : 'Decision contexts are incompatible; range comparison is unavailable.']);
+    : language === 'he' ? 'הקשרי ההחלטה אינם תואמים; השוואת הריינג\'ים אינה זמינה.' : 'Decision contexts are incompatible; range comparison is unavailable.']);
   const lines = [], described = new Set();
   let preservedLine = false;
   for (const region of narrativeRegions(comparison.regions)) {
@@ -448,11 +448,11 @@ export function renderPersonalRangeComparison(comparison, { language = 'en', lef
         : say(language, 'Among the specified', 'Среди заданных рук региона', 'בידיים שהוגדרו באזור');
       if (removed.length) lines.push(say(language,
         `${part} ${label}, ${leftName} replaces preferred continues in ${namedRight} with Fold at ${handList(removed)}.`,
-        `${part} «${label}», ${leftName} заменяет предпочтительное продолжение из ${namedRight} на Фолд для ${handList(removed)}.`,
+        `${part} «${label}», ${leftName} заменяет предпочтительное продолжение из ${namedRight} на Пас для ${handList(removed)}.`,
         `${part} ${label}, ${leftName} מחליף המשך מועדף אצל ${namedRight} בפולד עם ${handList(removed)}.`));
       if (added.length) lines.push(say(language,
         `${part} ${label}, ${leftName} adds preferred continues where ${namedRight} prefers Fold: ${handList(added)}.`,
-        `${part} «${label}», ${leftName} предпочитает продолжение там, где ${namedRight} предпочитает Фолд: ${handList(added)}.`,
+        `${part} «${label}», ${leftName} предпочитает продолжение там, где ${namedRight} предпочитает Пас: ${handList(added)}.`,
         `${part} ${label}, ${leftName} מוסיף המשך מועדף במקום שבו ${namedRight} מעדיף פולד: ${handList(added)}.`));
       [...removed, ...added].forEach((hand) => described.add(hand));
     }

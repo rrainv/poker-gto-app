@@ -30,7 +30,7 @@ export function previewPersonalStrategyIntent({ text, language = 'en', scope = {
     unresolvedTerms.unshift('qualitative_degree');
   }
   if (statedScope === null) unresolvedTerms.push('statement_scope');
-  if (/overfold|too\s+(?:tight|loose)|mistake|ошиб|слишком|перефолд|טעות|יותר\s+מדי/iu.test(originalText)) unresolvedTerms.push('self_assessment_not_validated');
+  if (/overfold|too\s+(?:tight|loose)|mistake|ошиб|слишком|перефолд|перепас|טעות|יותר\s+מדי/iu.test(originalText)) unresolvedTerms.push('self_assessment_not_validated');
   if (/\b(?:played|folded|called|yesterday|observed)\b|вчера|сыграл|наблюд|אתמול|שיחקתי/iu.test(originalText)) unresolvedTerms.push('observed_or_intended_role');
   const followupTopic = propositions.find((p) => p.topic !== 'clarify_intent')?.topic ?? 'clarify_intent';
   const envelope = createNaturalLanguageEnvelope({ claimClass: 'user_intent_inference',
@@ -50,7 +50,7 @@ const COPY = {
   ru: { prefix: 'Предлагаемая формулировка намерения', uncertainty: 'Точные руки, действия и частоты пока не определены. Этот просмотр не изменяет диапазон.',
     followup: 'Приведите пример конкретной руки или уточните, где действует это намерение.',
     offsuit: 'Какая разномастная рука поможет уточнить вашу границу здесь?' },
-  he: { prefix: 'ניסוח מוצע לכוונה', uncertainty: 'הידיים, הפעולות והתדירויות המדויקות עדיין לא נקבעו. התצוגה המקדימה אינה משנה טווח.',
+  he: { prefix: 'ניסוח מוצע לכוונה', uncertainty: 'הידיים, הפעולות והתדירויות המדויקות עדיין לא נקבעו. התצוגה המקדימה אינה משנה ריינג\'.',
     followup: 'תנו דוגמה ליד מסוימת או הבהירו היכן הכוונה הזאת חלה.',
     offsuit: 'איזו יד אוף־סוט תעזור להבהיר את הגבול שלכם כאן?' },
 };

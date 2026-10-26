@@ -375,7 +375,7 @@
     'Sign in or create account': 'כניסה או יצירת חשבון',
     'Use another account': 'שימוש בחשבון אחר',
     'Account / Profile': 'חשבון / פרופיל',
-    'Open Account / Profile': 'פתיחת חשבון / פרופיל',
+    'Open Account / Profile': 'פתח חשבון / פרופיל',
     'Guest study history is not saved. Device settings remain available.': 'היסטוריית הלימוד אינה נשמרת במצב אורח. הגדרות המכשיר נשארות זמינות.',
     'Study data is separated by this account on this device. Cloud sync is not enabled.': 'נתוני הלימוד מופרדים לפי החשבון הזה במכשיר. סנכרון לענן אינו פעיל.',
     'Riverline account': 'חשבון Riverline',

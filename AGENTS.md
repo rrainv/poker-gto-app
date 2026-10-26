@@ -5,9 +5,16 @@ Riverline is a local-first, browser-first No-Limit Hold'em learning workstation 
 ## Roles
 
 - **Manager:** the owner's persistent Claude Project chat. Priorities, decisions, tickets, report review, continuity. No repository edits.
-- **Work:** one Claude Code session per ticket. Inspect, implement, verify at the ticket's tier, report, stop. Corrections and interruptions of the same ticket continue in the **same session** (resume from the files; never start a duplicate session for one ticket). A new ticket gets a new session.
+- **Work:** one Claude Code session per ticket (or an authorized batch session). Inspect, implement, verify at the ticket's tier, report, stop. Corrections and interruptions of the same ticket continue in the **same session** (resume from the files; never start a duplicate session for one ticket). A new ticket gets a new session.
 - **Review:** an independent read-only session when risk justifies it (maths, money, identity, persistence, migrations, source authority). Not by default.
-- Claude Code is the only writer on the repo, never concurrently with another tool. External reviewers (e.g. Gemini) give read-only second opinions.
+
+## Multi-agent work
+
+- **Agents:** Claude Code (default implementer), Gemini Argon in Antigravity (batch implementer and independent reviewer), the Manager (Claude chat) plans and reviews.
+- **One writer per folder:** each agent works in its own git worktree and branch; never edit a folder another agent uses.
+- **Branches:** agent work lands on its own branch; the owner merges after Manager review.
+- **Risk tiers:** money, persistence schemas, identity/lifecycle, truth-model or claim changes need an independent review by a different agent before merge.
+- **Reports:** go to `docs/archive/agent-reports/<yyyy-mm>/<TICKET-ID>.md`.
 
 ## What to read
 

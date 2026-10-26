@@ -244,18 +244,18 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 
   /* Compatibility aliases used by the existing application. */
-  --bg: #101311;
-  --panel: #1a201d;
-  --panel2: #222a26;
-  --line: #303a35;
-  --text: #f2f5f1;
-  --muted: #8f9a94;
-  --primary: #42ad7b;
-  --primary-hover: #58c18f;
+  --bg: var(--surface-canvas);
+  --panel: var(--surface-panel);
+  --panel2: var(--surface-interactive);
+  --line: var(--border-default);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+  --primary: var(--accent-primary);
+  --primary-hover: var(--accent-primary-hover);
   --primary-rgb: 66, 173, 123;
   --orange: #d18a43;
-  --red: #d0646b;
-  --purple: #8b78ad;
+  --red: var(--status-danger);
+  --purple: var(--equity-tie);
   --heart: var(--suit-heart);
   --spade: var(--suit-spade);
   --diamond: var(--suit-diamond);
@@ -2132,7 +2132,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="discord-0px"] .matrix-wrap {
 
-  border-radius: 0px !important;
+  border-radius: 0px;
 
 }
 
@@ -2428,9 +2428,9 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="serious-pio"] .btn-action {
 
-  border-radius: 0px !important;
+  border-radius: 0px;
 
-  font-family: 'Fira Code', monospace, sans-serif !important;
+  font-family: 'Fira Code', monospace, sans-serif;
 
 }
 
@@ -2502,11 +2502,11 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .panel {
 
-  border: 1px solid var(--line) !important;
+  border: 1px solid var(--line);
 
-  box-shadow: 0 0 15px rgba(0, 255, 102, 0.08), inset 0 0 30px rgba(0, 255, 102, 0.02) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 102, 0.08), inset 0 0 30px rgba(0, 255, 102, 0.02);
 
-  background: linear-gradient(145deg, rgba(10, 20, 13, 0.98), rgba(5, 10, 5, 0.99)) !important;
+  background: linear-gradient(145deg, rgba(10, 20, 13, 0.98), rgba(5, 10, 5, 0.99));
 
 }
 
@@ -2514,9 +2514,9 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .panel-head {
 
-  border-bottom: 1px solid var(--line) !important;
+  border-bottom: 1px solid var(--line);
 
-  background: rgba(0, 255, 102, 0.03) !important;
+  background: rgba(0, 255, 102, 0.03);
 
 }
 
@@ -2542,13 +2542,13 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .card-slot {
 
-  border: 1px solid var(--line) !important;
+  border: 1px solid var(--line);
 
-  background: rgba(6, 18, 8, 0.8) !important;
+  background: rgba(6, 18, 8, 0.8);
 
-  box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.1) !important;
+  box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.1);
 
-  transition: all 0.2s ease !important;
+  transition: all 0.2s ease;
 
 }
 
@@ -2556,9 +2556,9 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .card-slot:hover {
 
-  border-color: var(--primary) !important;
+  border-color: var(--primary);
 
-  box-shadow: inset 0 0 15px rgba(0, 255, 102, 0.2), 0 0 10px rgba(0, 255, 102, 0.3) !important;
+  box-shadow: inset 0 0 15px rgba(0, 255, 102, 0.2), 0 0 10px rgba(0, 255, 102, 0.3);
 
 }
 
@@ -2572,13 +2572,13 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .matrix-cell {
 
-  font-family: 'Consolas', 'Courier New', monospace !important;
+  font-family: 'Consolas', 'Courier New', monospace;
 
-  border: 1px solid var(--line) !important;
+  border: 1px solid var(--line);
 
-  background: rgba(0, 20, 0, 0.6) !important;
+  background: rgba(0, 20, 0, 0.6);
 
-  color: var(--text) !important;
+  color: var(--text);
 
 }
 
@@ -2588,9 +2588,9 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] select:hover {
 
-  border-color: var(--primary) !important;
+  border-color: var(--primary);
 
-  box-shadow: 0 0 8px rgba(0, 255, 102, 0.3) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 102, 0.3);
 
 }
 
@@ -2598,11 +2598,11 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .tab.active {
 
-  background: rgba(0, 255, 102, 0.15) !important;
+  background: rgba(0, 255, 102, 0.15);
 
-  border-color: var(--primary) !important;
+  border-color: var(--primary);
 
-  box-shadow: 0 0 10px rgba(0, 255, 102, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
 
 }
 
@@ -2610,11 +2610,11 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .cta {
 
-  background: linear-gradient(135deg, rgba(0, 255, 102, 0.2), rgba(0, 255, 102, 0.1)) !important;
+  background: linear-gradient(135deg, rgba(0, 255, 102, 0.2), rgba(0, 255, 102, 0.1));
 
-  border: 1px solid var(--primary) !important;
+  border: 1px solid var(--primary);
 
-  box-shadow: 0 0 15px rgba(0, 255, 102, 0.2) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
 
 }
 
@@ -2622,9 +2622,9 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="terminal"] .cta:hover {
 
-  background: linear-gradient(135deg, rgba(0, 255, 102, 0.3), rgba(0, 255, 102, 0.2)) !important;
+  background: linear-gradient(135deg, rgba(0, 255, 102, 0.3), rgba(0, 255, 102, 0.2));
 
-  box-shadow: 0 0 20px rgba(0, 255, 102, 0.4) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
 
 }
 
@@ -2780,7 +2780,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-red"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -2794,7 +2794,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-red"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -2852,7 +2852,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-cyan"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -2866,7 +2866,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-cyan"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -2924,7 +2924,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-purple"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -2938,7 +2938,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-purple"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -2996,7 +2996,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-amber"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -3010,7 +3010,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-amber"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -3068,7 +3068,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-emerald"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -3082,7 +3082,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-emerald"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -3140,7 +3140,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-rose"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -3154,7 +3154,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-rose"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -3212,7 +3212,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-slate"] * {
 
-  border-radius: 0 !important;
+  border-radius: 0;
 
 }
 
@@ -3226,7 +3226,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 [data-theme="brutalist-slate"] .btn-action {
 
-  border: 2px solid var(--line) !important;
+  border: 2px solid var(--line);
 
   box-shadow: var(--shadow);
 
@@ -3835,9 +3835,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-slot:not(.filled) {
 
-  border: 1.5px dashed var(--border-default) !important;
+  border: 1.5px dashed var(--border-default);
 
-  background: var(--surface-inset) !important;
+  background: var(--surface-inset);
 
   color: var(--text-muted);
 
@@ -3861,7 +3861,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   font-family: system-ui, -apple-system, sans-serif;
 
-  color: var(--muted, #64748b);
+  color: var(--muted);
 
   opacity: 0.5;
 
@@ -3873,7 +3873,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-slot:not(.filled):hover {
 
-  border-color: var(--primary, #25c281) !important;
+  border-color: var(--primary) !important;
 
   background: rgba(37, 194, 129, 0.08) !important;
 
@@ -3885,7 +3885,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-slot:not(.filled):hover::before {
 
-  color: var(--primary, #25c281);
+  color: var(--primary);
 
   opacity: 1;
 
@@ -3947,21 +3947,21 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-slot.filled {
 
-  width: 48px !important;
+  width: 48px;
 
-  min-width: 48px !important;
+  min-width: 48px;
 
-  height: 66px !important;
+  height: 66px;
 
-  min-height: 66px !important;
+  min-height: 66px;
 
-  box-sizing: border-box !important;
+  box-sizing: border-box;
 
-  border: 1.5px solid var(--card-border) !important;
+  border: 1.5px solid var(--card-border);
 
-  background: var(--card-face) !important;
+  background: var(--card-face);
 
-  color: var(--suit-spade) !important;
+  color: var(--suit-spade);
 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 
@@ -3977,25 +3977,25 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-back {
 
-  width: 48px !important;
+  width: 48px;
 
-  min-width: 48px !important;
+  min-width: 48px;
 
-  height: 66px !important;
+  height: 66px;
 
-  min-height: 66px !important;
+  min-height: 66px;
 
-  box-sizing: border-box !important;
+  box-sizing: border-box;
 
-  border: 1px solid #ffffff !important;
+  border: 1px solid var(--text-on-action-fold);
 
-  background-color: #ef4444 !important;
+  background-color: #ef4444;
 
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="122" viewBox="0 0 90 122"><rect width="90" height="122" rx="7" fill="%23ffffff"/><rect x="4" y="4" width="82" height="114" rx="5" fill="%23dc2626"/><pattern id="r" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 0 L12 6 L6 12 L0 6 Z" fill="none" stroke="%23ffffff" stroke-width="0.8" opacity="0.85"/><path d="M6 0 L6 12 M0 6 L12 6" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.65"/><polygon points="6,2 10,6 6,10 2,6" fill="none" stroke="%23ffffff" stroke-width="0.6" opacity="0.75"/></pattern><rect x="4" y="4" width="82" height="114" rx="5" fill="url(%23r)"/><polygon points="45,18 55,30 45,42 35,30" fill="%23ffffff" stroke="%23dc2626" stroke-width="1.5"/><text x="45" y="34" font-size="11" font-weight="bold" fill="%23dc2626" text-anchor="middle" font-family="sans-serif">♠</text><polygon points="45,80 55,92 45,104 35,92" fill="%23ffffff" stroke="%23dc2626" stroke-width="1.5"/><text x="45" y="96" font-size="11" font-weight="bold" fill="%23dc2626" text-anchor="middle" font-family="sans-serif">♠</text></svg>') !important;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="122" viewBox="0 0 90 122"><rect width="90" height="122" rx="7" fill="%23ffffff"/><rect x="4" y="4" width="82" height="114" rx="5" fill="%23dc2626"/><pattern id="r" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 0 L12 6 L6 12 L0 6 Z" fill="none" stroke="%23ffffff" stroke-width="0.8" opacity="0.85"/><path d="M6 0 L6 12 M0 6 L12 6" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.65"/><polygon points="6,2 10,6 6,10 2,6" fill="none" stroke="%23ffffff" stroke-width="0.6" opacity="0.75"/></pattern><rect x="4" y="4" width="82" height="114" rx="5" fill="url(%23r)"/><polygon points="45,18 55,30 45,42 35,30" fill="%23ffffff" stroke="%23dc2626" stroke-width="1.5"/><text x="45" y="34" font-size="11" font-weight="bold" fill="%23dc2626" text-anchor="middle" font-family="sans-serif">♠</text><polygon points="45,80 55,92 45,104 35,92" fill="%23ffffff" stroke="%23dc2626" stroke-width="1.5"/><text x="45" y="96" font-size="11" font-weight="bold" fill="%23dc2626" text-anchor="middle" font-family="sans-serif">♠</text></svg>');
 
-  background-size: cover !important;
+  background-size: cover;
 
-  background-position: center !important;
+  background-position: center;
 
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 
@@ -4021,9 +4021,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 [data-theme="brutalist-rose"] .card-slot.facedown {
 
-  background-color: #2563eb !important;
+  background-color: #2563eb;
 
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="122" viewBox="0 0 90 122"><rect width="90" height="122" rx="7" fill="%23ffffff"/><rect x="4" y="4" width="82" height="114" rx="5" fill="%231d4ed8"/><pattern id="b" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 0 L12 6 L6 12 L0 6 Z" fill="none" stroke="%23ffffff" stroke-width="0.8" opacity="0.85"/><path d="M6 0 L6 12 M0 6 L12 6" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.65"/><polygon points="6,2 10,6 6,10 2,6" fill="none" stroke="%23ffffff" stroke-width="0.6" opacity="0.75"/></pattern><rect x="4" y="4" width="82" height="114" rx="5" fill="url(%23b)"/><polygon points="45,18 55,30 45,42 35,30" fill="%23ffffff" stroke="%231d4ed8" stroke-width="1.5"/><text x="45" y="34" font-size="11" font-weight="bold" fill="%231d4ed8" text-anchor="middle" font-family="sans-serif">♠</text><polygon points="45,80 55,92 45,104 35,92" fill="%23ffffff" stroke="%231d4ed8" stroke-width="1.5"/><text x="45" y="96" font-size="11" font-weight="bold" fill="%231d4ed8" text-anchor="middle" font-family="sans-serif">♠</text></svg>') !important;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="122" viewBox="0 0 90 122"><rect width="90" height="122" rx="7" fill="%23ffffff"/><rect x="4" y="4" width="82" height="114" rx="5" fill="%231d4ed8"/><pattern id="b" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 0 L12 6 L6 12 L0 6 Z" fill="none" stroke="%23ffffff" stroke-width="0.8" opacity="0.85"/><path d="M6 0 L6 12 M0 6 L12 6" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.65"/><polygon points="6,2 10,6 6,10 2,6" fill="none" stroke="%23ffffff" stroke-width="0.6" opacity="0.75"/></pattern><rect x="4" y="4" width="82" height="114" rx="5" fill="url(%23b)"/><polygon points="45,18 55,30 45,42 35,30" fill="%23ffffff" stroke="%231d4ed8" stroke-width="1.5"/><text x="45" y="34" font-size="11" font-weight="bold" fill="%231d4ed8" text-anchor="middle" font-family="sans-serif">♠</text><polygon points="45,80 55,92 45,104 35,92" fill="%23ffffff" stroke="%231d4ed8" stroke-width="1.5"/><text x="45" y="96" font-size="11" font-weight="bold" fill="%231d4ed8" text-anchor="middle" font-family="sans-serif">♠</text></svg>');
 
 }
 
@@ -4137,7 +4137,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-slot .corner { position: absolute; inset-inline-end: 5px; inset-block-end: 3px; font-size: 15px; opacity: .88; }
 
-.empty-card { display: none !important; }
+.empty-card { display: none; }
 
 /* Responsive Design for Mobile/Tablet */
 @media (max-width: 1024px) {
@@ -4149,10 +4149,10 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   }
   
   .card-slot.filled {
-    width: 42px !important;
-    min-width: 42px !important;
-    height: 58px !important;
-    min-height: 58px !important;
+    width: 42px;
+    min-width: 42px;
+    height: 58px;
+    min-height: 58px;
   }
   
   .card-slot .rank { font-size: 16px; line-height: 15px; }
@@ -4169,10 +4169,10 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   }
   
   .card-slot.filled {
-    width: 38px !important;
-    min-width: 38px !important;
-    height: 52px !important;
-    min-height: 52px !important;
+    width: 38px;
+    min-width: 38px;
+    height: 52px;
+    min-height: 52px;
   }
   
   .card-slot .rank { font-size: 14px; line-height: 13px; }
@@ -4529,7 +4529,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   border-color: var(--primary);
 
-  color: #fff;
+  color: var(--text-on-action-fold);
 
   font-weight: var(--weight-heading);
 
@@ -4567,9 +4567,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   border-radius: 50%;
 
-  background: #ffffff;
+  background: var(--text-on-action-fold);
 
-  box-shadow: 0 0 6px #ffffff;
+  box-shadow: 0 0 6px var(--text-on-action-fold);
 
 }
 
@@ -4595,7 +4595,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   font-size: var(--t-label);
 
-  color: #ffffff;
+  color: var(--text-on-action-fold);
 
 }
 
@@ -4789,7 +4789,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   transform: scale(1.8);
 
-  background: #fff;
+  background: var(--text-on-action-fold);
 
 }
 
@@ -5270,9 +5270,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* High Contrast Theme-Adaptive Badges & Selects */
 .training-select {
-  background: var(--surface-interactive) !important;
-  color: var(--text-primary) !important;
-  border: 1px solid var(--border-default) !important;
+  background: var(--surface-interactive);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-control);
   font-weight: var(--weight-heading);
@@ -5282,17 +5282,17 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 .training-select:hover {
-  border-color: var(--primary) !important;
+  border-color: var(--primary);
 }
 
 .training-score-badge {
-  background: var(--surface-interactive) !important;
-  border: 1px solid var(--border-default) !important;
-  color: var(--text-primary) !important;
-  font-weight: var(--weight-heading) !important;
-  padding: var(--space-3) var(--space-5) !important;
-  border-radius: 20px !important;
-  font-size: 13px !important;
+  background: var(--surface-interactive);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-weight: var(--weight-heading);
+  padding: var(--space-3) var(--space-5);
+  border-radius: 20px;
+  font-size: 13px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   display: inline-flex;
   align-items: center;
@@ -5300,14 +5300,14 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 .training-next-btn {
-  background: var(--primary) !important;
-  color: var(--button-text, #fff) !important;
-  font-weight: var(--weight-title) !important;
-  font-size: 15px !important;
-  padding: var(--space-5) var(--space-8) !important;
-  border-radius: var(--radius-control) !important;
-  border: none !important;
-  cursor: pointer !important;
+  background: var(--primary);
+  color: var(--button-text);
+  font-weight: var(--weight-title);
+  font-size: 15px;
+  padding: var(--space-5) var(--space-8);
+  border-radius: var(--radius-control);
+  border: none;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: var(--space-4);
@@ -5348,13 +5348,13 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Card Slot Micro-interactions & Insertion Pop */
 .card-slot {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-slot:hover {
   transform: translateY(-2px);
-  border-color: var(--primary) !important;
-  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25) !important;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
 }
 
 .card-slot.filled {
@@ -5473,15 +5473,15 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 .matrix-inspector-popover {
   position: absolute;
   z-index: 1000;
-  background: var(--panel, #1e293b);
-  border: 1px solid var(--line, #334155);
+  background: var(--panel);
+  border: 1px solid var(--line);
   box-shadow: 0 10px 30px rgba(0,0,0,0.7);
   border-radius: 8px;
   padding: 12px 14px;
   width: 220px;
   pointer-events: auto;
   animation: popoverFadeIn 0.15s ease-out;
-  color: var(--text, #fff);
+  color: var(--text);
   font-family: inherit;
 }
 
@@ -5516,24 +5516,24 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   gap: 10px;
   padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-control);
-  background: var(--panel, #1e293b);
-  border: 1px solid var(--line, #334155);
+  background: var(--panel);
+  border: 1px solid var(--line);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 13px;
-  color: var(--text, #f8fafc);
+  color: var(--text);
   white-space: nowrap;
 }
 
 .piotree-node-row:hover {
   background: rgba(30, 41, 59, 0.8);
-  border-color: var(--accent, #38bdf8);
+  border-color: var(--accent);
   transform: translateX(2px);
 }
 
 .piotree-node-row.selected {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(30, 41, 59, 0.9) 100%);
-  border-color: var(--accent, #38bdf8);
+  border-color: var(--accent);
   box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
 }
 
@@ -5544,8 +5544,8 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   align-items: center;
   justify-content: center;
   font-size: var(--t-label);
-  color: var(--accent, #38bdf8);
-  background: transparent !important;
+  color: var(--accent);
+  background: transparent;
   border-radius: var(--radius-cell);
   transition: transform 0.2s ease;
   user-select: none;
@@ -5589,7 +5589,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-cell);
   background: rgba(56, 189, 248, 0.15);
-  color: var(--accent, #38bdf8);
+  color: var(--accent);
 }
 
 .tree-bars {
@@ -5607,9 +5607,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   transition: width 0.3s ease;
 }
 
-.tree-seg-fold { background: var(--red, #ef4444); }
-.tree-seg-call { background: var(--matrix-call, #10b981); }
-.tree-seg-raise { background: var(--matrix-open, #a855f7); }
+.tree-seg-fold { background: var(--red); }
+.tree-seg-call { background: var(--matrix-call); }
+.tree-seg-raise { background: var(--matrix-open); }
 
 .tree-actions-list {
   font-size: var(--t-small);
@@ -5678,15 +5678,15 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 /* 3. Theme Contrast & Card Suit Visibility Compliance */
-.suit-s { color: var(--spade, #ffffff) !important; text-shadow: 0 0 2px rgba(0,0,0,0.8); }
-.suit-h { color: var(--heart, #ef4444) !important; }
-.suit-d { color: var(--diamond, #3b82f6) !important; }
-.suit-c { color: var(--club, #10b981) !important; }
+.suit-s { color: var(--spade) !important; text-shadow: 0 0 2px rgba(0,0,0,0.8); }
+.suit-h { color: var(--heart) !important; }
+.suit-d { color: var(--diamond) !important; }
+.suit-c { color: var(--club) !important; }
 
 /* Dark contrast enforcement for terminal / dark brutalist modes */
 [data-theme*="terminal"] .suit-s,
 [data-theme*="brutalist"] .suit-s {
-  color: #ffffff !important;
+  color: var(--text-on-action-fold);
 }
 
 /* 4. Complete Bi-Directional (i18n & Hebrew RTL) Layout Support */
@@ -5800,14 +5800,14 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   transform: translateX(4px);
 }
 
-.suit-h { color: var(--heart, #ef4444) !important; }
-.suit-d { color: var(--diamond, #3b82f6) !important; }
-.suit-c { color: var(--club, #10b981) !important; }
+.suit-h { color: var(--heart); }
+.suit-d { color: var(--diamond); }
+.suit-c { color: var(--club); }
 
 /* Dark contrast enforcement for terminal / dark brutalist modes */
 [data-theme*="terminal"] .suit-s,
 [data-theme*="brutalist"] .suit-s {
-  color: #ffffff !important;
+  color: var(--text-on-action-fold);
 }
 
 .path-progress {
@@ -5838,7 +5838,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 [dir="rtl"] .matrix-wrap,
 [dir="rtl"] .strategy-grid,
 [dir="rtl"] #strategyGrid {
-  direction: ltr !important;
+  direction: ltr;
 }
 
 [dir="rtl"] .panel-title,
@@ -5923,7 +5923,7 @@ input[type="number"] {
 
 [dir="rtl"] #heroAdvBar, 
 [dir="rtl"] #villainAdvBar {
-    transform-origin: right !important;
+    transform-origin: right;
 }
 
 @keyframes fadeSlideUp {
@@ -5984,8 +5984,8 @@ html[data-four-color="false"] .card.black {
   opacity: 0;
 }
 
-html[data-four-color="false"] .suit-s { color: var(--suit-spade) !important; }
-html[data-four-color="false"] .suit-c { color: var(--suit-spade) !important; }
+html[data-four-color="false"] .suit-s { color: var(--suit-spade); }
+html[data-four-color="false"] .suit-c { color: var(--suit-spade); }
 
 /* --------------------------------------------------------------------------
    DESIGN-003: Riverline application shell
@@ -9888,7 +9888,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .training-study-hints h3 { margin: 0; color: var(--text-primary); font-size: var(--text-label-size); }
 .training-study-hints p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--text-label-size); }
 .training-study-hint-content .analysis-study-hint { display: grid; gap: var(--space-3); padding-top: var(--space-1); }
-.analysis-study-hint-count { margin: 0; color: var(--text-muted) !important; font-size: var(--t-label) !important; font-weight: var(--weight-label); letter-spacing: .05em; text-transform: uppercase; }
+.analysis-study-hint-count { margin: 0; color: var(--text-muted); font-size: var(--t-label) !important; font-weight: var(--weight-label); letter-spacing: .05em; text-transform: uppercase; }
 .analysis-study-hint-prompt { margin: 0; color: var(--text-primary) !important; font-size: var(--text-body-size) !important; font-weight: var(--weight-heading); line-height: 1.5; }
 .analysis-study-hint-nudge { display: grid; gap: var(--space-2); padding: var(--space-3); background: color-mix(in srgb, var(--accent-primary) 6%, var(--surface-panel)); border-inline-start: 3px solid var(--accent-primary); border-radius: var(--radius-cell); }
 .analysis-study-hint-nudge > strong { color: var(--text-muted); font-size: var(--t-label); letter-spacing: .04em; text-transform: uppercase; }
@@ -13189,11 +13189,11 @@ body.has-modal-open { overflow: hidden; }
 }
 
 @media (max-width: 1100px) {
-  #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-decision-workspace {
+  #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"], [data-hand-stage="private-cards"], [data-hand-stage="reveal"]) .playbook-decision-workspace {
     order: 1;
     width: 100%;
   }
-  #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-context-rail {
+  #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"], [data-hand-stage="private-cards"], [data-hand-stage="reveal"]) .playbook-context-rail {
     order: 2;
     width: 100%;
   }
@@ -16500,7 +16500,7 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 }
 .opponent-learning-comparison > article { min-width: 0; overflow-wrap: anywhere; }
 /* HAND-HISTORY-IMPORT-001: native focus-trapped dialog, source text stays LTR. */
-.hand-import-dialog { color: var(--text-primary); background: var(--surface-panel); border: 1px solid var(--border-subtle, #637080); border-radius: 16px; box-sizing: border-box; width: min(720px, calc(100vw - 32px)); max-height: 88dvh; overflow: auto; padding: var(--space-8); }
+.hand-import-dialog { color: var(--text-primary); background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: 16px; box-sizing: border-box; width: min(720px, calc(100vw - 32px)); max-height: 88dvh; overflow: auto; padding: var(--space-8); }
 .hand-import-dialog::backdrop { background: rgb(0 0 0 / .6); }
 .hand-import-dialog textarea { box-sizing: border-box; display: block; width: 100%; resize: vertical; margin-block: var(--space-4) var(--space-6); padding: var(--space-5); color: inherit; background: transparent; }
 .hand-import-dialog label { display: block; margin-block-start: var(--space-5); }
@@ -16508,20 +16508,20 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 .hand-import-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 280px; overflow: auto; }
 .hand-import-preview li { overflow-wrap: anywhere; }
 /* Advanced Equity is a secondary, bounded disclosure over canonical facts. */
-.advanced-equity { border-block-start: 1px solid var(--border, #586174); padding: var(--space-5); min-inline-size: 0; }
+.advanced-equity { border-block-start: 1px solid var(--border); padding: var(--space-5); min-inline-size: 0; }
 .advanced-equity summary { cursor: pointer; font-weight: var(--weight-label); }
 .advanced-equity-body { display: grid; gap: var(--space-5); padding-block-start: var(--space-5); }
 .advanced-equity-inputs { display: grid; gap: 10px; }
-.advanced-equity fieldset { min-inline-size: 0; border: 1px solid var(--border, #586174); border-radius: var(--radius-control); padding: 10px; }
+.advanced-equity fieldset { min-inline-size: 0; border: 1px solid var(--border); border-radius: var(--radius-control); padding: 10px; }
 .advanced-equity label { display: block; margin-block: var(--space-3); }
-.advanced-equity textarea, .advanced-equity select, .advanced-equity input:not([type="checkbox"]) { max-inline-size: 100%; inline-size: 100%; color: inherit; background: var(--panel, #18202d); border: 1px solid var(--border, #586174); border-radius: 6px; padding: var(--space-3); }
+.advanced-equity textarea, .advanced-equity select, .advanced-equity input:not([type="checkbox"]) { max-inline-size: 100%; inline-size: 100%; color: inherit; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: var(--space-3); }
 .advanced-equity-controls, .advanced-equity-cards { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .advanced-equity-value { font-size: 1.2rem; font-weight: var(--weight-label); }
 .advanced-equity pre { white-space: pre-wrap; overflow-wrap: anywhere; max-block-size: 240px; overflow: auto; font-size: var(--t-small); }
-.advanced-equity-preview { border-inline-start: 2px solid var(--accent, #709bc5); padding-inline-start: 10px; }
+.advanced-equity-preview { border-inline-start: 2px solid var(--accent); padding-inline-start: 10px; }
 .advanced-mini-card { display: inline-block; padding: 5px; border: 1px solid currentColor; border-radius: 4px; }
 .advanced-mini-card.unused { opacity: .5; }
-.advanced-equity :focus-visible { outline: 2px solid var(--accent, #709bc5); outline-offset: 3px; }
+.advanced-equity :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* BETA-DESIGN-REFRESH-001. Shared study hierarchy; existing theme/card/action
    tokens and workspace authorities remain the source of presentation values. */
@@ -18696,7 +18696,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-cards-panel .board-card-set-editor { gap: var(--space-2); padding: 0; }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-cards-panel .playbook-board-street-guide { margin: 0 0 var(--space-2); }
 /* Dead cards: one compact row with the slots on the end side. */
-html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-dead-card-header {
+html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-cards-panel .playbook-dead-card-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;

@@ -25,7 +25,7 @@ export const OPPONENT_POLICY_COPY = {
     review: 'Допущения соперника в этой раздаче', history: 'Записанные решения политики', evidence: 'Данные политики',
     check_available: 'Чек был доступен.', small_call_price: 'Цена колла была небольшой.', large_call_price: 'Цена колла была большой.',
     decision: 'Место {seat}, {street}: {action}. {reason} Настроенный вес выбора действия, {weight}%.',
-    fold: 'фолд', check: 'чек', call: 'колл', bet: 'бет', raiseAction: 'рейз',
+    fold: 'пас', check: 'чек', call: 'колл', bet: 'бет', raiseAction: 'рейз',
     preflop: 'префлоп', flop: 'флоп', turn: 'тёрн', river: 'ривер', invalid: 'Введите целые проценты от 0 до 100 и сид политики от 0 до 4294967295.',
   },
   he: {

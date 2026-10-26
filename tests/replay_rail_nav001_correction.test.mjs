@@ -244,7 +244,8 @@ test('corrected table, history, Review, localization, bidi, and Daylight contrac
   // composition rule).
   assert.equal(css.cascaded(surface, 'grid-template-columns', { width: 1440 }), 'minmax(0, 1fr) minmax(320px, .43fr)');
   assert.ok(markup.getElementById('handReviewReplayRailMount'));
-  assert.match(TRANSLATIONS, /'Hero': 'Игрок'/);
+  // RU Hero follows TERMINOLOGY.md (I18N-RESIDUE-001).
+  assert.match(TRANSLATIONS, /'Hero': 'Hero'/);
   assert.match(TRANSLATIONS, /'Hero': 'הירו'/);
   // Amounts are isolated LTR runs in RTL.
   const html = app.document.documentElement;

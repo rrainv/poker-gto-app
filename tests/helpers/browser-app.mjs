@@ -391,6 +391,15 @@ export async function bootApp(options = {}) {
   options.beforeScripts?.(globalThis);
 
   const skip = new Set([...DEFAULT_SKIP_SCRIPTS, ...(options.skipScripts || [])]);
+  // A skipped script the page appends at runtime fails to load, as a missing
+  // file would in a browser (the page awaits its load/error outcome).
+  const appendToHead = document.head.appendChild.bind(document.head);
+  document.head.appendChild = (node) => {
+    const src = node?.localName === 'script' ? node.getAttribute('src')?.replace(/\?.*$/, '') : null;
+    appendToHead(node);
+    if (src && skip.has(src)) queueMicrotask(() => node.onerror?.(new dom.Event('error')));
+    return node;
+  };
   const sources = scriptSources(document);
   // Classic non-deferred scripts run first, then module/defer scripts in order
   // (modules and deferred classic scripts share document order).

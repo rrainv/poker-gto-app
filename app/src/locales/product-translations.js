@@ -1096,7 +1096,7 @@
     "Global utilities": "כלים כלליים",
     "Hero cards": "קלפי הירו",
     "Mute sound": "השתקת שמע",
-    "Open settings": "פתיחת ההגדרות",
+    "Open settings": "פתח הגדרות",
     "Playbook analysis views": "תצוגות הניתוח",
     "Player count, from 2 through 10": "מספר שחקנים, בין 2 ל‑10",
     "Primary mode": "מצב ראשי",
@@ -1510,13 +1510,13 @@ Object.assign(he, {
     "Applies immediately and uses the same preference as the sidebar.": "חל מיד ומשתמש באותה העדפה כמו סרגל הצד.",
     "Help & Learning": "עזרה ולמידה",
     "Learn Riverline remains the primary global entry. Use these secondary routes when you are already in Settings.": "ללמוד את Riverline נשאר נתיב הכניסה הכללי הראשי. השתמשו בנתיבים המשניים האלה כשאתם כבר בהגדרות.",
-    "Open Guide": "פתיחת המדריך",
+    "Open Guide": "פתח את המדריך",
     "Restart Settings tour": "הפעלת הסיור בהגדרות מחדש",
     "Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.": "העדפות המכשיר מקובצות לפי סוג. השתמשו ברשימת הקטגוריות כדי לעבור בין מראה, שמע ותנועה, שפה ועזרה, וחשבון ונתונים."
   });
 
   Object.assign(ru, {
-    'Hero': 'Игрок',
+    'Hero': 'Hero',
     'Abort hand': 'Прервать раздачу',
     'Abort this hand? Unsaved current live progress will be discarded. Saved hands and spots will not be changed.': 'Прервать эту раздачу? Несохранённый текущий прогресс будет удалён. Сохранённые раздачи и споты не изменятся.',
     'ClubGG currently supports 7 to 10 players. Enter a whole number in that range.': 'Сейчас ClubGG поддерживает от 7 до 10 игроков. Введите целое число в этом диапазоне.',

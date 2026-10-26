@@ -147,11 +147,10 @@ test('large desktop columns remain compact and 1024 desktop stacks primary conte
   assert.equal(css.cascaded(app.$('#gtoMode .playbook-context-rail'), 'order', narrow), '2');
 });
 
-test('stacked Hand shows the context rail first while private cards or reveals are chosen', {
-  todo: 'TEST-HYGIENE-001-F04: the [data-hand-stage]:not([data-hand-stage="setup"]) rule outranks the private-cards/reveal exception',
-}, async () => {
+test('stacked Hand shows the context rail first while private cards or reveals are chosen', async () => {
   // Protects (PREMIUM-LAYOUT-001): at <=1100px the private-card and reveal
-  // stages lead with the context rail. Currently defeated by specificity.
+  // stages lead with the context rail (TEST-HYGIENE-001-F04, fixed by
+  // CLEANUP-PREP-001).
   await app.navigate('hand');
   const gtoMode = app.byId('gtoMode');
   for (const stage of ['private-cards', 'reveal']) {

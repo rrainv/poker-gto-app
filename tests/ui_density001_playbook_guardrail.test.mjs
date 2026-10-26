@@ -105,9 +105,8 @@ test('dead-card header keeps the status group and Clear action in independent re
   assert.equal(css.cascaded(header.querySelector('.playbook-card-state-summary'), 'flex-wrap'), 'wrap');
 });
 
-test('Analyze dead-card header keeps its compact three-column grid row', {
-  todo: 'TEST-HYGIENE-001-F06: the preset .playbook-cards-panel .section-head rule outranks the Analyze dead-card grid',
-}, async () => {
+test('Analyze dead-card header keeps its compact three-column grid row', async () => {
+  // Protects: TEST-HYGIENE-001-F06 (fixed by CLEANUP-PREP-001).
   await app.navigate('analyze');
   assertReflowSafeHeader(app.$('.playbook-dead-card-header'), 'minmax(0, 1fr) auto auto');
 });
