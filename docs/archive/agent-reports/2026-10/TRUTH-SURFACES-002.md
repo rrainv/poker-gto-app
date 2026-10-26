@@ -29,7 +29,8 @@
    - **Hand Review frequency comparison (`app/src/core/logic.js`)**: Updated `renderHandReviewFrequencyComparison(decision)` so estimated decisions (`decision.source?.exactFrequencies !== true`) round mix percentages to 5% steps and hide actions `< 5%` without mutating `decision.allActions`.
 
 3. **Verdict Dominance Rule (`NORTH_STAR §7.3`)**:
-   - Confirmed and hardened `classifyVerdictDominance(actions)` in `app/src/application/analyze-verdict.mjs` to strictly return `'dominant'` (when the top action leads the second action by `>= 20` percentage points or no second action reaches `5%`) or `'close'` (using integer basis-point comparison `Math.round(next.probability * 10000) >= Math.round(VERDICT_MEANINGFUL_SHARE * 10000)` to avoid floating-point boundary drift at `0.05` / `0.20`), and verified every verdict display across Analyze, Training, and Review follows this two-state rule.
+   - The rule lives in `describeAnalyzeVerdict(strategyResult)` in `app/src/application/analyze-verdict.mjs`: `'dominant'` when the top action leads the next action by `>= 20` percentage points or no other action reaches `5%`, otherwise `'close'` ("A or B · close"); comparisons are in whole basis points so `0.05` / `0.20` never flip on floating-point noise.
+   - *Corrected in MERGE-002:* this report previously named a `classifyVerdictDominance` function (it does not exist) and claimed every verdict display followed the rule. Explain (`analysis-explanation.mjs`) still used a private 95/70/10 four-state shape and 1% values; MERGE-002 moved it onto `describeAnalyzeVerdict` and `presentStrategyMixActions`.
 
 ## Files Changed
 

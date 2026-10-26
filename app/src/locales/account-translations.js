@@ -468,6 +468,8 @@
     'Type DELETE to confirm': 'Type DELETE to confirm',
     'Permanently delete all data': 'Permanently delete all data',
     'All local data has been deleted from this browser.': 'All local data has been deleted from this browser.',
+    'Close other Riverline tabs to finish deleting': 'Close other Riverline tabs to finish deleting',
+    'Some local data could not be deleted. Try again.': 'Some local data could not be deleted. Try again.',
   });
   Object.assign(ru, {
     'Confirm password': 'Подтвердите пароль',
@@ -494,6 +496,8 @@
     'Type DELETE to confirm': 'Введите УДАЛИТЬ для подтверждения',
     'Permanently delete all data': 'Безвозвратно удалить все данные',
     'All local data has been deleted from this browser.': 'Все локальные данные удалены из этого браузера.',
+    'Close other Riverline tabs to finish deleting': 'Закройте другие вкладки Riverline, чтобы завершить удаление',
+    'Some local data could not be deleted. Try again.': 'Не удалось удалить часть локальных данных. Попробуйте ещё раз.',
   });
   Object.assign(he, {
     'Confirm password': 'אימות סיסמה',
@@ -520,6 +524,8 @@
     'Type DELETE to confirm': 'הקלד מחק לאישור',
     'Permanently delete all data': 'מחק לצמיתות את כל הנתונים',
     'All local data has been deleted from this browser.': 'כל הנתונים המקומיים נמחקו מהדפדפן הזה.',
+    'Close other Riverline tabs to finish deleting': 'סגרו לשוניות Riverline אחרות כדי לסיים את המחיקה',
+    'Some local data could not be deleted. Try again.': 'לא ניתן היה למחוק חלק מהנתונים המקומיים. נסו שוב.',
   });
 
   global.riverlineAccountTranslations = Object.freeze({

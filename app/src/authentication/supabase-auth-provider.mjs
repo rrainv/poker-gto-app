@@ -199,8 +199,14 @@ export function createSupabaseAuthProviderAdapter({
     async refreshSession() {
       return requireUser(() => authClient.auth.refreshSession(), 'session_expired');
     },
-    async signOut() {
+    async signOut({ scope } = {}) {
       try {
+        // Local scope (Delete all data) ends this device's session without revoking other devices.
+        if (scope === 'local') {
+          const localOnly = await authClient.auth.signOut({ scope: 'local' });
+          if (localOnly?.error) throw localOnly.error;
+          return;
+        }
         const globalResult = await timeout(authClient.auth.signOut({ scope: 'global' }), timeoutMs);
         if (!globalResult?.error) return;
         const localResult = await authClient.auth.signOut({ scope: 'local' });

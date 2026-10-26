@@ -588,18 +588,7 @@ function analysisPartValues(part) {
 }
 
 function analysisTextPart(part, explanation) {
-  const values = analysisPartValues(part);
-  if (part.templateKey === 'analysis.strategy.dominant') {
-    const secondary = explanation?.actionAnalysis?.find((entry, index) => index > 0 && entry.probability > 0);
-    if (secondary) {
-      return analysisMessage('analysis.strategy.dominant.withSecondary', part.text, {
-        ...values,
-        secondary: analysisActionText(secondary.label),
-        secondaryProbability: `${(secondary.probability * 100).toFixed(0)}%`
-      });
-    }
-  }
-  return analysisMessage(part.templateKey, part.text, values);
+  return analysisMessage(part.templateKey, part.text, analysisPartValues(part));
 }
 
 function analysisSectionElement(analysisSection, facts, explanation) {
@@ -791,7 +780,8 @@ function analysisSummaryText(explanation) {
   return analysisMessage(explanation.summaryKey, explanation.summary, {
     ...(explanation.summaryValues || {}),
     action: analysisActionText(primary?.label || explanation.summaryValues?.action),
-    probability: primary ? `${(primary.probability * 100).toFixed(0)}%` : explanation.summaryValues?.probability,
+    // Same display share as the mix (5% steps for estimated sources), never the raw probability.
+    probability: explanation.summaryValues?.probability,
     source: explanation.truth ? analysisUiText(explanation.summaryValues.source) : analysisProvenanceLabel(explanation)
   });
 }

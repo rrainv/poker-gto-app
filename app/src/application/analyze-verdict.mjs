@@ -119,19 +119,3 @@ export function describeAnalyzeVerdict(strategyResult) {
     marginPoints: close ? Math.round(margin * 100) : null,
   });
 }
-
-if (typeof window !== 'undefined') {
-  Object.defineProperty(window, 'RiverlineAnalyzeVerdict', {
-    configurable: true,
-    enumerable: false,
-    value: Object.freeze({
-      schemaVersion: ANALYZE_VERDICT_SCHEMA_VERSION,
-      closeMargin: VERDICT_CLOSE_MARGIN,
-      meaningfulShare: VERDICT_MEANINGFUL_SHARE,
-      estimatedMixStepPercent: ESTIMATED_MIX_STEP_PERCENT,
-      presentMixActions: presentStrategyMixActions,
-      describe: describeAnalyzeVerdict,
-    }),
-    writable: false,
-  });
-}

@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
 
 import { bootApp, text } from './helpers/app-under-test.mjs';
 import { isRendered } from './helpers/mini-dom.mjs';
@@ -24,7 +26,9 @@ const app = await bootApp({
 });
 
 const {
+  DELETE_BLOCKED_WAIT_MS,
   DELETE_CONFIRM_WORDS,
+  DELETE_RELOAD_DELAY_MS,
   KNOWN_RIVERLINE_DATABASES,
   STORAGE_PERSIST_MARKER_KEY,
   isIosBrowserTab,
@@ -60,7 +64,7 @@ test('DATA-SAFETY-001: requests persistent storage once at startup without naggi
   assert.equal(statusEl.dataset.storageStatus, 'temporary');
   assert.equal(text(statusEl), 'Temporary browser storage');
   assert.match(text(detailEl), /browser can clear temporary storage if device space runs low/i);
-  assert.equal(iosNoteEl.hidden, false, 'calm install/back-up note is shown when storage is temporary');
+  assert.equal(iosNoteEl.hidden, true, 'the iPhone/iPad Safari note stays hidden on non-iOS even when storage is temporary');
   assert.match(text(iosNoteEl), /Add Riverline to the Home Screen or back up important work/i);
 
   // On an iOS Safari browser tab (non-standalone), the calm install/back-up note remains visible even if persisted() is true.
@@ -187,18 +191,95 @@ test('DATA-SAFETY-001: Delete all data is strongly guarded with warning list, lo
   const beforeDbs = await app.window.indexedDB.databases();
   assert.ok(beforeDbs.length >= 1, 'at least one Riverline IndexedDB database exists before deletion');
 
-  await app.click('#settingsDeleteAllDataOpen');
-  await app.setValue('#settingsDeleteAllDataInput', 'DELETE');
-  assert.equal(confirmBtn.disabled, false);
+  const signOutCalls = [];
+  const reloads = [];
+  const auth = app.window.RiverlineAuthentication;
+  const originalSignOut = auth?.signOut;
+  Object.defineProperty(app.window, 'RiverlineAuthentication', {
+    configurable: true,
+    value: { ...(auth || {}), signOut: async (options) => { signOutCalls.push({ options, storageKeys: app.window.localStorage.length }); } },
+  });
+  app.window.location.reload = () => reloads.push(true);
 
-  await app.click('#settingsDeleteAllDataConfirm');
-  await app.settle(100);
+  try {
+    await app.click('#settingsDeleteAllDataOpen');
+    await app.setValue('#settingsDeleteAllDataInput', 'DELETE');
+    assert.equal(confirmBtn.disabled, false);
 
-  const afterDbs = await app.window.indexedDB.databases();
-  assert.deepEqual(afterDbs, [], 'all Riverline IndexedDB databases are deleted');
-  assert.equal(app.window.localStorage.length, 0, 'localStorage is cleared');
-  assert.equal(app.window.sessionStorage.length, 0, 'sessionStorage is cleared');
-  assert.equal(guardEl.hidden, true, 'guard closes after deletion');
-  assert.equal(statusEl.hidden, false, 'deletion status message is shown');
-  assert.equal(text(statusEl), 'All local data has been deleted from this browser.');
+    await app.click('#settingsDeleteAllDataConfirm');
+    await app.settle(100);
+
+    assert.equal(signOutCalls.length, 1, 'signs out once before wiping');
+    assert.deepEqual(signOutCalls[0].options, { scope: 'local' }, 'sign-out is local to this device');
+    assert.ok(signOutCalls[0].storageKeys > 0, 'sign-out runs before localStorage is wiped');
+
+    const afterDbs = await app.window.indexedDB.databases();
+    assert.deepEqual(afterDbs, [], 'all Riverline IndexedDB databases are deleted');
+    assert.equal(app.window.localStorage.length, 0, 'localStorage is cleared');
+    assert.equal(app.window.sessionStorage.length, 0, 'sessionStorage is cleared');
+    assert.equal(guardEl.hidden, true, 'guard closes after deletion');
+    assert.equal(statusEl.hidden, false, 'deletion status message is shown');
+    assert.equal(text(statusEl), 'All local data has been deleted from this browser.');
+    assert.equal(reloads.length, 0, 'the status shows briefly before reloading');
+
+    await app.settle(DELETE_RELOAD_DELAY_MS + 100);
+    assert.equal(reloads.length, 1, 'the page reloads after deletion');
+    // Nothing that marks orientation as completed survives, so the reload opens first run.
+    assert.equal(app.window.localStorage.getItem('riverline.welcomeOrientation.v1'), null);
+    const prepaint = fs.readFileSync(new URL('../app/src/application/welcome-orientation-prepaint.js', import.meta.url), 'utf8');
+    const root = { dataset: {} };
+    vm.runInNewContext(prepaint, {
+      document: { documentElement: root, addEventListener() {}, querySelectorAll: () => [] },
+      window: { localStorage: app.window.localStorage },
+    });
+    assert.equal(root.dataset.welcomeOrientation, 'unseen', 'the reloaded app starts in first run');
+  } finally {
+    Object.defineProperty(app.window, 'RiverlineAuthentication', { configurable: true, value: auth });
+    if (auth) assert.equal(app.window.RiverlineAuthentication.signOut, originalSignOut);
+  }
+});
+
+test('DATA-SAFETY-001: the window bridge exposes no unconfirmed delete', () => {
+  const bridge = app.window.RiverlineDataSafety;
+  assert.equal('deleteAllLocalData' in bridge, false);
+  const deleting = Object.keys(bridge).filter((key) => /delete/i.test(key));
+  assert.deepEqual(deleting.sort(), ['closeDeleteGuard', 'confirmDeleteAllData', 'openDeleteGuard']);
+});
+
+test('DATA-SAFETY-001: a blocked deletion waits, then asks to close other tabs instead of claiming success', async () => {
+  const pending = [];
+  const reloads = [];
+  const factory = app.window.indexedDB;
+  const originalDelete = factory.deleteDatabase;
+  factory.deleteDatabase = (name) => {
+    const request = new EventTarget();
+    pending.push({ name, request });
+    queueMicrotask(() => request.dispatchEvent(new Event('blocked')));
+    return request;
+  };
+  app.window.location.reload = () => reloads.push(true);
+  try {
+    app.window.localStorage.setItem('riverline_test_sentinel', 'present');
+    await app.click('#settingsDeleteAllDataOpen');
+    await app.setValue('#settingsDeleteAllDataInput', 'DELETE');
+    await app.click('#settingsDeleteAllDataConfirm');
+    const statusEl = app.byId('settingsDeleteAllDataStatus');
+    // Every database waits out the blocked window in turn before the outcome is known.
+    for (let step = 0; step < KNOWN_RIVERLINE_DATABASES.length + 2; step += 1) {
+      await app.settle(DELETE_BLOCKED_WAIT_MS + 50);
+    }
+    assert.ok(pending.length >= KNOWN_RIVERLINE_DATABASES.length);
+    assert.equal(statusEl.hidden, false);
+    assert.equal(text(statusEl), 'Close other Riverline tabs to finish deleting');
+    assert.equal(reloads.length, 0, 'no reload while deletion is blocked');
+
+    // The other tabs close: the queued deletions finish, then success shows and the page reloads.
+    pending.forEach(({ request }) => request.dispatchEvent(new Event('success')));
+    await app.settle(50);
+    assert.equal(text(statusEl), 'All local data has been deleted from this browser.');
+    await app.settle(DELETE_RELOAD_DELAY_MS + 100);
+    assert.equal(reloads.length, 1);
+  } finally {
+    factory.deleteDatabase = originalDelete;
+  }
 });

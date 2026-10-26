@@ -2209,6 +2209,8 @@ Object.assign(he, {
     ['Type DELETE to confirm', 'Введите УДАЛИТЬ для подтверждения', 'הקלד מחק לאישור'],
     ['Permanently delete all data', 'Безвозвратно удалить все данные', 'מחק לצמיתות את כל הנתונים'],
     ['All local data has been deleted from this browser.', 'Все локальные данные удалены из этого браузера.', 'כל הנתונים המקומיים נמחקו מהדפדפן הזה.'],
+    ['Close other Riverline tabs to finish deleting', 'Закройте другие вкладки Riverline, чтобы завершить удаление', 'סגרו לשוניות Riverline אחרות כדי לסיים את המחיקה'],
+    ['Some local data could not be deleted. Try again.', 'Не удалось удалить часть локальных данных. Попробуйте ещё раз.', 'לא ניתן היה למחוק חלק מהנתונים המקומיים. נסו שוב.'],
   ]) { ru[key] = russian; he[key] = hebrew; }
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {

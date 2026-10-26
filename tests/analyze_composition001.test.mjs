@@ -89,7 +89,7 @@ test('verdict dominance reads existing StrategyResult data only and never change
   assert.equal(describeAnalyzeVerdict({ actions: [] }).kind, 'unavailable');
   assert.doesNotMatch(verdictModule, /strategyProvider|resolve\(|import /, 'no strategy authority or dependency');
   const scripts = markup.querySelectorAll('script[src]');
-  const verdict = scripts.find((node) => node.getAttribute('src') === 'src/application/analyze-verdict.mjs');
+  const verdict = scripts.find((node) => node.getAttribute('src') === 'src/application/analyze-verdict-bridge.mjs');
   assert.equal(verdict?.getAttribute('type'), 'module');
   assert.ok(precedes(verdict, scripts.find((node) => node.getAttribute('src').split('?')[0] === 'src/core/logic.js')), 'the module registers before logic.js runs');
 });

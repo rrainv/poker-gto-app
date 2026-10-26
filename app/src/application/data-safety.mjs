@@ -83,33 +83,53 @@ function writePersistMarker(storage, persisted) {
   }
 }
 
-function deleteDatabaseByName(indexedDBFactory, name) {
+export const DELETE_BLOCKED_WAIT_MS = 3000;
+export const DELETE_RELOAD_DELAY_MS = 1500;
+export const SIGN_OUT_WAIT_MS = 5000;
+
+// `outcome` is 'deleted', 'failed' or 'blocked' (another tab still holds the database
+// open after `blockedWaitMs`). A blocked request stays queued in the browser and
+// finishes once those connections close; `completion` follows it to the end.
+function deleteDatabaseByName(browserWindow, indexedDBFactory, name, blockedWaitMs) {
   if (!indexedDBFactory || typeof indexedDBFactory.deleteDatabase !== 'function' || !name) {
-    return Promise.resolve(false);
+    return { outcome: Promise.resolve('failed'), completion: Promise.resolve('failed') };
   }
-  return new Promise((resolve) => {
+  const schedule = browserWindow?.setTimeout ?? setTimeout;
+  const cancel = browserWindow?.clearTimeout ?? clearTimeout;
+  let complete;
+  const completion = new Promise((resolve) => { complete = resolve; });
+  const outcome = new Promise((resolve) => {
     let settled = false;
+    let blockedTimer = null;
     const finish = (value) => {
       if (settled) return;
       settled = true;
+      if (blockedTimer !== null) cancel(blockedTimer);
       resolve(value);
+    };
+    const end = (value) => {
+      complete(value);
+      finish(value);
     };
     try {
       const request = indexedDBFactory.deleteDatabase(name);
       if (!request || typeof request.addEventListener !== 'function') {
-        finish(true);
+        end('deleted');
         return;
       }
-      request.addEventListener('success', () => finish(true), { once: true });
-      request.addEventListener('error', () => finish(false), { once: true });
-      request.addEventListener('blocked', () => finish(true), { once: true });
+      request.addEventListener('success', () => end('deleted'), { once: true });
+      request.addEventListener('error', () => end('failed'), { once: true });
+      request.addEventListener('blocked', () => {
+        if (blockedTimer === null) blockedTimer = schedule(() => finish('blocked'), blockedWaitMs);
+      }, { once: true });
     } catch {
-      finish(false);
+      end('failed');
     }
   });
+  return { outcome, completion };
 }
 
-export async function deleteAllRiverlineData(browserWindow) {
+export async function deleteAllRiverlineData(browserWindow, { blockedWaitMs = DELETE_BLOCKED_WAIT_MS } = {}) {
   const indexedDBFactory = browserWindow?.indexedDB;
   const databaseNames = new Set(KNOWN_RIVERLINE_DATABASES);
   if (typeof indexedDBFactory?.databases === 'function') {
@@ -126,21 +146,34 @@ export async function deleteAllRiverlineData(browserWindow) {
     }
   }
 
+  const outcomes = { deleted: [], failed: [], blocked: [] };
+  const completions = [];
   for (const name of databaseNames) {
-    await deleteDatabaseByName(indexedDBFactory, name);
+    const request = deleteDatabaseByName(browserWindow, indexedDBFactory, name, blockedWaitMs);
+    outcomes[await request.outcome].push(name);
+    completions.push(request.completion);
   }
 
   try { browserWindow?.localStorage?.clear?.(); } catch { /* ignore */ }
   try { browserWindow?.sessionStorage?.clear?.(); } catch { /* ignore */ }
 
   return Object.freeze({
-    deletedDatabases: Object.freeze([...databaseNames]),
+    deletedDatabases: Object.freeze(outcomes.deleted),
+    failedDatabases: Object.freeze(outcomes.failed),
+    blockedDatabases: Object.freeze(outcomes.blocked),
+    // Resolves true once every queued deletion (blocked ones included) has succeeded.
+    completion: Promise.all(completions).then((values) => values.every((value) => value === 'deleted')),
   });
 }
 
 export function installDataSafetyController(browserWindow, options = {}) {
   if (!browserWindow?.document) return null;
   const document = browserWindow.document;
+  const {
+    blockedWaitMs = DELETE_BLOCKED_WAIT_MS,
+    reloadDelayMs = DELETE_RELOAD_DELAY_MS,
+    signOutWaitMs = SIGN_OUT_WAIT_MS,
+  } = options;
 
   let requestedInMemory = Boolean(readPersistMarker(browserWindow.localStorage)?.requested);
   let inFlightPersist = null;
@@ -195,7 +228,8 @@ export function installDataSafetyController(browserWindow, options = {}) {
         iosNoteEl,
         'In iPhone and iPad browser tabs, Safari may clear local data after 7 days without use. Add Riverline to the Home Screen or back up important work.',
       );
-      iosNoteEl.hidden = persisted && !iosTab;
+      // The 7-day Safari note applies only to iPhone/iPad browser tabs.
+      iosNoteEl.hidden = !iosTab;
     }
   }
 
@@ -323,33 +357,62 @@ export function installDataSafetyController(browserWindow, options = {}) {
     if (restoreFocus) openBtn?.focus?.();
   }
 
+  function showDeleteStatus(key) {
+    const statusEl = document.querySelector('#settingsDeleteAllDataStatus');
+    if (!statusEl) return;
+    statusEl.hidden = false;
+    setTranslatedText(statusEl, key);
+  }
+
+  // Best effort, this device only: a stalled or failing sign-out never blocks the wipe,
+  // which removes the local session tokens anyway.
+  async function signOutBeforeWipe() {
+    const authentication = browserWindow.RiverlineAuthentication;
+    if (typeof authentication?.signOut !== 'function') return;
+    const schedule = browserWindow.setTimeout ?? setTimeout;
+    try {
+      await Promise.race([
+        authentication.signOut({ scope: 'local' }),
+        new Promise((resolve) => { schedule(resolve, signOutWaitMs); }),
+      ]);
+    } catch { /* best effort */ }
+  }
+
+  function finishDeletion(result) {
+    showDeleteStatus('All local data has been deleted from this browser.');
+    browserWindow.dispatchEvent?.(new browserWindow.CustomEvent('riverline:alldatadeleted', {
+      detail: result,
+    }));
+    // Show the status briefly, then restart into first run with nothing left in memory.
+    (browserWindow.setTimeout ?? setTimeout)(() => browserWindow.location?.reload?.(), reloadDelayMs);
+  }
+
   async function confirmDeleteAllData() {
     if (deleting || !isConfirmationMatch()) return false;
     const confirmBtn = document.querySelector('#settingsDeleteAllDataConfirm');
-    const statusEl = document.querySelector('#settingsDeleteAllDataStatus');
     deleting = true;
     if (confirmBtn) confirmBtn.disabled = true;
     try {
-      const result = await deleteAllLocalDataAndReset();
+      await signOutBeforeWipe();
+      const result = await deleteAllRiverlineData(browserWindow, { blockedWaitMs });
+      requestedInMemory = false;
       closeDeleteGuard({ restoreFocus: false });
-      if (statusEl) {
-        statusEl.hidden = false;
-        setTranslatedText(statusEl, 'All local data has been deleted from this browser.');
+      if (result.blockedDatabases.length) {
+        // Never claim success while another tab holds a database open; finish when it closes.
+        showDeleteStatus('Close other Riverline tabs to finish deleting');
+        void result.completion.then((done) => { if (done) finishDeletion(result); });
+        return false;
       }
-      browserWindow.dispatchEvent?.(new browserWindow.CustomEvent('riverline:alldatadeleted', {
-        detail: result,
-      }));
+      if (result.failedDatabases.length) {
+        showDeleteStatus('Some local data could not be deleted. Try again.');
+        return false;
+      }
+      finishDeletion(result);
       return true;
     } finally {
       deleting = false;
       syncDeleteConfirmGuardUi();
     }
-  }
-
-  async function deleteAllLocalDataAndReset() {
-    const result = await deleteAllRiverlineData(browserWindow);
-    requestedInMemory = false;
-    return result;
   }
 
   function bindUi() {
@@ -406,8 +469,8 @@ export function installDataSafetyController(browserWindow, options = {}) {
     isConfirmationMatch: () => isConfirmationMatch(),
     openDeleteGuard: () => openDeleteGuard(),
     closeDeleteGuard: (opts) => closeDeleteGuard(opts),
+    // Deletion is reachable only through the typed confirmation.
     confirmDeleteAllData: () => confirmDeleteAllData(),
-    deleteAllLocalData: () => deleteAllLocalDataAndReset(),
   });
 
   Object.defineProperty(browserWindow, 'RiverlineDataSafety', {

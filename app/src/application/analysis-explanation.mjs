@@ -18,15 +18,21 @@ import {
   formatExactPokerAmountBb,
   formatSuggestedSizingBb,
 } from './poker-sizing-presentation.mjs';
+import {
+  VERDICT_CLOSE_MARGIN,
+  VERDICT_MEANINGFUL_SHARE,
+  describeAnalyzeVerdict,
+  presentStrategyMixActions,
+} from './analyze-verdict.mjs';
 
 export { deriveBoardStructureFacts as deriveBoardTextureFacts } from './range-analysis.mjs';
 
 export const ANALYSIS_EXPLANATION_SCHEMA_VERSION = 'analysis-explanation/v1';
 
+// Explain owns no thresholds of its own: it reads Analyze's two-state verdict (analyze-verdict/v1).
 export const ANALYSIS_THRESHOLDS = Object.freeze({
-  pureProbability: 0.95,
-  dominantProbability: 0.70,
-  meaningfulProbability: 0.10,
+  closeMargin: VERDICT_CLOSE_MARGIN,
+  meaningfulShare: VERDICT_MEANINGFUL_SHARE,
 });
 
 const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
@@ -134,16 +140,6 @@ function warning(code, message, severity = 'info', values = {}, messageKey = nul
   };
 }
 
-function stableHash(values) {
-  const input = JSON.stringify(values);
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-}
-
 function validCard(card) {
   return typeof card === 'string' && /^[2-9TJQKA][cdhs]$/.test(card);
 }
@@ -202,13 +198,26 @@ function provenanceFor(strategyResult, claimPolicy) {
   };
 }
 
-function strategyShape(actions) {
-  if (!actions.length) return 'unavailable';
-  const leading = actions[0];
-  if (leading.probability >= ANALYSIS_THRESHOLDS.pureProbability) return 'pure';
-  if (leading.probability >= ANALYSIS_THRESHOLDS.dominantProbability) return 'dominant';
-  const meaningful = actions.filter((entry) => entry.probability >= ANALYSIS_THRESHOLDS.meaningfulProbability);
-  return meaningful.length >= 2 ? 'mixed' : 'fragmented';
+function isMeaningfulShare(probability) {
+  // Whole basis points, same comparison as the verdict, so 0.05 never flips on float noise.
+  return Math.round(probability * 10000) >= Math.round(VERDICT_MEANINGFUL_SHARE * 10000);
+}
+
+// The same verdict and display shares Analyze shows: estimated sources read in 5% steps
+// with actions under 5% hidden; exact sources keep whole percentages. Keyed by position
+// in the sorted `actions` list.
+function strategyPresentation(strategyResult, actions) {
+  const verdict = describeAnalyzeVerdict({ actions });
+  const shares = presentStrategyMixActions({
+    actions,
+    exactFrequencies: strategyResult?.exactFrequencies,
+    sourceDescriptor: strategyResult?.sourceDescriptor,
+  });
+  const values = new Map(shares.map((share) => [share.index, share.value]));
+  return {
+    verdict,
+    displayValue: (position) => values.get(position) ?? null,
+  };
 }
 
 function normalizeActions(strategyResult, includeActionEv = false) {
@@ -228,16 +237,16 @@ function normalizeActions(strategyResult, includeActionEv = false) {
     .sort((left, right) => right.probability - left.probability || left.index - right.index);
 }
 
-function makeActionAnalysis(actions) {
-  const shape = strategyShape(actions);
+function makeActionAnalysis(actions, presentation) {
   return actions.map((entry, index) => ({
     action: { ...entry.action },
     label: entry.label,
     probability: entry.probability,
+    displayPercent: presentation.displayValue(index),
     evBb: entry.evBb,
     role: index === 0 ? 'primary'
-      : entry.probability >= ANALYSIS_THRESHOLDS.meaningfulProbability ? 'meaningful_secondary' : 'minor',
-    strategyShape: shape,
+      : isMeaningfulShare(entry.probability) ? 'meaningful_secondary' : 'minor',
+    verdictKind: presentation.verdict.kind,
   }));
 }
 
@@ -923,53 +932,37 @@ function actionContextSection(context, authority, history, depth, warnings) {
   return section('action_context', 'Action Context', 'context', facts);
 }
 
-function strategySection(context, actions, source, depth) {
+function strategySection(actions, presentation, depth) {
   if (!actions.length) return null;
-  const shape = strategyShape(actions);
-  const primary = actions[0];
-  const secondary = actions.find((entry, index) => index > 0
-    && entry.probability >= ANALYSIS_THRESHOLDS.meaningfulProbability) || actions[1] || null;
-  const facts = actions
-    .filter((entry) => depth === 'detailed'
-      || entry === primary
-      || entry.probability >= ANALYSIS_THRESHOLDS.meaningfulProbability)
-    .map((entry) => fact(`strategy_action_${entry.action.type}_${entry.index}`, {
-      label: entry.label, labelKey: 'analysis.fact.actionProbability', value: entry.probability, unit: 'probability',
+  const { verdict } = presentation;
+  const share = (position) => `${presentation.displayValue(position) ?? Math.round(actions[position].probability * 100)}%`;
+  const displayed = actions
+    .map((entry, position) => ({ entry, position, value: presentation.displayValue(position) }))
+    .filter(({ value }) => value !== null);
+  const facts = displayed
+    .filter(({ entry, position }) => depth === 'detailed' || position === 0 || isMeaningfulShare(entry.probability))
+    .map(({ entry, value }) => fact(`strategy_action_${entry.action.type}_${entry.index}`, {
+      label: entry.label, labelKey: 'analysis.fact.actionProbability', value: value / 100, unit: 'probability',
       templateKey: 'analysis.strategy.actionProbability', fallback: '{action}: {probability}.',
-      values: { action: entry.label, probability: percent(entry.probability, 0) },
+      values: { action: entry.label, probability: `${value}%` },
     }));
-  const variant = stableHash([
-    context.street, context.heroPosition, context.heroCards, context.board,
-    context.potBb, context.facingSizeBb, source, primary.label, rounded(primary.probability, 4), shape,
-  ]) % 2;
+  const primary = verdict.primary;
   let part;
-  if (shape === 'pure') {
-    part = variant === 0
-      ? textPart('analysis.strategy.pure.primary', '{action} is effectively pure at {probability} in the displayed result.', {
-        action: primary.label, probability: percent(primary.probability, 0),
-      })
-      : textPart('analysis.strategy.pure.alternate', 'The displayed result puts {probability} on {action}, above the pure-action threshold.', {
-        action: primary.label, probability: percent(primary.probability, 0),
-      });
-  } else if (shape === 'dominant') {
-    part = textPart('analysis.strategy.dominant', 'This is mostly {primary} ({primaryProbability}){secondaryClause}.', {
-      primary: primary.label,
-      primaryProbability: percent(primary.probability, 0),
-      secondaryClause: secondary ? `, with ${secondary.label} at ${percent(secondary.probability, 0)}` : '',
+  if (verdict.kind === 'close') {
+    part = textPart('analysis.strategy.close', '{primary} or {secondary} · close ({primaryProbability} and {secondaryProbability}).', {
+      primary: primary.label, primaryProbability: share(primary.index),
+      secondary: verdict.secondary.label, secondaryProbability: share(verdict.secondary.index),
     });
-  } else if (shape === 'mixed') {
-    part = variant === 0
-      ? textPart('analysis.strategy.mixed.between', 'The result mixes between {primary} ({primaryProbability}) and {secondary} ({secondaryProbability}).', {
-        primary: primary.label, primaryProbability: percent(primary.probability, 0),
-        secondary: secondary?.label || 'another action', secondaryProbability: percent(secondary?.probability || 0, 0),
-      })
-      : textPart('analysis.strategy.mixed.noDominant', 'No action reaches the dominant threshold; {primary} leads at {primaryProbability}.', {
-        primary: primary.label, primaryProbability: percent(primary.probability, 0),
-      });
   } else {
-    part = textPart('analysis.strategy.fragmented', '{action} leads the displayed result at {probability}; remaining weight is spread across minor actions.', {
-      action: primary.label, probability: percent(primary.probability, 0),
-    });
+    const next = displayed.find(({ position }) => position !== primary.index);
+    part = next
+      ? textPart('analysis.strategy.dominant.withSecondary', 'This is mostly {primary} ({primaryProbability}), with {secondary} at {secondaryProbability}.', {
+        primary: primary.label, primaryProbability: share(primary.index),
+        secondary: next.entry.label, secondaryProbability: `${next.value}%`,
+      })
+      : textPart('analysis.strategy.dominant', 'This is mostly {primary} ({primaryProbability}).', {
+        primary: primary.label, primaryProbability: share(primary.index),
+      });
   }
   return section('strategy_mix', 'Strategy Mix', 'primary', facts, [part]);
 }
@@ -1143,7 +1136,8 @@ export function createAnalysisExplanation({
       claimPolicy.claims[STRATEGY_CLAIMS.ACTION_EV],
     )
     : [];
-  const actionAnalysis = makeActionAnalysis(actions);
+  const presentation = strategyPresentation(strategyResult, actions);
+  const actionAnalysis = makeActionAnalysis(actions, presentation);
   const reason = unavailableReasonFor(decisionContext, strategyResult, unavailableReason)
     || (claimPolicy.availability === 'unavailable' ? 'strategy_unavailable' : null);
   const sections = [];
@@ -1169,7 +1163,7 @@ export function createAnalysisExplanation({
     const spr = sprSection(decisionContext, warnings);
     if (spr) sections.push(spr);
     sections.push(actionContextSection(decisionContext, normalizedAuthority, history, depth, warnings));
-    const strategy = strategySection(decisionContext, actions, provenance.source, depth);
+    const strategy = strategySection(actions, presentation, depth);
     if (strategy) sections.push(strategy);
     const heuristicSample = heuristicSampleSection(strategyResult, warnings);
     if (heuristicSample) sections.push(heuristicSample);
@@ -1212,7 +1206,7 @@ export function createAnalysisExplanation({
   const headlineKey = reason ? 'analysis.headline.unavailable' : 'analysis.headline.available';
   const summaryValues = reason ? { reason: UNAVAILABLE_COPY[reason] || UNAVAILABLE_COPY.strategy_unavailable } : {
     action: leadingAction?.label || strategyResult?.recommendation?.label || 'The recommendation',
-    probability: leadingAction ? percent(leadingAction.probability, 0) : 'unknown',
+    probability: leadingAction ? `${presentation.displayValue(0) ?? Math.round(leadingAction.probability * 100)}%` : 'unknown',
     source: strategyTruthPresentation(truth).sourceLabel,
   };
   const summary = reason

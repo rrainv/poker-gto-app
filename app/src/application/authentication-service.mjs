@@ -401,14 +401,14 @@ export function createAuthenticationService({
     }
   }
 
-  async function signOut() {
+  async function signOut(options) {
     beginAuthenticationOperation();
     if (transitionTask) {
       accountIdentity.requireRecovery({ code: 'identity_transition_interrupted' });
       useRecoveryState();
       await transitionTask;
       if (accountIdentity.getLifecycleState().status === 'guest_active') useGuestState('signed_out');
-      try { await (adapter ? providerOperation('signOut') : null); } catch { if (state.status === 'guest') publish({ noticeCode: 'signout_incomplete' }); }
+      try { await (adapter ? providerOperation('signOut', options) : null); } catch { if (state.status === 'guest') publish({ noticeCode: 'signout_incomplete' }); }
       return state;
     }
     let guestActivation;
@@ -418,7 +418,7 @@ export function createAuthenticationService({
     try { await guestActivation; }
     catch { useRecoveryState(); }
     if (adapter) {
-      try { await providerOperation('signOut'); }
+      try { await providerOperation('signOut', options); }
       catch {
         return state.status === 'guest'
           ? publish({ noticeCode: 'signout_incomplete' })

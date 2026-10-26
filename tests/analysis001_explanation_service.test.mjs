@@ -242,21 +242,55 @@ test('SPR is postflop-only, exact HU actor-relative, and unavailable as a multiw
   assert.equal(findSection(multiway, 'spr'), undefined);
 });
 
-test('pure, dominant, and balanced mixed outputs use centralized thresholds', () => {
-  assert.deepEqual(ANALYSIS_THRESHOLDS, {
-    pureProbability: 0.95,
-    dominantProbability: 0.70,
-    meaningfulProbability: 0.10,
-  });
+test('Explain reads the shared two-state Analyze verdict, not its own thresholds', () => {
+  assert.deepEqual(ANALYSIS_THRESHOLDS, { closeMargin: 0.2, meaningfulShare: 0.05 });
+  assert.doesNotMatch(SERVICE_SOURCE, /strategyShape|pureProbability|dominantProbability|'mixed'|'fragmented'/);
   const fixtures = [
-    [[action('Check', 'check', 0.95), action('Bet', 'bet', 0.05)], 'pure'],
-    [[action('Call', 'call', 0.70), action('Fold', 'fold', 0.30)], 'dominant'],
-    [[action('Call', 'call', 0.50), action('Raise', 'raise', 0.30), action('Fold', 'fold', 0.20)], 'mixed'],
+    [[action('Check', 'check', 0.95), action('Bet', 'bet', 0.05)], 'dominant'],
+    [[action('Call', 'call', 0.62), action('Raise', 'raise', 0.30), action('Fold', 'fold', 0.08)], 'dominant'],
+    [[action('Call', 'call', 0.50), action('Raise', 'raise', 0.30), action('Fold', 'fold', 0.20)], 'dominant'],
+    [[action('Call', 'call', 0.45), action('Raise', 'raise', 0.35), action('Fold', 'fold', 0.20)], 'close'],
+    [[action('Open', 'raise', 0.52), action('Fold', 'fold', 0.04), action('Call', 'call', 0.44)], 'close'],
+    [[action('Fold', 'fold', 0.52), action('Call', 'call', 0.04)], 'dominant'],
   ];
   fixtures.forEach(([actions, expected]) => {
     const result = explanation({ strategyResult: strategy({ actions }) });
-    assert.equal(result.actionAnalysis[0].strategyShape, expected);
+    assert.equal(result.actionAnalysis[0].verdictKind, expected, JSON.stringify(actions));
   });
+});
+
+test('Explain with 62/30/8 says dominant and shows 5%-rounded 60/30/10 at every depth', () => {
+  const actions = [action('Call', 'call', 0.62), action('Raise', 'raise', 0.30), action('Fold', 'fold', 0.08)];
+  ['concise', 'detailed'].forEach((depth) => {
+    const result = explanation({ strategyResult: strategy({ actions }), depth });
+    const mix = findSection(result, 'strategy_mix');
+    assert.deepEqual(mix.facts.map((entry) => [entry.label, entry.values.probability]), [
+      ['Call', '60%'], ['Raise', '30%'], ['Fold', '10%'],
+    ]);
+    assert.equal(mix.textParts[0].templateKey, 'analysis.strategy.dominant.withSecondary');
+    assert.equal(mix.textParts[0].text, 'This is mostly Call (60%), with Raise at 30%.');
+    assert.equal(result.summaryValues.probability, '60%');
+    assert.deepEqual(result.actionAnalysis.map((entry) => entry.displayPercent), [60, 30, 10]);
+    // StrategyResult probabilities are never rewritten.
+    assert.deepEqual(result.actionAnalysis.map((entry) => entry.probability), [0.62, 0.30, 0.08]);
+  });
+});
+
+test('Explain hides estimated actions under 5% even at detailed depth and names close spots', () => {
+  const actions = [action('Open', 'raise', 0.52), action('Call', 'call', 0.44), action('Fold', 'fold', 0.04)];
+  const result = explanation({ strategyResult: strategy({ actions }), depth: 'detailed' });
+  const mix = findSection(result, 'strategy_mix');
+  assert.deepEqual(mix.facts.map((entry) => [entry.label, entry.values.probability]), [['Open', '55%'], ['Call', '45%']]);
+  assert.equal(mix.textParts[0].templateKey, 'analysis.strategy.close');
+  assert.equal(mix.textParts[0].text, 'Open or Call · close (55% and 45%).');
+  assert.equal(result.actionAnalysis[2].displayPercent, null);
+});
+
+test('Explain keeps whole percentages and every action for exact sources', () => {
+  const actions = [action('Call', 'call', 0.62), action('Raise', 'raise', 0.35), action('Fold', 'fold', 0.03)];
+  const result = explanation({ strategyResult: strategy({ actions, exactFrequencies: true }), depth: 'detailed' });
+  const mix = findSection(result, 'strategy_mix');
+  assert.deepEqual(mix.facts.map((entry) => entry.values.probability), ['62%', '35%', '3%']);
 });
 
 test('unaccepted StrategyResult sizing is retained structurally without promotion, rationale, or EV', () => {
