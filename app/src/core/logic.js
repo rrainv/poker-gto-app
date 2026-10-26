@@ -2747,7 +2747,10 @@ function renderAnalyzeVerdict(strategyResult) {
   if (!element) return null;
   const verdict = window.RiverlineAnalyzeVerdict?.describe(strategyResult) || null;
   const shares = strategyResult?.actions ? strategyResultPresentationActions(strategyResult) : [];
-  const share = (entry) => `${shares[entry.index]?.value ?? Math.round(entry.probability * 100)}%`;
+  const share = (entry) => {
+    const matched = shares.find((item) => item.name === entry.label && item.action?.type === entry.type) || shares[entry.index];
+    return `${matched?.value ?? Math.round(entry.probability * 20) * 5}%`;
+  };
   if (!verdict || verdict.kind === 'unavailable') {
     element.textContent = t(strategyResult?.recommendation?.label || 'Unavailable');
     element.dataset.verdictKind = 'unavailable';
@@ -5046,10 +5049,10 @@ function renderHandReviewFrequencyComparison(decision) {
   if (!stack || !rows) return;
   stack.replaceChildren();
   rows.replaceChildren();
-  const distribution = [...decision.distribution].sort((left, right) => (
+  const sorted = [...decision.distribution].sort((left, right) => (
     right.probability - left.probability
   ));
-  if (distribution.length === 0) {
+  if (sorted.length === 0) {
     stack.classList.add('is-empty');
     stack.setAttribute('aria-label', t('Strategy frequencies unavailable'));
     const unavailable = document.createElement('p');
@@ -5058,6 +5061,38 @@ function renderHandReviewFrequencyComparison(decision) {
     rows.appendChild(unavailable);
     return;
   }
+  const exactFrequencies = decision.source?.exactFrequencies === true;
+  let distribution;
+  if (exactFrequencies) {
+    distribution = sorted.map((entry) => ({
+      ...entry,
+      displayPercent: entry.probability * 100,
+      displayLabel: formatReviewFrequency(entry.probability),
+    }));
+  } else {
+    const positive = sorted.filter((entry) => Number.isFinite(entry.probability) && entry.probability > 0);
+    const meaningful = positive.filter((entry) => Math.round(entry.probability * 10000) >= 500);
+    const kept = meaningful.length ? meaningful : positive.slice(0, 1);
+    const total = kept.reduce((sum, entry) => sum + entry.probability, 0) || 1;
+    const allocations = kept.map((entry, index) => {
+      const exactSteps = (entry.probability / total) * 20;
+      const steps = Math.floor(exactSteps);
+      return { entry, index, steps, remainder: exactSteps - steps };
+    });
+    let stepsLeft = 20 - allocations.reduce((sum, item) => sum + item.steps, 0);
+    [...allocations]
+      .sort((left, right) => right.remainder - left.remainder || left.index - right.index)
+      .forEach((item) => {
+        if (stepsLeft <= 0) return;
+        allocations[item.index].steps += 1;
+        stepsLeft -= 1;
+      });
+    distribution = allocations.map(({ entry, steps }) => ({
+      ...entry,
+      displayPercent: steps * 5,
+      displayLabel: `${steps * 5}%`,
+    }));
+  }
   stack.classList.remove('is-empty');
   const highestProbability = Math.max(...distribution.map((entry) => entry.probability));
   const accessible = [];
@@ -5065,14 +5100,14 @@ function renderHandReviewFrequencyComparison(decision) {
     const chosen = entry.type === decision.chosenAction.type;
     const highest = Math.abs(entry.probability - highestProbability) <= Number.EPSILON;
     const label = t(entry.label || trainingActionLabel(entry.type, decision.durable.decisionContext));
-    const frequency = formatReviewFrequency(entry.probability);
+    const frequency = entry.displayLabel;
     const kind = visualActionKind({ action: { type: entry.type } });
     accessible.push(`${label} ${frequency}${chosen ? `, ${t('chosen action')}` : ''}${highest ? `, ${t('highest frequency')}` : ''}`);
 
     const segment = document.createElement('span');
     segment.className = 'hand-review-frequency-segment';
     segment.dataset.actionKind = kind;
-    segment.style.width = `${entry.probability * 100}%`;
+    segment.style.width = `${entry.displayPercent}%`;
     stack.appendChild(segment);
 
     const row = document.createElement('div');
@@ -5098,7 +5133,7 @@ function renderHandReviewFrequencyComparison(decision) {
     const track = document.createElement('span');
     track.className = 'hand-review-frequency-track';
     const fill = document.createElement('i');
-    fill.style.width = `${entry.probability * 100}%`;
+    fill.style.width = `${entry.displayPercent}%`;
     track.appendChild(fill);
     const value = document.createElement('strong');
     value.textContent = frequency;
@@ -5240,6 +5275,21 @@ function renderActiveHandReview() {
   renderHandReviewDecisionList(model);
   if ($('#handReviewPreviousDecision')) $('#handReviewPreviousDecision').disabled = !model.navigation.canPreviousDecision;
   if ($('#handReviewNextDecision')) $('#handReviewNextDecision').disabled = !model.navigation.canNextDecision;
+  const reviewTruthPresentation = truthPresentation(decision.truth);
+  const reviewHeading = $('#handReviewTruthHeading');
+  if (reviewHeading) {
+    if (decision.truth?.state === 'accepted_reference_comparison') {
+      const refLabel = (decision.strategyResult ? strategySourceDisplayLabel(decision.strategyResult) : '')
+        || decision.truth.selectedReference?.manifest?.source?.displayName
+        || reviewTruthPresentation.sourceLabel;
+      reviewHeading.textContent = refLabel;
+      delete reviewHeading.dataset.i18n;
+    } else {
+      reviewHeading.dataset.i18n = reviewTruthPresentation.sourceLabel;
+      reviewHeading.textContent = t(reviewTruthPresentation.sourceLabel);
+    }
+  }
+  if ($('#handReviewTier')) $('#handReviewTier').hidden = decision.truth?.state !== 'heuristic_comparison';
   if ($('#handReviewDecisionStreet')) $('#handReviewDecisionStreet').textContent = reviewStreetLabel(decision.street);
   if ($('#handReviewDecisionTitle')) $('#handReviewDecisionTitle').textContent = t('Hero Decision {number}', { number: decision.decisionNumber });
   if ($('#handReviewDecisionContext')) $('#handReviewDecisionContext').textContent = reviewContextCopy(decision);
@@ -5972,27 +6022,66 @@ function updateTrainingPositions() {
 
 function strategyResultPresentationActions(result) {
   if (!result || !Array.isArray(result.actions)) throw new TypeError('Expected StrategyResult v1');
-  const allocations = result.actions.map((entry, index) => {
-    const exact = entry.probability * 100;
+  const isExact = result.exactFrequencies === true
+    || result.sourceDescriptor?.capabilities?.actionDistribution === 'exact';
+  const indexed = result.actions.map((entry, index) => ({ entry, index }));
+  if (isExact) {
+    const allocations = indexed.map(({ entry, index }) => {
+      const exact = entry.probability * 100;
+      return {
+        entry,
+        index,
+        value: Math.floor(exact),
+        remainder: exact - Math.floor(exact)
+      };
+    });
+    let pointsLeft = 100 - allocations.reduce((sum, entry) => sum + entry.value, 0);
+    [...allocations]
+      .sort((left, right) => right.remainder - left.remainder || left.index - right.index)
+      .forEach((entry) => {
+        if (pointsLeft <= 0) return;
+        allocations[entry.index].value += 1;
+        pointsLeft -= 1;
+      });
+    return allocations.map(({ entry, value }) => ({
+      action: entry.action,
+      name: entry.label,
+      value,
+      kind: entry.action.type === 'fold' ? 'fold'
+        : entry.action.type === 'check' || entry.action.type === 'call' ? 'passive'
+          : entry.action.type === 'all_in' ? 'all-in' : 'aggressive'
+    }));
+  }
+  const positive = indexed.filter(({ entry }) => Number.isFinite(entry.probability) && entry.probability > 0);
+  if (!positive.length) return [];
+  const meaningful = positive.filter(({ entry }) => Math.round(entry.probability * 10000) >= 500);
+  const kept = meaningful.length ? meaningful : [
+    [...positive].sort((left, right) => right.entry.probability - left.entry.probability || left.index - right.index)[0]
+  ];
+  const totalProbability = kept.reduce((sum, { entry }) => sum + entry.probability, 0) || 1;
+  const allocations = kept.map(({ entry, index }, slot) => {
+    const exactSteps = (entry.probability / totalProbability) * 20;
+    const steps = Math.floor(exactSteps);
     return {
       entry,
       index,
-      value: Math.floor(exact),
-      remainder: exact - Math.floor(exact)
+      slot,
+      steps,
+      remainder: exactSteps - steps
     };
   });
-  let pointsLeft = 100 - allocations.reduce((sum, entry) => sum + entry.value, 0);
+  let stepsLeft = 20 - allocations.reduce((sum, item) => sum + item.steps, 0);
   [...allocations]
     .sort((left, right) => right.remainder - left.remainder || left.index - right.index)
-    .forEach((entry) => {
-      if (pointsLeft <= 0) return;
-      allocations[entry.index].value += 1;
-      pointsLeft -= 1;
+    .forEach((item) => {
+      if (stepsLeft <= 0) return;
+      allocations[item.slot].steps += 1;
+      stepsLeft -= 1;
     });
-  return allocations.map(({ entry, value }) => ({
+  return allocations.map(({ entry, steps }) => ({
     action: entry.action,
     name: entry.label,
-    value,
+    value: steps * 5,
     kind: entry.action.type === 'fold' ? 'fold'
       : entry.action.type === 'check' || entry.action.type === 'call' ? 'passive'
         : entry.action.type === 'all_in' ? 'all-in' : 'aggressive'
@@ -14550,6 +14639,30 @@ function renderTrainingEvaluationSummary(evaluation, exercise) {
   if (!evaluation || !exercise) return;
   const truth = trainingTruth(evaluation, exercise);
   const presentation = truthPresentation(truth);
+  const heading = $('#trainingTruthHeading');
+  if (heading) {
+    if (truth.state === 'accepted_reference_comparison') {
+      const sourceLabel = (typeof strategySourceDisplayLabel === 'function' && exercise.strategyResult
+        ? strategySourceDisplayLabel(exercise.strategyResult)
+        : '')
+        || truth.selectedReference?.manifest?.source?.displayName
+        || presentation.sourceLabel;
+      heading.textContent = sourceLabel;
+      delete heading.dataset.i18n;
+    } else {
+      heading.dataset.i18n = presentation.sourceLabel;
+      heading.textContent = t(presentation.sourceLabel);
+    }
+  }
+  const tier = $('#trainingTier');
+  if (tier) tier.hidden = truth.state !== 'heuristic_comparison';
+  const streetEl = $('#trainingFeedbackStreet');
+  if (streetEl) {
+    const rawStreet = String(exercise.decisionContext?.street || 'preflop');
+    const streetKey = rawStreet.charAt(0).toUpperCase() + rawStreet.slice(1);
+    streetEl.dataset.i18n = streetKey;
+    streetEl.textContent = t(streetKey);
+  }
   if ($('#trainingScoreBadge')) $('#trainingScoreBadge').hidden = true;
   if ($('#trainingGradeBadge')) {
     $('#trainingGradeBadge').textContent = t(presentation.title);

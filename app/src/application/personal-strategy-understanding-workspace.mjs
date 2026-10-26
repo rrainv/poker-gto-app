@@ -152,6 +152,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     q('personalCoachCards')?.replaceChildren();
     if (q('personalContextInputDisclosure')) q('personalContextInputDisclosure').open = false;
     for (const id of ['personalIntentStatements', 'personalRangeSummary', 'personalRangeFacts', 'personalComparisonSummary', 'personalHistoryContent', 'personalUnderstandingCoverage', 'personalStrategyMap']) q(id)?.replaceChildren();
+    if (q('personalComparisonProvenance')) { q('personalComparisonProvenance').textContent = ''; q('personalComparisonProvenance').hidden = true; }
     q('personalIntentText').value = ''; q('personalIntentScopeNote').value = '';
     q('personalIntentScope').disabled = false;
     q('personalComparisonFacts').textContent = ''; q('personalIntentError').textContent = '';
@@ -366,6 +367,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     const token = capture(); busy = true;
     coachComparison = null; renderCoach();
     q('personalCompareSource').disabled = true; q('personalCompareApproach').disabled = true;
+    if (q('personalComparisonProvenance')) { q('personalComparisonProvenance').textContent = ''; q('personalComparisonProvenance').hidden = true; }
     lines('personalComparisonSummary', [t('Comparing compatible evidence…')]);
     try {
       const { entry, approach } = active(); let comparison, rightName;
@@ -382,6 +384,20 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       }
       assertCurrent(token);
       coachComparison = comparison; renderCoach();
+      const provenance = q('personalComparisonProvenance');
+      if (provenance) {
+        if (source && comparison?.compatible) {
+          const isReference = comparison.regions?.some((region) => region.sourceKind === 'reference');
+          const parts = isReference
+            ? [t('Selected reference'), t('Preflop')]
+            : [t('Heuristic baseline'), t('Estimated'), t('Preflop')];
+          provenance.textContent = parts.join(' · ');
+          provenance.hidden = false;
+        } else {
+          provenance.textContent = '';
+          provenance.hidden = true;
+        }
+      }
       lines('personalComparisonSummary', renderPersonalRangeComparison(comparison, { language: language(), leftName: approach.displayName, rightName }));
       q('personalComparisonFacts').textContent = JSON.stringify(comparison, null, 2);
     } catch (caught) { if (current(token.version, token.scopeKey)) { lines('personalComparisonSummary', [t('Comparison unavailable for this context.')]); error(caught); } }

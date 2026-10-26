@@ -19419,3 +19419,27 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-mat
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .matrix-wrap { overflow: visible; }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .hand-cell { aspect-ratio: 1.25; }
+
+/* TRUTH-SURFACES-002: one provenance indicator per surface (Training, Hand Review, Personal Strategy). */
+#trainingStrategySource[hidden],
+#trainingReferenceSummary[hidden],
+#trainingGradeBadge[hidden],
+#handReviewSourceBadge[hidden],
+.hand-review-overview-facts > div[hidden],
+#personalComparisonProvenance[hidden] {
+  display: none;
+}
+.training-feedback-head:not(:has(> :not([hidden]))) {
+  display: none;
+}
+:is(.training-feedback-provenance, .hand-review-provenance-eyebrow, .personal-comparison-provenance) {
+  margin: 0 0 var(--space-1);
+  color: var(--provenance);
+  font: var(--weight-label) var(--t-small)/var(--t-small-line) var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+:is(.training-feedback-provenance, .hand-review-provenance-eyebrow, .personal-comparison-provenance) span {
+  text-transform: none;
+  color: inherit;
+}

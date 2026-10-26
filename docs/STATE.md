@@ -45,6 +45,7 @@ From the Manager's M1 plan (2026-10-15). The top unfinished row is next.
 | MOCKUP-ASSETS-001 | Real card backs, icons, table measurements for the design kit | none | T0 | S | Done on `argon/m1-batch-1` (2026-10-18) |
 | I18N-RESIDUE-001 | Finish RU/HE terminology alignment per TERMINOLOGY.md across `.mjs` language/strategy modules and locale catalogs (`I18N-TERMS-RESIDUE`) | none | T1 | S | Done on `argon/m1-batch-1` (2026-10-18) |
 | CLEANUP-PREP-001 | Guard unbundled Supabase UMD script, replace exact-match CSS colours/fallbacks with `:root` tokens, remove 106 redundant `!important` rules, fix F04 and F06 (`DS-CSS-DEBT`) | none | T1 | S | Done on `argon/m1-batch-1` (2026-10-18) |
+| TRUTH-SURFACES-002 | Single provenance indicator per surface (Analyze, Training feedback, Hand Review, Personal Strategy comparison), 5% estimated mix rounding and <5% hiding, strict two-state verdict dominance rule (`QA-SHELL-004`, `OWNER-19`, `REVIEW-MATH-03`) | truth fixes | T1 | S | Done on `argon/m1-batch-2` (2026-10-26) |
 
 ### Phase 1: design decisions on the PC (before any screen build; mockups only, no code)
 

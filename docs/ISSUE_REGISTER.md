@@ -33,7 +33,7 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | QA-DECISION-INPUT-009 | ticket | Equity "Random {street} ready." status not tied to its stage; Training Memory panel still says "Facing N bb" | P3 | Partial (Saved part fixed by SAVED-COMPOSITION-002) | M1 | |
 | REF-DEBT-001 | recovery review | Analyze reference heading can use a provider-declared display name and drops localization | P2 | Open | M3 (before any real reference) | Must be fixed before registering any reference |
 | QA-ANALYZE-COMPOSITION-004 | ticket | Mix-bar RTL fix applied only to Analyze; Training mix rows still broken in HE | P2 | Open (Analyze part fixed in uncommitted ANALYZE-COMPOSITION-001) | M1 | Decide D-13 (HE mix bar direction) first |
-| REVIEW-MATH-03 | indep review | Estimated mixes shown at 1% precision; trace actions shown | P2 | Open *(verified 2026-10-15: no 5% rounding in `analyze-verdict.mjs`)* | M1 | Round estimated mixes to 5%, hide actions under 5% (NORTH_STAR §7.3) |
+| REVIEW-MATH-03 | indep review | Estimated mixes shown at 1% precision; trace actions shown | P2 | Fixed (TRUTH-SURFACES-002) | M1 | Estimated mixes rounded to 5% and actions under 5% hidden across Analyze, Training feedback, and Hand Review without mutating StrategyResult or Review data; exact mixes stay unrounded (NORTH_STAR §7.3) |
 | QA-AUDIT-HAND-ANALYZE-STACK-001 | QA (audit) | Hand → Analyze may transfer the wrong stack/economics snapshot | P1 | Open, needs reproduction | M1 | RET-AUDIT-HIGH-RISK-REPRO-001 |
 | QA-AUDIT-HAND-REVIEW-PRIORITY-001 | QA (audit) | Hand Review priority metrics may disagree across displayed values | P2 | Open, needs reproduction | M2 (Review rework) | RET-AUDIT-HIGH-RISK-REPRO-001 |
 
@@ -47,12 +47,12 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | OWNER-2b | owner | Load flicker: sidebar leaf, character images pop in; "Enter Riverline" hover flicker | P2 | Open | M1 | App-ready gate, preloading, hover without layout change |
 | OWNER-11 | owner | Card slot sizing inconsistent (hero larger than board/dead) | P2 | Open | M1 | Card size scale by context |
 | OWNER-18 | owner | Stepper/mini cards cut off or positioned too high | P2 | Partial (Analyze stepper mini cards reworked in uncommitted amendment 2) | M1 | Shared card rules |
-| OWNER-19 | owner | "Heuristic fallback" shown 3–4 times on one page | P2 | Partial (Analyze fixed in TRUTH-FIXES-001) | M1 | Analyze: header pill hidden, Explain summary no longer repeats "Source: …"; the one indicator is the label above the verdict with the tier ("Heuristic baseline · Estimated · Preflop"). Still open: Training (header pill + side "Heuristic baseline" panel + feedback title) = QA-SHELL-004; Hand review and Personal comparison not audited; the verdict reason sentence and truth note still say "heuristic baseline" / "approximate" |
+| OWNER-19 | owner | "Heuristic fallback" shown 3–4 times on one page | P2 | Fixed (TRUTH-FIXES-001, TRUTH-SURFACES-002) | M1 | One provenance indicator per surface: header `#strategySourceStatus` hidden on Analyze, Training, Hand Review, and Personal Strategy; each surface renders one provenance eyebrow (`Heuristic baseline · Estimated · <Street>`) above its verdict/feedback/review/comparison |
 | OWNER-20 | owner | Explain leaves dead space under columns | P3 | Open | M1 | Adaptive to content; see QA-ANALYZE-COMPOSITION-002 |
 | OWNER-1 | owner | Sidebar header arrow and text end at the same point | P3 | Open | M1 | Shell rework |
 | QA-SHELL-002 | QA | Legacy `[dir="rtl"] header` double-flip still affects other headers (Home/Saved section heads, Review "Review Mistakes") | P2 | Open *(verified 2026-10-15: rule at `app/styles.css` ~L4955)* | M1 | Small RTL repair or SHELL-002 |
 | QA-SHELL-003 | QA | Hand status line still above workspace | P3 | Open (fixed for Analyze) | M1 (Hand foundation) | |
-| QA-SHELL-004 | QA | Training shows its own "Heuristic fallback" labels besides the header badge | P3 | Open (fixed for Analyze) | M1 | Training redesign |
+| QA-SHELL-004 | QA | Training shows its own "Heuristic fallback" labels besides the header badge | P3 | Fixed (TRUTH-SURFACES-002) | M1 | Training feedback now shows a single provenance eyebrow above the verdict; redundant header badge, side source line, reference summary, and grade badge are hidden |
 | QA-SHELL-005 | QA | Unaudited states for the one-accent rule (Full Hand states, Saved detail, Personal inner) | P3 | Open | M1 | LAYOUT-AUDIT-001 |
 | QA-SHELL-006 | QA | Home, Saved, Training sparse at 1920 in the wide frame | P2 | Open (Saved addressed by SAVED-COMPOSITION-002) | M1/M2 | Merged into OWNER-2/3/8/9/10 |
 | QA-SHELL-007 | QA | Home tour step 1 uses Guest wording for signed-in users; empty context lines | P3 | Open | M2 | Home redesign |
@@ -257,7 +257,7 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | REVIEW-DOC-04 | Missing About & legal placeholder; Chippy vs Help & guide category | Open | Later/M3 |
 | REVIEW-MATH-01 | Mockup numbers wrong (Equity runouts, Style, Learn wording, Home Game totals) | Rule: golden numbers from the engine; corrections recorded in the archived mockup log | M1 |
 | REVIEW-MATH-02 | Scoped "Exact" labels; Monte Carlo confidence level; luck needs known cards | Adopted in NORTH_STAR | M1/M2 |
-| REVIEW-MATH-03 | Estimated mixes shown at 1% precision; trace actions | See section A | M1 |
+| REVIEW-MATH-03 | Estimated mixes shown at 1% precision; trace actions | Fixed in TRUTH-SURFACES-002 (see section A) | M1 |
 | REVIEW-EVID-01 | Evidence gate, no VPIP from drills | Adopted in NORTH_STAR | M2 |
 | REVIEW-PS-01 | Plan bounds with Sometimes; spot map from Table rules; HJ group | Adopted in NORTH_STAR | M2 |
 | REVIEW-HG-01 | Balance gate must count only recorded entries | Adopted | M2 |

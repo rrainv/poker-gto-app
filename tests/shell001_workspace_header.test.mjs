@@ -88,14 +88,14 @@ test('the source badge appears only where strategy content is shown', async () =
   const rule = (state) => shouldShowSourceBadge(state);
   assert.equal(rule({ destination: 'analyze' }), false, 'Analyze names its source above the verdict');
   assert.equal(rule({ destination: 'hand' }), false, 'never during live Hand play');
-  assert.equal(rule({ destination: 'hand', handReviewOpen: true }), true);
+  assert.equal(rule({ destination: 'hand', handReviewOpen: true }), false, 'Hand Review names its source above the decision');
   assert.equal(rule({ destination: 'training' }), false, 'no badge before an answer');
   assert.equal(rule({ destination: 'training', trainingFullHandPhase: 'live' }), false);
   assert.equal(rule({ destination: 'training', trainingFullHandPhase: 'complete' }), false);
-  assert.equal(rule({ destination: 'training', trainingFeedbackShown: true }), true);
-  assert.equal(rule({ destination: 'training', trainingFullHandPhase: 'review' }), true);
+  assert.equal(rule({ destination: 'training', trainingFeedbackShown: true }), false, 'Training names its source above feedback');
+  assert.equal(rule({ destination: 'training', trainingFullHandPhase: 'review' }), false, 'Full Hand Review names its source above the decision');
   assert.equal(rule({ destination: 'personal-strategy' }), false);
-  assert.equal(rule({ destination: 'personal-strategy', personalComparisonOpen: true }), true);
+  assert.equal(rule({ destination: 'personal-strategy', personalComparisonOpen: true }), false, 'Personal Strategy names its source in comparison');
   for (const destination of ['home', 'saved', 'equity', 'home-game', 'guide', null]) {
     assert.equal(rule({ destination, handReviewOpen: true, trainingFeedbackShown: true, personalComparisonOpen: true }), false, destination);
   }
@@ -105,7 +105,7 @@ test('the source badge appears only where strategy content is shown', async () =
   assert.equal(badge.hidden, true);
   // The rule reads presentation state only; it never calls strategy or Equity.
   assert.doesNotMatch(headerModule, /StrategyProvider|strategyProvider|resolveStrategy|calculateEquity|RiverlineEquity|DecisionContext|callPlaybookStateBridge/);
-  // Reveal timing is untouched: Full Hand keeps the badge hidden until review.
+  // Reveal timing is untouched: Full Hand keeps provenance hidden until review, then shows it once inside Hand Review.
   await app.training.start('full_hand');
   await app.settle(300);
   assert.equal(app.byId('strategySourceStatus').hidden, true, 'hidden during a live Full Hand');
@@ -113,7 +113,8 @@ test('the source badge appears only where strategy content is shown', async () =
   assert.equal(app.byId('strategySourceStatus').hidden, true, 'hidden at completion');
   await app.click('#trainingReviewHand');
   await app.settle(300);
-  assert.equal(app.byId('strategySourceStatus').hidden, false, 'shown in Full Hand review');
+  assert.equal(app.byId('strategySourceStatus').hidden, true, 'header badge stays hidden in Full Hand review');
+  assert.equal(app.byId('handReviewProvenance').hidden, false, 'Full Hand review shows provenance above the decision');
   await app.navigate('home');
 });
 
