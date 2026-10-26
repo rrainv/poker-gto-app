@@ -25,11 +25,12 @@ export function shouldShowSourceBadge({
   personalComparisonOpen = false,
 } = {}) {
   switch (destination) {
-    // Analyze names its source once, above the verdict (OWNER-19).
-    case 'analyze': return false;
-    case 'hand': return handReviewOpen === true;
-    case 'training': return trainingFeedbackShown === true || trainingFullHandPhase === 'review';
-    case 'personal-strategy': return personalComparisonOpen === true;
+    // Each strategy surface names its source once in-surface (OWNER-19 / QA-SHELL-004).
+    case 'analyze':
+    case 'hand':
+    case 'training':
+    case 'personal-strategy':
+      return false;
     default: return false;
   }
 }

@@ -171,3 +171,14 @@ export function isChipConserved(state) {
     === stacks.remainingMilliBb + state.potMilliBb + state.deductionTotalMilliBb
       + (state.recordedSettlement?.rakeMilliBb ?? 0);
 }
+
+export {
+  deriveActorPotBeforeActionBb,
+  actorPotBeforeActionBb,
+  deriveStackToPotRatio,
+  stackToPotRatio,
+  deriveMinimumDefenseFrequency,
+  minimumDefenseFrequency,
+  deriveMinimumDefenseFrequencyPercent,
+  minimumDefenseFrequencyPercent,
+} from './actor-call-economics.js';

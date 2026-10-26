@@ -2190,6 +2190,26 @@ Object.assign(he, {
     ['max', 'макс', 'שחקנים'],
     ['Not shown for this decision: {facts}', 'Не показано для этого решения: {facts}', 'לא מוצג בהחלטה הזו: {facts}']
   ]) { ru[key] = russian; he[key] = hebrew; }
+  // DATA-SAFETY-001 storage persistence and Delete all data guard.
+  for (const [key, russian, hebrew] of [
+    ['Browser storage', 'Хранилище браузера', 'אחסון הדפדפן'],
+    ['Temporary browser storage', 'Временное хранилище браузера', 'אחסון דפדפן זמני'],
+    ['Persistent browser storage', 'Постоянное хранилище браузера', 'אחסון דפדפן קבוע'],
+    ['Local data stays on this device during normal use, but the browser can clear temporary storage if device space runs low.', 'При обычной работе локальные данные остаются на этом устройстве, но браузер может очистить временное хранилище при нехватке места.', 'הנתונים המקומיים נשמרים במכשיר הזה בשימוש רגיל, אך הדפדפן עלול לפנות אחסון זמני אם חסר מקום במכשיר.'],
+    ['The browser will keep your local Riverline data unless you clear site data or delete it below.', 'Браузер сохранит локальные данные Riverline, пока вы не очистите данные сайта или не удалите их ниже.', 'הדפדפן ישמור על הנתונים המקומיים של Riverline אלא אם תנקו את נתוני האתר או תמחקו אותם למטה.'],
+    ['In iPhone and iPad browser tabs, Safari may clear local data after 7 days without use. Add Riverline to the Home Screen or back up important work.', 'Во вкладках браузера на iPhone и iPad Safari может очистить локальные данные через 7 дней без использования. Добавьте Riverline на экран «Домой» или сохраните резервную копию важной работы.', 'בלשוניות דפדפן ב־iPhone וב־iPad,‏ Safari עלול למחוק נתונים מקומיים לאחר 7 ימים ללא שימוש. הוסיפו את Riverline למסך הבית או גבו עבודה חשובה.'],
+    ['Delete all data', 'Удалить все данные', 'מחק את כל הנתונים'],
+    ['Permanently remove all Riverline study data, game night records, and preferences stored in this browser.', 'Безвозвратно удалить все учебные материалы Riverline, записи покерных вечеров и настройки, сохранённые в этом браузере.', 'מחיקה לצמיתות של כל נתוני הלימוד של Riverline, רישומי ערבי הפוקר וההעדפות השמורים בדפדפן הזה.'],
+    ['This permanently deletes all local data in this browser and cannot be undone:', 'Это действие безвозвратно удалит все локальные данные в этом браузере, и его нельзя отменить:', 'פעולה זו מוחקת לצמיתות את כל הנתונים המקומיים בדפדפן הזה ולא ניתן לבטל אותה:'],
+    ['Saved Hands and Saved Spots, including notes and tags', 'Сохранённые раздачи и ситуации, включая заметки и теги', 'ידיים שמורות ומצבים שמורים, כולל הערות ותגיות'],
+    ['Personal Strategy setups, approaches, and Range Calibration history', 'Игровые условия, подходы личной стратегии и история калибровки диапазонов', 'מערכי משחק, גישות באסטרטגיה אישית והיסטוריית כיול ריינג\'ים'],
+    ['Training Memory sessions, decision history, and review records', 'Сессии памяти тренировок, история решений и записи для повторения', 'סשנים בזיכרון האימונים, היסטוריית החלטות ורשומות חזרה'],
+    ['Home Game sessions, players, groups, and presets', 'Сессии покерного вечера, игроки, группы и шаблоны', 'סשנים של ערב פוקר, שחקנים, קבוצות ותבניות'],
+    ['Local profiles, custom themes, and device preferences', 'Локальные профили, пользовательские темы и настройки устройства', 'פרופילים מקומיים, ערכות נושא מותאמות והעדפות מכשיר'],
+    ['Type DELETE to confirm', 'Введите УДАЛИТЬ для подтверждения', 'הקלד מחק לאישור'],
+    ['Permanently delete all data', 'Безвозвратно удалить все данные', 'מחק לצמיתות את כל הנתונים'],
+    ['All local data has been deleted from this browser.', 'Все локальные данные удалены из этого браузера.', 'כל הנתונים המקומיים נמחקו מהדפדפן הזה.'],
+  ]) { ru[key] = russian; he[key] = hebrew; }
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),

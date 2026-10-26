@@ -12451,6 +12451,15 @@ body.has-modal-open { overflow: hidden; }
 .account-profile-facts > div { display: grid; gap: var(--space-1); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
 .account-profile-facts dt { color: var(--text-primary); font-size: var(--text-label-size); font-weight: var(--weight-heading); }
 .account-profile-facts dd { margin: 0; color: var(--text-muted); font-size: var(--text-micro-size); line-height: 1.45; }
+.account-profile-facts dd[data-storage-status="persisted"] { color: var(--text-primary); font-weight: var(--weight-control); }
+.settings-danger-zone { display: grid; gap: var(--space-3); margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+.settings-danger-head { display: grid; gap: var(--space-1); }
+.settings-danger-zone .settings-subsection-title { margin: 0; color: var(--text-primary); font-size: var(--text-label-size); font-weight: var(--weight-heading); }
+.settings-delete-guard:not([hidden]) { display: grid; gap: var(--space-3); padding: var(--space-4); background: color-mix(in srgb, var(--status-danger) 6%, var(--surface-inset)); border: 1px solid color-mix(in srgb, var(--status-danger) 42%, var(--border-subtle)); border-radius: var(--radius-panel); }
+.settings-delete-warning { margin: 0; color: var(--text-primary); font-size: var(--text-label-size); font-weight: var(--weight-control); line-height: 1.45; }
+.settings-delete-list { margin: 0; padding-inline-start: var(--space-5); display: grid; gap: var(--space-1); color: var(--text-secondary); font-size: var(--text-micro-size); line-height: 1.45; }
+.settings-delete-confirm-field { display: grid; gap: var(--space-2); color: var(--text-primary); font-size: var(--text-label-size); font-weight: var(--weight-control); }
+.settings-delete-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
 
 /* Collapsed table becomes a compact adjacent control rather than a blank row. */
 .playbook-decision-workspace.is-table-collapsed .playbook-table-toggle {
@@ -19419,3 +19428,27 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-mat
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .matrix-wrap { overflow: visible; }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .hand-cell { aspect-ratio: 1.25; }
+
+/* TRUTH-SURFACES-002: one provenance indicator per surface (Training, Hand Review, Personal Strategy). */
+#trainingStrategySource[hidden],
+#trainingReferenceSummary[hidden],
+#trainingGradeBadge[hidden],
+#handReviewSourceBadge[hidden],
+.hand-review-overview-facts > div[hidden],
+#personalComparisonProvenance[hidden] {
+  display: none;
+}
+.training-feedback-head:not(:has(> :not([hidden]))) {
+  display: none;
+}
+:is(.training-feedback-provenance, .hand-review-provenance-eyebrow, .personal-comparison-provenance) {
+  margin: 0 0 var(--space-1);
+  color: var(--provenance);
+  font: var(--weight-label) var(--t-small)/var(--t-small-line) var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+:is(.training-feedback-provenance, .hand-review-provenance-eyebrow, .personal-comparison-provenance) span {
+  text-transform: none;
+  color: inherit;
+}

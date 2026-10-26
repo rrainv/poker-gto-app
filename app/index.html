@@ -1255,7 +1255,7 @@
 
                 <article class="hand-review-decision-detail" aria-labelledby="handReviewDecisionTitle">
                   <header class="hand-review-decision-header">
-                    <div><span id="handReviewDecisionStreet" class="hand-review-street poker-data-token"></span><h3 id="handReviewDecisionTitle"></h3><p id="handReviewDecisionContext"></p></div>
+                    <div><div id="handReviewProvenance" class="eyebrow hand-review-provenance-eyebrow"><span id="handReviewTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span><span id="handReviewTier"> · <span id="handReviewTierLabel" data-i18n="Estimated" title="Heuristic guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="handReviewDecisionStreet" class="hand-review-street poker-data-token"></span></div><h3 id="handReviewDecisionTitle"></h3><p id="handReviewDecisionContext"></p></div>
                     <span id="handReviewComparisonBadge" class="badge status-badge status-badge--info"></span>
                   </header>
 
@@ -1271,7 +1271,7 @@
                   <details class="hand-review-comparison" aria-labelledby="handReviewComparisonTitle"><summary data-i18n="Source comparison">Source comparison</summary>
                     <div class="hand-review-section-heading">
                       <div><span data-i18n="Observed action and source comparison">Observed action and source comparison</span><h4 id="handReviewComparisonTitle" data-i18n="Chosen action and strategy source">Chosen action and strategy source</h4></div>
-                      <span id="handReviewSourceBadge" class="badge status-badge status-badge--info"></span>
+                      <span id="handReviewSourceBadge" class="badge status-badge status-badge--info" hidden></span>
                     </div>
                     <div class="hand-review-chosen-row"><span data-i18n="Hero chose">Hero chose</span><strong id="handReviewChosenAction"></strong></div>
                     <div id="handReviewFrequencyStack" class="hand-review-frequency-stack" role="img" aria-label="Strategy frequencies unavailable"></div>
@@ -1331,7 +1331,7 @@
                   <div><dt data-i18n="Hero decisions">Hero decisions</dt><dd id="handReviewDecisionCount" class="poker-data-token">0</dd></div>
                   <div><dt data-i18n="Comparable decisions">Comparable decisions</dt><dd id="handReviewComparableCount" class="poker-data-token">0</dd></div>
                   <div><dt data-i18n="Comparison unavailable">Comparison unavailable</dt><dd id="handReviewUnavailableCount" class="poker-data-token">0</dd></div>
-                  <div><dt data-i18n="Strategy source">Strategy source</dt><dd id="handReviewOverviewSource">-</dd></div>
+                  <div hidden><dt data-i18n="Strategy source">Strategy source</dt><dd id="handReviewOverviewSource">-</dd></div>
                 </dl>
                 <p id="handReviewAlignmentSummary" class="hand-review-overview-summary"></p>
                 <p id="handReviewPrioritySummary" class="hand-review-priority-summary"></p>
@@ -1927,7 +1927,7 @@
                 <section class="personal-next-question"><h3 data-i18n="Teach Riverline Next">Teach Riverline Next</h3><label for="personalTeachTopic" data-i18n="Focus (optional)">Focus (optional)</label><select id="personalTeachTopic" class="control-select"><option value="" data-i18n="Let Riverline suggest">Let Riverline suggest</option><option value="offsuit_boundary" data-i18n="Offsuit boundary">Offsuit boundary</option><option value="suited_boundary" data-i18n="Suited boundary">Suited boundary</option><option value="pair_boundary" data-i18n="Pocket pairs">Pocket pairs</option></select><p id="personalTeachReason"></p><button id="personalTeachNext" class="ui-button ui-button--secondary" type="button" data-i18n="Teach this next">Teach this next</button></section>
               </aside>
             </div>
-            <details class="personal-comparison"><summary data-i18n="Compare Approaches or a strategy source">Compare Approaches or a strategy source</summary><label for="personalComparisonApproach" data-i18n="Compare with">Compare with</label><select id="personalComparisonApproach" class="control-select"></select><button id="personalCompareApproach" class="ui-button ui-button--secondary" type="button" data-i18n="Compare Approaches">Compare Approaches</button><button id="personalCompareSource" class="ui-button ui-button--tertiary" type="button" data-i18n="Compare with baseline / reference">Compare with baseline / reference</button><p data-i18n="Comparisons describe compatible evidence. Differences do not establish mistakes.">Comparisons describe compatible evidence. Differences do not establish mistakes.</p><ul id="personalComparisonSummary" aria-live="polite"></ul><details><summary data-i18n="Comparison evidence">Comparison evidence</summary><pre id="personalComparisonFacts" dir="ltr"></pre></details></details>
+            <details class="personal-comparison"><summary data-i18n="Compare Approaches or a strategy source">Compare Approaches or a strategy source</summary><label for="personalComparisonApproach" data-i18n="Compare with">Compare with</label><select id="personalComparisonApproach" class="control-select"></select><button id="personalCompareApproach" class="ui-button ui-button--secondary" type="button" data-i18n="Compare Approaches">Compare Approaches</button><button id="personalCompareSource" class="ui-button ui-button--tertiary" type="button" data-i18n="Compare with baseline / reference">Compare with baseline / reference</button><p data-i18n="Comparisons describe compatible evidence. Differences do not establish mistakes.">Comparisons describe compatible evidence. Differences do not establish mistakes.</p><p id="personalComparisonProvenance" class="eyebrow personal-comparison-provenance" hidden></p><ul id="personalComparisonSummary" aria-live="polite"></ul><details><summary data-i18n="Comparison evidence">Comparison evidence</summary><pre id="personalComparisonFacts" dir="ltr"></pre></details></details>
           </section>
 
 
@@ -2205,7 +2205,7 @@
               <div class="training-state-cluster">
                 <span id="trainingDecisionNumber" class="badge status-badge status-badge--info" hidden></span>
                 <span id="trainingStateBadge" class="badge status-badge status-badge--info" data-i18n="Idle">Idle</span>
-                <span id="trainingStrategySource" class="badge status-badge status-badge--info" data-i18n="Source unavailable">Source unavailable</span>
+                <span id="trainingStrategySource" class="badge status-badge status-badge--info" data-i18n="Source unavailable" hidden>Source unavailable</span>
               </div>
             </header>
 
@@ -2278,8 +2278,8 @@
             </div>
 
             <div id="trainingFeedback" class="training-feedback" data-grade="none" hidden data-tutorial-anchor="training-feedback">
-              <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
-              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><h3 id="feedbackTitle" tabindex="-1" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
+              <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback" hidden>Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
+              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><div id="trainingFeedbackProvenance" class="eyebrow training-feedback-provenance"><span id="trainingTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span><span id="trainingTier"> · <span id="trainingTierLabel" data-i18n="Estimated" title="Heuristic guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="trainingFeedbackStreet" data-i18n="Preflop">Preflop</span></div><h3 id="feedbackTitle" tabindex="-1" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
               <dl id="trainingSameSpotComparison" class="training-same-spot-comparison" hidden aria-label="Same spot comparison" data-i18n-aria-label="Same spot comparison">
                 <div><dt data-i18n="Earlier answer">Earlier answer</dt><dd id="trainingSameSpotEarlierAnswer">-</dd></div>
                 <div><dt data-i18n="This try">This try</dt><dd id="trainingSameSpotThisTry">-</dd></div>
@@ -2352,7 +2352,7 @@
               </section>
             </div>
           </section>
-          <section id="trainingReferenceSummary" class="panel training-reference-summary" aria-labelledby="trainingReferenceSummaryTitle">
+          <section id="trainingReferenceSummary" class="panel training-reference-summary" aria-labelledby="trainingReferenceSummaryTitle" hidden>
             <div class="panel-body">
               <span id="trainingReferenceSummaryTitle" class="training-rail-label" data-i18n="Strategy source">Strategy source</span>
               <strong id="trainingReferenceSummaryValue" data-i18n="Source unavailable">Source unavailable</strong>
@@ -2968,7 +2968,39 @@
           <dl class="account-profile-facts">
             <div><dt data-i18n="Study data">Study data</dt><dd data-i18n="Stored on this device">Stored on this device</dd></div>
             <div><dt id="settingsSyncHeading" data-i18n="Cloud sync is not enabled">Cloud sync is not enabled</dt><dd id="settingsSyncDescription" data-i18n="Study data is still stored locally. Signing in does not create a cloud backup.">Study data is still stored locally. Signing in does not create a cloud backup.</dd></div>
+            <div id="settingsStoragePersistenceRow">
+              <dt id="settingsStorageStatusHeading" data-i18n="Browser storage">Browser storage</dt>
+              <dd id="settingsStorageStatus" data-storage-status="temporary" data-i18n="Temporary browser storage">Temporary browser storage</dd>
+              <dd id="settingsStorageStatusDetail" data-i18n="Local data stays on this device during normal use, but the browser can clear temporary storage if device space runs low.">Local data stays on this device during normal use, but the browser can clear temporary storage if device space runs low.</dd>
+              <dd id="settingsStorageIosNote" data-i18n="In iPhone and iPad browser tabs, Safari may clear local data after 7 days without use. Add Riverline to the Home Screen or back up important work.">In iPhone and iPad browser tabs, Safari may clear local data after 7 days without use. Add Riverline to the Home Screen or back up important work.</dd>
+            </div>
           </dl>
+          <section id="settingsDeleteAllDataSection" class="settings-danger-zone" aria-labelledby="settingsDeleteAllDataHeading">
+            <div class="settings-danger-head">
+              <h4 id="settingsDeleteAllDataHeading" class="settings-subsection-title" data-i18n="Delete all data">Delete all data</h4>
+              <p id="settingsDeleteAllDataSummary" class="panel-note" data-i18n="Permanently remove all Riverline study data, game night records, and preferences stored in this browser.">Permanently remove all Riverline study data, game night records, and preferences stored in this browser.</p>
+            </div>
+            <button id="settingsDeleteAllDataOpen" class="ui-button ui-button--danger" type="button" aria-expanded="false" aria-controls="settingsDeleteAllDataGuard" data-i18n="Delete all data">Delete all data</button>
+            <div id="settingsDeleteAllDataGuard" class="settings-delete-guard" hidden>
+              <p id="settingsDeleteAllDataWarning" class="settings-delete-warning" data-i18n="This permanently deletes all local data in this browser and cannot be undone:">This permanently deletes all local data in this browser and cannot be undone:</p>
+              <ul id="settingsDeleteAllDataList" class="settings-delete-list">
+                <li data-i18n="Saved Hands and Saved Spots, including notes and tags">Saved Hands and Saved Spots, including notes and tags</li>
+                <li data-i18n="Personal Strategy setups, approaches, and Range Calibration history">Personal Strategy setups, approaches, and Range Calibration history</li>
+                <li data-i18n="Training Memory sessions, decision history, and review records">Training Memory sessions, decision history, and review records</li>
+                <li data-i18n="Home Game sessions, players, groups, and presets">Home Game sessions, players, groups, and presets</li>
+                <li data-i18n="Local profiles, custom themes, and device preferences">Local profiles, custom themes, and device preferences</li>
+              </ul>
+              <label class="settings-delete-confirm-field" for="settingsDeleteAllDataInput">
+                <span id="settingsDeleteAllDataPrompt" data-confirm-word="DELETE" data-i18n="Type DELETE to confirm">Type DELETE to confirm</span>
+                <input id="settingsDeleteAllDataInput" class="control-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" dir="auto" data-confirm-word="DELETE">
+              </label>
+              <div class="settings-delete-actions">
+                <button id="settingsDeleteAllDataConfirm" class="ui-button ui-button--destructive" type="button" disabled data-i18n="Permanently delete all data">Permanently delete all data</button>
+                <button id="settingsDeleteAllDataCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button>
+              </div>
+            </div>
+            <p id="settingsDeleteAllDataStatus" class="panel-note" role="status" aria-live="polite" hidden></p>
+          </section>
         </div>
 
         <div id="settingsPanelAudio" class="settings-group settings-panel settings-audio-group" role="tabpanel" aria-labelledby="settingsTabAudio" data-settings-panel="audio" hidden>

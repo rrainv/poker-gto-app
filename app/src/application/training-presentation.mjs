@@ -37,11 +37,23 @@ function historyActionLabel(type) {
   }[type] || words(type);
 }
 
-function historyAmountLabel(record) {
+function historyAmountMilliBb(record) {
   const type = record?.submittedAction?.type;
   if (type === 'fold' || type === 'check') return null;
-  if (type === 'call') return bbLabel(record.committedMilliBb);
-  return bbLabel(record?.submittedAction?.amountToMilliBb ?? record?.currentBetAfterMilliBb);
+  const milliBb = type === 'call'
+    ? record?.committedMilliBb
+    : (record?.submittedAction?.amountToMilliBb ?? record?.currentBetAfterMilliBb);
+  return Number.isSafeInteger(milliBb) && milliBb >= 0 ? milliBb : null;
+}
+
+function historyAmountBb(record) {
+  const milliBb = historyAmountMilliBb(record);
+  return milliBb === null ? null : milliBb / 1000;
+}
+
+function historyAmountLabel(record) {
+  const milliBb = historyAmountMilliBb(record);
+  return milliBb === null ? null : bbLabel(milliBb);
 }
 
 function legalActionPresentation(type, legalActions) {
@@ -50,11 +62,25 @@ function legalActionPresentation(type, legalActions) {
   const base = {
     type,
     label: type === 'all_in' ? 'All-in' : words(type),
+    amountMilliBb: null,
+    amountBb: null,
     amountLabel: null,
     boundsLabel: null,
   };
-  if (type === 'call') base.amountLabel = bbLabel(source.commitMilliBb);
-  if (type === 'all_in') base.amountLabel = bbLabel(source.amountToMilliBb);
+  if (type === 'call') {
+    base.amountMilliBb = Number.isSafeInteger(source.commitMilliBb) && source.commitMilliBb >= 0
+      ? source.commitMilliBb
+      : null;
+    base.amountBb = base.amountMilliBb === null ? null : base.amountMilliBb / 1000;
+    base.amountLabel = bbLabel(source.commitMilliBb);
+  }
+  if (type === 'all_in') {
+    base.amountMilliBb = Number.isSafeInteger(source.amountToMilliBb) && source.amountToMilliBb >= 0
+      ? source.amountToMilliBb
+      : null;
+    base.amountBb = base.amountMilliBb === null ? null : base.amountMilliBb / 1000;
+    base.amountLabel = bbLabel(source.amountToMilliBb);
+  }
   if (type === 'bet' || type === 'raise') {
     const minimum = bbLabel(source.minToMilliBb);
     const maximum = bbLabel(source.maxToMilliBb);
@@ -117,6 +143,8 @@ export function createTrainingPresentationModel(exercise) {
       position: playersById.get(record.playerId)?.position || null,
       actionType: record.submittedAction?.type || 'unknown',
       actionLabel: historyActionLabel(record.submittedAction?.type),
+      amountMilliBb: historyAmountMilliBb(record),
+      amountBb: historyAmountBb(record),
       amountLabel: historyAmountLabel(record),
       isHero: record.playerId === exercise.heroPlayerId,
     }));

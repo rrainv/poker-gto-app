@@ -65,3 +65,79 @@ export function deriveActorCallEconomics(state, actorPlayerId) {
       : null,
   });
 }
+
+function finiteNonNegativeNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+/**
+ * Canonical actor-contestable pot before the current decision action, in big blinds.
+ * Accepts either a DecisionContext (`actorContestablePotAfterCallBb`, `callAmountBb`)
+ * or a milliBb actor-economics record (`actorContestablePotAfterCallMilliBb`, `callCommitmentMilliBb`).
+ */
+export function deriveActorPotBeforeActionBb(context) {
+  if (!context || typeof context !== 'object') return null;
+  const afterCallBb = finiteNonNegativeNumber(context.actorContestablePotAfterCallBb);
+  const callAmountBb = finiteNonNegativeNumber(context.callAmountBb);
+  if (afterCallBb !== null && callAmountBb !== null) {
+    return afterCallBb >= callAmountBb ? afterCallBb - callAmountBb : null;
+  }
+  const afterCallMilliBb = finiteNonNegativeNumber(context.actorContestablePotAfterCallMilliBb);
+  const callMilliBb = finiteNonNegativeNumber(context.callCommitmentMilliBb);
+  if (afterCallMilliBb !== null && callMilliBb !== null) {
+    return afterCallMilliBb >= callMilliBb ? (afterCallMilliBb - callMilliBb) / 1000 : null;
+  }
+  return null;
+}
+
+/**
+ * Canonical heads-up Stack-to-Pot Ratio (SPR) before the current action.
+ * Returns null when multiway, when effectiveStackBb is unavailable, or when pot before action <= 0.
+ */
+export function deriveStackToPotRatio(context) {
+  if (!context || typeof context !== 'object') return null;
+  if (context.opponentCount !== 1) return null;
+  const effectiveStackBb = finiteNonNegativeNumber(context.effectiveStackBb);
+  const potBeforeActionBb = deriveActorPotBeforeActionBb(context);
+  if (effectiveStackBb === null || potBeforeActionBb === null || potBeforeActionBb <= 0) {
+    return null;
+  }
+  return effectiveStackBb / potBeforeActionBb;
+}
+
+/**
+ * Canonical heads-up Minimum Defense Frequency (MDF) as a probability in [0, 1].
+ * Returns null when multiway, when no positive call is faced, or when actor-contestable pot is unavailable.
+ */
+export function deriveMinimumDefenseFrequency(context) {
+  if (!context || typeof context !== 'object') return null;
+  if (context.opponentCount !== 1) return null;
+  const callAmountBb = finiteNonNegativeNumber(context.callAmountBb)
+    ?? (finiteNonNegativeNumber(context.callCommitmentMilliBb) !== null
+      ? context.callCommitmentMilliBb / 1000
+      : null);
+  const afterCallBb = finiteNonNegativeNumber(context.actorContestablePotAfterCallBb)
+    ?? (finiteNonNegativeNumber(context.actorContestablePotAfterCallMilliBb) !== null
+      ? context.actorContestablePotAfterCallMilliBb / 1000
+      : null);
+  if (callAmountBb === null || callAmountBb <= 0) return null;
+  if (afterCallBb === null || afterCallBb <= 0 || afterCallBb < callAmountBb) return null;
+  const potBeforeActionBb = deriveActorPotBeforeActionBb(context);
+  if (potBeforeActionBb === null) return null;
+  return potBeforeActionBb / afterCallBb;
+}
+
+/**
+ * Canonical heads-up Minimum Defense Frequency (MDF) as a percentage in [0, 100].
+ */
+export function deriveMinimumDefenseFrequencyPercent(context) {
+  const mdf = deriveMinimumDefenseFrequency(context);
+  return mdf === null ? null : mdf * 100;
+}
+
+export {
+  deriveActorPotBeforeActionBb as actorPotBeforeActionBb,
+  deriveStackToPotRatio as stackToPotRatio,
+  deriveMinimumDefenseFrequency as minimumDefenseFrequency,
+  deriveMinimumDefenseFrequencyPercent as minimumDefenseFrequencyPercent,
+};
