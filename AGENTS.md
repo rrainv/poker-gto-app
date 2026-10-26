@@ -20,6 +20,7 @@ Riverline is a local-first, browser-first No-Limit Hold'em learning workstation 
 
 - **Minimum read set:** this file plus the files the ticket names. Tickets carry their own context.
 - Direction: [docs/NORTH_STAR.md](docs/NORTH_STAR.md). Live status and queue: [docs/STATE.md](docs/STATE.md). Issues: [docs/ISSUE_REGISTER.md](docs/ISSUE_REGISTER.md). Visual contract: [docs/project/DESIGN_SYSTEM.md](docs/project/DESIGN_SYSTEM.md). Terms: [docs/TERMINOLOGY.md](docs/TERMINOLOGY.md). Reference specs in `docs/project/` only when a ticket names them. `docs/archive/` is history, never required reading.
+- **Skills** live in `.agents/skills/` (sources: `SOURCES.md`): `riverline-design` for any UI work; `/review-animations` before merging motion changes; `/break-ui` for new data-heavy components.
 - **Never read giant files whole** (`app/src/core/logic.js`, `app/styles.css`, `docs/ISSUE_REGISTER.md`, large specs): search by ID, function or heading and read the relevant range.
 - Don't re-read unchanged files during same-session corrections.
 
