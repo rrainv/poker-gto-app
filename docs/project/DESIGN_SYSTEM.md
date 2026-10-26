@@ -2,7 +2,9 @@
 
 The visual contract: design direction (Style v4), tokens, components, composition and stability rules, and the acceptance standard. It merges the former design-system document (tokens, components and cascade facts that match the code) with Design Language v2 (the Manager's 2026-10-12/13 spec, authoritative for direction). Direction comes from [NORTH_STAR §8](../NORTH_STAR.md#8-design-language); this file says how. A guide, not an ultimatum: the owner's judgement is final.
 
-Where the target and the current code differ, both are stated: **Target** is what M1 builds toward, **Code** is what `app/styles.css` and `presentation-theme.mjs` do today. Values marked *provisional* are proposals to confirm on the PC (decisions D-10 to D-13 in [STATE.md](../STATE.md#open-decisions); D-14 resolved 2026-10-15).
+Where the target and the current code differ, both are stated: **Target** is what M1 builds toward, **Code** is what `app/styles.css` and `presentation-theme.mjs` do today. Values marked *provisional* are proposals to confirm on the PC (open items in [STATE.md](../STATE.md#open-decisions); D-14 resolved 2026-10-15; D-10, D-11 and D-13 resolved 2026-10-26 by P1-30).
+
+**Phase 1 decisions (DOCS-PHASE1-001, 2026-10-26).** The owner's design decisions of 2026-10-18 → 26 are applied below with their IDs, dates and reasons; the full logs are in [design/decisions/](../design/decisions/README.md) (P1-xx = PHASE1_DECISIONS). Companion references: [MOTION_SPEC.md](../design/MOTION_SPEC.md) (41 moments), [VOICE_GUIDE.md](../design/VOICE_GUIDE.md), [MOCKUP_QA.md](../design/MOCKUP_QA.md), [ACHIEVEMENTS_CATALOGUE.md](../design/ACHIEVEMENTS_CATALOGUE.md). The `riverline-design` agent skill summarises these rules for UI work.
 
 Interaction semantics live in [INTERACTION_GRAMMAR.md](INTERACTION_GRAMMAR.md); terms and copy in [TERMINOLOGY.md](../TERMINOLOGY.md); theme values in `app/src/application/presentation-theme.mjs`.
 
@@ -22,6 +24,10 @@ Interaction semantics live in [INTERACTION_GRAMMAR.md](INTERACTION_GRAMMAR.md); 
 3. *Would a serious design do the job better?* Playful or unusual designs are welcome only when they work as well or better.
 
 **Functionally correct but visibly sloppy is a product defect.** No clipping, no overlap and valid geometry are necessary, not sufficient.
+
+**PC first (P1-28, owner correction 2026-10-23).** Recent mockups had drifted into phone-first layouts; PC stays the priority and is harder to get right. Design the **1920×1080 PC layout first** (keeping the aesthetics, animation, design and colours), thinking about what each PC layout needs and could add; phone versions come after, as their own designed layouts. Before designing any screen, **re-read its earlier PC layouts** and list what they contained; carry over what is still wanted and write down anything dropped, with the reason (P1-26: content first, then layout).
+
+**Direction approved (P1-17, 2026-10-22):** the owner called the approved design + motion direction "amazing": keep improving it and recheck every screen against it.
 
 **Same feature, same component, same behaviour everywhere.** History rails, card displays, action inputs, fact grids, tier badges, mix bars, seats and player rows are shared components that look and behave identically in Hand, Review, Analyze, Training, Full Hand, Equity and Saved. Rework diverging copies rather than adding new ones.
 
@@ -74,6 +80,10 @@ All colours come from role tokens (canvas, shell, panel, elevated, interactive, 
 
 **Contrast rules** (all themes): text pairs ≥ 4.5:1; non-text pairs (check glyph vs fill, checkbox boundary vs surface, switch thumb vs track, track vs surface) ≥ 3:1; provenance vs `--action-aggressive` RGB distance ≥ 60. The component sheet measures the rendered pairs per theme.
 
+**Contrast fixes from the mockup deep review (2026-10-26, register DS-CONTRAST-TOKENS, for DS-TOKENS-001):** the draft Daylight primary button (#ffffff on #2f8a5f = 4.27:1), the Midnight fold colour used as small text (#68716c = 3.29:1) and muted hint text miss WCAG AA for small text. Proposed tokens: Daylight button **#287a53** (5.1:1), fold **#828c86** (4.65:1); muted hints re-measured. *(Code: Daylight already uses a deeper accent, #256044, and `--action-*-text` roles are contrast-derived, so the failures are in the kit drafts and any place that uses the raw fold colour as text; DS-TOKENS-001 reconciles both.)*
+
+**Built-in presets stay read-only (mockup review 2026-10-26, register DS-THEME-SLATE):** Slate is a built-in theme; "Your copy" is a separate slot / action (the kit Settings board overwrote Slate). *(Code has Midnight, Graphite and Daylight; Slate exists only in the kit and mockups so far.)*
+
 **Colour use:** colour carries meaning only: the one primary action, selection, active step, action data (mix bars, action buttons), status, provenance (brass). No decorative accent borders, gradient washes or coloured left-border cards. The accent is never a text-hierarchy colour; provenance (brass) and the aggressive action colour stay visibly distinct.
 
 ### Midnight (default) = the mockup palette
@@ -86,7 +96,7 @@ Code facts: these are the pinned preset roles (`PRESENTATION_THEMES[midnight].ro
 
 Target draft (language check canvas): canvas #f4f2ec · panel #ffffff · inset #f0eee7 · lines #dedad0 / #c9c4b7 · text #1a1d1b / #3f4642 / #5c6560 · accent #2f8a5f (on-accent #ffffff) · actions: fold #7b827e, passive #2f7480, aggressive #a5652f · felt #3d7d61 → #2a5c46. Action colours are darker than in Midnight to keep contrast on white.
 
-Code today: Daylight accent deep jade #256044 / #1e4f38 (white text 7.4:1, ≥ 4.97:1 on every Daylight surface); Daylight never paints pure white (`--surface-elevated` #fefdfb). Reconcile in DS-TOKENS-V4.
+Code today: Daylight accent deep jade #256044 / #1e4f38 (white text 7.4:1, ≥ 4.97:1 on every Daylight surface); Daylight never paints pure white (`--surface-elevated` #fefdfb). Reconcile in DS-TOKENS-001 (was DS-TOKENS-V4).
 
 ### Custom themes and the table
 
@@ -100,7 +110,7 @@ Code today: Daylight accent deep jade #256044 / #1e4f38 (white text 7.4:1, ≥ 4
 
 - **UI font:** `--font-ui` "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif. On Windows Firefox, Segoe UI Variable Text renders (a variable font, so 650/750 are true weights).
 - **Numbers:** tabular digits everywhere (`body` sets `font-variant-numeric: tabular-nums`; `--font-data` resolves to `--font-ui`). Monospace (`--font-mono`) only for technical strings: `kbd`, `code`, `samp`, `.technical-id`.
-- **Heading face (*provisional*, D-10):** the current UI font at heavy weight, or **Rubik** (owner leans Rubik; one family covers Latin, Cyrillic and Hebrew). Serifs rejected. Workspace titles, verdicts and big numbers only.
+- **Heading face: Rubik** (P1-30, owner 2026-10-26: "looks good; tweaks possible once seen in real examples"; resolves D-10). One family covers Latin, Cyrillic and Hebrew. Serifs rejected. Workspace titles, verdicts and big numbers only. **Self-hosted** font files (no Google Fonts requests at runtime; the app's CSP allows only `font-src 'self' data:`), licence row in [THIRD_PARTY.md](../THIRD_PARTY.md) (SIL OFL). *(Code: `--font-display` is still the system stack; DS-TOKENS-001 adds Rubik; register DS-FONT-RUBIK.)*
 - **Line length:** explanatory text max ~70 characters per line.
 
 ### Scale
@@ -200,7 +210,7 @@ Components reference theme primitives directly (`var(--surface-inset)`, not a `:
 
 ## Components
 
-Each exists once and is reused everywhere. Code inventory first, then the Style v4 shared components M1 builds (DS-COMPONENTS-V4).
+Each exists once and is reused everywhere. Code inventory first, then the Style v4 shared components M1 builds (COMPONENTS-001, was DS-COMPONENTS-V4).
 
 ### Code inventory (DS-FOUNDATION-001)
 
@@ -230,17 +240,21 @@ Migration status: adopted families are Button, Field, Checkbox, Segmented, Chip,
 - **Tabs and segmented controls:** selected = underline (tabs) or filled segment; never an extra "Selected" label (never double-signal a state).
 - **Hero answer card:** see Style v4.
 - **Number tiles:** 2–4 key numbers, value 15/650 tabular, label above; full list behind "All details".
-- **Tier badge / pill:** Exact / Verified / Estimated / Unavailable; one per surface, fixed position, one-line reason on hover; scoped labels where needed ("Exact · price only", "Exact · known cards", "Exact · push/fold model"). No numeric confidence percentages.
-- **Mix bar:** action colours, labels inside segments (Style v4), estimated values rounded to 5%, actions under 5% hidden, a "you" marker where relevant, hover tooltip per segment. Hebrew direction decided on the PC (D-13).
+- **Source / tier label (D-31, owner 2026-10-21):** one combined label per surface in a fixed position: **source + tier + scope where useful** ("Heuristic baseline · Estimated", "Model · Estimated · multiway", "Exact · price only", "Exact · known cards", "Exact · push/fold model"); one-line reason on hover, details in "Source". Tiers: Exact / Verified / Estimated / Unavailable. When there is no data, say so; fallbacks are always labelled. No numeric confidence percentages.
+- **Mix bar:** action colours, labels inside segments (Style v4), estimated values rounded to 5%, actions under 5% hidden, hover tooltip per segment. The **"you" marker is a tick below the bar, never across a label** (MOCKUP_QA #4). **Hebrew (P1-30, resolves D-13): the bar stays left-to-right as a data island, and its legend follows the bar's direction** (both LTR); a legend that inherits RTL while the bar is LTR contradicts the order (mockup review 2026-10-26; register I18N-HE-MIXBAR-LEGEND).
 - **History rail:** vertical, street-grouped, compact three-column rows (marker, actor, action); Hero rows emphasised; selected row highlighted; key-moment dots; transparent backgrounds. Used by Replay, Review, Hand, Training, Full Hand, Orbit. The rejected horizontal action path stays rejected.
-- **Cards:** inline 22×30, mini 30×42, standard 46×64 (also on the table), table/hero 58×82; four- or two-colour suits and T/10 from Settings. Every known card shows rank and suit identity across themes, colour modes and RTL. **Unknown cards are face-down backs**, never only words. Card back: the app's real back or the kit's modernised proposal (cream border, forest face, fine brass lattice, leaf mark), D-11.
-- **Decision controls by mode** (*provisional*, D-05): (A) big action cards tinted in action colours, raise sizes inside the raise card, a confirm button that carries the amount; (B) round action buttons at the seat with a size chip bar and one cost line, click again to confirm. Both show each choice's cost (price, share of stack, stack after). Choosing Bet/Raise never silently submits a size.
-- **Feedback strip:** replaces the decision area in place; "You chose X · Baseline: Y · close"; tier badge; mix bar with a "you" marker; one-line why; Next as the single accent action. Neutral wording ("inside / outside the baseline's mix"), never right/wrong for heuristic comparison.
-- **Training panels** beyond the decision: the opener's likely range, this session's results by spot type, your plan plus the baseline revealed after answering; never leak the answer before submission.
+- **Cards:** inline 22×30, mini 30×42, standard 46×64 (also on the table), table/hero 58×82; four- or two-colour suits and T/10 from Settings. Every known card shows rank and suit identity across themes, colour modes and RTL. **Unknown cards are face-down backs**, never only words. **Card back (P1-30, resolves D-11):** add an **"R" monogram for Riverline in a special font** and make it look more like a real card back (the current kit back, cream border, forest face, fine brass lattice and a brass edge, is "also good"); final art at the PC.
+- **Choosing an action: select + confirm everywhere (P1-03, 2026-10-18).** Click an action, then confirm with the button that **carries the amount**. Settings › Training changes the mode (Instant, Hold). **One-time prompt:** after a few confirmed answers (two in the prototype), a small, quiet, non-modal inline prompt "Don't want to confirm? Answer with one click" with **"Switch to one click"** (changes the setting immediately, reversible) and **"Keep confirming"** (dismisses for good); it never repeats once answered. Keyboard answers (F / C / R, 1–4, Enter) are never animated.
+- **Decision controls (P1-04, 2026-10-18): both exist as shared components with the same rules** (select + confirm, costs visible, sizes in one place, same colours): (A) **big action cards** tinted in action colours, raise sizes inside the raise card, the selected card's border draws in the action colour while the others step back, a Confirm button carrying the amount; (B) **round action buttons at the seat** with a size chip bar and one cost line. Both show each choice's cost (price, share of stack, stack after). Choosing Bet/Raise never silently submits a size. **Which mode uses which is provisional** (starting idea: cards without a table, seat buttons at the table; the owner decides at the PC; D-05). On the phone: a compact bottom dock with tinted action cards + sizes + Confirm (MOB-04).
+- **Decision zone and feedback:** the decision zone has a **reserved height**; the action cards and Confirm swap in place with the feedback (P1-24). Feedback: verdict by the dominance rule, inside/outside pills, mix fill with a "you" tick below, one-line reason, then Next (the single accent action) / Explain / Save / Your plan. Neutral wording ("inside / outside the baseline's mix"), never right/wrong for heuristic comparison. On the phone the feedback is a bottom sheet.
+- **Training panels (P1-05, 2026-10-18): all five**: spot at a glance (pot, price, equity needed, stacks); the opponent's likely range (mini matrix, Estimated); this session's results by spot type; your plan + baseline after answering; similar spots you've played. **Everything reachable at any time or at most one click/expand away** (calm surface, deep data); on the PC a right rail of collapsible panel cards, on the phone panel chips opening bottom sheets. **No answer leaks before submission:** the plan/baseline panel stays locked until the answer. Which panels are open by default is decided on the mockup; more panels are welcome later.
+- **Fact tiles** show their derivation on hover (P1-24; the M3 hover derivations start here where the facts exist).
 - **Range matrix:** small = plain coloured cells with hand and mix on hover; large = hand labels in every cell, mixed cells split by action colours, axis labels, a hover card with combos and mix. Never mirrored in RTL.
 - **Seats:** character (portrait or semi-abstract avatar), name, position, stack, state; folded seats dimmed; playstyle label visible by default (appearance never implies behaviour).
 - **Ledger rows:** player, bought in (total + count, expandable with a chevron, not an "entries" label), cash out (money with chips beneath), net, actions (Rebuy, Cash out, Edit).
-- **Empty states:** one line of what to do, one action; later an illustration or Chippy.
+- **Seats at a table:** **hero at the bottom of every table**, the other seats rotated around; cards and labels never overlap seats; a seat label never reuses a control's class (MOCKUP_QA #9, #10).
+- **Empty states:** see [Illustration and empty states](#illustration-and-empty-states).
+- **Stickers (sticker book):** see [Sticker book](#sticker-book-achievements).
 
 ---
 
@@ -255,7 +269,7 @@ Code since SHELL-001 (`bf90a55`); the shell and sidebar direction is being re-de
 - **Canvas grid:** `--canvas-max` 1680 px (target ~1640 px, D-14); the canvas owns the 24 px gutter; every frame is `min(100%, --canvas-max)` centered and the header pads to the same start edge. Workspaces choose column templates inside the frame; they never set page margins or their own max widths.
 - **Sidebar footer:** Language, Audio and Settings as one row of 36 px icon buttons (one column in the collapsed rail), each with `aria-label`, an `sr-only` label and one translated tooltip. Expanded nav items carry no tooltip; the collapsed rail sets one to the inline end. Target footer adds an About & legal link (NORTH_STAR §7.11).
 - **One accent action per view:** at most one accent-filled control per state; legal poker actions are peers; transport controls and tutorial offers are secondary; switch tracks and selected segments are indicators, not actions.
-- **Target shell** (D-03): brand at the top, clear groups, footer row with language, sound, settings and About & legal; header per workspace with title, one context line and the workspace's chips. Sidebar options: variant 4 (hubs with sub-items: Home, Study, Tools, Library, Game night), variant 2 (Home first, grouped by job: Study, Tools, Yours), or the current rail refreshed.
+- **Target shell (P1-01, decided 2026-10-18; resolves D-03 and D-04): sidebar variant 4.** Brand at the top; **Home**; then three hubs with sub-items, **each with its own hub screen**: **Study** (Training, Personal Strategy, Learn), **Tools** (Hand, Analyze, Equity), **Library** (Saved, My poker); **Game night** separate below; a footer row with language, sound, settings and About & legal. Header per workspace with title, one context line, the **context chip** ("Table rules · approach", P1-26) and the workspace's chips. Hub content (P1-02, a working split): Home = app-wide (continue, today's session, last game night, what Riverline noticed; later Chippy, news, achievements); Study hub = plan coverage table, drill launcher (quick / long), review queue with why each item is due, learning path; Tools hub = recent hands / spots / Equity calculations with New buttons and quick actions; Library hub = Saved (filters, inspector) plus My poker setups. Motion: sidebar highlight glide (moment 13), workspace switch with a blur bridge (moment 14). Built by SHELL-002 (hub screens start as skeletons).
 
 ## List and inspector (SAVED-COMPOSITION-002)
 
@@ -307,15 +321,59 @@ Estimated mixes are rounded to 5% and actions under 5% are not shown as part of 
 
 ## Motion, feedback and sound
 
-- **Smooth (default):** visible and pleasant, ~150–220 ms, ease-out: panels, tabs, the feedback strip, counters, skeleton fades.
-- **Table motion:** deal, flip, chips to the pot, pot push: ~200–350 ms, physical and satisfying, never fireworks.
-- **Quiet:** repeated high-frequency actions (drill after drill, scrolling lists) get minimal motion.
-- **Expressive (rare):** session or orbit completion, milestones, Chippy, onboarding moments: up to ~600 ms.
-- **Reduced motion:** follows the system or the in-app toggle (MOTION-001); removes movement but keeps short pauses so changes can be followed; never shortens Full Hand comprehension pauses.
+The motion catalog is the approved direction for Riverline (P1-07, owner 2026-10-18: "this design with these animations is what I want"; P1-17: "amazing"). The owner's real ask (P1-06b) is **richer, more crafted animations everywhere**, designed across the whole app, not just tempo. All 41 moments with choreography, base durations and tempos: [MOTION_SPEC.md](../design/MOTION_SPEC.md). This section replaces the earlier four-level scale (smooth ~150–220 ms, table ~200–350 ms, quiet, expressive ≤ 600 ms), which the decisions below refine.
+
+**Frequency decides motion (P1-06, from the motion research, emilkowalski `emil-design-eng`, MIT):**
+- Drill actions and **anything keyboard-triggered are near-instant** (0–120 ms; no growing bars on every answer). Keyboard actions stay instant under every Motion setting.
+- Hover / select / press about 100 ms (press scale .97); panels, dropdowns, feedback 150–250 ms; dialogs 200–300 ms; table moments (deal, chips) 250–300 ms, physical but never slow; rare moments (session end, milestones) may be longer and expressive. These are base values before the tempo factor below.
+- Curves: strong ease-out `cubic-bezier(.23,1,.32,1)` for entrances and responses; ease-in-out `cubic-bezier(.77,0,.175,1)` for things moving on screen; drawer `cubic-bezier(.32,.72,0,1)` for sheets and toasts; spring `cubic-bezier(.34,1.36,.64,1)` only for small confirmations. **Never ease-in for entrances**; exits shorter than entrances; popovers grow from their trigger, never from scale(0); stagger 30–80 ms; transitions over keyframes; a blur bridge on crossfades; hover only for fine pointers (`@media (hover:hover) and (pointer:fine)`), with a tap equivalent on touch and a keyboard-focus equivalent.
+
+**Tempo (P1-06a, P1-06b, P1-08).** The owner found the research timings too snappy and wants a **softer, more Apple-like tempo** for hover, panels and table moments. Tempo = playback factor: Snappy 1.0, **Balanced 0.7** (≈ 1.4× slower than the research defaults; the default for every moment), Fluid 0.5; real duration = base ÷ tempo. **Per-moment picks (P1-08):** sidebar ≈ 0.85; workspace switch Fluid; showdown Balanced; history rail Fluid; equity update ≈ 0.6; list filtering Fluid; invalid input ≈ 0.85; loading Fluid; theme change Fluid; Game night settle Balanced; plan building Balanced; whose turn: **redo entirely** (now A halo + timer or C quiet pill, pick pending, P1-10 / P1-30). Part 4 moments (Settings, Learn, Library) as listed in the spec.
+
+**One global Motion setting (P1-09).** Every moment keeps its designed tempo, and one setting in Settings › Sound & motion scales them all together: **Instant** (no animation), **Faster** (×1.6 speed), **Standard** (the designed tempos), **Reduced** (opacity fades ≤ 200 ms only; **follows the system setting by default**). This replaces the earlier in-app reduced-motion toggle (MOTION-001). Reduced motion keeps short pauses so changes can be followed and never shortens Full Hand comprehension pauses.
+
+**60 fps is a requirement (P1-10, 2026-10-19).** The mockups looked choppy in places; production must hold 60 fps: animate **transform, opacity and clip-path only**; no per-frame JS loops; no layout properties (left/top/width/height); no animated box-shadow (use opacity on a pre-blurred layer); `will-change` only on active elements; **profiled in Firefox before acceptance**. Heavy work (equity simulation) runs in a Web Worker so animations stay smooth.
+
+Always:
 - No motion ever shifts layout; motion never owns or delays poker truth (canonical state updates first).
+- **Transitions never leave stale content** (MOCKUP_QA #1): the new content sits on top, the old one is removed by a timeout as well as by its animation (never rely only on `animation.finished`), and quick repeated taps cancel the previous swap.
 - **Hover and press:** every control reacts to the pointer (hover lifts or brightens slightly, press gives a quick tactile response, hold where meaningful, clear focus rings). Mouse-first: the app must look and feel good before keyboard polish; the key contract still applies.
-- **Sound (M1 first set):** one good set (cards, chips, a few study cues) with master volume and mute; realistic but softened, moderate level. Study cues are neutral synthesized tones and never sound like right or wrong; confirmation and disclosure sounds never imply correctness. Muting sound never removes a visual state change. Seek/hydration never replays world effects. The full per-category mixer comes later (NORTH_STAR §7.15).
-- **Keyboard contract** (default proposal, low priority): F fold, C check/call, B/R bet or raise, A all-in, digits = size presets; U unsure, L review later, S save, E explain. Keys are configurable (M2 rebinding with clash check and reset); one key per action across screens; every workspace lists its keys in Settings › Shortcuts; a keyboard hint lists exactly the bound keys.
+- Before merging motion changes, run the `/review-animations` skill (AGENTS.md).
+
+**Sound (P1-11, 2026-10-19; licences 2026-10-26).**
+- **Real recordings only.** Synthesized stand-ins were rejected ("synthesized slop"); this includes the study cues, which replaces the earlier rule "study cues are neutral synthesized tones". Sounds come from real, properly licensed recordings (full-quality originals, not previews), **judged by ear** on the PC with good speakers or headphones, on a local listening page (AUDIO-RESEARCH-001; candidate sets from R-06). Which events make sound is decided on that page. The sound should be good and natural (owner).
+- **Licences:** CC0 preferred; **CC-BY allowed with a credit line in About & legal**; never CC-BY-NC, BBC, or redistribution-restricted packs in the repo; each file recorded in [THIRD_PARTY.md](../THIRD_PARTY.md).
+- **Study cues never sound like right or wrong; errors are never a buzzer**; confirmation and disclosure sounds never imply correctness.
+- **Sound and motion are separate settings.** The Motion setting never mutes sound (R-06's "Instant mutes table sounds" was rejected); only keyboard repeats stay silent. Muting sound never removes a visual state change. Seek/hydration never replays world effects.
+- The first real set ships with master volume and mute; the full per-category mixer comes later (NORTH_STAR §7.15). *(Code today: CC0 Freesound previews in `app/assets/audio/foley/` and oscillator-synthesized study cues in `SoundFX.js`; both are replaced by the listening-page choice.)*
+
+**Keyboard contract** (default proposal, low priority): F fold, C check/call, B/R bet or raise, A all-in, digits = size presets; U unsure, L review later, S save, E explain. Keys are configurable (M2 rebinding with clash check and reset); one key per action across screens; every workspace lists its keys in Settings › Shortcuts; a keyboard hint lists exactly the bound keys.
+
+---
+
+## Illustration and empty states
+
+**Illustration style (P1-13, P1-14; approved 2026-10-19: "most of the new design looks great").** **Soft depth + fine line**: soft-depth objects for warmth and recognisability, with fine jade/brass line accents (outlines, small marks, motion lines) for precision and clarity. Line alone was less understandable (too little detail); the "felt and flat" style was rejected. This replaces the provisional "geometric-abstract with fine line accents". Details are tuned when real art is made. Approved set: https://claude.ai/artifact/7fZoz4bq5rrNyU7yabfLQj.
+
+**Two-card rule (P1-14, MOCKUP_QA #13):** when two cards are shown together in an illustration, the front one is **face up** and the second, behind it, **face down** (card back with the brass edge), for contrast. Check every new graphic.
+
+**Empty states (P1-12, 2026-10-19).** **D, a useful starter from real data, wherever Riverline has something real to offer; otherwise B: an illustration, one line, one action** (later with Chippy). B beats plain text everywhere; visuals and Chippy on empty screens are welcome. C (a full faded example list) is too much; a lighter version (one small labelled example) may be explored. Copy follows the voice guide ("Spots and hands you save gather here." + one action, never "Nothing here :(").
+
+## Chippy
+
+Brief (P1-15, P1-15a, P1-15b; owner 2026-10-19; final art is M3). Chippy is **a calm, serious teacher who happens to be a chip: a mentor, not a mascot**. The v1–v3 sketches were too playful: no big glossy eyes, no cartoon antics, no idle personality.
+- **Real-chip look:** few, wide edge inserts like real chips (not many small dashes), visible thickness, an inner ring; soft-depth style.
+- **Colour follows the active theme** (user can pick): jade, deep red, brass, copper, slate. **Bigger face area** so the face isn't cramped.
+- **Lean:** small dot or pill eyes, a minimal mouth, restrained expressions (neutral, explaining, thinking, encouraging, not sure); limbs rare or none.
+- Appears on empty screens with the one-line text and action, in onboarding and tutorials, as an optional Explain intro and as the session-report presenter; never interrupts, never judges, can be disabled (own Settings category). Claim strength never changes with Chippy's tone (VOICE_GUIDE).
+- Latest sketch: https://claude.ai/artifact/PX6EXmRnNTmXn2Kts3Xk7a; further variants when the M3 art work starts.
+
+## Sticker book (achievements)
+
+Activity-only achievements (P1-20; NORTH_STAR §7.12) shown as a **sticker book with tiered stickers**. Look (P1-22, draft "lovely, really good direction, good enough for now", https://claude.ai/artifact/9tv3PQ56XusCCmbjEKgBfD), set after the owner found the first demo "cheap and out of place" (consistency check, 2026-10-22): stickers must **look like real stickers**:
+- **die-cut** round shapes with a **white cut border**; a **metal tier edge** Bronze → Silver → Gold → **Holo** (holo with a moving shine); an **illustrated centre** in the soft-depth style; **curved, rounded custom lettering**; a gloss highlight. Never plain text in boxes.
+- **Pages by area** on a book-like backdrop; **locked slots as dashed "?"**; levelling up **peels the new sticker on with a spring**.
+- Earned stickers are never downgraded; the book can be hidden entirely. Catalogue draft: [ACHIEVEMENTS_CATALOGUE.md](../design/ACHIEVEMENTS_CATALOGUE.md).
 
 ---
 
@@ -327,12 +385,14 @@ Estimated mixes are rounded to 5% and actions under 5% are not shown as part of 
 - **No placeholder controls:** features that don't exist yet are not shown as disabled "coming later" controls (exception: About & legal once legal documents exist).
 - **Honesty wording:** "inside the baseline's mix", "possible reading, not a verdict", "solution for these ranges and this tree"; never "correct" for heuristic agreement; never GTO/solver language for the heuristic.
 - No em or en dashes in user-facing sentences; sentence case. Terms per [TERMINOLOGY.md](../TERMINOLOGY.md).
+- **Voice:** a calm, honest coach in every language: facts first, then the why, then how sure; describe actions, never judge the person; praise the process; name luck as luck; state uncertainty in one line. Patterns, the takeaway-line formula and the banned words: [VOICE_GUIDE.md](../design/VOICE_GUIDE.md) (draft 2026-10-22).
+- **Russian uses the casual «ты»** (owner, 2026-10-23), consistent with the Hebrew masculine singular.
 
 ## Languages, RTL and accessibility
 
 - EN, RU and HE are first-class. Stable copy enters the translation system; dynamic copy supports interpolation and units; translation never alters poker logic.
 - **Russian length:** short labels grow 200–300%; design buttons and chips for the longest locale; let rows wrap gracefully.
-- **Hebrew:** full right-to-left layout with logical CSS properties; cards, ranges, amounts, percentages and abbreviations stay left-to-right islands (`.poker-island`); the range matrix is never mirrored; masculine imperative buttons where natural.
+- **Hebrew:** full right-to-left layout with logical CSS properties; cards, ranges, amounts, percentages and abbreviations stay left-to-right islands (`.poker-island`); the range matrix is never mirrored; masculine imperative buttons where natural (gender-neutral rewrites are not needed). **Mix bars stay LTR and their legend follows the bar's direction** (P1-30; a legend inheriting RTL beside an LTR bar contradicts its order). One poker-token component handles LTR isolation and tabular numbers (mockup review production rules).
 - Switching language keeps everything open where it is.
 - Semantic controls and headings, visible focus, keyboard workflows, truthful ARIA state, contrast, non-colour cues, reduced motion, readable status and error announcements. Hover has a keyboard-focus equivalent; touch gets an explicit tap model.
 
@@ -347,14 +407,16 @@ The M1 refresh reserves space and patterns so M2/M3 features slot in without ano
 - **Equity:** layout that accepts the range grid (M2) and per-player runouts.
 - **Library / My poker:** list-and-detail pattern that takes bot tables and custom playstyles (M3).
 - **Settings:** categories for Chippy and About & legal; appearance preview that grows with tables, chips and characters.
-- **Phone views (M3):** Game night and hand capture get phone-friendly pages; desktop stays first-class.
+- **Phone version (MOB-01, 2026-10-21; replaces "phone views (M3)"):** close to the full app (Analyze, chess.com/Duolingo-style study, Game night, hand capture) as dedicated phone layouts on shared components, data and motion (MOB-02, decided by prototypes); designed after each screen's PC layout (P1-28), built after M2. Phone patterns already drafted: thumb-zone bottom dock with select + confirm, bottom sheets on the drawer curve, panel chips, tappable setup tags (MOB-03 … MOB-06).
 
 ---
 
 ## Mockups and acceptance
 
 - Mockups are visual references, never numeric specs; every number in a mockup, demo, lesson or test comes from the domain engine ("golden spots"). Mockup figures were found wrong in places.
-- Screens without an approved mockup get one **before** they are built. New mockups are 1920×1080 on the design kit, with the real shell, icons and card backs unless the shell itself is being designed; some get RU, HE, Daylight or custom-theme versions.
+- Screens without an approved mockup get one **before** they are built. New mockups are **fixed 1920×1080 canvases** on the design kit (scaled to fit when viewed elsewhere), with the real shell, icons and card backs unless the shell itself is being designed; PC first, phone versions separate and later (P1-28); some get RU, HE, Daylight or custom-theme versions.
+- **Mockup QA (P1-21, 2026-10-22):** every mockup or prototype passes [MOCKUP_QA.md](../design/MOCKUP_QA.md) before it is published (stale content, overflow at 390 px and 1366 px, no spoilers, markers never over text, honest navigation states, computed numbers, touch, motion per spec, unique class names, hero at the bottom, no dead space above docked controls, a real phone screenshot, the two-card rule, content inventory first, PC first). It is also a good starting checklist for real screens.
+- **Kit unification (mockup review 2026-10-26; register KIT-REDRAW-001):** Learn, Full Hand/Orbit, the five Settings sub-pages and the five My poker pages still exist only as 1440×900 "Sidebar 1" canvases; they are redrawn on Style v4 + the hub sidebar at 1920×1080 before their build tickets.
 - **Visual acceptance:** Firefox 1920×1080 at 100% primary; 1366×768 functional (the minimum supported desktop); EN/RU/HE; Midnight + Daylight; never "zoom out" as a fix. Larger widths (2560×1440/1600) when a ticket owns geometry. 1024×768 findings are compact/mobile future evidence. Mobile later gets its own composition, not stacked desktop panels.
 - Structural CSS or no-overlap tests are evidence, not visual acceptance; without a browser, visual status is `UNVERIFIED`, `PARTIAL` or `STRUCTURAL ONLY`.
 - Before M1 closes, the owner walks through every screen (the owner design pass).
@@ -365,4 +427,6 @@ The M1 refresh reserves space and patterns so M2/M3 features slot in without ano
 
 ## Open design decisions
 
-Tracked in [STATE.md › Open decisions](../STATE.md#open-decisions): shell and sidebar variant and hub screens (D-03); My poker placement (D-04); decision controls (D-05); drill with or without a table (D-06); Equity layout (D-07); Learn mix (D-08); heading face (D-10); card back (D-11); Daylight values and table theme scope (D-12); Hebrew mix bar direction (D-13). Kit-number conflicts (D-14) are resolved: Style v4 values win (see Style v4 › The design kit).
+Tracked in [STATE.md › Open decisions](../STATE.md#open-decisions): which mode uses cards vs seat buttons (D-05); Daylight values, the contrast tokens and table theme scope (D-12); whose turn at the table, A halo + timer or C quiet pill (D-23); kit text notes (D-24); the Equity PC bug list (D-25); card back final art with the "R" monogram (P1-30).
+
+Resolved: kit-number conflicts (D-14, Style v4 values win); shell and hubs (D-03, D-04 → P1-01); drill with or without a table (D-06 → both modes, panels P1-05); Equity layout (D-07 → B look, A density, P1-30); Learn mix (D-08 → leaning to B with A's content, P1-30); heading face (D-10 → Rubik); card back direction (D-11 → "R" monogram, real card-back look); Hebrew mix bar (D-13 → bar LTR, legend follows).

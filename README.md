@@ -59,7 +59,9 @@ py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [Project brief](docs/BRIEF.md) (context for agents and researchers)
 - [Agent rules](AGENTS.md)
+- [Third-party register](docs/THIRD_PARTY.md) (licences and allowed uses)
 - [North Star](docs/NORTH_STAR.md)
 - [State](docs/STATE.md)
 - [Architecture contract](docs/project/ARCHITECTURE_CONTRACT.md)

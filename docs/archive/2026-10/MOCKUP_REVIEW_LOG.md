@@ -167,6 +167,10 @@ A working quick drill in Style v4 (three spots: BTN vs CO open, BB vs BTN open, 
 Owner: will refine smoothness and polish on the PC; wants a very high level of polish before the heavy feature work.
 Owner feedback: the concept looks much better; the layout is a bit wonky on the phone (it is built for desktop).
 
+## 23. Prototype v2 (https://claude.ai/artifact/QU9fhzBcbfXSGR8LB4fiNk)
+The quick drill rebuilt with the accepted Argon critique: honest tiers (Estimated; "Exact · price only"); size-aware facts (multiple and stack after recompute; a non-baseline size is flagged); action cards as groups with real size buttons (no buttons inside buttons) and full keyboard use; grid-stacked swap with a fast exit then entrance; mix bar grows with scaleX in 240 ms, light text on fold; neutral colours for tiers and "inside / outside the baseline's mix" (circle vs hollow square, never green = correct); corner-index cards with a flat 190 ms deal; positional breadcrumb and an "needed to call" tile; a narrower Fold card; Feel settings moved into a header popover; the rail shows the spot's context before answering and your plan after; focus ring visible on accent buttons; no external font requests. Three ways to choose an action to compare: Instant (default), Select + confirm, Hold.
+Owner feedback: pending (decide the default way to choose an action).
+
 ## Independent review corrections (2026-10)
 Mockup numbers are illustrative; these were checked by exact enumeration and are wrong in the canvases:
 - Equity runouts (A♥K♥ vs Q♠Q♣ on Q♥7♣2♥): Hero now 25.6% (not 26.2%); 7♥ turn 0% (pairs board, Villain full house); 7/2 non-heart turns 0%; A/K 18.2%; J/T 22.7%; blanks 15.9%; Hero worst turn 0%, Villain best 100%. Grouped outs: A or K is 6 cards (−7.4 pts); board pairs −25.6 pts; after a paired turn a flush never wins. Q♦ and blanks were not grouped. Option B must add "non-heart turn, heart river" (~43% of Hero's wins); Hero's by-river split is 36.4 / 0.9 / 19.7 / 43.0.

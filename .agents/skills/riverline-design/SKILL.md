@@ -6,17 +6,17 @@ license: Adapted in part from MIT-licensed skills by Emil Kowalski and Jakub Kre
 
 # Riverline design skill
 
-Riverline is a calm, premium No-Limit Hold'em study workstation: dark forest / jade / brass, "calm surface, deep data", honest numbers. This file is a working summary. Authorities, in order: docs/NORTH_STAR.md (direction), docs/project/DESIGN_SYSTEM.md (visual contract), docs/TERMINOLOGY.md (terms). The owner's newer decisions currently sit in docs/_incoming/ (PHASE1_DECISIONS, MOTION_SPEC, PS/HAND/MOBILE_DESIGN_DECISIONS, VOICE_GUIDE, MOCKUP_QA). When something here conflicts with those, they win; flag the conflict in your report.
+Riverline is a calm, premium No-Limit Hold'em study workstation: dark forest / jade / brass, "calm surface, deep data", honest numbers. This file is a working summary. Authorities, in order: docs/NORTH_STAR.md (direction), docs/project/DESIGN_SYSTEM.md (visual contract), docs/TERMINOLOGY.md (terms). The owner's decision logs, with reasons and dates, are in docs/design/decisions/ (PHASE1_DECISIONS, PS/HAND/MOBILE_DESIGN_DECISIONS, LONG_TERM_NOTES); the design references are docs/design/MOTION_SPEC.md, docs/design/VOICE_GUIDE.md, docs/design/MOCKUP_QA.md and docs/design/ACHIEVEMENTS_CATALOGUE.md. When something here conflicts with those, they win; flag the conflict in your report.
 
 ## 1. Before you design or change a screen
 1. Redesigns need an approved mockup before building (AGENTS.md). Read the earlier PC layouts for that screen (design kit, canvases, the all-mockups hub) and list what they contained. Carry over what is still wanted; write down anything dropped and why. Content first, then layout.
-2. Check the screen's decisions in the logs (e.g. Training panels P1-05, select + confirm P1-03) and open decisions in docs/STATE.md (e.g. D-05 decision controls, D-13 Hebrew mix bar direction).
+2. Check the screen's decisions in the logs (e.g. Training panels P1-05, select + confirm P1-03) and open decisions in docs/STATE.md (e.g. D-05 which mode uses cards or seat buttons, D-23 whose turn).
 3. Build for 1920×1080 and 1366×768 (the minimum desktop) first. Phone views are their own designed layouts, not squeezed desktop (mockups check 390×844; phone builds wait for MOB-02).
 
 ## 2. Surface and tokens
 - Use role tokens from app/styles.css only; no raw hex in component rules. Midnight is the reference theme; every theme, custom ones included, must pass contrast (text 4.5:1, non-text 3:1).
 - Calm surface, deep data: the first look is clean; raw data is one hover, click or expand away ("All details", derivations on hover).
-- At most two containment levels; group with spacing first (gap between groups ≥ 2× gap within). Style v4: soft panels (target radius 16, padding 22; code still 10 px until DS-TOKENS-V4), hero answer cards, number tiles, pills.
+- At most two containment levels; group with spacing first (gap between groups ≥ 2× gap within). Style v4: soft panels (target radius 16, padding 22; code still 10 px until DS-TOKENS-001), hero answer cards, number tiles, pills.
 - One accent-filled primary action per view. Selection is an underline, thumb or tint, never an accent fill.
 - Never double-signal a state (accent border AND an "In use" label = wrong).
 - No dead space and no pseudo-dead space (long strips whose content would fit in less). Reserve heights for changing regions so nothing jumps; hover never changes layout.
@@ -26,7 +26,7 @@ Riverline is a calm, premium No-Limit Hold'em study workstation: dark forest / j
 - No placeholder controls for features that don't exist yet.
 - `minmax(0,1fr)` on grid tracks, `min-width:0` on flex children, `overscroll-behavior: contain` on inner scrollers.
 
-## 3. Motion (docs/_incoming/MOTION_SPEC.md lists all 41 moments)
+## 3. Motion (docs/design/MOTION_SPEC.md lists all 41 moments)
 - Frequency decides motion. Anything keyboard-triggered is instant. 100+/day actions are near-instant.
 - Every moment has its own tempo; one global Motion setting scales all of them: Instant / Faster / Standard / Reduced (Reduced = opacity fades ≤ 200 ms only; follows the system setting by default; keeps short pauses so changes can be followed and never shortens Full Hand comprehension pauses).
 - Curves: ease-out `cubic-bezier(.23,1,.32,1)` (entrances, responses); ease-in-out `cubic-bezier(.77,0,.175,1)` (things moving on screen); drawer `cubic-bezier(.32,.72,0,1)` (sheets, toasts); spring `cubic-bezier(.34,1.36,.64,1)` only for small confirmations. Never ease-in for entrances.
@@ -48,12 +48,12 @@ Riverline is a calm, premium No-Limit Hold'em study workstation: dark forest / j
 - Mockup numbers are never facts: examples use engine-computed "golden spots".
 
 ## 5. Copy, i18n and RTL
-- Voice: docs/_incoming/VOICE_GUIDE.md (calm honest coach; banned verdict words; takeaway formula).
+- Voice: docs/design/VOICE_GUIDE.md (calm honest coach; banned verdict words; takeaway formula).
 - Quiet copy: don't state what users already assume; verb-first buttons; sentence case. No em/en dashes in product sentences. Raw enum, schema or state identifiers never reach users.
 - Terms come from docs/TERMINOLOGY.md (RU пас, диапазон, валью, си-бет; HE ריינג', הירו, ואליו; Latin abbreviations BTN, SPR, EV, bb).
 - Whole-string templates only: never build sentences from fragments around variables; plurals via Intl.PluralRules (Russian has three forms).
 - Logical CSS only (`margin-inline-start`, `inset-inline-end`, `text-align: start`); explicit `[dir="rtl"]` handling for `translateX` and directional icons.
-- In Hebrew, every poker token (cards, boards, positions, sizes, ranges, percentages) is an LTR island: `<bdi dir="ltr">` or the existing `.poker-island` class. The 13×13 matrix is never mirrored; mix bar direction is open (D-13).
+- In Hebrew, every poker token (cards, boards, positions, sizes, ranges, percentages) is an LTR island: `<bdi dir="ltr">` or the existing `.poker-island` class. The 13×13 matrix is never mirrored; mix bars stay LTR and their legend follows the bar (P1-30).
 - Size controls for the longest language (Russian short labels can grow 200–300%): min-width, flexible width, no fixed text boxes; rows wrap gracefully.
 - Mandatory notices are present but never nagging: 18+ / study tool / no real-money play (first run once, About & legal once it exists, one line where relevant).
 

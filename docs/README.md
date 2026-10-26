@@ -9,6 +9,14 @@ Executable code and passing tests are final implementation truth. If code contra
 - [Issue register](ISSUE_REGISTER.md): bugs, debt, pending acceptance and small wants (search by ID).
 - [Terminology](TERMINOLOGY.md): EN/RU/HE terms, the i18n source of truth.
 - [Idea bank](IDEA_BANK.md): ideas, not commitments; never required reading.
+- [Brief](BRIEF.md): project context for agents and researchers.
+- [Third-party register](THIRD_PARTY.md): every outside component, dataset and tool with its licence and allowed uses (sourcing policy LT-04).
+
+## Design and research
+
+- [Owner decision logs](design/decisions/README.md): Phase 1, Personal Strategy, Hand, phone, long-term (dated record, unchanged copies).
+- [Motion spec](design/MOTION_SPEC.md), [voice guide](design/VOICE_GUIDE.md), [mockup QA checklist](design/MOCKUP_QA.md), [achievements catalogue](design/ACHIEVEMENTS_CATALOGUE.md).
+- [Research](research/README.md): filed reports and analyses (evidence, not authority; not legal advice).
 
 ## Reference specs (read when a ticket names them)
 
