@@ -6333,15 +6333,9 @@ function updateMetrics() {
 
   const mSPR = $('#mSPR');
   if (mSPR) {
-    const actorPotBeforeAction = context
-      && Number.isFinite(context.actorContestablePotAfterCallBb)
-      && Number.isFinite(context.callAmountBb)
-      ? context.actorContestablePotAfterCallBb - context.callAmountBb
-      : null;
-    mSPR.textContent = context?.opponentCount === 1
-      && Number.isFinite(context.effectiveStackBb)
-      && actorPotBeforeAction > 0
-      ? (context.effectiveStackBb / actorPotBeforeAction).toFixed(1)
+    const spr = window.RiverlinePokerDomain?.deriveStackToPotRatio(context) ?? null;
+    mSPR.textContent = Number.isFinite(spr)
+      ? spr.toFixed(1)
       : '-';
   }
 
@@ -12906,9 +12900,6 @@ function trainingContextPresentationAdapter(decisionContext) {
     ? decisionContext.callAmountBb
     : null;
   const potSize = decisionContext.currentPotBb ?? decisionContext.potBb;
-  const actorContestablePotAfterCall = Number.isFinite(
-    decisionContext.actorContestablePotAfterCallBb
-  ) ? decisionContext.actorContestablePotAfterCallBb : null;
   const requiredRawEquity = Number.isFinite(decisionContext.requiredRawEquity)
     ? decisionContext.requiredRawEquity
     : null;
@@ -12923,10 +12914,7 @@ function trainingContextPresentationAdapter(decisionContext) {
     callAmount,
     potOdds: callAmount !== null && callAmount > 0 && requiredRawEquity !== null
       ? requiredRawEquity * 100 : null,
-    mdf: decisionContext.opponentCount === 1
-      && callAmount !== null && callAmount > 0 && actorContestablePotAfterCall !== null
-      ? (actorContestablePotAfterCall - callAmount) / actorContestablePotAfterCall * 100
-      : null,
+    mdf: window.RiverlinePokerDomain?.deriveMinimumDefenseFrequencyPercent(decisionContext) ?? null,
     board: [...decisionContext.board],
     rakeMode: decisionContext.rakeMode,
     forcedContributionPerPlayerBb: decisionContext.forcedContributionPerPlayerBb,
@@ -14599,7 +14587,11 @@ function canonicalTrainingFeedback(evaluation, strategyResult) {
 
 function trainingActionHistoryForAnalysis(presentation) {
   return (presentation?.actionHistory || []).map((entry) => {
-    const parsedAmount = Number.parseFloat(String(entry.amountLabel || '').replace('bb', ''));
+    const amountBb = Number.isFinite(entry.amountBb) && entry.amountBb >= 0
+      ? entry.amountBb
+      : Number.isSafeInteger(entry.amountMilliBb) && entry.amountMilliBb >= 0
+        ? entry.amountMilliBb / 1000
+        : null;
     return {
       sequence: entry.sequence,
       street: entry.street,
@@ -14607,7 +14599,7 @@ function trainingActionHistoryForAnalysis(presentation) {
       position: entry.position,
       actionType: entry.actionType,
       actionLabel: entry.actionLabel,
-      amountBb: Number.isFinite(parsedAmount) ? parsedAmount : null,
+      amountBb,
       amountLabel: entry.amountLabel,
       isHero: entry.isHero
     };

@@ -4,7 +4,13 @@ import { mountTablePresets } from './table-presets-workspace.mjs';
 import { createCanonicalLiveController } from './canonical-live-controller.mjs';
 import { createCanonicalHandLifecycleRecorder } from './canonical-hand-lifecycle.mjs';
 import { canonicalPokerStatesEqual, reconstructCanonicalHandReplaySource } from './canonical-hand-replay-source.mjs';
-import { isHandResumable } from '../../../shared/poker-domain/index.js';
+import {
+  deriveActorPotBeforeActionBb,
+  deriveMinimumDefenseFrequency,
+  deriveMinimumDefenseFrequencyPercent,
+  deriveStackToPotRatio,
+  isHandResumable,
+} from '../../../shared/poker-domain/index.js';
 import {
   PLAYBOOK_MODES,
   createPlaybookModeController,
@@ -635,12 +641,27 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       savedHandViewer ? null : canonicalController.getAvailableChanceCards(pendingCards)
     ),
     getDiagnostics: () => canonicalController.getDiagnostics(),
+    deriveActorPotBeforeActionBb,
+    deriveStackToPotRatio,
+    deriveMinimumDefenseFrequency,
+    deriveMinimumDefenseFrequencyPercent,
   });
 
   Object.defineProperty(browserWindow, 'RiverlinePlaybookState', {
     configurable: true,
     enumerable: false,
     value: bridge,
+    writable: false,
+  });
+  Object.defineProperty(browserWindow, 'RiverlinePokerDomain', {
+    configurable: true,
+    enumerable: false,
+    value: Object.freeze({
+      deriveActorPotBeforeActionBb,
+      deriveStackToPotRatio,
+      deriveMinimumDefenseFrequency,
+      deriveMinimumDefenseFrequencyPercent,
+    }),
     writable: false,
   });
   return bridge;
