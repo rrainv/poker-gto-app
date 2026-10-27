@@ -11320,9 +11320,30 @@ function initTrainingMode() {
     const result = callTrainingServiceBridge('watchFullHandRest');
     if (result?.ok) {
       $('#trainingWatchRest').hidden = true;
-      if (result.snapshot.status === 'advancing') await runFullHandPresentation();
-      else renderFullHandTrainingSnapshot(result.snapshot);
+      if (result.snapshot.status === 'advancing') {
+        const skip = $('#trainingFullHandSkipRest');
+        if (skip) skip.hidden = false;
+        try {
+          await runFullHandPresentation();
+        } finally {
+          if (skip) skip.hidden = true;
+        }
+        // Skip removed the focused control; land on the summary's first action.
+        if (skip?.dataset.restoreFocus === 'true') {
+          delete skip.dataset.restoreFocus;
+          const summaryAction = [$('#trainingReviewHand'), $('#trainingFullHandNewHand')]
+            .find((control) => control && !control.hidden);
+          summaryAction?.focus?.({ preventScroll: true });
+        }
+      } else renderFullHandTrainingSnapshot(result.snapshot);
     }
+  });
+  // WATCH-REST: Skip plays the remaining canonical events without pacing.
+  bind('#trainingFullHandSkipRest', 'click', () => {
+    const skip = $('#trainingFullHandSkipRest');
+    if (!fullHandPresentationOrchestrator?.skip?.()) return;
+    if (document.activeElement === skip) skip.dataset.restoreFocus = 'true';
+    skip.hidden = true;
   });
   bind('#trainingMemoryPanel', 'toggle', (event) => {
     if (event.currentTarget.open) void refreshTrainingMemoryPanel();
@@ -12037,6 +12058,7 @@ function setFullHandTrainingPhase(phase = 'setup') {
   if (!workspace) return;
   const nextPhase = trainingSessionMode() === 'full_hand' ? phase : 'off';
   workspace.dataset.trainingFullHandPhase = nextPhase;
+  syncTrainingWorkspaceTitle(workspace);
   const active = ['live', 'complete', 'review'].includes(nextPhase);
   projectTrainingDecisionControls(nextPhase === 'live');
   const compact = $('#trainingFullHandCompactControls');
@@ -13335,15 +13357,36 @@ function renderTrainingStateBadge(state) {
   }
 }
 
+// QA-SWEEP-030: the workspace heading follows the training state and the
+// Full Hand phase instead of asking for a decision during summary or Review.
+function trainingWorkspaceTitleKey(workspace) {
+  const state = workspace.dataset.trainingState;
+  const phase = workspace.dataset.trainingFullHandPhase;
+  if (state === 'feedback') return 'Learn from this decision';
+  if (state === 'complete') return 'Session complete';
+  if (phase === 'review') return 'Post-Hand Review';
+  const snapshot = app.training.fullHandSnapshot;
+  if (state === 'terminal' || phase === 'complete') {
+    return snapshot?.status === 'hero_complete' ? 'Your hand summary' : 'Hand Complete';
+  }
+  const heroFolded = phase === 'live' && snapshot?.state?.players
+    ?.find((player) => player.playerId === snapshot.heroPlayerId)?.folded;
+  return heroFolded ? 'Watching the rest of this hand' : 'Make the decision';
+}
+
+function syncTrainingWorkspaceTitle(workspace = $('#trainingWorkspace')) {
+  const title = $('#trainingWorkspaceTitle');
+  if (!workspace || !title) return;
+  const key = trainingWorkspaceTitleKey(workspace);
+  if (title.dataset.i18n !== key) title.dataset.i18n = key;
+  title.textContent = t(key);
+}
+
 function setTrainingWorkspaceState(state) {
   const workspace = document.querySelector('.training-workspace');
   if (!workspace) return;
   workspace.dataset.trainingState = state;
-  const title = $('#trainingWorkspaceTitle');
-  if (title) {
-    const key = state === 'feedback' ? 'Learn from this decision' : 'Make the decision';
-    title.dataset.i18n = key; title.textContent = t(key);
-  }
+  syncTrainingWorkspaceTitle(workspace);
   projectTrainingContinuationControls(
     (trainingSessionMode() !== 'full_hand' || trainingSameSpotIsActive()) && state === 'feedback',
   );

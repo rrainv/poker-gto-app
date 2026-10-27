@@ -99,12 +99,12 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 |---|---|---|---|---|---|---|
 | OWNER-9 | owner | Post-answer panel huge; hides cards and position | P2 | Open | M1 (Training redesign) | |
 | OWNER-10 | owner | Full Hand: visual bugs, text alignment, spacing, oversized panels | P2 | Open | M1 | Full Hand quality pass |
-| QA-SWEEP-010 | sweep | Full Hand lineup tiles: names clipped, run together with position/behaviour | P2 | Open | M1 | |
+| QA-SWEEP-010 | sweep | Full Hand lineup tiles: names clipped, run together with position/behaviour | P2 | Fixed (FULLHAND-QUALITY-001 on `argon/m1-batch-3`); acceptance pending | M1 | Cause: the opponent text sits inside the seat button, outside the `li > div` grid rule, in a ~50 px column. Tiles now stack name / position / behaviour; 48 px portraits |
 | QA-SWEEP-026 | sweep | Training Memory: "No decisions recorded" above decisions; cards as text | P3 | Open | M1 | |
 | TM-RAW-ID | ticket | Training Memory panel shows raw `source@version` | P3 | Open | M1 | |
-| QA-SWEEP-030 | sweep | Full Hand header stays "Make the decision" through summary and Review | P3 | Open | M1 | |
+| QA-SWEEP-030 | sweep | Full Hand header stays "Make the decision" through summary and Review | P3 | Fixed (FULLHAND-QUALITY-001 on `argon/m1-batch-3`); acceptance pending | M1 | Heading follows state and phase: Your hand summary (Hero folded), Watching the rest of this hand, Hand Complete, Post-Hand Review, Session complete |
 | QA-SWEEP-028 | sweep | Native `window.confirm` dialogs (unstyled, blocking, partly untranslated) | P3 | Open *(verified 2026-10-15: present in `logic.js`)* | M1 | |
-| WATCH-REST | sweep / owner | Watch Rest takes ~45–55 s with no speed/skip | P2 | Open | M1 (skip) / M2 (speed) | = WANT-WATCH-SPEED |
+| WATCH-REST | sweep / owner | Watch Rest takes ~45–55 s with no speed/skip | P2 | Partial: skip fixed (FULLHAND-QUALITY-001 on `argon/m1-batch-3`); speed open (M2) | M1 (skip) / M2 (speed) | = WANT-WATCH-SPEED. "Skip to end" plays the remaining canonical events without pacing or motion |
 | RET-TRAIN-001 | RQ | Training does not generate the exact calibrated BB-vs-BTN node; no cold-4bet / opener-facing-cold-4bet targets | P3 | Deferred | M2/M3 | Do not fabricate families to cover them |
 
 ### Equity
@@ -225,7 +225,7 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | WANT-EQUITY-GRID | Visual range picker in Equity (reuse the Personal Strategy matrix) | M2 | NORTH_STAR §7.4 moved it to M2 (owner, 2026-10-12); draft said M3 |
 | WANT-SAVED-TITLES | Meaningful auto-titles | Fixed (SAVED-COMPOSITION-002) | |
 | WANT-BACK-TO-REVIEW | Back to Review after Explain | M3 | |
-| WANT-WATCH-SPEED | Watch Rest skip (M1) and speed (M2) | M1/M2 | = WATCH-REST |
+| WANT-WATCH-SPEED | Watch Rest skip (M1, done) and speed (M2) | M1/M2 | = WATCH-REST |
 | WANT-SHORTCUTS | Shortcuts sheet; command palette later | M2 / M3 | |
 | WANT-DERIVATIONS | Hover number derivations | M3 | |
 | WANT-AUTO-NEXT | Training speed: auto-next after feedback, optional timer | M2 | |

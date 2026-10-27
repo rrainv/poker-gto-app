@@ -2112,6 +2112,7 @@ Object.assign(he, {
     ['Behavior', 'Поведение', 'התנהגות'],
     ['Apply this policy to all opponents', 'Применить это поведение ко всем соперникам', 'החלת ההתנהגות על כל היריבים'],
     ['Watch rest of hand', 'Досмотреть раздачу', 'צפייה בהמשך היד'],
+    ['Skip to end', 'К концу раздачи', 'דילוג לסוף היד'],
     ['Watching the rest of this hand', 'Наблюдение за продолжением раздачи', 'צפייה בהמשך היד הזו'],
     ['Your decisions are ready to review. Opponents are paused.', 'Ваши решения готовы к разбору. Соперники на паузе.', 'ההחלטות שלכם מוכנות לסקירה. היריבים בהשהיה.'],
     ['Hero folded. No further cards or opponent actions have been played.', 'Hero сбросил карты. Новые карты и действия соперников пока не разыграны.', 'הירו פרש. לא חולקו קלפים נוספים ולא בוצעו פעולות נוספות של היריבים.'],

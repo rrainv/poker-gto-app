@@ -171,6 +171,19 @@ export function createFullHandTrainingPresentationOrchestrator({
   requireFunction(prefersReducedMotion, 'prefersReducedMotion');
   const policy = requireTimingPolicy(timingPolicy);
   let epoch = 0;
+  // WATCH-REST: a skip request for the running epoch drops the remaining
+  // pacing and motion; every canonical event still goes through advanceOne().
+  let skipEpoch = null;
+  let releasePause = null;
+
+  const isSkipping = (runEpoch) => skipEpoch === runEpoch;
+  const pause = (durationMs, runEpoch) => {
+    if (isSkipping(runEpoch)) return Promise.resolve();
+    return new Promise((resolve) => {
+      releasePause = resolve;
+      Promise.resolve(wait(durationMs)).then(resolve, resolve);
+    }).finally(() => { releasePause = null; });
+  };
 
   const controller = {
     invalidate() {
@@ -178,10 +191,18 @@ export function createFullHandTrainingPresentationOrchestrator({
       return epoch;
     },
 
+    skip() {
+      if (skipEpoch === epoch) return false;
+      skipEpoch = epoch;
+      releasePause?.();
+      return true;
+    },
+
     async run({ initialTransition = null } = {}) {
       const runEpoch = ++epoch;
       const reducedMotion = prefersReducedMotion() === true;
       const isCurrent = () => epoch === runEpoch;
+      const motionEnabled = () => !reducedMotion && !isSkipping(runEpoch);
       setInputLocked(true, { epoch: runEpoch, reducedMotion });
 
       if (initialTransition) {
@@ -191,11 +212,11 @@ export function createFullHandTrainingPresentationOrchestrator({
           event: initialTransition.event,
           previousSnapshot: initialTransition.previousSnapshot,
           snapshot: currentSnapshot,
-          motionEnabled: !reducedMotion,
+          motionEnabled: motionEnabled(),
           epoch: runEpoch,
         }));
         if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
-        await wait(eventSettleDuration(policy, reducedMotion, initialTransition.event));
+        await pause(eventSettleDuration(policy, reducedMotion, initialTransition.event), runEpoch);
         if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
       }
 
@@ -207,7 +228,7 @@ export function createFullHandTrainingPresentationOrchestrator({
           await Promise.resolve(renderBoundary({
             cue,
             snapshot,
-            motionEnabled: !reducedMotion,
+            motionEnabled: motionEnabled(),
             epoch: runEpoch,
           }));
           if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
@@ -226,11 +247,11 @@ export function createFullHandTrainingPresentationOrchestrator({
         if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
 
         if (cue.kind === 'bot_thinking') {
-          await wait(timingValue(policy, reducedMotion, 'botThinkingMs'));
+          await pause(timingValue(policy, reducedMotion, 'botThinkingMs'), runEpoch);
           if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
         } else if (['dealing_private_cards', 'dealing_street', 'resolving_showdown']
           .includes(cue.kind)) {
-          await wait(timingValue(policy, reducedMotion, 'chanceLeadMs'));
+          await pause(timingValue(policy, reducedMotion, 'chanceLeadMs'), runEpoch);
           if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
         }
 
@@ -254,11 +275,11 @@ export function createFullHandTrainingPresentationOrchestrator({
             event: step.event,
             previousSnapshot,
             snapshot: step.snapshot,
-            motionEnabled: !reducedMotion,
+            motionEnabled: motionEnabled(),
             epoch: runEpoch,
           }));
           if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
-          await wait(eventSettleDuration(policy, reducedMotion, step.event));
+          await pause(eventSettleDuration(policy, reducedMotion, step.event), runEpoch);
           if (!isCurrent()) return result('stale', runEpoch, getSnapshot());
         }
       }
