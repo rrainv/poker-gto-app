@@ -46,14 +46,14 @@ If information is missing: "Add the turn bet size to judge this river call."
 |---|---|---|---|
 | Inside the mix | Inside the baseline's mix. | В пределах микса базовой стратегии. | בתוך התמהיל של אסטרטגיית הבסיס. |
 | Outside the mix | Outside the baseline's mix. | Вне микса базовой стратегии. | מחוץ לתמהיל של אסטרטגיית הבסיס. |
-| Price | You need 38.5% to call 2.5 bb. | Чтобы сделать колл 2.5 bb, нужно 38.5%. | צריך 38.5% כדי לעשות קול 2.5 bb. |
+| Price | You need 38.5% to call 2.5 bb. | Чтобы сделать колл 2.5 bb, тебе нужно 38.5%. | צריך 38.5% כדי לעשות קול 2.5 bb. |
 | Unknown | Not answered yet: unknown, never treated as fold. | Ещё нет ответа: неизвестно, не считается пасом. | עוד אין תשובה: לא ידוע, ולא נחשב פולד. |
-| Pattern | Folded 14 of 18 in hands you played. | Пас в 14 из 18 сыгранных раздач. | פולד ב-14 מתוך 18 ידיים ששיחקת. |
-| Luck | The river cost you 146 bb against expectation. | Ривер стоил вам 146 bb относительно ожидания. | הריבר עלה לך 146 bb ביחס לציפייה. |
-| Empty | Spots and hands you save gather here. | Здесь появятся сохранённые споты и раздачи. | ספוטים וידיים שתשמור יופיעו כאן. |
-| Error | Enter a buy-in greater than zero, or leave it empty. | Введите бай-ин больше нуля или оставьте поле пустым. | הזן באי-אין גדול מאפס, או השאר ריק. |
+| Pattern | Folded 14 of 18 in hands you played. | Ты пасовал в 14 из 18 сыгранных раздач. | פולד ב-14 מתוך 18 ידיים ששיחקת. |
+| Luck | The river cost you 146 bb against expectation. | Ривер стоил тебе 146 bb относительно ожидания. | הריבר עלה לך 146 bb ביחס לציפייה. |
+| Empty | Spots and hands you save gather here. | Здесь появятся споты и раздачи, которые ты сохранишь. | ספוטים וידיים שתשמור יופיעו כאן. |
+| Error | Enter a buy-in greater than zero, or leave it empty. | Введи бай-ин больше нуля или оставь поле пустым. | הזן באי-אין גדול מאפס, או השאר ריק. |
 
-**Decided (owner, 2026-10-23): casual address in Russian («ты»)**, consistent with the Hebrew masculine singular. Examples above to be rewritten in «ты» form, e.g. «Ривер стоил тебе 146 bb относительно ожидания.», «Введи бай-ин больше нуля или оставь поле пустым.»
+**Decided (owner, 2026-10-23): casual address in Russian («ты»)**, consistent with the Hebrew masculine singular. The RU examples above use it (rewritten in DOCS-SMALL-001, 2026-10-27); lines with no address («В пределах микса…», «Ещё нет ответа…») need no change. All new RU copy uses «ты» and the imperative «-и/-ь» forms («Введи», «оставь», «попробуй»).
 
 ## 6. Banned words in product text
 mistake, wrong, correct (for strategy), error (for strategy), blunder, punt, leak (as a label on the person), optimal, GTO-approved, perfect, nit/fish/donk (as labels on people), "you should always", "trust me", exclamation-mark praise.

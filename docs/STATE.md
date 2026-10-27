@@ -2,7 +2,7 @@
 
 The **one live status file**: where the project is, what is next, what is waiting on a decision. It replaces `CURRENT_PHASE.md`, `ROADMAP.md`, `PRODUCT_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md` as status owners (archived under `docs/archive/2026-10/`). Direction lives in [NORTH_STAR.md](NORTH_STAR.md); bugs, debt and small wants in [ISSUE_REGISTER.md](ISSUE_REGISTER.md); the owner's decisions with reasons in [design/decisions/](design/decisions/README.md). A guide, not an ultimatum: the owner decides order and scope.
 
-Last updated: 2026-10-26 (DOCS-PHASE1-001: Phase 1 decisions, the M1 build plan, canvases and research).
+Last updated: 2026-10-27 (DOCS-SMALL-001: batch 2 accepted, research round 4, five research questions, the i18n text-owner rule).
 
 **Update rule.** The Manager (or a ticket that owns it) updates this file when a ticket is accepted, the queue changes, or a decision is made. Keep it short: replace rows, don't append history. Accepted-work rows keep only the latest ~15; older history is git log.
 
@@ -41,8 +41,9 @@ From the Manager's **M1 build plan (draft, 2026-10-22)**, which replaces the 202
 | 0.2 | TRAINING-F12-001 | Every Training start clears completion state (F12); Adjust drill focuses a shown control (F13) | C | T1 | Done and accepted (owner, 2026-10-26): `9d963dc`, `06bc02d` |
 | 0.3 | SKILLS-001 | Pinned, vetted agent skills in `.agents/skills` (riverline-design, better-accessibility, review-animations, break-ui) | C | T0 | Done: `cb4f087`, merged `dbaf49d` |
 | 0.4 | DOCS-PHASE1-001 | All owner decisions and research into the repo with reasons; consistency check applied; brief; third-party register | C | T0 | This ticket (2026-10-26) |
-| 0.5 | Argon batch 2 | B4 TRUTH-SURFACES-002, B5 DOMAIN-MATH-001, B6 DATA-SAFETY-001 (with honest storage status) | A | T1 | Done: merged `7b9fdc2`; review fixes MERGE-002 `a9b2578`; owner acceptance pending (register REVIEW-MATH-03, DATA-SAFETY-M1) |
-| 0.6 | B5 cross-review | Independent review of DOMAIN-MATH-001 (maths risk tier) | C | review | Not recorded as a separate report; MERGE-002 merged B5 and logged follow-ups (DOMAIN-MATH-FOLLOWUPS) |
+| 0.4a | DOCS-SMALL-001 | Batch 2 acceptance in the register, REVIEW-BATCH2 linked, RU «ты» examples, research round 4, the i18n text-owner rule | C | T0 | This ticket (2026-10-27) |
+| 0.5 | Argon batch 2 | B4 TRUTH-SURFACES-002, B5 DOMAIN-MATH-001, B6 DATA-SAFETY-001 (with honest storage status) | A | T1 | Done and accepted (owner, 2026-10-26): merged `7b9fdc2`; review [REVIEW-BATCH2](archive/agent-reports/2026-10/REVIEW-BATCH2.md); review fixes [MERGE-002](archive/agent-reports/2026-10/MERGE-002.md) `a9b2578` (register REVIEW-MATH-03, DATA-SAFETY-M1) |
+| 0.6 | B5 cross-review | Independent review of DOMAIN-MATH-001 (maths risk tier) | C | review | Done: [REVIEW-BATCH2](archive/agent-reports/2026-10/REVIEW-BATCH2.md) (B5: merge, small optional follow-ups); MERGE-002 merged B5 and logged the follow-ups (DOMAIN-MATH-FOLLOWUPS) |
 | 0.7 | NOTICES-001 | 18+ and responsible-gambling notices, study-tool and fair-play line, "Quick spot lookup" rename, no poker-room links | A or C | T1 | Next (after 0.4) |
 | 0.8 | MOTION-FOUNDATION-001 | Motion tokens + the global Motion setting, no redesign (= 2.2 below) | C | T1 | Queued |
 | 0.9 | HG-LEDGER-EDITS-001 | Money: zero cash-out record + repeatable corrections (HG-002, HG-003; persisted-format change needs approval) | C | T1 | Queued |
@@ -131,7 +132,7 @@ Commits on `codex/stabilization`. Per NORTH_STAR §10, a commit title is not acc
 
 | Commit | Date | Work | Acceptance |
 |---|---|---|---|
-| `a9b2578` | 2026-10-26 | MERGE-002: review fixes for Argon batch 2 (Explain uses the shared verdict; data-safety delete flow) | Pending owner acceptance (REVIEW-MATH-03, DATA-SAFETY-M1) |
+| `a9b2578` | 2026-10-26 | MERGE-002: review fixes for Argon batch 2 (Explain uses the shared verdict; data-safety delete flow) | Accepted (owner, 2026-10-26; REVIEW-MATH-03, DATA-SAFETY-M1) |
 | `7b9fdc2` | 2026-10-26 | Argon batch 2: TRUTH-SURFACES-002, DOMAIN-MATH-001, DATA-SAFETY-001 | same |
 | `dbaf49d` | 2026-10-26 | SKILLS-001: pinned, vetted agent skills | Merged |
 | `9d963dc`, `06bc02d` | 2026-10-26 | TRAINING-F12-001 (F12, F13) | Accepted (owner Firefox check, 2026-10-26) |
@@ -187,6 +188,11 @@ Decisions the owner (or Manager) still has to make. Mockup-derived items are des
 | D-18 | Pre-dependency versions of screens (an M1/M2 screen never relies on an M3 feature); Manager handles per redesign ticket | Manager |
 | D-20 | Historical pilot-era Training Memory records (2026-09 HRC pilot): zero affected records found on the owner's origins; field-path control not run. Close, or run the control | Owner |
 | D-22 | Older carried-over product questions: Training `Not sure` behaviour; Training-evidence opt-in placement/default; default comparison source; Home Game settlement preference (fewest transfers first per NORTH_STAR §7.9); username login before release; card-outcome preview touch/click semantics | archived PRODUCT_BACKLOG §14 |
+| D-34 | **Deals in drills and bot play (R-11):** honest shuffle only, or also a "representative deal" that steers toward instructive spots. *Manager recommends:* honest shuffle now; an optional, clearly labelled representative deal later | Owner; research round 4 |
+| D-35 | **Bot adaptation (R-11):** fixed presets, or bots that adapt to you during a session. *Manager recommends:* fixed presets first | Owner; research round 4 |
+| D-36 | **Playstyle controls (R-11):** how many presets and sliders. *Manager recommends:* 6 presets + 2 sliders (the initiative ratios), everything else in an "Adjust" drawer | Owner; research round 4 |
+| D-37 | **All-in equity share scope (R-12):** which all-ins Review covers first. *Manager recommends:* heads-up and equal-stack all-ins first; side pots and multiway later | Owner; research round 4 |
+| D-38 | **Review entry (R-12):** open on the hand overview, or straight into the key decisions. *Manager recommends:* overview by default, with a "try the key decisions first" option | Owner; research round 4 |
 | D-02 | Bulk disposition of ~60 pre-reset "human acceptance pending / partial" rows: close as superseded by the M1 redesign + owner design pass, or keep individually | ISSUE_REGISTER §G |
 | — | Phone build approach (MOB-02: same web app with phone layouts vs native), decided by prototypes; solver packs later: download on demand or bundled (M3) | Owner, later |
 
@@ -247,6 +253,9 @@ Filed in [research/](research/README.md) (evidence, not legal advice, to verify)
 | R-08 | Home and live games | Analysed: 20-spot priority list, four baseline improvement candidates (one data inconsistency noted) |
 | R-09 | Accessible poker interfaces | Prompt written; no report yet |
 | R-10 | Learning path | Analysed: 58-concept draft map, first 8 lessons; its RU/HE terms are not ours |
+| R-11 | Bot playstyles (M3) | Round 4, owner's notes (2026-10-27): presets with stat ranges, initiative-ratio sliders, 5 hand-strength buckets, `BotObservationView` isolation enforced by a test, staged "read the table" graded on realised stats and the preset (NORTH_STAR §7.13); open: D-34 … D-36 |
+| R-12 | Review | Round 4, owner's notes: "all-in equity share" naming, "next key decision" stops before your action, three rows (played / your plan / baseline), outcome kept apart, no accuracy % (NORTH_STAR §7.6); open: D-37, D-38 |
+| R-13 | Claude Code add-ons | Round 4, owner's notes: none installed; RTK maybe later, for git output only (NORTH_STAR §10) |
 | — | LT-06 solver licensing; agent skills; master synthesis (not a brief) | Filed; see [research/README.md](research/README.md) |
 
 ---

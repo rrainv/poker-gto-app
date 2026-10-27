@@ -4,7 +4,7 @@ Execution class: Correctness · Tier: T1 + full suite once · Agent: Claude Code
 
 ## Outcome
 
-- `codex/stabilization` now contains SKILLS-001 (`merge: SKILLS-001 agent skills`, `--no-ff`) and Argon batch 2 (B4–B6, `--no-ff`), plus the REVIEW-BATCH2 fixes below.
+- `codex/stabilization` now contains SKILLS-001 (`merge: SKILLS-001 agent skills`, `--no-ff`) and Argon batch 2 (B4–B6, `--no-ff`), plus the [REVIEW-BATCH2](REVIEW-BATCH2.md) fixes below.
 - **Explain (B4)** reads the same two-state verdict as Analyze (`describeAnalyzeVerdict`: dominant when the top action leads by ≥ 20 points or no other action reaches 5%, else "A or B · close") and the same display shares (`presentStrategyMixActions`: estimated sources in 5% steps, actions under 5% hidden at every depth; exact sources in whole percentages). The private 95/70/10 four-state `strategyShape` and its `pure`/`mixed`/`fragmented` copy are gone; EN/RU/HE copy is now `dominant`, `dominant.withSecondary` and `close`. Explain with 62/30/8 reads "This is mostly Call (60%), with Raise at 30%." and the summary says 60%.
 - **Data safety (B6)**: Delete all data signs out first (best effort, this device only, bounded wait), wipes, shows the status briefly, then reloads into first run. The window bridge no longer exposes an unconfirmed delete. The iOS 7-day note shows only in iPhone/iPad browser tabs. A blocked deletion waits; if still blocked it says "Close other Riverline tabs to finish deleting" (EN/RU/HE) and finishes (success status + reload) once those tabs close.
 

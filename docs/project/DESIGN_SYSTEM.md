@@ -394,6 +394,7 @@ Activity-only achievements (P1-20; NORTH_STAR §7.12) shown as a **sticker book 
 - **Russian length:** short labels grow 200–300%; design buttons and chips for the longest locale; let rows wrap gracefully.
 - **Hebrew:** full right-to-left layout with logical CSS properties; cards, ranges, amounts, percentages and abbreviations stay left-to-right islands (`.poker-island`); the range matrix is never mirrored; masculine imperative buttons where natural (gender-neutral rewrites are not needed). **Mix bars stay LTR and their legend follows the bar's direction** (P1-30; a legend inheriting RTL beside an LTR bar contradicts its order). One poker-token component handles LTR isolation and tabular numbers (mockup review production rules).
 - Switching language keeps everything open where it is.
+- **The code owns the text it rewrites** (QA-LANGUAGE-SWITCH-003, owner 2026-10-27): an element whose text code sets carries no static `data-i18n` key; the code renders that text at startup and again on every language switch. Static `data-i18n` keys stay only on text that code never touches, so there is exactly one owner per string and no stale text after a switch.
 - Semantic controls and headings, visible focus, keyboard workflows, truthful ARIA state, contrast, non-colour cues, reduced motion, readable status and error announcements. Hover has a keyboard-focus equivalent; touch gets an explicit tap model.
 
 ---

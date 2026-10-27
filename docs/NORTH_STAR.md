@@ -310,6 +310,7 @@ Review priorities: (1) decision walkthrough (baseline target, plan context, why)
 - **Key moments**: several typed markers, none "the" verdict: biggest deviation × pot size; commitment point (SPR/price); highest stakes (share of stack); **luck moment** (biggest equity swing) shown separately from decisions. All labelled hypotheses with evidence.
 - **Review mockup draft (P1-18, 2026-10-22; awaiting owner feedback):** https://claude.ai/artifact/EqbQPm21Fg8yBqDaJHEbHx. Left: the hand as a compact rail (your decisions highlighted, a brass marker gliding between them). Centre: one decision at a time (felt strip at that moment, villain cards face-down "shown later", You vs Baseline, one source/tier label, mix fill with a "you" marker, reason, exact facts, actions Next decision / Explain / Open in Analyze / Save spot / "how I usually play"). Right: key moments ("possible readings, not verdicts"), decisions vs luck (equity line, expected vs actual, "Exact · known cards") and a one-line takeaway. Owner direction (P1-17): Review is the next big design piece.
 - **Retry before reveal (idea 25, from R-05; M2):** try a key decision again before seeing the analysis.
+- **Research round 4, R-12 (owner's notes, 2026-10-27):** name the luck figure **"all-in equity share"**; **"Next key decision" stops before your action** (you see the spot, not the answer); each decision shows **three rows: played / your plan / baseline**; the **outcome is kept apart** from the decision rows; **no accuracy %** for a hand or session. Open (STATE D-37, D-38): which all-ins first; overview or key decisions first.
 - Back to Review after Explain **[M3]**; notes on hands/decisions **[M3]**.
 - Preserved: vertical street-grouped Replay rail with direct seeking and return-to-live (and return-to-completed-hand); Replay facts come from the frame (domain legal-action selector), never live values; Analyze handoff uses the exact pre-action decision; leaving Review tears down its ephemeral state.
 
@@ -384,6 +385,7 @@ Review priorities: (1) decision walkthrough (baseline target, plan context, why)
   - Bots become **card-aware by style**: preflop ranges per style plus postflop behaviour by hand-strength category. Built as **one opponent model shared with Analyze's Opponent axis** (no second opponent engine).
   - Table setup: **table type** (a realistic mix of styles for a pool; shares the Table axis), **saved lineups** (central in My poker, editable at the table), **seat by seat**, and **random table**.
   - During play: playstyle labels shown by default; optional **"read the table" mode** hides them, shows observed session stats with sample sizes (HUD-like), and the session report reveals the real styles and how well you read them.
+  - **Research round 4, R-11 (owner's notes, 2026-10-27):** playstyle **presets carry stat ranges**; adjustment is by **initiative-ratio sliders**; bots sort hands into **5 hand buckets**; bots decide only from a **`BotObservationView`** (what that seat may know, never hidden cards), and **a test enforces that isolation**; **"read the table" is staged** and graded on the bots' **realised stats and their preset**, not on hidden labels alone. Open (STATE D-34 … D-36): deal policy, adaptation, preset and slider count.
 - Preserved opponent model: OpponentPolicy with bounded aggression/calling/folding/sizing, presets/custom, per-seat; policy randomness separate from deal randomness; card-independent synthetic assumptions; Personal-Strategy-as-bot and real-person models **[Later]** (privacy, consent, deletion rules required).
 
 ### 7.14 Natural language (rule-based, no LLM)
@@ -553,6 +555,9 @@ Minimum read set: AGENTS.md, then only ticket-named files. No whole-file reads o
 
 ### External reviewer (Gemini Argon)
 - Google's Gemini 4 Argon (available to the owner in the Gemini app and Antigravity) is used for **independent second opinions** (maths and number checks, design critique, research, plan sanity checks), **one-off read-only whole-repo audits** in Antigravity, as a second reader for RU/HE wording and later legal drafts, and **as a batch implementer** in its own git worktree and branch (AGENT-POLICY-001, see [AGENTS.md › Multi-agent work](../AGENTS.md#multi-agent-work)): one writer per folder, never the same folder as another agent, the owner merges after Manager review, and risk-tier work gets a cross-review by a different agent. This replaces the earlier "Claude Code stays the only writer on the repo" rule, which the multi-agent policy superseded.
+
+### Tooling (R-13, owner's notes 2026-10-27)
+No Claude Code add-ons are installed. RTK may come later, for git output only; anything else needs the owner's yes and a [THIRD_PARTY](THIRD_PARTY.md) row first.
 
 ### Acceptance
 - Human acceptance is its own evidence; tests and commit titles cannot create it.
