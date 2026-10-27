@@ -27,16 +27,32 @@ const resolveHomeDestination = (destination, options) => app.call('resolveHomeDe
 const resolvePlaybookDestination = (destination, mode) => app.call('resolvePlaybookDestinationPresentation', destination, mode);
 const allTemplates = () => [markup, ...markup.querySelectorAll('template').map((template) => template.content)];
 
-test('Core Flow navigation presents six primary study destinations and three grouped support destinations', () => {
+test('Core Flow navigation follows sidebar variant 4: Home, Study, Tools, Library hubs, Game night apart (SHELL-002)', () => {
   const destinations = navigation.querySelectorAll('[data-navigation-id]').map((node) => node.dataset.navigationId);
   assert.deepEqual(destinations, [
-    'hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved',
-    'home', 'home-game', 'guide',
+    'home',
+    'study', 'training', 'personal-strategy', 'guide',
+    'tools', 'hand', 'analyze', 'equity',
+    'library', 'saved',
+    'home-game',
   ]);
-  assert.match(text(navigation.querySelector('.mode-nav-group--core')), /Core study/);
-  assert.match(text(navigation.querySelector('.mode-nav-group--support')), /Riverline/);
+  for (const [group, hub, items] of [
+    ['study', 'Study', ['training', 'personal-strategy', 'guide']],
+    ['tools', 'Tools', ['hand', 'analyze', 'equity']],
+    ['library', 'Library', ['saved']],
+  ]) {
+    const section = navigation.querySelector(`.mode-nav-group--${group}`);
+    const label = section.querySelector(':scope > .mode-nav-item--hub');
+    assert.equal(label.dataset.mode, 'hub', group);
+    assert.equal(label.dataset.navigationId, group);
+    assert.equal(text(label), hub);
+    assert.equal(section.getAttribute('aria-labelledby'), label.id);
+    assert.deepEqual(section.querySelectorAll('li > .mode-nav-item').map((item) => item.dataset.navigationId), items, group);
+  }
+  // Workspaces are a real list of buttons.
+  assert.ok(navigation.querySelectorAll('ul.mode-nav-list > li > button.mode-nav-item').length >= 9);
   assert.ok(navigation.querySelector('.mode-nav-item.mode-nav-item--hand'));
-  const support = navigation.querySelector('.mode-nav-group--support .mode-nav-item:not([aria-current="page"])');
+  const support = navigation.querySelector('.mode-nav-list--apart .mode-nav-item:not([aria-current="page"])');
   // Superseded: support items were --text-muted; the shell now gives every
   // inactive item --text-secondary (groups are distinguished by headings).
   assert.equal(css.cascaded(support, 'color'), 'var(--text-secondary)');

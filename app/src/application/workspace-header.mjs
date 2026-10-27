@@ -46,6 +46,26 @@ export function formatWorkspaceContext(parts) {
   return normalizeWorkspaceContext(parts).join(WORKSPACE_CONTEXT_SEPARATOR);
 }
 
+// SHELL-002: the context chip names the Game and Approach the app already
+// knows (published by Home's view model or Personal Strategy). Read-only;
+// Table rules join it in M2. One whole-string template per shape.
+export const PLAY_CONTEXT_TEMPLATES = Object.freeze({
+  gameAndApproach: 'Game: {game} · Approach: {approach}',
+  game: 'Game: {game}',
+});
+
+export function normalizePlayContext(value) {
+  const game = typeof value?.game === 'string' ? value.game.trim() : '';
+  const approach = typeof value?.approach === 'string' ? value.approach.trim() : '';
+  if (!game) return null;
+  return Object.freeze({ game, approach });
+}
+
+export function playContextTemplate(context) {
+  if (!context) return null;
+  return context.approach ? PLAY_CONTEXT_TEMPLATES.gameAndApproach : PLAY_CONTEXT_TEMPLATES.game;
+}
+
 function elementShown(element) {
   if (!element || element.hidden || element.getAttribute?.('aria-hidden') === 'true') return false;
   return Boolean(element.getClientRects?.().length);
@@ -67,6 +87,7 @@ export function createWorkspaceHeaderController({ document, translate = (key) =>
   const descriptions = new Map();
   const defaultDescriptions = new Map();
   let destination = null;
+  let playContext = null;
   let badgeFrame = null;
   const defer = schedule ?? ((callback) => (document.defaultView?.requestAnimationFrame
     ? document.defaultView.requestAnimationFrame(callback)
@@ -85,6 +106,26 @@ export function createWorkspaceHeaderController({ document, translate = (key) =>
       line.append(fact);
     });
     line.hidden = parts.length === 0;
+  }
+
+  function renderPlayContext() {
+    const chip = document.querySelector('#workspacePlayContext');
+    if (!chip) return;
+    chip.replaceChildren();
+    const key = playContextTemplate(playContext);
+    if (key) {
+      // The translated template keeps its placeholders; user-named values are
+      // inserted as direction-isolated islands so the sentence stays whole.
+      translate(key).split(/(\{game\}|\{approach\})/).forEach((piece) => {
+        if (piece === '{game}' || piece === '{approach}') {
+          const value = document.createElement('bdi');
+          value.dir = 'auto';
+          value.textContent = piece === '{game}' ? playContext.game : playContext.approach;
+          chip.append(value);
+        } else if (piece) chip.append(piece);
+      });
+    }
+    chip.hidden = !key;
   }
 
   function renderSourceBadge() {
@@ -131,6 +172,15 @@ export function createWorkspaceHeaderController({ document, translate = (key) =>
     getContext(target = destination) {
       return contexts.get(target) ?? Object.freeze([]);
     },
+    setPlayContext(value) {
+      const next = normalizePlayContext(value);
+      if (next?.game === playContext?.game && next?.approach === playContext?.approach) return;
+      playContext = next;
+      renderPlayContext();
+    },
+    getPlayContext() { return playContext; },
+    // The chip's labels are code-owned text: re-rendered on a language switch.
+    refreshLanguage() { renderPlayContext(); },
     // A workspace may replace its Help description (e.g. Home for Guests).
     setDescription(target, key) {
       if (key) descriptions.set(target, key);
@@ -168,6 +218,7 @@ if (typeof window !== 'undefined' && window.document) {
   };
   if (window.document.readyState === 'loading') window.document.addEventListener('DOMContentLoaded', observeBadgeInputs, { once: true });
   else observeBadgeInputs();
+  window.addEventListener('riverline:languagechange', () => controller.refreshLanguage());
   Object.defineProperty(window, 'RiverlineWorkspaceHeader', {
     configurable: true,
     enumerable: false,

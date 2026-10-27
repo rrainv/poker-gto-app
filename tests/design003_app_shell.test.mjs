@@ -29,17 +29,21 @@ test('the application opens directly into the workstation', () => {
 });
 
 test('the shell exposes a deliberate core and support hierarchy with structural active semantics', async () => {
-  // Protects: core (Hand..Saved) and support (Home..Guide) navigation groups;
+  // Protects: the variant 4 groups (SHELL-002);
   // aria-current and data attributes follow the active destination and the
   // active mode view is shown.
   const shell = shellMarkup();
   for (const destination of ['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved', 'home', 'home-game', 'guide']) {
     assert.ok(shell.querySelector(`[data-navigation-id="${destination}"]`), destination);
   }
-  const core = shell.querySelector('.mode-nav-group--core');
-  const support = shell.querySelector('.mode-nav-group--support');
-  assert.ok(core.querySelector('[data-navigation-id="hand"]') && core.querySelector('[data-navigation-id="saved"]'));
-  assert.ok(support.querySelector('[data-navigation-id="home"]') && support.querySelector('[data-navigation-id="guide"]'));
+  // SHELL-002: Study, Tools and Library groups; Home first, Game night apart.
+  const study = shell.querySelector('.mode-nav-group--study');
+  const tools = shell.querySelector('.mode-nav-group--tools');
+  const library = shell.querySelector('.mode-nav-group--library');
+  assert.ok(study.querySelector('[data-navigation-id="training"]') && study.querySelector('[data-navigation-id="guide"]'));
+  assert.ok(tools.querySelector('[data-navigation-id="hand"]') && tools.querySelector('[data-navigation-id="equity"]'));
+  assert.ok(library.querySelector('[data-navigation-id="saved"]'));
+  assert.ok(shell.querySelector('.mode-nav-list--apart [data-navigation-id="home-game"]'));
   assert.equal(shell.querySelector('[data-navigation-id="home"]').getAttribute('aria-current'), 'page');
   assert.equal(shell.querySelector('[data-navigation-id="hand"]').getAttribute('aria-current'), 'false');
 
@@ -66,7 +70,7 @@ test('mode switching updates workspace context without touching poker state', as
   const state = { decisionContext: app.window.app.decisionContext, strategyResult: app.window.app.strategyResult };
   const spy = app.spy(['calculateEquity', 'updateContext']);
   try {
-    for (const [destination, expectedTitle] of [['equity', 'Equity'], ['training', 'Training'], ['home', 'Home'], ['saved', 'Saved'], ['guide', 'Guide']]) {
+    for (const [destination, expectedTitle] of [['equity', 'Equity'], ['training', 'Training'], ['home', 'Home'], ['saved', 'Saved'], ['guide', 'Learn'], ['study', 'Study'], ['tools', 'Tools'], ['library', 'Library']]) {
       await app.navigate(destination);
       const shell = app.$('.riverline-shell');
       const button = app.$(`.mode-nav-item[data-navigation-id="${destination}"]`);

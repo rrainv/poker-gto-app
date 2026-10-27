@@ -344,7 +344,7 @@
 <body>
 
   <div class="riverline-shell" data-active-mode="home" data-active-destination="home">
-  <aside id="modeRail" class="mode-rail" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
+  <aside id="modeRail" class="mode-rail" data-motion="control" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
       <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 256 256" aria-hidden="true"><use href="assets/riverline-brand-mark.svg#riverlineBrandSpade" /></svg>
@@ -358,50 +358,78 @@
         </button>
       </div>
 
+      <!-- SHELL-002: sidebar variant 4 (P1-01). Home; three groups whose quiet
+           labels open their hub screens; Game night apart. Every workspace keeps
+           its data-mode / data-navigation-id route. -->
       <nav class="mode-navigation" aria-label="Riverline navigation" data-i18n-aria-label="Riverline navigation" data-tutorial-anchor="shell-navigation">
-        <section class="mode-nav-group mode-nav-group--core" aria-labelledby="coreNavigationLabel">
-          <p id="coreNavigationLabel" class="mode-nav-group-label" data-i18n="Core study">Core study</p>
-          <button class="mode-nav-item mode-nav-item--hand" type="button" data-mode="gto" data-navigation-id="hand" data-workspace-eyebrow="Core study" data-mode-title="Hand" data-mode-subtitle="Play or continue a canonical Hand, then analyze, save, and study it." aria-label="Hand" data-i18n-aria-label="Hand" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="11" height="15" rx="2"/><path d="M9 8h3m-3 4h3m6-5h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8"/></svg>
-            <span data-i18n="Hand">Hand</span>
-          </button>
-          <button class="mode-nav-item" type="button" data-mode="gto" data-navigation-id="analyze" data-workspace-eyebrow="Core study" data-mode-title="Analyze" data-mode-subtitle="Review the current Hand or build a study spot with source-aware guidance." aria-label="Analyze" data-i18n-aria-label="Analyze" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M7 11l2-2 2 2 3-4"/></svg>
-            <span data-i18n="Analyze">Analyze</span>
-          </button>
-          <button class="mode-nav-item" type="button" data-mode="training" data-navigation-id="training" data-workspace-eyebrow="Core study" data-mode-title="Training" data-mode-subtitle="Practice poker decisions without losing the current Hand." aria-label="Training" data-i18n-aria-label="Training" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
-            <span data-i18n="Training">Training</span>
-          </button>
-          <button class="mode-nav-item" type="button" data-mode="calibration" data-navigation-id="personal-strategy" data-workspace-eyebrow="Core study" data-mode-title="Personal Strategy" data-mode-subtitle="Review what Riverline understands, teach your intended play, and refine exact examples in Matrix Edit." aria-label="Personal Strategy" data-i18n-aria-label="Personal Strategy" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
-            <span data-i18n="Personal Strategy">Personal Strategy</span>
-          </button>
-          <button class="mode-nav-item" type="button" data-mode="equity" data-navigation-id="equity" data-workspace-eyebrow="Core study" data-mode-title="Equity" data-mode-subtitle="Calculate exact or simulated win chances for known and unknown hands." aria-label="Equity" data-i18n-aria-label="Equity" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
-            <span data-i18n="Equity">Equity</span>
-          </button>
-          <button class="mode-nav-item" type="button" data-mode="home" data-navigation-id="saved" data-workspace-eyebrow="Core study" data-mode-title="Saved study" data-mode-subtitle="Open saved Hands and Spots for replay, review, and continued study." aria-label="Saved" data-i18n-aria-label="Saved study" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8"/></svg>
-            <span data-i18n="Saved study">Saved</span>
-          </button>
-        </section>
-
-        <section class="mode-nav-group mode-nav-group--support" aria-labelledby="supportNavigationLabel">
-          <p id="supportNavigationLabel" class="mode-nav-group-label" data-i18n="Riverline">Riverline</p>
-          <button class="mode-nav-item active" type="button" data-mode="home" data-navigation-id="home" data-workspace-eyebrow="Riverline" data-mode-title="Home" data-mode-subtitle="Continue recent work and choose the next useful action." aria-label="Home" data-i18n-aria-label="Home" aria-current="page">
+        <ul class="mode-nav-list" role="list">
+          <li><button class="mode-nav-item active" type="button" data-mode="home" data-navigation-id="home" data-mode-title="Home" data-mode-subtitle="Continue recent work and choose the next useful action." aria-label="Home" data-i18n-aria-label="Home" aria-current="page">
             <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4v-9Z"/></svg>
             <span data-i18n="Home">Home</span>
+          </button></li>
+        </ul>
+
+        <section class="mode-nav-group mode-nav-group--study" aria-labelledby="studyNavigationLabel">
+          <button id="studyNavigationLabel" class="mode-nav-item mode-nav-item--hub" type="button" data-mode="hub" data-navigation-id="study" data-mode-title="Study" data-mode-subtitle="Practice decisions, build your own strategy and learn how Riverline works." aria-label="Study" data-i18n-aria-label="Study" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-4 9 4-9 4-9-4Z"/><path d="M7 11v5c3 2 7 2 10 0v-5M21 9v5"/></svg>
+            <span data-i18n="Study">Study</span>
           </button>
-          <button class="mode-nav-item" type="button" data-mode="homegame" data-navigation-id="home-game" data-workspace-eyebrow="Riverline" data-mode-title="Home Game" data-mode-subtitle="Run a real poker night with exact buy-ins, cash-outs, and settlement." aria-label="Home Game" data-i18n-aria-label="Home Game" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a5 5 0 0 1 10 0v2m1-6a4 4 0 0 1 7 2.6V20"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v3m-1.5-1.5h3"/></svg>
-            <span data-i18n="Home Game">Home Game</span>
-          </button>
-          <button class="mode-nav-item" type="button" data-mode="info" data-navigation-id="guide" data-workspace-eyebrow="Riverline" data-mode-title="Guide" data-mode-subtitle="Product workflows, study boundaries, and current capabilities." aria-label="Guide" data-i18n-aria-label="Guide" aria-current="false">
-            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
-            <span data-i18n="Guide">Guide</span>
-          </button>
+          <ul class="mode-nav-list" role="list">
+            <li><button class="mode-nav-item" type="button" data-mode="training" data-navigation-id="training" data-mode-title="Training" data-mode-subtitle="Practice poker decisions without losing the current Hand." aria-label="Training" data-i18n-aria-label="Training" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
+              <span data-i18n="Training">Training</span>
+            </button></li>
+            <li><button class="mode-nav-item" type="button" data-mode="calibration" data-navigation-id="personal-strategy" data-mode-title="Personal Strategy" data-mode-subtitle="Review what Riverline understands, teach your intended play, and refine exact examples in Matrix Edit." aria-label="Personal Strategy" data-i18n-aria-label="Personal Strategy" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
+              <span data-i18n="Personal Strategy">Personal Strategy</span>
+            </button></li>
+            <li><button class="mode-nav-item" type="button" data-mode="info" data-navigation-id="guide" data-mode-title="Learn" data-mode-subtitle="Product workflows, study boundaries, and current capabilities." aria-label="Learn" data-i18n-aria-label="Learn" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
+              <span data-i18n="Learn">Learn</span>
+            </button></li>
+          </ul>
         </section>
+
+        <section class="mode-nav-group mode-nav-group--tools" aria-labelledby="toolsNavigationLabel">
+          <button id="toolsNavigationLabel" class="mode-nav-item mode-nav-item--hub" type="button" data-mode="hub" data-navigation-id="tools" data-mode-title="Tools" data-mode-subtitle="Play or reconstruct a Hand, analyze a spot and calculate Equity." aria-label="Tools" data-i18n-aria-label="Tools" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5a4 4 0 0 0-5 5L4 16v4h4l5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-3-3 1.5-3Z"/></svg>
+            <span data-i18n="Tools">Tools</span>
+          </button>
+          <ul class="mode-nav-list" role="list">
+            <li><button class="mode-nav-item mode-nav-item--hand" type="button" data-mode="gto" data-navigation-id="hand" data-mode-title="Hand" data-mode-subtitle="Play or continue a canonical Hand, then analyze, save, and study it." aria-label="Hand" data-i18n-aria-label="Hand" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="11" height="15" rx="2"/><path d="M9 8h3m-3 4h3m6-5h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8"/></svg>
+              <span data-i18n="Hand">Hand</span>
+            </button></li>
+            <li><button class="mode-nav-item" type="button" data-mode="gto" data-navigation-id="analyze" data-mode-title="Analyze" data-mode-subtitle="Review the current Hand or build a study spot with source-aware guidance." aria-label="Analyze" data-i18n-aria-label="Analyze" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M7 11l2-2 2 2 3-4"/></svg>
+              <span data-i18n="Analyze">Analyze</span>
+            </button></li>
+            <li><button class="mode-nav-item" type="button" data-mode="equity" data-navigation-id="equity" data-mode-title="Equity" data-mode-subtitle="Calculate exact or simulated win chances for known and unknown hands." aria-label="Equity" data-i18n-aria-label="Equity" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
+              <span data-i18n="Equity">Equity</span>
+            </button></li>
+          </ul>
+        </section>
+
+        <section class="mode-nav-group mode-nav-group--library" aria-labelledby="libraryNavigationLabel">
+          <button id="libraryNavigationLabel" class="mode-nav-item mode-nav-item--hub" type="button" data-mode="hub" data-navigation-id="library" data-mode-title="Library" data-mode-subtitle="Your saved Hands and Spots." aria-label="Library" data-i18n-aria-label="Library" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h3v16H5zM10 4h3v16h-3zM15 5.5l3-.8 3.4 14.6-3 .7z"/></svg>
+            <span data-i18n="Library">Library</span>
+          </button>
+          <ul class="mode-nav-list" role="list">
+            <li><button class="mode-nav-item" type="button" data-mode="home" data-navigation-id="saved" data-mode-title="Saved study" data-mode-subtitle="Open saved Hands and Spots for replay, review, and continued study." aria-label="Saved" data-i18n-aria-label="Saved study" aria-current="false">
+              <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8"/></svg>
+              <span data-i18n="Saved study">Saved</span>
+            </button></li>
+          </ul>
+        </section>
+
+        <ul class="mode-nav-list mode-nav-list--apart" role="list">
+          <li><button class="mode-nav-item" type="button" data-mode="homegame" data-navigation-id="home-game" data-mode-title="Home Game" data-mode-subtitle="Run a real poker night with exact buy-ins, cash-outs, and settlement." aria-label="Game night" data-i18n-aria-label="Home Game" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a5 5 0 0 1 10 0v2m1-6a4 4 0 0 1 7 2.6V20"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v3m-1.5-1.5h3"/></svg>
+            <span data-i18n="Home Game">Game night</span>
+          </button></li>
+        </ul>
       </nav>
 
         <div class="rail-utilities" role="group" aria-label="Global utilities" data-i18n-aria-label="Global utilities">
@@ -428,10 +456,13 @@
     </aside>
 
     <div class="workspace-shell">
-      <header class="workspace-header">
+      <header class="workspace-header" data-motion="nav">
         <div class="workspace-heading">
           <h1 id="workspaceTitle" data-i18n="Home">Home</h1>
           <p id="workspaceContext" class="workspace-context" hidden></p>
+          <!-- SHELL-002: the context chip names the Game and Approach the app
+               already knows (read-only; Table rules arrive in M2). -->
+          <p id="workspacePlayContext" class="workspace-play-context" hidden></p>
         </div>
 
         <div class="workspace-utilities" role="group" aria-label="Workspace tools" data-i18n-aria-label="Workspace tools">
@@ -612,6 +643,74 @@
           </div>
         </div>
       </div>
+      </div>
+    </section>
+
+
+    <!-- SHELL-002: hub screens (P1-02). One card per workspace with its
+         purpose; a "continue" line only where the app already knows one. -->
+    <section id="hubMode" class="mode-view hub-mode" style="display:none;" aria-labelledby="workspaceTitle">
+      <div class="workspace-frame workspace-frame--standard hub-workspace">
+        <ul class="hub-card-list" data-hub="study" role="list" hidden>
+          <li><button class="hub-card" type="button" data-hub-target="training">
+            <svg class="hub-card-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Training">Training</strong>
+              <span class="hub-card-purpose" data-i18n="Practice decisions in drills or full hands and see how they compare.">Practice decisions in drills or full hands and see how they compare.</span>
+              <span class="hub-card-continue" data-hub-continue="training" hidden></span>
+            </span>
+          </button></li>
+          <li><button class="hub-card" type="button" data-hub-target="personal-strategy">
+            <svg class="hub-card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Personal Strategy">Personal Strategy</strong>
+              <span class="hub-card-purpose" data-i18n="Teach Riverline how you intend to play each Game and Approach.">Teach Riverline how you intend to play each Game and Approach.</span>
+              <span class="hub-card-continue" data-hub-continue="personal-strategy" hidden></span>
+            </span>
+          </button></li>
+          <li><button class="hub-card" type="button" data-hub-target="guide">
+            <svg class="hub-card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Learn">Learn</strong>
+              <span class="hub-card-purpose" data-i18n="How Riverline works, its workflows and its honesty labels.">How Riverline works, its workflows and its honesty labels.</span>
+            </span>
+          </button></li>
+        </ul>
+        <ul class="hub-card-list" data-hub="tools" role="list" hidden>
+          <li><button class="hub-card" type="button" data-hub-target="hand">
+            <svg class="hub-card-icon hub-card-icon--hand" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="11" height="15" rx="2"/><path d="M9 8h3m-3 4h3m6-5h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Hand">Hand</strong>
+              <span class="hub-card-purpose" data-i18n="Play or reconstruct a legal hand, then review and save it.">Play or reconstruct a legal hand, then review and save it.</span>
+              <span class="hub-card-continue" data-hub-continue="hand" hidden></span>
+            </span>
+          </button></li>
+          <li><button class="hub-card" type="button" data-hub-target="analyze">
+            <svg class="hub-card-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M7 11l2-2 2 2 3-4"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Analyze">Analyze</strong>
+              <span class="hub-card-purpose" data-i18n="Build any spot and see the baseline's mix with its reasons.">Build any spot and see the baseline's mix with its reasons.</span>
+              <span class="hub-card-continue" data-hub-continue="analyze" hidden></span>
+            </span>
+          </button></li>
+          <li><button class="hub-card" type="button" data-hub-target="equity">
+            <svg class="hub-card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Equity">Equity</strong>
+              <span class="hub-card-purpose" data-i18n="Calculate win chances for known hands, ranges and unknown cards.">Calculate win chances for known hands, ranges and unknown cards.</span>
+            </span>
+          </button></li>
+        </ul>
+        <ul class="hub-card-list" data-hub="library" role="list" hidden>
+          <li><button class="hub-card" type="button" data-hub-target="saved">
+            <svg class="hub-card-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8"/></svg>
+            <span class="hub-card-copy">
+              <strong class="hub-card-title" data-i18n="Saved study">Saved</strong>
+              <span class="hub-card-purpose" data-i18n="Open saved Hands and Spots for replay, review, and continued study.">Open saved Hands and Spots for replay, review, and continued study.</span>
+              <span class="hub-card-continue" data-hub-continue="saved" hidden></span>
+            </span>
+          </button></li>
+        </ul>
       </div>
     </section>
 
@@ -3355,6 +3454,7 @@
   <script type="module" src="src/application/welcome-orientation-bootstrap.mjs"></script>
   <script type="module" src="src/application/settings-ia-bootstrap.mjs"></script>
   <script type="module" src="src/application/workspace-header.mjs"></script>
+  <script type="module" src="src/application/shell-navigation.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/guide-bootstrap.mjs"></script>
   <script type="module" src="src/application/motion-preference-bootstrap.mjs"></script>

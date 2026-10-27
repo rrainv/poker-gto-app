@@ -138,7 +138,9 @@ function mountLibrary(objects, extra = {}) {
 // ---------------------------------------------------------------- composition
 
 test('one toolbar row holds view tabs, search, chips, selects, Mistakes toggle, Clear and the result count', async () => {
-  assert.equal(markup.querySelector('#homeSavedOverview, #savedLibraryTitle, [data-i18n="Library"]'), null,
+  // SHELL-002: the sidebar's LIBRARY group label legitimately uses the key; the
+  // check covers the Home/Saved workspace.
+  assert.equal(markup.querySelector('#homeSavedOverview, #savedLibraryTitle, #homeMode [data-i18n="Library"]'), null,
     'the duplicated "Saved Hands & Spots" and "Library" title panels are gone');
   const toolbar = markup.querySelector('#savedLibrarySection [data-saved-toolbar]');
   assert.ok(toolbar.classList.contains('saved-toolbar') && toolbar.classList.contains('panel'));

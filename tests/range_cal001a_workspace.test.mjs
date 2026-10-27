@@ -32,7 +32,8 @@ const visualAudit = fs.readFileSync(new URL('./tooling/audit_range_cal001a.cjs',
 
 test('Personal Strategy is the top-level destination while its existing workspace remains canonical', async () => {
   const destinations = markup.querySelectorAll('[data-navigation-id]').map((node) => node.dataset.navigationId);
-  assert.deepEqual(destinations.slice(0, 9), ['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved', 'home', 'home-game', 'guide']);
+  // SHELL-002: Personal Strategy sits in the Study group of sidebar variant 4.
+  assert.deepEqual(destinations.slice(0, 12), ['home', 'study', 'training', 'personal-strategy', 'guide', 'tools', 'hand', 'analyze', 'equity', 'library', 'saved', 'home-game']);
   const item = markup.querySelector('[data-navigation-id="personal-strategy"]');
   assert.equal(item.dataset.mode, 'calibration');
   assert.equal(item.dataset.modeTitle, 'Personal Strategy');

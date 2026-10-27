@@ -45,7 +45,7 @@ test('sidebar has explicit expanded and collapsed states with accessible control
   const toggle = rail.querySelector('#sidebarCollapseBtn');
   assert.equal(toggle.getAttribute('aria-expanded'), 'true');
   assert.equal(toggle.getAttribute('aria-controls'), 'modeRail');
-  assert.equal(css.cascaded(shell, '--sidebar-expanded-width'), '208px');
+  assert.equal(css.cascaded(shell, '--sidebar-expanded-width'), '240px');
   assert.equal(css.cascaded(shell, '--sidebar-collapsed-width'), '64px');
   assert.equal(css.cascaded(shell, 'grid-template-columns'), 'var(--sidebar-expanded-width) minmax(0, 1fr)');
   shell.classList.add('is-sidebar-collapsed');

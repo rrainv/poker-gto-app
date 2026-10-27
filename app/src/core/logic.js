@@ -8637,6 +8637,10 @@ function navigateToProductDestination(destination) {
     home: ['home', 'home'],
     'home-game': ['homegame', 'home-game'],
     guide: ['info', 'guide'],
+    // SHELL-002: hub screens for the Study, Tools and Library groups.
+    study: ['hub', 'study'],
+    tools: ['hub', 'tools'],
+    library: ['hub', 'library'],
   }[destination];
   if (route) navigateToWorkspace(route[0], route[1]);
 }
@@ -9117,6 +9121,15 @@ function renderHomeWorkspace(model) {
   window.RiverlineWorkspaceHeader?.setContext('home', guest
     ? [t('Guest Mode')]
     : [model.identity?.profile?.displayName || t('Riverline player'), t(homeSyncCopy(model.sync)[0])]);
+  // SHELL-002: the header chip names the selected Game and Approach that
+  // Home's view model already loaded (nothing extra is read).
+  const personalStrategy = model.sections.personalStrategy;
+  if (personalStrategy?.status === 'ready' && personalStrategy.selectedProfile) {
+    window.RiverlineWorkspaceHeader?.setPlayContext?.({
+      game: personalStrategy.selectedProfile.displayName,
+      approach: personalStrategy.selectedMode?.displayName || '',
+    });
+  }
   renderHomeReviewMistakesLink(model);
   renderHomeContinue(model.sections.continue);
   renderHomePersonalStrategy(model.sections.personalStrategy);
@@ -9601,7 +9614,13 @@ function bindEvents() {
   $$('.mode-nav-item[data-mode]').forEach((button) => button.addEventListener('click', () => {
     const mode = button.dataset.mode;
     const destination = button.dataset.navigationId || mode;
+    // SHELL-002: the workspace switch enters from the direction of travel in
+    // the sidebar (moment 14); keyboard input stays instant via the motion rule.
+    const navigationItems = $$('.mode-nav-item[data-mode]');
+    const previousIndex = navigationItems.findIndex((item) => item.getAttribute('aria-current') === 'page');
     if (!activateNavigationItem(button)) return;
+    const canvas = $('.workspace-canvas');
+    if (canvas) canvas.dataset.navDirection = navigationItems.indexOf(button) < previousIndex ? 'back' : 'forward';
     clearToast();
     if ((app.handReview.source === 'canonical_hand' && destination !== 'hand')
       || (app.handReview.source === 'training_full_hand' && mode !== 'training')) {
@@ -9636,6 +9655,7 @@ function bindEvents() {
       renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
     }
     if (mode === 'equity') updateEquityReadiness();
+    if (mode === 'hub') window.RiverlineShellNavigation?.showHub(destination, { homeModel: homeViewModel });
     if (mode === 'home') {
       applyHomeDestinationPresentation(destination);
       void refreshHomeWorkspace({ preserveVisible: Boolean(homeViewModel) });
