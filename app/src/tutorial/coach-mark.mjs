@@ -242,7 +242,9 @@ export function createCoachMarkSurface({
 
   function settleAndLayout(sequence, shouldScroll) {
     if (shouldScroll) {
-      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      const reduced = window.RiverlineMotion
+        ? !window.RiverlineMotion.allowsTravel()
+        : window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
       active.target.scrollIntoView?.({ behavior: reduced ? 'auto' : 'smooth', block: 'center', inline: 'nearest' });
     }
     window.requestAnimationFrame(() => window.requestAnimationFrame(() => {

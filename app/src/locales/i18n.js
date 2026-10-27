@@ -2760,7 +2760,7 @@ Object.entries(tablePresenceTranslations).forEach(([language, entries]) => {
 });
 const audioMotionTranslations = {
   en: {
-    "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.": "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.",
+    "Poker sounds and study feedback stay separate. Motion has its own setting and never changes sound.": "Poker sounds and study feedback stay separate. Motion has its own setting and never changes sound.",
     "Sound enabled": "Sound enabled",
     "Mute or enable all Riverline cues.": "Mute or enable all Riverline cues.",
     "Master volume": "Master volume",
@@ -2783,7 +2783,7 @@ const audioMotionTranslations = {
     "Mute sound": "Mute sound"
   },
   ru: {
-    "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.": "Звуки покера и учебная обратная связь настраиваются отдельно. Анимация независимо учитывает настройку уменьшения движения.",
+    "Poker sounds and study feedback stay separate. Motion has its own setting and never changes sound.": "Звуки покера и учебная обратная связь настраиваются отдельно. У анимации своя настройка, и она не меняет звук.",
     "Sound enabled": "Звук включён",
     "Mute or enable all Riverline cues.": "Отключить или включить все звуки Riverline.",
     "Master volume": "Общая громкость",
@@ -2806,7 +2806,7 @@ const audioMotionTranslations = {
     "Mute sound": "Отключить звук"
   },
   he: {
-    "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.": "צלילי הפוקר ומשוב הלימוד נשלטים בנפרד. התנועה מכבדת באופן עצמאי את העדפת צמצום התנועה.",
+    "Poker sounds and study feedback stay separate. Motion has its own setting and never changes sound.": "צלילי הפוקר ומשוב הלימוד נשלטים בנפרד. לתנועה יש הגדרה משלה, והיא לא משנה את הצליל.",
     "Sound enabled": "צליל מופעל",
     "Mute or enable all Riverline cues.": "השתקה או הפעלה של כל צלילי Riverline.",
     "Master volume": "עוצמת שמע כללית",

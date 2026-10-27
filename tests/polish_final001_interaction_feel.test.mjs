@@ -45,8 +45,9 @@ test('shared analysis card notation has a compact explicit contrast surface', ()
 
 test('motion language is tokenized, event-scoped, and avoids large animated trees', async () => {
   const root = app.document.documentElement;
-  for (const token of ['--motion-micro', '--motion-standard', '--motion-emphasis']) {
-    assert.match(css.cascaded(root, token), /^var\(--duration-/, token);
+  // MOTION-FOUNDATION-001: one scale; each duration = base × setting ÷ tempo.
+  for (const token of ['--motion-micro', '--motion-panel', '--motion-table']) {
+    assert.match(css.cascaded(root, token), /^calc\(var\(--motion-base-[a-z]+\) \* var\(--motion-scale\) \/ var\(--motion-tempo\)\)$/, token);
   }
   // Opening the analysis panel and switching Analyze views mark only the
   // entering element, which runs the panel entrance.
@@ -67,7 +68,7 @@ test('motion language is tokenized, event-scoped, and avoids large animated tree
   const hint = probe('<div class="training-study-hint-content"><div class="analysis-study-hint"></div></div>').firstElementChild;
   assert.match(css.cascaded(hint, 'animation'), /riverline-hint-enter/);
   // A collapsing table keeps visibility until the collapse finishes.
-  assert.match(css.cascaded(probe('<div class="table-wrapper collapsed"></div>'), 'transition'), /visibility 0s linear var\(--motion-standard\)/);
+  assert.match(css.cascaded(probe('<div class="table-wrapper collapsed"></div>'), 'transition'), /visibility 0s linear var\(--motion-panel\)/);
   for (const rule of polishSheet.rules) {
     for (const { value } of rule.declarations) assert.doesNotMatch(value, /bounce|spin|flash|infinite/i, rule.selectorText);
   }
@@ -106,11 +107,13 @@ test('answer feedback remains semantic while correct and mistake states get calm
   assert.deepEqual(Object.fromEntries(from.declarations.map(({ property, value }) => [property, value])), { opacity: '0', translate: '0 -5px' });
 });
 
-test('reduced motion makes all nonessential animation and transition near-instant', async () => {
+test('reduced motion makes all nonessential animation near-instant and keeps only short fades', async () => {
   const reduced = { reducedMotion: true };
   const any = probe('<div class="deck-card"></div>');
   assert.equal(css.cascaded(any, 'animation-duration', reduced), '.01ms');
-  assert.equal(css.cascaded(any, 'transition-duration', reduced), '.01ms');
+  // MOTION-FOUNDATION-001: Reduced = opacity fades of 200 ms or less.
+  assert.equal(css.cascaded(any, 'transition-property', reduced), 'opacity');
+  assert.equal(css.cascaded(any, 'transition-duration', reduced), 'var(--motion-fade)');
   const hint = probe('<div class="training-study-hint-content"><div class="analysis-study-hint"></div></div>').firstElementChild;
   assert.equal(css.cascaded(hint, 'animation', reduced), 'none');
   // Opening Hand Review scrolls to it smoothly, or instantly under reduced motion.
@@ -120,6 +123,8 @@ test('reduced motion makes all nonessential animation and transition near-instan
   const surface = app.byId('handReviewSurface');
   const open = (reducedMotion) => {
     app.environment.media = { ...media, reducedMotion };
+    // The Motion setting follows the system preference by default.
+    app.document.documentElement.dataset.motionMode = reducedMotion ? 'reduced' : 'standard';
     surface._scrolledIntoView = undefined;
     assert.ok(app.call('openCanonicalHandReview'), 'the review opens');
     return surface._scrolledIntoView;
@@ -129,6 +134,7 @@ test('reduced motion makes all nonessential animation and transition near-instan
     assert.deepEqual(open(true), { behavior: 'auto', block: 'start' });
   } finally {
     app.environment.media = media;
+    app.document.documentElement.dataset.motionMode = 'standard';
   }
 });
 

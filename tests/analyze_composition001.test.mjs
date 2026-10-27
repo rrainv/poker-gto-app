@@ -36,7 +36,8 @@ const root = () => app.document.documentElement;
 // borders, provenance colour or !important, and uses the accent only on
 // the listed components".
 const rawCss = read('../app/styles.css');
-const analyzeSheet = new StyleSheetModel(rawCss.slice(rawCss.indexOf('/* ANALYZE-COMPOSITION-001: Analyze composition')));
+// The Analyze section runs to the shared motion foundation (MOTION-FOUNDATION-001).
+const analyzeSheet = new StyleSheetModel(rawCss.slice(rawCss.indexOf('/* ANALYZE-COMPOSITION-001: Analyze composition'), rawCss.indexOf('/* MOTION-FOUNDATION-001 ----')));
 const wholeSheet = new StyleSheetModel(rawCss);
 
 const result = (rows) => ({

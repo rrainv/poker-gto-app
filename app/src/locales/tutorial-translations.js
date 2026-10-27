@@ -794,13 +794,13 @@
 
   const audioMotionTutorial = {
     en: {
-      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.',
+      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion has its own setting: Instant, Faster, Standard or Reduced.': 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion has its own setting: Instant, Faster, Standard or Reduced.',
     },
     ru: {
-      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'Звук необязателен: задайте общую громкость, затем отдельно включите сигналы «Стол / Покер» и «Обучение / Интерфейс». Анимация настраивается независимо и учитывает системное предпочтение уменьшенного движения.',
+      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion has its own setting: Instant, Faster, Standard or Reduced.': 'Звук необязателен: задайте общую громкость, затем отдельно включите сигналы «Стол / Покер» и «Обучение / Интерфейс». У анимации своя настройка: «Мгновенно», «Быстрее», «Стандартный» или «Меньше движения».',
     },
     he: {
-      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'הצליל הוא אופציונלי: הגדירו עוצמה כללית, ולאחר מכן הפעילו בנפרד צלילי שולחן / פוקר ולימוד / ממשק. התנועה נשלטת בנפרד ומכבדת את העדפת המערכת להפחתת תנועה.',
+      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion has its own setting: Instant, Faster, Standard or Reduced.': 'הצליל הוא אופציונלי: הגדירו עוצמה כללית, ולאחר מכן הפעילו בנפרד צלילי שולחן / פוקר ולימוד / ממשק. לתנועה יש הגדרה משלה: מיידי, מהיר יותר, סטנדרטי או מופחת.',
     },
   };
   Object.assign(en, audioMotionTutorial.en);

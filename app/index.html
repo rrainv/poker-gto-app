@@ -18,6 +18,7 @@
 
   <script src="src/application/welcome-orientation-prepaint.js"></script>
   <script src="src/application/presentation-theme-prepaint.js"></script>
+  <script src="src/application/motion-preference-prepaint.js"></script>
   <script type="module" src="src/application/presentation-theme-initial.mjs"></script>
 
   <link rel="stylesheet" href="styles.css?v=28">
@@ -3009,7 +3010,7 @@
               <p class="settings-panel-kicker" data-i18n="This device">This device</p>
               <h3 class="settings-section-title" data-i18n="Audio & Motion">Audio &amp; Motion</h3>
             </header>
-            <p class="panel-note" data-i18n="Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.">Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.</p>
+            <p class="panel-note" data-i18n="Poker sounds and study feedback stay separate. Motion has its own setting and never changes sound.">Poker sounds and study feedback stay separate. Motion has its own setting and never changes sound.</p>
             <div class="settings-audio-controls">
               <div class="switchrow audio-setting-row" data-setting-id="audio-enabled">
                 <span><strong data-i18n="Sound enabled">Sound enabled</strong><small data-i18n="Mute or enable all Riverline cues.">Mute or enable all Riverline cues.</small></span>
@@ -3057,12 +3058,18 @@
               </details>
             </div>
 
-            <section class="settings-system-status" aria-labelledby="settingsMotionTitle">
+            <section class="settings-system-status settings-motion-field" data-setting-id="motion" aria-labelledby="settingsMotionTitle">
               <div class="settings-system-status-head">
-                <div><strong id="settingsMotionTitle" data-i18n="Reduced motion">Reduced motion</strong><small data-i18n="Uses this device's operating-system preference.">Uses this device's operating-system preference.</small></div>
-                <output id="settingsReducedMotionStatus" class="badge status-badge status-badge--neutral" aria-live="polite" data-i18n="System preference: Off">System preference: Off</output>
+                <div><strong id="settingsMotionTitle" data-i18n="Motion">Motion</strong><small id="settingsMotionHint" data-i18n="Scales every animation. Keyboard actions are always instant.">Scales every animation. Keyboard actions are always instant.</small></div>
               </div>
-              <p class="panel-note" data-i18n="Change reduced motion in system settings. Riverline applies it immediately and keeps sound independent.">Change reduced motion in system settings. Riverline applies it immediately and keeps sound independent.</p>
+              <div id="settingsMotionControl" class="ui-segments settings-motion-control" role="group" aria-labelledby="settingsMotionTitle" aria-describedby="settingsMotionHint">
+                <button class="ui-tab" type="button" data-motion-option="instant" aria-pressed="false" data-i18n="Instant">Instant</button>
+                <button class="ui-tab" type="button" data-motion-option="faster" aria-pressed="false" data-i18n="Faster">Faster</button>
+                <button class="ui-tab active" type="button" data-motion-option="standard" aria-pressed="true" data-i18n="Standard">Standard</button>
+                <button class="ui-tab" type="button" data-motion-option="reduced" aria-pressed="false" data-i18n="Reduced">Reduced</button>
+              </div>
+              <p id="settingsMotionSource" class="panel-note" data-i18n="Matches this device's reduced-motion setting until you choose.">Matches this device's reduced-motion setting until you choose.</p>
+              <button id="settingsMotionFollowDevice" class="ui-button ui-button--tertiary settings-motion-follow" type="button" hidden data-i18n="Match this device's setting">Match this device's setting</button>
             </section>
         </div>
 
@@ -3349,6 +3356,7 @@
   <script type="module" src="src/application/workspace-header.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/guide-bootstrap.mjs"></script>
+  <script type="module" src="src/application/motion-preference-bootstrap.mjs"></script>
   <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/advanced-equity-workspace.mjs"></script>

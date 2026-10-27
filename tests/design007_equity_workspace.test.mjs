@@ -317,7 +317,8 @@ test('responsive, theme-token, keyboard-focus, reduced-motion, and RTL safeguard
   assert.ok(css.matchingRules(card).some((rule) => rule.selectorText.includes('[dir="rtl"] .equity-player-card')));
   markup.documentElement.setAttribute('dir', 'ltr');
   card.remove();
-  assert.ok(css.rules.some((rule) => rule.conditions.some(({ query }) => query.includes('prefers-reduced-motion: reduce'))));
+  // Reduced rules follow the Motion setting (MOTION-FOUNDATION-001).
+  assert.ok(css.rules.some((rule) => rule.selectors.some((selector) => selector.includes('[data-motion-mode="reduced"]'))));
   for (const rule of design.rules) {
     for (const { value } of rule.declarations) assert.doesNotMatch(value, /#[0-9a-f]{3,8}\b/i, rule.selectorText);
   }

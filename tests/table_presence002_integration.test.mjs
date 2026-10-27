@@ -163,8 +163,9 @@ test('theme, card, density, layout, RTL, and reduced-motion authorities remain c
   root.setAttribute('dir', 'ltr');
   const unit = app.$('#visual-table-container .table-player-unit');
   assert.ok(unit, 'the table renders player units');
-  const motion = css.cascaded(unit, 'transition', { reducedMotion: true }) ?? css.cascaded(unit, 'animation', { reducedMotion: true });
-  assert.match(motion || 'none', /none/);
+  // Reduced (MOTION-FOUNDATION-001): seats never move; only a short opacity fade remains.
+  assert.equal(css.cascaded(unit, 'transition-property', { reducedMotion: true }), 'opacity');
+  assert.match(css.cascaded(unit, 'animation', { reducedMotion: true }) || 'none', /none/);
   const wrapper = app.byId('table-wrapper');
   assert.ok(wrapper.dataset.tableProjection);
   assert.equal(css.cascaded(wrapper, 'max-height'), 'none');

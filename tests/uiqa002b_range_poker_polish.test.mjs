@@ -304,7 +304,7 @@ test('deal and feedback motion are event-scoped, restrained, and reduced-motion 
   assert.equal(translate('to'), '0 0');
   const dealt = probe('<div class="card-group is-card-dealt"><span class="riverline-card"></span></div>');
   const delays = uiQa.rules.flatMap((rule) => rule.declarations).filter(({ property }) => property === 'animation-delay').map(({ value }) => value);
-  assert.ok(delays.includes('calc(var(--card-deal-order, 0) * 22ms)'));
+  assert.ok(delays.includes('calc(var(--card-deal-order, 0) * 22ms * var(--motion-scale))'));
   assert.equal(css.cascaded(probe('<span class="card-slot filled"></span>'), 'animation'), 'none');
   assert.equal(css.cascaded(dealt, 'animation', { reducedMotion: true }), 'none');
   assert.doesNotMatch(authored, /bounce|spin|rotate|pulse/i);

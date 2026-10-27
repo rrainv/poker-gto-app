@@ -234,7 +234,7 @@ test('D22: interaction states use motion tokens and focus-visible outlines', () 
   assert.ok(summary, 'the Analyze summary exists');
   assert.ok(focused(summary), 'summary focus ring');
   const transitions = amendSheet.rules.flatMap((rule) => rule.declarations).filter(({ property }) => property === 'transition');
-  assert.ok(transitions.some(({ value }) => value.startsWith('color var(--motion-fast) var(--ease-standard)')));
+  assert.ok(transitions.some(({ value }) => value.startsWith('color var(--motion-micro) var(--ease-out)')));
   for (const { value } of transitions) assert.doesNotMatch(value, /\d+ms/, 'durations come from motion tokens');
   for (const selector of ['#playbookAnalysisTabs .ui-tab:focus-visible', '.control-value:focus-within', 'summary:focus-visible', '.hand-cell:focus-visible', '.analyze-explain-depth > .ui-tab:focus-visible']) {
     assert.ok(amendSheet.rules.some((rule) => rule.selectors.some((candidate) => candidate.includes(selector))), selector);

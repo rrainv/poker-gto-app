@@ -447,6 +447,14 @@ function requireProductPerformanceBridge() {
 
 const $ = (selector) => document.querySelector(selector);
 
+// MOTION-FOUNDATION-001: script-driven motion (smooth scrolling, table travel)
+// asks the one Motion setting; keyboard-triggered moments never travel.
+function motionTravelAllowed() {
+  const motion = window.RiverlineMotion;
+  if (motion) return motion.allowsTravel();
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches !== true;
+}
+
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const allDeck = () => SUITS.flatMap((suit) => RANKS.map((rank) => rank + suit.id));
@@ -5803,7 +5811,7 @@ function openCanonicalHandReview() {
   if (!model?.selectedDecision) return null;
   selectActiveHandReviewDecision(model.selectedDecisionIndex);
   const rendered = renderActiveHandReview();
-  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = !motionTravelAllowed();
   $('#handReviewSurface')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
   return rendered;
 }
@@ -5898,7 +5906,7 @@ function bindHandReviewWorkspace() {
 
 function revealCanonicalHandHistory({ replay = false } = {}) {
   if (replay) callPlaybookStateBridge('startReplayPlayback');
-  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = !motionTravelAllowed();
   $('#handHistorySection')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest' });
 }
 
@@ -5972,7 +5980,7 @@ async function openCanonicalHandDecisionInAnalysis(decisionIndex = null) {
     decisionContext: record.decisionContext
   });
   if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return null;
-  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = !motionTravelAllowed();
   $('#contextView')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
   return record;
 }
@@ -9668,7 +9676,7 @@ function bindEvents() {
   const revealPlaybookDestination = (view, control) => {
     const destination = view === 'context' ? $('#contextView') : $(`#${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
     if (!destination) return;
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = !motionTravelAllowed();
     destination.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
     control?.focus?.({ preventScroll: true });
   };
@@ -11281,7 +11289,7 @@ function openTrainingMemoryView(view) {
   if (!panel) return;
   setTrainingMemoryView(view);
   panel.open = true;
-  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const reducedMotion = !motionTravelAllowed();
   panel.scrollIntoView({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
 }
 
@@ -13035,7 +13043,7 @@ async function openTrainingMemorySameSpot(recordId, handoff = null) {
     if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
     setTrainingMemoryStatus('Same spot ready');
     $('#trainingExerciseSurface')?.scrollIntoView?.({
-      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      behavior: motionTravelAllowed() ? 'smooth' : 'auto',
       block: 'start',
     });
     return result;
@@ -13101,7 +13109,7 @@ async function openTrainingMemoryRedrill(recordId, kind) {
     renderCanonicalTrainingExercise(result.exercise);
     setTrainingMemoryStatus('Current comparison');
     $('#trainingExerciseSurface')?.scrollIntoView?.({
-      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      behavior: motionTravelAllowed() ? 'smooth' : 'auto',
       block: 'start',
     });
     return result;
@@ -14271,8 +14279,7 @@ function ensureFullHandPresentationOrchestrator() {
         if (snapshot.status === 'awaiting_hero') renderFullHandPresentationStatus(cue, snapshot);
       },
       setInputLocked: (locked) => setFullHandTrainingInputLocked(locked),
-      prefersReducedMotion: () => window.matchMedia?.('(prefers-reduced-motion: reduce)')
-        .matches === true,
+      prefersReducedMotion: () => !motionTravelAllowed(),
     },
   );
   return fullHandPresentationOrchestrator;
@@ -14764,7 +14771,7 @@ function toggleFullHandTrainingReview() {
   if ($('#trainingExerciseSurface')) $('#trainingExerciseSurface').hidden = false;
   dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
   const rendered = renderActiveHandReview();
-  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = !motionTravelAllowed();
   $('#trainingRecommendation')?.scrollIntoView?.({
     behavior: reducedMotion ? 'auto' : 'smooth',
     block: 'start'

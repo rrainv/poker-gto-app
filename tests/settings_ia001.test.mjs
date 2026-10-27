@@ -29,7 +29,7 @@ const EXPECTED_SETTINGS = Object.freeze({
     'card-back-style',
     'workstation-theme',
   ]),
-  audio: Object.freeze(['audio-enabled', 'audio-volume', 'audio-poker', 'audio-study']),
+  audio: Object.freeze(['audio-enabled', 'audio-volume', 'audio-poker', 'audio-study', 'motion']),
   language: Object.freeze(['language']),
   account: Object.freeze([]),
 });
@@ -44,7 +44,7 @@ test('every visible preference has exactly one category and the inventory stays 
   for (const category of Object.keys(EXPECTED_SETTINGS)) {
     assert.deepEqual(inventory[category], [...EXPECTED_SETTINGS[category]].sort(), category);
   }
-  assert.equal(occurrences.length, 11);
+  assert.equal(occurrences.length, 12);
   for (const id of ['tutorial', 'guide', 'account-status', 'sound-preview', 'reduced-motion']) {
     assert.equal(settings.querySelector(`[data-setting-id="${id}"]`), null, id);
   }
@@ -103,12 +103,13 @@ test('audio remains one hierarchy and preview actions are demoted from preferenc
   assert.match(soundSource, /volume\) volume\.oninput = \(event\) => authority\.setMasterVolume/);
 });
 
-test('reduced motion is truthful system status rather than invented preference storage', () => {
-  assert.equal(settings.querySelector('#settingsReducedMotionStatus').getAttribute('aria-live'), 'polite');
-  assert.match(settingsSource, /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)/);
-  assert.match(settingsSource, /System preference: On/);
-  assert.match(settingsSource, /System preference: Off/);
-  assert.doesNotMatch(settingsSource, /reducedMotion[^\n]+setItem|setItem[^\n]+reducedMotion/);
+test('Motion is one global device setting next to sound, not a second reduced-motion status', () => {
+  // P1-09 / MOTION-FOUNDATION-001 replaced the read-only system status with the
+  // Motion setting (behaviour: tests/motion_foundation001.test.mjs).
+  assert.equal(settings.querySelector('#settingsReducedMotionStatus'), null);
+  const control = settings.querySelector('#settingsMotionControl');
+  assert.equal(control.closest('[data-settings-panel]').dataset.settingsPanel, 'audio');
+  assert.deepEqual(control.querySelectorAll('[data-motion-option]').map((button) => button.dataset.motionOption), ['instant', 'faster', 'standard', 'reduced']);
 });
 
 test('language is a shared secondary route and Help does not replace global discovery', () => {
@@ -136,7 +137,7 @@ test('EN RU HE copy, RTL logical layout, focus containment, and modal close sema
   vm.runInNewContext(productTranslations, { window: sandbox });
   const requiredKeys = [
     'Audio & Motion', 'Language & Help', 'Account & Data', 'Settings categories',
-    'System preference: On', 'Open Guide', 'Restart Settings tour',
+    'Motion', 'Instant', 'Faster', 'Reduced', 'Open Guide', 'Restart Settings tour',
   ];
   for (const language of ['en', 'ru', 'he']) {
     for (const key of requiredKeys) assert.ok(sandbox.riverlineProductTranslations[language][key], `${language}: ${key}`);

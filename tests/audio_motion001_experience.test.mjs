@@ -1048,9 +1048,10 @@ test('settings, copy, tokens, and reduced-motion CSS expose the bounded system',
     'audioSettingsSwitch', 'audioMasterVolume', 'audioPokerSwitch', 'audioStudySwitch',
   ]) assert.ok(markup.getElementById(id), id);
   const css = appStyleSheet();
+  // MOTION-FOUNDATION-001: one motion scale (base durations; rules use the
+  // scaled --motion-* tokens).
   for (const [token, value] of [
-    ['--motion-instant', '1ms'], ['--motion-fast-semantic', '110ms'],
-    ['--motion-normal-semantic', '170ms'], ['--motion-poker-settle', '240ms'],
+    ['--motion-base-micro', '100ms'], ['--motion-base-panel', '180ms'], ['--motion-base-table', '260ms'],
   ]) assert.equal(css.cascaded(markup.documentElement, token), value, token);
   // Chip flights never take pointer input and stop moving under reduced motion.
   const flight = markup.createElement('div');

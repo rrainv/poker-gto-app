@@ -71,22 +71,7 @@ export function installSettingsInformationArchitecture(browserWindow = window) {
     const setLanguage = browserWindow.RiverlineI18n?.setLanguage ?? browserWindow.setLanguage;
     setLanguage?.(event.currentTarget.value);
   });
-  listen(browserWindow, 'riverline:languagechange', () => {
-    syncLanguage();
-    updateMotionStatus();
-  });
-
-  const motionStatus = document.querySelector('#settingsReducedMotionStatus');
-  const reducedMotion = browserWindow.matchMedia?.('(prefers-reduced-motion: reduce)') ?? null;
-  function updateMotionStatus() {
-    if (!motionStatus) return;
-    const key = reducedMotion?.matches ? 'System preference: On' : 'System preference: Off';
-    motionStatus.dataset.i18n = key;
-    motionStatus.textContent = browserWindow.t?.(key) ?? key;
-    motionStatus.classList.toggle('status-badge--available', Boolean(reducedMotion?.matches));
-    motionStatus.classList.toggle('status-badge--neutral', !reducedMotion?.matches);
-  }
-  listen(reducedMotion, 'change', updateMotionStatus);
+  listen(browserWindow, 'riverline:languagechange', syncLanguage);
 
   function focusActiveTab() {
     browserWindow.requestAnimationFrame?.(() => {
@@ -99,7 +84,6 @@ export function installSettingsInformationArchitecture(browserWindow = window) {
     restoreFocusOnClose = true;
     activate('appearance');
     syncLanguage();
-    updateMotionStatus();
     focusActiveTab();
   });
 
@@ -149,7 +133,6 @@ export function installSettingsInformationArchitecture(browserWindow = window) {
 
   activate('appearance', { resetScroll: false });
   syncLanguage();
-  updateMotionStatus();
 
   const controller = Object.freeze({
     activate,

@@ -255,6 +255,24 @@ const INHERITED = new Set([
   'pointer-events', 'user-select', 'text-rendering', '-webkit-font-smoothing', 'font-optical-sizing', 'text-shadow',
 ]);
 
+// MOTION-FOUNDATION-001: the app resolves a system reduced-motion preference
+// to data-motion-mode="reduced" on the root (no stored Motion choice), and
+// Reduced rules are scoped to that attribute. A reducedMotion environment
+// therefore evaluates with the root in Reduced.
+function withMotionEnvironment(element, env, run) {
+  const root = element?.ownerDocument?.documentElement;
+  if (!env.reducedMotion || typeof root?.setAttribute !== 'function'
+    || root.getAttribute('data-motion-mode') === 'reduced') return run();
+  const previous = root.getAttribute('data-motion-mode');
+  root.setAttribute('data-motion-mode', 'reduced');
+  try {
+    return run();
+  } finally {
+    if (previous === null) root.removeAttribute('data-motion-mode');
+    else root.setAttribute('data-motion-mode', previous);
+  }
+}
+
 export class StyleSheetModel {
   constructor(text) {
     this.source = text;
@@ -342,6 +360,10 @@ export class StyleSheetModel {
    * Inherited properties and custom properties walk up the tree.
    */
   cascaded(element, property, options = {}) {
+    return withMotionEnvironment(element, this.environment(options.environment || options), () => this._cascaded(element, property, options));
+  }
+
+  _cascaded(element, property, options = {}) {
     const env = this.environment(options.environment || options);
     const context = { states: options.states ? new Set(options.states) : undefined, stateElement: options.stateElement, allowPseudoElements: Boolean(options.pseudoElement) };
     const dir = directionOf(element);
@@ -389,6 +411,10 @@ export class StyleSheetModel {
 
   /** Rules (in source order) that apply to an element in an environment. */
   matchingRules(element, options = {}) {
+    return withMotionEnvironment(element, this.environment(options.environment || options), () => this._matchingRules(element, options));
+  }
+
+  _matchingRules(element, options = {}) {
     const env = this.environment(options.environment || options);
     const context = { states: options.states ? new Set(options.states) : undefined, stateElement: options.stateElement, allowPseudoElements: true };
     const rules = new Set();

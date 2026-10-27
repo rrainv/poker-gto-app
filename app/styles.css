@@ -235,13 +235,29 @@
   --indeterminate-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.75 6h6.5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
   --canvas-glow: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--accent-primary) 9%, transparent), transparent 58%);
 
-  --duration-fast: 120ms;
-  --duration-normal: 180ms;
-  --duration-slow: 260ms;
-  --motion-fast: var(--duration-fast);
-  --motion-normal: var(--duration-normal);
-  --motion-slow: var(--duration-slow);
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* MOTION-FOUNDATION-001: the one motion scale (MOTION_SPEC, DESIGN_SYSTEM
+     "Motion"). Curves: ease-out for entrances and responses, ease-in-out for
+     things moving on screen, drawer for sheets and toasts, spring only for
+     small confirmations. */
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --ease-spring: cubic-bezier(.34, 1.36, .64, 1);
+  /* Base durations at Standard and tempo 1. Rules use the scaled tokens
+     below (--motion-micro …), never these. */
+  --motion-base-micro: 100ms;   /* hover, select, press */
+  --motion-base-panel: 180ms;   /* panels, dropdowns, feedback */
+  --motion-base-dialog: 240ms;  /* dialogs, sheets */
+  --motion-base-table: 260ms;   /* table moments: deal, chips, settle */
+  --motion-base-rare: 600ms;    /* rare, expressive moments */
+  --motion-fade: 160ms;         /* Reduced: the only motion left (≤ 200 ms) */
+  /* Global Motion setting (data-motion-mode on the root): Instant 0,
+     Faster .625 (×1.6 speed), Standard and Reduced 1. */
+  --motion-scale: 1;
+  /* Per-moment tempo (data-motion on an element): real duration =
+     base × scale ÷ tempo. Untagged elements keep tempo 1. */
+  --motion-tempo: 1;
+
 
   /* Compatibility aliases used by the existing application. */
   --bg: var(--surface-canvas);
@@ -261,9 +277,6 @@
   --diamond: var(--suit-diamond);
   --club: var(--suit-club);
   --shadow: var(--shadow-panel);
-  --transition-fast: var(--duration-fast) var(--ease-standard);
-  --transition-normal: var(--duration-normal) var(--ease-standard);
-  --transition-slow: var(--duration-slow) var(--ease-standard);
   --card-bg: var(--surface-interactive);
   --border: var(--border-default);
   --button-text: var(--text-on-accent);
@@ -343,12 +356,6 @@
   --series-8: #c06f5b;
   --series-9: #6e9f68;
 
-  /* formerly a separate :root block (old line 10180) */
-  --motion-instant: 1ms;
-  --motion-fast-semantic: 110ms;
-  --motion-normal-semantic: 170ms;
-  --motion-poker-settle: 240ms;
-  --motion-poker-ease: cubic-bezier(.2, .72, .25, 1);
 
   /* formerly a separate :root block (old line 11522) */
   --suit-spade-ui: var(--text-primary);
@@ -363,10 +370,6 @@
   /* formerly a separate :root block (old line 12632) */
   --range-matrix-cell: clamp(42px, 2.75vw, 46px);
 
-  /* formerly a separate :root block (old line 12851) */
-  --motion-micro: var(--duration-fast);
-  --motion-standard: var(--duration-normal);
-  --motion-emphasis: var(--duration-slow);
 
   /* SHELL-001: one canvas grid. Every workspace frame shares --canvas-max and
      the canvas owns the gutter (--gutter-canvas); workspaces pick column
@@ -1397,9 +1400,8 @@ div.home-empty-state .ui-button { justify-self: start; }
   .home-open-button { justify-self: start; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .home-loading-spinner { animation: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .home-loading-spinner { animation: none; }
 
 /* TUTORIAL-001: reusable semantic coach-mark surface ------------------ */
 
@@ -1441,7 +1443,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
   border-radius: var(--radius-overlay);
   box-shadow: var(--shadow-overlay);
   pointer-events: auto;
-  transition: opacity var(--motion-fast) var(--ease-standard);
+  transition: opacity var(--motion-micro) var(--ease-out);
 }
 
 .tutorial-coach:focus { outline: none; box-shadow: var(--shadow-overlay), var(--focus-ring); }
@@ -1483,10 +1485,9 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
   .tutorial-coach-body { line-height: 1.45; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tutorial-spotlight,
-  .tutorial-coach { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .tutorial-spotlight,
+:where(:root[data-motion-mode="reduced"]) .tutorial-coach { transition: none; }
 
 /* DESIGN-008: focused Training workspace ------------------------------- */
 
@@ -1525,7 +1526,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 .training-state-message > div { display: grid; gap: var(--space-2); }
 .training-state-message > .ui-button { margin-top: var(--space-3); }
 .training-state-message--error { color: var(--status-danger); border-color: color-mix(in srgb, var(--status-danger) 48%, var(--border-default)); }
-.training-spinner { width: 28px; height: 28px; border: 3px solid var(--border-default); border-top-color: var(--accent-primary); border-radius: 50%; animation: trainingSpin var(--duration-slow) linear infinite; }
+.training-spinner { width: 28px; height: 28px; border: 3px solid var(--border-default); border-top-color: var(--accent-primary); border-radius: 50%; animation: trainingSpin 260ms linear infinite; }
 @keyframes trainingSpin { to { transform: rotate(1turn); } }
 
 .training-exercise-surface { display: grid; gap: var(--space-5); }
@@ -1541,17 +1542,17 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 .training-full-hand-stacks span { display: inline-flex; gap: var(--space-2); align-items: center; padding: var(--space-2) var(--space-3); color: var(--text-secondary); background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); font-size: var(--text-micro-size); }
 .training-full-hand-stacks strong { color: var(--text-primary); font-family: var(--font-data); font-variant-numeric: tabular-nums; }
 .training-full-hand-table-wrapper { min-height: 0; margin: 0; overflow: visible; }
-.training-full-hand-table-wrapper #visual-table-container { --replay-motion-action: 320ms; --replay-motion-deal: 560ms; max-width: 800px; margin: 0 auto; padding: 0; }
+.training-full-hand-table-wrapper #visual-table-container { --replay-motion-action: calc(320ms * var(--motion-scale)); --replay-motion-deal: calc(560ms * var(--motion-scale)); max-width: 800px; margin: 0 auto; padding: 0; }
 .training-full-hand-table-wrapper .table-seat-surface,
-.training-full-hand-table-wrapper .table-actor-indicator { transition: stroke var(--motion-micro) var(--ease-standard), stroke-width var(--motion-micro) var(--ease-standard), opacity var(--motion-micro) var(--ease-standard); }
-.training-full-hand-action-status { width: fit-content; min-height: 34px; margin: calc(var(--space-3) * -1) auto 0; padding: var(--space-2) var(--space-4); color: var(--text-secondary); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); font-size: var(--text-label-size); transition: color var(--motion-micro) var(--ease-standard), border-color var(--motion-micro) var(--ease-standard), background-color var(--motion-micro) var(--ease-standard); }
+.training-full-hand-table-wrapper .table-actor-indicator { transition: stroke var(--motion-micro) var(--ease-out), stroke-width var(--motion-micro) var(--ease-out), opacity var(--motion-micro) var(--ease-out); }
+.training-full-hand-action-status { width: fit-content; min-height: 34px; margin: calc(var(--space-3) * -1) auto 0; padding: var(--space-2) var(--space-4); color: var(--text-secondary); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); font-size: var(--text-label-size); transition: color var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out), background-color var(--motion-micro) var(--ease-out); }
 .training-full-hand-action-status[data-presentation-state="bot_thinking"],
 .training-full-hand-action-status[data-presentation-state="dealing_street"],
 .training-full-hand-action-status[data-presentation-state="resolving_showdown"] { color: var(--status-warning); border-color: color-mix(in srgb, var(--status-warning) 52%, var(--border-subtle)); }
 .training-full-hand-action-status[data-presentation-state="bot_action"],
 .training-full-hand-action-status[data-presentation-state$="_dealt"] { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-subtle)); }
-.training-full-hand-action-status[data-presentation-state="hero_turn"] { color: var(--text-primary); background: color-mix(in srgb, var(--accent-primary) 12%, var(--surface-inset)); border-color: var(--accent-primary); font-weight: var(--weight-title); animation: training-hero-status-pulse 720ms var(--ease-standard) 2; }
-.training-full-hand-table-wrapper #visual-table-container[data-training-hero-turn="true"] .table-seat.is-hero.is-actor .table-seat-surface { stroke: var(--accent-primary); stroke-width: 4; animation: training-hero-seat-pulse 720ms var(--ease-standard) 2; }
+.training-full-hand-action-status[data-presentation-state="hero_turn"] { color: var(--text-primary); background: color-mix(in srgb, var(--accent-primary) 12%, var(--surface-inset)); border-color: var(--accent-primary); font-weight: var(--weight-title); animation: training-hero-status-pulse calc(720ms * var(--motion-scale)) var(--ease-out) 2; }
+.training-full-hand-table-wrapper #visual-table-container[data-training-hero-turn="true"] .table-seat.is-hero.is-actor .table-seat-surface { stroke: var(--accent-primary); stroke-width: 4; animation: training-hero-seat-pulse calc(720ms * var(--motion-scale)) var(--ease-out) 2; }
 @keyframes training-hero-status-pulse { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-primary) 16%, transparent); } }
 @keyframes training-hero-seat-pulse { 50% { filter: brightness(1.35); } }
 .training-card-row { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); direction: ltr; }
@@ -1577,7 +1578,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 .training-decision-prompt > strong { color: var(--text-primary); font-size: 1.15rem; }
 .training-decision-prompt > small { color: var(--text-muted); }
 .training-decision-prompt:not(.is-hero-turn) > span { color: var(--status-warning); }
-.training-decision-prompt.is-hero-turn { padding-inline-start: var(--space-3); border-inline-start: 3px solid var(--accent-primary); animation: training-hero-prompt-enter 360ms var(--ease-standard) both; }
+.training-decision-prompt.is-hero-turn { padding-inline-start: var(--space-3); border-inline-start: 3px solid var(--accent-primary); animation: training-hero-prompt-enter calc(360ms * var(--motion-scale)) var(--ease-out) both; }
 @keyframes training-hero-prompt-enter { from { opacity: .58; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
 
 .training-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
@@ -1882,15 +1883,14 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 [dir="rtl"] .training-frequency-track { direction: ltr; }
 [dir="rtl"] .training-action-history li.is-hero { box-shadow: inset -3px 0 0 var(--accent-primary); }
 
-@media (prefers-reduced-motion: reduce) {
-  .training-spinner { animation: none; }
-  .training-feedback,
-  .training-solution-panel,
-  .training-readonly-card,
-  .training-full-hand-action-status,
-  .training-decision-prompt.is-hero-turn,
-  .training-full-hand-table-wrapper #visual-table-container[data-training-hero-turn="true"] .table-seat.is-hero.is-actor .table-seat-surface { transition: none; animation: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .training-spinner { animation: none; }
+:where(:root[data-motion-mode="reduced"]) .training-feedback,
+:where(:root[data-motion-mode="reduced"]) .training-solution-panel,
+:where(:root[data-motion-mode="reduced"]) .training-readonly-card,
+:where(:root[data-motion-mode="reduced"]) .training-full-hand-action-status,
+:where(:root[data-motion-mode="reduced"]) .training-decision-prompt.is-hero-turn,
+:where(:root[data-motion-mode="reduced"]) .training-full-hand-table-wrapper #visual-table-container[data-training-hero-turn="true"] .table-seat.is-hero.is-actor .table-seat-surface { transition: none; animation: none; }
 
 [data-theme="midnight"] {
   color-scheme: dark;
@@ -2548,7 +2548,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
   box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.1);
 
-  transition: all 0.2s ease;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: ease;
 
 }
 
@@ -3413,7 +3413,7 @@ body {
 
   pointer-events: auto;
 
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background calc(0.3s * var(--motion-scale)) ease, color calc(0.3s * var(--motion-scale)) ease;
 
 }
 
@@ -3570,7 +3570,7 @@ h1 { font-family: var(--font-display); font-size: var(--text-page-title-size); l
 
   font-size: var(--t-small);
 
-  transition: all 0.2s ease;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: ease;
 
   position: relative;
 
@@ -3602,7 +3602,7 @@ h1 { font-family: var(--font-display); font-size: var(--text-page-title-size); l
 
   color: var(--muted);
 
-  transition: .2s;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(.2s * var(--motion-scale)); transition-timing-function: ease;
 
   padding: var(--space-2);
 
@@ -3825,7 +3825,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   perspective: 800px;
 
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease, border-color calc(0.2s * var(--motion-scale)) ease, box-shadow calc(0.2s * var(--motion-scale)) ease;
 
 }
 
@@ -3865,7 +3865,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   opacity: 0.5;
 
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition: color calc(0.2s * var(--motion-scale)) ease, opacity calc(0.2s * var(--motion-scale)) ease;
 
 }
 
@@ -3965,7 +3965,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 
-  animation: cardFlip 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: cardFlip calc(0.42s * var(--motion-scale)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 
 }
 
@@ -4031,7 +4031,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .animate-deal, .card-slot.flip-in {
 
-  animation: cardFlip 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: cardFlip calc(0.42s * var(--motion-scale)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 
 }
 
@@ -4077,7 +4077,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 
-  animation: eptCardFlip 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: eptCardFlip calc(0.38s * var(--motion-scale)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 
 }
 
@@ -4085,7 +4085,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .animate-deal, .card-slot.flip-in {
 
-  animation: eptCardFlip 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: eptCardFlip calc(0.38s * var(--motion-scale)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 
 }
 
@@ -4110,12 +4110,12 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   transform: translateY(-4px) scale(1.05);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--primary);
   z-index: 10;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease, box-shadow calc(0.2s * var(--motion-scale)) ease;
 }
 
 .card-slot.filled:hover .suit {
   transform: scale(1.1);
-  transition: transform 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease;
 }
 
 /* Board-specific hover effects based on suit */
@@ -4329,7 +4329,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .bar { height: 9px; background: var(--surface-inset); overflow: hidden; border-radius: var(--radius-pill); box-shadow: inset 0 1px 3px rgba(0,0,0,0.22); }
 
-.fill { height: 100%; border-radius: inherit; background: var(--theme-act1); transition: width var(--motion-normal) var(--ease-standard); }
+.fill { height: 100%; border-radius: inherit; background: var(--theme-act1); transition: width var(--motion-panel) var(--ease-out); }
 
 .fill.orange { background: var(--theme-act2); }
 
@@ -4355,7 +4355,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .matrix-wrap { overflow-x: auto; }
 
-.hand-cell { min-width: 27px; min-height: 27px; padding: var(--space-1); border: 1px solid transparent; border-radius: var(--radius-cell); color: var(--text-primary); font-size: 9px; font-weight: var(--weight-heading); text-align: start; transition: transform var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.hand-cell { min-width: 27px; min-height: 27px; padding: var(--space-1); border: 1px solid transparent; border-radius: var(--radius-cell); color: var(--text-primary); font-size: 9px; font-weight: var(--weight-heading); text-align: start; transition: transform var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out); }
 
 .hand-cell:hover, .hand-cell.selected { transform: translateY(-1px); border-color: var(--border-focus); box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18); }
 
@@ -4673,7 +4673,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .eqbar { height: 9px; border-radius: var(--radius-pill); background: var(--surface-inset); overflow: hidden }
 
-.eqfill { height: 100%; background: var(--equity-primary); border-radius: var(--radius-pill); transition: width var(--motion-slow) var(--ease-standard) }
+.eqfill { height: 100%; background: var(--equity-primary); border-radius: var(--radius-pill); transition: width var(--motion-table) var(--ease-out) }
 
 .eqfill.hero { background: var(--equity-primary) }
 
@@ -4721,7 +4721,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 
 
-.toast { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--surface-elevated); color: var(--text-primary); border: 1px solid var(--border-default); padding: 10px 14px; border-radius: var(--radius-control); font-size: var(--t-small); font-weight: var(--weight-heading); transition: var(--motion-normal); z-index: 20 }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--surface-elevated); color: var(--text-primary); border: 1px solid var(--border-default); padding: 10px 14px; border-radius: var(--radius-control); font-size: var(--t-small); font-weight: var(--weight-heading); transition: var(--motion-panel); z-index: 20 }
 
 .toast.show { opacity: 1; transform: translate(-50%, 0) }
 
@@ -4761,7 +4761,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   font-size: var(--t-small);
 
-  transition: .3s;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(.3s * var(--motion-scale)); transition-timing-function: ease;
 
   white-space: nowrap;
 
@@ -4781,7 +4781,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   box-shadow: 0 0 8px var(--primary);
 
-  transition: transform .2s ease-out;
+  transition: transform calc(.2s * var(--motion-scale)) ease-out;
 
 }
 
@@ -4809,7 +4809,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .wobble {
 
-  animation: ripple 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: ripple calc(0.7s * var(--motion-scale)) cubic-bezier(0.2, 0.8, 0.2, 1);
 
 }
 
@@ -4853,7 +4853,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   .tab {
   box-shadow: inset 0 -2px 0 rgba(255,255,255,0.05);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); flex: 1 }
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); flex: 1 }
 
   .panel-head { padding: 14px }
 
@@ -4899,7 +4899,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
   text-align: center;
 
-  transition: opacity 0.2s, filter 0.2s;
+  transition: opacity calc(0.2s * var(--motion-scale)), filter calc(0.2s * var(--motion-scale));
 
 }
 
@@ -5116,7 +5116,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .btn {
 
-  transition: all 0.2s ease;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: ease;
 
 }
 
@@ -5130,7 +5130,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .card-slot {
 
-  transition: all 0.2s ease;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: ease;
 
 }
 
@@ -5144,7 +5144,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .hand-cell {
 
-  transition: transform 0.1s;
+  transition: transform calc(0.1s * var(--motion-scale));
 
 }
 
@@ -5164,15 +5164,15 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Smooth Animations */
 
-.card-slot { transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast); }
+.card-slot { transition: transform var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out); }
 
 .card-slot:hover { transform: translateY(-2px); }
 
-.card-slot.filled { transition: transform var(--transition-normal), box-shadow var(--transition-normal); }
+.card-slot.filled { transition: transform var(--motion-panel) var(--ease-out), box-shadow var(--motion-panel) var(--ease-out); }
 
 
 
-.cta, .small-link, .tab, .sub-tab { transition: all var(--transition-fast); }
+.cta, .small-link, .tab, .sub-tab { transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: var(--motion-micro); transition-timing-function: var(--ease-out); }
 
 .cta:hover { transform: translateY(-1px); }
 
@@ -5181,9 +5181,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 
 
-.action-wheel { transition: transform var(--transition-slow); }
+.action-wheel { transition: transform var(--motion-table) var(--ease-out); }
 
-.action-wheel.wobble { animation: wobble 0.4s ease; }
+.action-wheel.wobble { animation: wobble calc(0.4s * var(--motion-scale)) ease; }
 
 
 
@@ -5199,42 +5199,42 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 
 
-.frequency-bar { transition: width var(--transition-normal); }
+.frequency-bar { transition: width var(--motion-panel) var(--ease-out); }
 
 
 
-.deck-card { transition: all var(--transition-fast); }
+.deck-card { transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: var(--motion-micro); transition-timing-function: var(--ease-out); }
 
 
 
-.modal-backdrop { transition: opacity var(--transition-normal); }
+.modal-backdrop { transition: opacity var(--motion-panel) var(--ease-out); }
 
-.modal { transition: transform var(--transition-normal), opacity var(--transition-normal); }
-
-
-
-.toast { transition: all var(--transition-normal); }
+.modal { transition: transform var(--motion-panel) var(--ease-out), opacity var(--motion-panel) var(--ease-out); }
 
 
 
-.live-indicator { transition: all var(--transition-normal); }
+.toast { transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: var(--motion-panel); transition-timing-function: var(--ease-out); }
 
 
+
+.live-indicator { transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: var(--motion-panel); transition-timing-function: var(--ease-out); }
 
 
 
 
-.range-cell { transition: background-color var(--transition-fast), transform var(--transition-fast); }
+
+
+.range-cell { transition: background-color var(--motion-micro) var(--ease-out), transform var(--motion-micro) var(--ease-out); }
 
 .range-cell:hover { transform: scale(1.05); }
 
 
 
-.eqfill { transition: width var(--transition-slow); }
+.eqfill { transition: width var(--motion-table) var(--ease-out); }
 
 
 
-.quick-select { transition: border-color var(--transition-fast), box-shadow var(--transition-fast); }
+.quick-select { transition: border-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out); }
 
 /* ---------------------------------------------------------------------------
    Training Mode Micro-Animations & Contrast Fixes
@@ -5257,15 +5257,15 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 .animate-deal {
-  animation: cardDeal 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: cardDeal calc(0.35s * var(--motion-scale)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .animate-solution {
-  animation: solutionReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: solutionReveal calc(0.4s * var(--motion-scale)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-feedback {
-  animation: feedbackSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: feedbackSlide calc(0.3s * var(--motion-scale)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* High Contrast Theme-Adaptive Badges & Selects */
@@ -5278,7 +5278,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   font-weight: var(--weight-heading);
   font-size: var(--t-body);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: var(--motion-micro); transition-timing-function: var(--ease-out);
 }
 
 .training-select:hover {
@@ -5312,7 +5312,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   align-items: center;
   gap: var(--space-4);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease, filter calc(0.2s * var(--motion-scale)) ease;
 }
 
 .training-next-btn:hover {
@@ -5327,12 +5327,12 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 /* Mode views and sub-tabs smooth fade/slide in */
 .mode-view.active {
   display: block;
-  animation: fadeInView 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInView calc(0.28s * var(--motion-scale)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .gto-view.active {
   display: block;
-  animation: fadeInView 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInView calc(0.24s * var(--motion-scale)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeInView {
@@ -5348,7 +5348,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Card Slot Micro-interactions & Insertion Pop */
 .card-slot {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-slot:hover {
@@ -5358,7 +5358,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 .card-slot.filled {
-  animation: cardPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: cardPop calc(0.25s * var(--motion-scale)) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes cardPop {
@@ -5368,7 +5368,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Tab Hover & Selection Polish */
 .tab, .sub-tab, .street-tab {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter !important; transition-duration: calc(0.2s * var(--motion-scale)) !important; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .tab:hover, .sub-tab:hover, .street-tab:hover {
@@ -5382,7 +5382,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Button Elevation & Click Feedback */
 .cta, .btn-action, .secondary, .solver-import-btn {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter !important; transition-duration: calc(0.2s * var(--motion-scale)) !important; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .cta:hover, .btn-action:hover {
@@ -5396,7 +5396,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Modal Smooth Entrance */
 .modal-backdrop.show .modal {
-  animation: modalEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalEnter calc(0.28s * var(--motion-scale)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes modalEnter {
@@ -5412,7 +5412,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Matrix 13x13 Cells Zoom & Glow on Hover */
 .matrix-cell {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+  transition: transform calc(0.15s * var(--motion-scale)) ease, box-shadow calc(0.15s * var(--motion-scale)) ease, filter calc(0.15s * var(--motion-scale)) ease !important;
 }
 
 .matrix-cell:hover {
@@ -5434,19 +5434,19 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 /* Progress Fills & Wheel Smooth Transitions */
 .frequency .fill, .eqfill {
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: width calc(0.4s * var(--motion-scale)) cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 #heroAdvBar, #villainAdvBar {
   width: 100%;
   transform-origin: left;
   transform: scaleX(0.5);
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: transform calc(0.4s * var(--motion-scale)) cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Toast Smooth Slide-In */
 .toast.show {
-  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: toastIn calc(0.3s * var(--motion-scale)) cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes toastIn {
@@ -5480,7 +5480,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   padding: 12px 14px;
   width: 220px;
   pointer-events: auto;
-  animation: popoverFadeIn 0.15s ease-out;
+  animation: popoverFadeIn calc(0.15s * var(--motion-scale)) ease-out;
   color: var(--text);
   font-family: inherit;
 }
@@ -5519,7 +5519,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   background: var(--panel);
   border: 1px solid var(--line);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, translate, filter; transition-duration: calc(0.2s * var(--motion-scale)); transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 13px;
   color: var(--text);
   white-space: nowrap;
@@ -5547,7 +5547,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   color: var(--accent);
   background: transparent;
   border-radius: var(--radius-cell);
-  transition: transform 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease;
   user-select: none;
 }
 
@@ -5604,7 +5604,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 .tree-bar-seg {
   height: 100%;
-  transition: width 0.3s ease;
+  transition: width calc(0.3s * var(--motion-scale)) ease;
 }
 
 .tree-seg-fold { background: var(--red); }
@@ -5641,7 +5641,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   cursor: pointer;
   outline: none;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: background calc(0.3s * var(--motion-scale)) ease, border-color calc(0.3s * var(--motion-scale)) ease;
 }
 
 .training-select:hover {
@@ -5740,7 +5740,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 [id^="outsPanel-"] {
-  animation: fadeIn 0.25s ease;
+  animation: fadeIn calc(0.25s * var(--motion-scale)) ease;
 }
 
 @keyframes outsReveal {
@@ -5749,7 +5749,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 [id^="outsPanel-"] {
-  animation: outsReveal 0.25s ease;
+  animation: outsReveal calc(0.25s * var(--motion-scale)) ease;
 }
 
 
@@ -5775,11 +5775,11 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 .mode-view {
-  animation: fadeSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fadeSlideUp calc(0.3s * var(--motion-scale)) cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .card {
-  animation: cardFlipIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: cardFlipIn calc(0.35s * var(--motion-scale)) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .coach-clipboard {
@@ -5791,7 +5791,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 .coach-clipboard ul li {
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease, background calc(0.2s * var(--motion-scale)) ease;
   padding: var(--space-3);
   border-radius: 6px;
 }
@@ -5866,7 +5866,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 [id^="outsPanel-"] {
-  animation: fadeIn 0.25s ease;
+  animation: fadeIn calc(0.25s * var(--motion-scale)) ease;
 }
 
 @keyframes outsReveal {
@@ -5875,7 +5875,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 [id^="outsPanel-"] {
-  animation: outsReveal 0.25s ease;
+  animation: outsReveal calc(0.25s * var(--motion-scale)) ease;
 }
 
 /* Numeric outputs align consistently across strategy, equity, and training surfaces. */
@@ -5901,18 +5901,7 @@ input[type="number"] {
 *::-webkit-scrollbar-track { background: var(--surface-inset); }
 *::-webkit-scrollbar-thumb { background: var(--border-strong); border: 2px solid var(--surface-inset); border-radius: var(--radius-pill); }
 
-@media (prefers-reduced-motion: reduce) {
-  html:focus-within { scroll-behavior: auto; }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+/* The global Reduced rule lives in the MOTION-FOUNDATION-001 section. */
 
 
 /* RTL Fixes for text scale mirroring */
@@ -5937,11 +5926,11 @@ input[type="number"] {
 }
 
 .mode-view {
-  animation: fadeSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fadeSlideUp calc(0.3s * var(--motion-scale)) cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .card {
-  animation: cardFlipIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: cardFlipIn calc(0.35s * var(--motion-scale)) cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .coach-clipboard {
@@ -5953,7 +5942,7 @@ input[type="number"] {
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 .coach-clipboard ul li {
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform calc(0.2s * var(--motion-scale)) ease, background calc(0.2s * var(--motion-scale)) ease;
   padding: var(--space-3);
   border-radius: 6px;
 }
@@ -5976,7 +5965,7 @@ html[data-four-color="false"] .card.black {
 .table-wrapper {
   overflow: hidden;
   max-height: 800px;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
+  transition: max-height calc(0.3s * var(--motion-scale)) ease, opacity calc(0.3s * var(--motion-scale)) ease;
   opacity: 1;
 }
 .table-wrapper.collapsed {
@@ -6110,7 +6099,7 @@ html[data-four-color="false"] .suit-c { color: var(--suit-spade); }
   font-weight: var(--weight-control);
   text-align: start;
   cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+  transition: color var(--motion-micro) var(--ease-out), background var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out);
 }
 
 .mode-nav-group--support .mode-nav-item {
@@ -6458,11 +6447,11 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: color var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard),
-    translate var(--duration-fast) var(--ease-standard);
+  transition: color var(--motion-micro) var(--ease-out),
+    background-color var(--motion-micro) var(--ease-out),
+    border-color var(--motion-micro) var(--ease-out),
+    box-shadow var(--motion-micro) var(--ease-out),
+    translate var(--motion-micro) var(--ease-out);
 }
 
 /* Secondary is the default look. Poker action buttons own their action color. */
@@ -6697,7 +6686,7 @@ button:disabled,
   font-weight: var(--weight-body);
   line-height: 1.2;
   outline: 0;
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition: border-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out);
 }
 .control-input,
 .control-select { font-size: var(--t-body); }
@@ -6896,7 +6885,7 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
   border: 1.5px solid var(--text-muted);
   border-radius: var(--radius-cell);
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out);
 }
 :where(input[type="radio"]) { border-radius: 50%; }
 :where(input[type="checkbox"])::before {
@@ -6907,7 +6896,7 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
   -webkit-mask: var(--check-glyph) center / 12px 12px no-repeat;
   mask: var(--check-glyph) center / 12px 12px no-repeat;
   transform: scale(0);
-  transition: transform var(--duration-fast) var(--ease-standard);
+  transition: transform var(--motion-micro) var(--ease-out);
 }
 :where(input[type="checkbox"], input[type="radio"]):hover:not(:disabled) { border-color: var(--accent-primary); }
 :where(input[type="checkbox"]):is(:checked, :indeterminate) {
@@ -6974,7 +6963,7 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
   border-radius: 50%;
   box-shadow: 0 1px 2px rgb(0 0 0 / .28);
   transform: translateX(0);
-  transition: transform var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  transition: transform var(--motion-micro) var(--ease-out), color var(--motion-micro) var(--ease-out);
 }
 .ui-switch:is(.on, [aria-pressed="true"], [aria-checked="true"]),
 .switch:is(.on, [aria-pressed="true"], [aria-checked="true"]) {
@@ -7327,7 +7316,7 @@ button.ui-chip:hover:not(:disabled) { color: var(--text-primary); background: va
   border-radius: var(--radius-panel);
   box-shadow: var(--elevation-surface);
   backdrop-filter: none;
-  transition: background var(--duration-normal) var(--ease-standard), border-color var(--duration-normal) var(--ease-standard), color var(--duration-normal) var(--ease-standard);
+  transition: background var(--motion-panel) var(--ease-out), border-color var(--motion-panel) var(--ease-out), color var(--motion-panel) var(--ease-out);
 }
 .panel-head { gap: var(--study-gap); border-block-end: 1px solid var(--border-subtle); }
 .panel-head :is(h2, h3) {
@@ -7356,15 +7345,13 @@ button.ui-chip:hover:not(:disabled) { color: var(--text-primary); background: va
   box-shadow: var(--elevation-overlay);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .ui-button:hover:not(:disabled) { translate: 0 -1px; }
-  .ui-button:active:not(:disabled) { translate: 0 2px; }
-  :is(.ui-disclosure, .study-disclosure)[open] > :not(summary) { animation: riverline-unfold 180ms ease-out; }
-  @keyframes riverline-unfold { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ui-button:is(:hover, :active) { translate: none; }
-}
+/* Motion: not Reduced (was @media prefers-reduced-motion: no-preference). */
+:where(:root:not([data-motion-mode="reduced"])) .ui-button:hover:not(:disabled) { translate: 0 -1px; }
+:where(:root:not([data-motion-mode="reduced"])) .ui-button:active:not(:disabled) { translate: 0 2px; }
+:where(:root:not([data-motion-mode="reduced"])) :is(.ui-disclosure, .study-disclosure)[open] > :not(summary) { animation: riverline-unfold calc(180ms * var(--motion-scale)) ease-out; }
+@keyframes riverline-unfold { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .ui-button:is(:hover, :active) { translate: none; }
 
 /* Modal and settings ----------------------------------------------------- */
 
@@ -7447,7 +7434,7 @@ button.ui-chip:hover:not(:disabled) { color: var(--text-primary); background: va
   font-weight: var(--weight-title);
 }
 .theme-edit-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
-.theme-color-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); transition: opacity var(--motion-micro) var(--ease-standard); }
+.theme-color-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); transition: opacity var(--motion-micro) var(--ease-out); }
 html[data-theme-editing="false"] .theme-color-controls { opacity: .62; }
 .theme-color-field {
   min-width: 0;
@@ -7610,7 +7597,7 @@ html[data-theme-editing="false"] .theme-color-controls { opacity: .62; }
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, 3px);
-  transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+  transition: opacity var(--motion-micro) var(--ease-out), transform var(--motion-micro) var(--ease-out);
 }
 
 [data-tooltip]:hover::after,
@@ -7796,13 +7783,13 @@ html[data-four-color="false"] {
   border-radius: var(--riverline-card-radius, var(--radius-card)) !important;
   box-shadow: var(--riverline-card-shadow, var(--poker-card-shadow)) !important;
   transform: none !important;
-  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard) !important;
+  transition: border-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out) !important;
 }
 
 .card-slot:hover { transform: none !important; border-color: var(--border-focus) !important; }
 .card-slot:focus-visible,
 .deck-card:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
-.card-slot.filled { animation: poker-card-enter var(--duration-normal) var(--ease-standard) both; }
+.card-slot.filled { animation: poker-card-enter var(--motion-panel) var(--ease-out) both; }
 .card-slot .rank { font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 17px; }
 .card-slot .suit { font-size: 19px; line-height: 20px; transform: none !important; }
 .card-slot .corner { inset-inline-end: 5px; inset-block-end: 4px; font-size: 14px; }
@@ -8121,7 +8108,7 @@ html[data-four-color="false"] {
   border-color: var(--border-subtle);
   box-shadow: none;
   transform: none;
-  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
+  transition: border-color var(--motion-micro) var(--ease-out), background-color var(--motion-micro) var(--ease-out);
 }
 .hand-cell:hover { border-color: var(--border-focus); box-shadow: none; transform: none; }
 .hand-cell.selected,
@@ -8277,7 +8264,7 @@ html[data-four-color="false"] {
 .table-seat.is-all-in .table-seat-meta { fill: var(--action-all-in); }
 .table-dealer-button circle { fill: var(--card-face); stroke: var(--card-border); }
 .table-dealer-button text { fill: var(--suit-spade); font: 800 10px/1 var(--font-ui); }
-.card-group { transition: transform var(--duration-normal) var(--ease-standard); }
+.card-group { transition: transform var(--motion-panel) var(--ease-out); }
 .table-card-face { fill: var(--riverline-card-face, var(--card-face)); stroke: var(--riverline-card-border, var(--card-border)); stroke-width: 1; filter: url(#riverlineCardShadow); }
 .table-card-rank { font: 700 15px/1 var(--riverline-card-rank-font); fill: currentColor; }
 .table-card-suit { font: 700 13px/1 var(--riverline-card-rank-font); fill: currentColor; }
@@ -8350,10 +8337,9 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   .equity-player-label { grid-column: 1 / -1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .card-slot.filled { animation: none; }
-  .card-group { transition-duration: 0.01ms; transition-delay: 0ms !important; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .card-slot.filled { animation: none; }
+:where(:root[data-motion-mode="reduced"]) .card-group { transition-duration: 0.01ms; transition-delay: 0ms !important; }
 
 /* PLAYBOOK-001: explicit state-source contract -------------------------- */
 
@@ -9102,8 +9088,8 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   box-shadow: none;
 }
 .replay-action-entry.is-replay-future::marker { opacity: .58; }
-.replay-timeline[data-replay-motion-cycle="a"] .is-replay-motion-current { animation: replay-timeline-current-a 440ms cubic-bezier(.25, .1, .25, 1) both; }
-.replay-timeline[data-replay-motion-cycle="b"] .is-replay-motion-current { animation: replay-timeline-current-b 440ms cubic-bezier(.25, .1, .25, 1) both; }
+.replay-timeline[data-replay-motion-cycle="a"] .is-replay-motion-current { animation: replay-timeline-current-a calc(440ms * var(--motion-scale)) cubic-bezier(.25, .1, .25, 1) both; }
+.replay-timeline[data-replay-motion-cycle="b"] .is-replay-motion-current { animation: replay-timeline-current-b calc(440ms * var(--motion-scale)) cubic-bezier(.25, .1, .25, 1) both; }
 @keyframes replay-timeline-current-a {
   from { opacity: .42; translate: 0 5px; }
   to { opacity: 1; translate: 0 0; }
@@ -9277,9 +9263,8 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   .saved-study-modal-actions .ui-button { width: 100%; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .playbook-primary-decision[data-recommendation-state="loading"]::before { animation: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .playbook-primary-decision[data-recommendation-state="loading"]::before { animation: none; }
 
 /* DESIGN-007: focused Equity workspace ---------------------------------- */
 
@@ -9514,7 +9499,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .progress-heading .progress-percent { margin-inline-start: auto; color: var(--text-primary); font: var(--weight-title) var(--text-label-size)/1 var(--font-data); font-variant-numeric: tabular-nums; }
 .progress-spinner { width: 16px; height: 16px; flex: 0 0 16px; border: 2px solid var(--border-default); border-top-color: var(--accent-primary); border-radius: 50%; animation: equity-progress-spin .85s linear infinite; }
 .progress-track { height: 8px; overflow: hidden; background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); }
-.progress-fill { width: 0; height: 100%; background: var(--accent-primary); transition: width var(--duration-fast) linear; }
+.progress-fill { width: 0; height: 100%; background: var(--accent-primary); transition: width var(--motion-micro) linear; }
 .progress-copy { min-height: 1.3em; justify-content: space-between; margin-top: var(--space-2); color: var(--text-muted); font: var(--weight-label) var(--text-micro-size)/1.3 var(--font-data); }
 .progress-wrap[data-progress-mode="indeterminate"] .progress-track { visibility: hidden; }
 .progress-wrap[data-progress-mode="determinate"] .progress-spinner { display: none; }
@@ -9584,10 +9569,9 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   .equity-result-summary > div + div { border-inline-start: 0; border-top: 1px solid var(--border-subtle); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .progress-spinner { animation: none; }
-  .progress-fill { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .progress-spinner { animation: none; }
+:where(:root[data-motion-mode="reduced"]) .progress-fill { transition: none; }
 
 /* EQUITY-UX-001R: retain comfortable result metrics while fitting the full
    result card and footer in a 1080p desktop renderer. */
@@ -9646,7 +9630,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   --sidebar-expanded-width: 208px;
   --sidebar-collapsed-width: 64px;
   grid-template-columns: var(--sidebar-expanded-width) minmax(0, 1fr);
-  transition: grid-template-columns var(--duration-normal) var(--ease-standard);
+  transition: grid-template-columns var(--motion-panel) var(--ease-out);
 }
 
 .riverline-shell.is-sidebar-collapsed {
@@ -9677,7 +9661,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 .rail-collapse-button:hover { color: var(--text-primary); border-color: var(--border-default); }
-.rail-collapse-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--duration-normal) var(--ease-standard); }
+.rail-collapse-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--motion-panel) var(--ease-out); }
 .is-sidebar-collapsed .rail-collapse-icon { transform: rotate(180deg); }
 
 /* SHELL-001: Language, Audio and Settings form one compact row of icon
@@ -9957,7 +9941,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .analysis-explain-toggle > span { min-width: 0; display: grid; gap: 1px; }
 .analysis-explain-toggle strong { color: var(--text-primary); font-size: var(--text-label-size); }
 .analysis-explain-toggle small { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: var(--weight-control); }
-.analysis-explain-toggle svg { flex: 0 0 auto; transition: transform var(--duration-fast) var(--ease-standard); }
+.analysis-explain-toggle svg { flex: 0 0 auto; transition: transform var(--motion-micro) var(--ease-out); }
 .analysis-explain-toggle[aria-expanded="true"] svg { transform: rotate(45deg); }
 
 .table-wrapper { min-height: 0; max-height: 800px; margin: 0; overflow: visible; }
@@ -10249,8 +10233,8 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .table-chip-flight {
   pointer-events: none;
   opacity: 0;
-  animation: riverline-experience-chip-flight var(--motion-poker-settle) var(--motion-poker-ease) both;
-  animation-delay: calc(var(--chip-flight-order, 0) * 16ms);
+  animation: riverline-experience-chip-flight var(--motion-table) var(--ease-out) both;
+  animation-delay: calc(var(--chip-flight-order, 0) * 16ms * var(--motion-scale));
 }
 .table-chip-flight--award {
   animation-name: riverline-experience-pot-award;
@@ -10270,43 +10254,42 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 .table-hole-cards.is-experience-fold-motion {
-  animation: riverline-experience-fold-retreat var(--motion-fast-semantic) var(--motion-poker-ease) both;
+  animation: riverline-experience-fold-retreat var(--motion-micro) var(--ease-out) both;
 }
 @keyframes riverline-experience-fold-retreat {
   from { opacity: 1; translate: 0 0; }
   to { opacity: .22; translate: var(--fold-retreat-x, 0) var(--fold-retreat-y, 7px); }
 }
 .table-community-cards.is-experience-street-advance {
-  animation: riverline-experience-board-settle var(--motion-poker-settle) var(--motion-poker-ease) both;
+  animation: riverline-experience-board-settle var(--motion-table) var(--ease-out) both;
 }
 @keyframes riverline-experience-board-settle {
   from { opacity: .68; translate: 0 -5px; }
   to { opacity: 1; translate: 0 0; }
 }
 #visual-table-container.is-experience-hand-complete .riverline-poker-table {
-  animation: riverline-experience-hand-complete var(--motion-normal-semantic) var(--motion-poker-ease) both;
+  animation: riverline-experience-hand-complete var(--motion-panel) var(--ease-out) both;
 }
 @keyframes riverline-experience-hand-complete {
   from { filter: contrast(1.04); }
   to { filter: contrast(1); }
 }
 #visual-table-container.is-experience-review-selection .riverline-poker-table {
-  animation: riverline-experience-review-selection var(--motion-fast-semantic) var(--ease-standard) both;
+  animation: riverline-experience-review-selection var(--motion-micro) var(--ease-out) both;
 }
 @keyframes riverline-experience-review-selection {
   from { opacity: .92; }
   to { opacity: 1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .table-chip-flight { display: none !important; }
-  .table-hole-cards.is-experience-fold-motion,
-  .table-community-cards.is-experience-street-advance,
-  #visual-table-container.is-experience-hand-complete .riverline-poker-table,
-  #visual-table-container.is-experience-review-selection .riverline-poker-table {
-    animation: none !important;
-    translate: none !important;
-  }
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .table-chip-flight { display: none !important; }
+:where(:root[data-motion-mode="reduced"]) .table-hole-cards.is-experience-fold-motion,
+:where(:root[data-motion-mode="reduced"]) .table-community-cards.is-experience-street-advance,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container.is-experience-hand-complete .riverline-poker-table,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container.is-experience-review-selection .riverline-poker-table {
+  animation: none !important;
+  translate: none !important;
 }
 
 /* FULL-HAND-REVIEW-001: one post-hand decision review for Hand and Training. */
@@ -10510,11 +10493,10 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   .hand-review-actions .ui-button { flex: 1 1 100%; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hand-review-surface *,
-  .hand-review-surface *::before,
-  .hand-review-surface *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .hand-review-surface *,
+:where(:root[data-motion-mode="reduced"]) .hand-review-surface *::before,
+:where(:root[data-motion-mode="reduced"]) .hand-review-surface *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
 
 /* Settings, Guide, and card presentation -------------------------------- */
 
@@ -10799,11 +10781,10 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   unicode-bidi: isolate;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .riverline-shell,
-  .rail-collapse-icon,
-  .table-wrapper { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .riverline-shell,
+:where(:root[data-motion-mode="reduced"]) .rail-collapse-icon,
+:where(:root[data-motion-mode="reduced"]) .table-wrapper { transition: none; }
 
 /* RANGE-CAL-001A: isolated Range Calibration workspace ------------------ */
 
@@ -11129,7 +11110,7 @@ body.has-modal-open { overflow: hidden; }
   box-shadow: var(--shadow-xs);
   font: var(--weight-title) clamp(1rem, 1.8vw, 1.18rem)/1.2 var(--font-ui);
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), translate var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out), translate var(--motion-micro) var(--ease-out);
 }
 
 .calibration-action-button--fold { border-block-end: 3px solid color-mix(in srgb, var(--action-fold) 72%, var(--border-default)); }
@@ -11325,7 +11306,7 @@ body.has-modal-open { overflow: hidden; }
   padding: var(--space-2);
   direction: ltr;
 }
-.calibration-matrix-cell { position: relative; width: var(--personal-matrix-cell); height: var(--personal-matrix-cell); min-width: 0; display: grid; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto; align-items: center; gap: 0 2px; padding: 3px 3px 5px; overflow: hidden; color: var(--text-primary); background: var(--surface-interactive); border: 1px solid var(--border-default); border-radius: 3px; box-shadow: none; cursor: pointer; transition: opacity var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
+.calibration-matrix-cell { position: relative; width: var(--personal-matrix-cell); height: var(--personal-matrix-cell); min-width: 0; display: grid; grid-template-columns: 1fr auto; grid-template-rows: 1fr auto; align-items: center; gap: 0 2px; padding: 3px 3px 5px; overflow: hidden; color: var(--text-primary); background: var(--surface-interactive); border: 1px solid var(--border-default); border-radius: 3px; box-shadow: none; cursor: pointer; transition: opacity var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out), background-color var(--motion-micro) var(--ease-out); }
 .calibration-matrix-cell:hover { background: var(--surface-interactive-hover); border-color: var(--border-focus); transform: none; }
 .calibration-matrix-cell:focus-visible { z-index: 2; outline: 2px solid var(--border-focus); outline-offset: 1px; }
 .calibration-matrix-cell[aria-selected="true"] { z-index: 1; border-color: var(--accent-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 32%, transparent); }
@@ -11488,10 +11469,9 @@ body.has-modal-open { overflow: hidden; }
   .calibration-question-footer { padding-top: var(--space-3); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .calibration-spinner { animation: none; }
-  .calibration-action-button { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .calibration-spinner { animation: none; }
+:where(:root[data-motion-mode="reduced"]) .calibration-action-button { transition: none; }
 
 /* UI-QA-002B: dense range analysis and restrained poker microinteraction. */
 
@@ -11583,7 +11563,7 @@ body.has-modal-open { overflow: hidden; }
   border-radius: 3px;
   box-shadow: none;
   transform: none;
-  transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+  transition: border-color var(--motion-micro) var(--ease-out), background-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out);
 }
 .range-matrix-panel .hand-cell.hand-pair { background: color-mix(in srgb, var(--text-primary) 7%, var(--surface-interactive)); }
 .range-matrix-panel .hand-cell.hand-suited { background: color-mix(in srgb, var(--accent-primary) 5%, var(--surface-interactive)); }
@@ -11721,16 +11701,16 @@ body.has-modal-open { overflow: hidden; }
 .card-slot.is-card-dealt,
 .training-readonly-card.is-card-dealt,
 .card-group.is-card-dealt {
-  animation: riverline-card-deal var(--duration-normal) var(--ease-standard) both;
-  animation-delay: calc(var(--card-deal-order, 0) * 22ms);
+  animation: riverline-card-deal var(--motion-panel) var(--ease-out) both;
+  animation-delay: calc(var(--card-deal-order, 0) * 22ms * var(--motion-scale));
 }
 @keyframes riverline-card-deal {
   from { opacity: 0; translate: var(--card-deal-from-x, 0) var(--card-deal-from-y, -8px); }
   to { opacity: 1; translate: 0 0; }
 }
 #trainingGuessButtons .animate-deal { animation: none; }
-.animate-solution { animation: riverline-result-enter var(--duration-normal) var(--ease-standard) both; }
-.animate-feedback { animation: riverline-feedback-enter var(--duration-normal) var(--ease-standard) both; }
+.animate-solution { animation: riverline-result-enter var(--motion-panel) var(--ease-out) both; }
+.animate-feedback { animation: riverline-feedback-enter var(--motion-panel) var(--ease-out) both; }
 @keyframes riverline-result-enter {
   from { opacity: 0; translate: 0 6px; }
   to { opacity: 1; translate: 0 0; }
@@ -11762,14 +11742,13 @@ body.has-modal-open { overflow: hidden; }
   .matrix-inspector-meta { padding: 0 0 var(--space-3); border-inline-start: 0; border-bottom: 1px solid var(--border-subtle); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .card-slot.is-card-dealt,
-  .training-readonly-card.is-card-dealt,
-  .card-group.is-card-dealt,
-  .animate-solution,
-  .animate-feedback { animation: none; }
-  .range-matrix-panel .hand-cell { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .card-slot.is-card-dealt,
+:where(:root[data-motion-mode="reduced"]) .training-readonly-card.is-card-dealt,
+:where(:root[data-motion-mode="reduced"]) .card-group.is-card-dealt,
+:where(:root[data-motion-mode="reduced"]) .animate-solution,
+:where(:root[data-motion-mode="reduced"]) .animate-feedback { animation: none; }
+:where(:root[data-motion-mode="reduced"]) .range-matrix-panel .hand-cell { transition: none; }
 
 /* PRODUCT-UI-002: density, geometry, and component fit ------------------ */
 
@@ -12157,10 +12136,10 @@ body.has-modal-open { overflow: hidden; }
 
 /* REPLAY-001C: bounded semantic motion over authoritative Table Presence facts. */
 #visual-table-container {
-  --replay-motion-action: var(--motion-normal-semantic);
-  --replay-motion-deal: var(--motion-poker-settle);
-  --replay-motion-showdown: var(--motion-poker-settle);
-  --replay-motion-ease: var(--motion-poker-ease);
+  --replay-motion-action: var(--motion-panel);
+  --replay-motion-deal: var(--motion-table);
+  --replay-motion-showdown: var(--motion-table);
+  --replay-motion-ease: var(--ease-out);
 }
 #visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-action-motion .table-seat-surface { animation: replay-seat-action-a var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-action-motion .table-seat-surface { animation: replay-seat-action-b var(--replay-motion-action) var(--replay-motion-ease) both; }
@@ -12181,7 +12160,7 @@ body.has-modal-open { overflow: hidden; }
 #visual-table-container[data-replay-motion-cycle] .card-group.is-replay-card-motion,
 #visual-table-container[data-replay-motion-cycle] .table-hole-cards.is-replay-card-motion {
   animation: replay-card-deal var(--replay-motion-deal) var(--replay-motion-ease) both;
-  animation-delay: calc(var(--card-deal-order, 0) * 70ms);
+  animation-delay: calc(var(--card-deal-order, 0) * 70ms * var(--motion-scale));
 }
 #visual-table-container[data-replay-motion-cycle="a"] .riverline-poker-table.is-replay-showdown-motion { animation: replay-showdown-settle-a var(--replay-motion-showdown) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="b"] .riverline-poker-table.is-replay-showdown-motion { animation: replay-showdown-settle-b var(--replay-motion-showdown) var(--replay-motion-ease) both; }
@@ -12666,7 +12645,7 @@ body.has-modal-open { overflow: hidden; }
 .paired-range-row > span { color: var(--text-muted); font-size: var(--text-micro-size); }
 .paired-range-row > b { color: var(--text-secondary); text-align: end; font: var(--weight-heading) var(--text-micro-size)/1 var(--font-data); white-space: nowrap; }
 .paired-range-track { min-width: 0; height: 9px; overflow: hidden; background: color-mix(in srgb, var(--text-muted) 10%, var(--surface-interactive)); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); }
-.paired-range-track > i { display: block; width: 0; height: 100%; background: var(--range-category-color, var(--accent-primary)); border-radius: inherit; transition: width var(--duration-normal) var(--ease-standard); }
+.paired-range-track > i { display: block; width: 0; height: 100%; background: var(--range-category-color, var(--accent-primary)); border-radius: inherit; transition: width var(--motion-panel) var(--ease-out); }
 .paired-range-category[data-category="veryStrong"] { --range-category-color: var(--range-category-very-strong); }
 .paired-range-category[data-category="strongMade"] { --range-category-color: var(--range-category-strong-made); }
 .paired-range-category[data-category="marginal"] { --range-category-color: var(--range-category-marginal-draw); }
@@ -12790,9 +12769,9 @@ body.has-modal-open { overflow: hidden; }
 
 /* Feedback remains immediate and textual; motion only softens its arrival. */
 .training-feedback {
-  transition: border-color var(--motion-micro) var(--ease-standard),
-    background-color var(--motion-micro) var(--ease-standard),
-    box-shadow var(--motion-standard) var(--ease-standard);
+  transition: border-color var(--motion-micro) var(--ease-out),
+    background-color var(--motion-micro) var(--ease-out),
+    box-shadow var(--motion-panel) var(--ease-out);
 }
 .training-feedback[data-truth-state="normative_assessment"][data-grade="success"] {
   background: color-mix(in srgb, var(--status-success) 5%, var(--surface-section));
@@ -12809,14 +12788,14 @@ body.has-modal-open { overflow: hidden; }
   border-inline-start-color: var(--status-danger);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-danger) 7%, transparent);
 }
-.animate-feedback { animation: riverline-answer-enter var(--motion-emphasis) var(--ease-standard) both; }
+.animate-feedback { animation: riverline-answer-enter var(--motion-table) var(--ease-out) both; }
 @keyframes riverline-answer-enter {
   from { opacity: 0; translate: 0 -5px; }
   to { opacity: 1; translate: 0 0; }
 }
 
 .training-study-hint-content .analysis-study-hint {
-  animation: riverline-hint-enter var(--motion-standard) var(--ease-standard) both;
+  animation: riverline-hint-enter var(--motion-panel) var(--ease-out) both;
 }
 @keyframes riverline-hint-enter {
   from { opacity: 0; translate: 0 4px; }
@@ -12827,7 +12806,7 @@ body.has-modal-open { overflow: hidden; }
 .gto-view.is-view-entering,
 .analysis-panel-content.is-analysis-entering,
 .equity-player-results[data-result-state="complete"] {
-  animation: riverline-panel-enter var(--motion-standard) var(--ease-standard) both;
+  animation: riverline-panel-enter var(--motion-panel) var(--ease-out) both;
 }
 @keyframes riverline-panel-enter {
   from { opacity: 0; translate: 0 5px; }
@@ -12835,7 +12814,7 @@ body.has-modal-open { overflow: hidden; }
 }
 
 .modal-backdrop.show > .modal {
-  animation: riverline-modal-enter var(--motion-emphasis) var(--ease-standard) both;
+  animation: riverline-modal-enter var(--motion-table) var(--ease-out) both;
 }
 @keyframes riverline-modal-enter {
   from { opacity: 0; transform: translateY(6px); }
@@ -12843,55 +12822,45 @@ body.has-modal-open { overflow: hidden; }
 }
 
 .deck-card {
-  transition: border-color var(--motion-micro) var(--ease-standard),
-    background-color var(--motion-micro) var(--ease-standard),
-    box-shadow var(--motion-micro) var(--ease-standard);
+  transition: border-color var(--motion-micro) var(--ease-out),
+    background-color var(--motion-micro) var(--ease-out),
+    box-shadow var(--motion-micro) var(--ease-out);
 }
 
 /* Visibility waits for the restrained collapse instead of cutting it off. */
 .table-wrapper {
   visibility: visible;
-  transition: max-height var(--motion-standard) var(--ease-standard),
-    opacity var(--motion-micro) var(--ease-standard),
+  transition: max-height var(--motion-panel) var(--ease-out),
+    opacity var(--motion-micro) var(--ease-out),
     visibility 0s linear 0s;
 }
 .table-wrapper.collapsed {
   height: auto;
   visibility: hidden;
-  transition: max-height var(--motion-standard) var(--ease-standard),
-    opacity var(--motion-micro) var(--ease-standard),
-    visibility 0s linear var(--motion-standard);
+  transition: max-height var(--motion-panel) var(--ease-out),
+    opacity var(--motion-micro) var(--ease-out),
+    visibility 0s linear var(--motion-panel);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html:focus-within { scroll-behavior: auto; }
-  *,
-  *::before,
-  *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important;
-    transition-delay: 0s !important;
-  }
-  .animate-feedback,
-  .training-study-hint-content .analysis-study-hint,
-  .gto-view.is-view-entering,
-  .analysis-panel-content.is-analysis-entering,
-  .equity-player-results[data-result-state="complete"],
-  .modal-backdrop.show > .modal { animation: none !important; }
-  .replay-timeline .is-replay-motion-current,
-  #visual-table-container .table-seat.is-replay-action-motion .table-seat-surface,
-  #visual-table-container .table-action-badge.is-replay-action-motion,
-  #visual-table-container .table-seat.is-replay-next-actor-motion .table-actor-indicator,
-  #visual-table-container .table-seat.is-replay-all-in-motion .table-seat-surface,
-  #visual-table-container .is-replay-action-motion,
-  #visual-table-container .is-replay-next-actor-motion,
-  #visual-table-container .is-replay-value-motion,
-  #visual-table-container .is-replay-fold-motion,
-  #visual-table-container .is-replay-all-in-motion,
-  #visual-table-container .is-replay-pot-motion,
-  #visual-table-container .is-replay-showdown-motion { animation: none !important; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .animate-feedback,
+:where(:root[data-motion-mode="reduced"]) .training-study-hint-content .analysis-study-hint,
+:where(:root[data-motion-mode="reduced"]) .gto-view.is-view-entering,
+:where(:root[data-motion-mode="reduced"]) .analysis-panel-content.is-analysis-entering,
+:where(:root[data-motion-mode="reduced"]) .equity-player-results[data-result-state="complete"],
+:where(:root[data-motion-mode="reduced"]) .modal-backdrop.show > .modal { animation: none !important; }
+:where(:root[data-motion-mode="reduced"]) .replay-timeline .is-replay-motion-current,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .table-seat.is-replay-action-motion .table-seat-surface,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .table-action-badge.is-replay-action-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .table-seat.is-replay-next-actor-motion .table-actor-indicator,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .table-seat.is-replay-all-in-motion .table-seat-surface,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-action-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-next-actor-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-value-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-fold-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-all-in-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-pot-motion,
+:where(:root[data-motion-mode="reduced"]) #visual-table-container .is-replay-showdown-motion { animation: none !important; }
 
 /* CORE-FLOW-001A: destination presentation ----------------------------- */
 
@@ -13346,7 +13315,7 @@ body.has-modal-open { overflow: hidden; }
 
 .table-player-unit {
   opacity: var(--seat-prominence-opacity, 1);
-  transition: opacity var(--motion-fast) var(--ease-standard);
+  transition: opacity var(--motion-micro) var(--ease-out);
 }
 .table-seat-base {
   fill: color-mix(in srgb, var(--poker-table-seat) 70%, #000000);
@@ -13355,10 +13324,10 @@ body.has-modal-open { overflow: hidden; }
 }
 .table-player-unit .table-seat-surface {
   filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .22));
-  transition: fill var(--motion-fast) var(--ease-standard),
-    stroke var(--motion-fast) var(--ease-standard),
-    stroke-width var(--motion-fast) var(--ease-standard),
-    opacity var(--motion-fast) var(--ease-standard);
+  transition: fill var(--motion-micro) var(--ease-out),
+    stroke var(--motion-micro) var(--ease-out),
+    stroke-width var(--motion-micro) var(--ease-out),
+    opacity var(--motion-micro) var(--ease-out);
 }
 .table-player-unit.is-prominence-hero .table-seat-surface {
   fill: color-mix(in srgb, var(--poker-table-seat-hero) 90%, var(--surface-panel));
@@ -13690,13 +13659,12 @@ body.has-modal-open { overflow: hidden; }
   .hand-action-sizing > #handActionAmountBounds { grid-column: auto; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .table-player-unit,
-  .table-player-unit .table-seat-surface { transition-duration: .01ms !important; }
-  .training-full-hand-action-status[data-presentation-state="hero_turn"],
-  .training-full-hand-table-wrapper #visual-table-container[data-training-hero-turn="true"] .table-seat.is-hero.is-actor .table-seat-surface {
-    animation: none !important;
-  }
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .table-player-unit,
+:where(:root[data-motion-mode="reduced"]) .table-player-unit .table-seat-surface { transition-duration: .01ms !important; }
+:where(:root[data-motion-mode="reduced"]) .training-full-hand-action-status[data-presentation-state="hero_turn"],
+:where(:root[data-motion-mode="reduced"]) .training-full-hand-table-wrapper #visual-table-container[data-training-hero-turn="true"] .table-seat.is-hero.is-actor .table-seat-surface {
+  animation: none !important;
 }
 
 #gtoMode[data-product-destination="hand"] .playbook-workspace,
@@ -15048,7 +15016,7 @@ html[data-welcome-orientation="unseen"] #welcomeOrientation[hidden] { display: b
   background: color-mix(in srgb, var(--surface-panel) 92%, transparent);
   box-shadow: var(--shadow-sm);
   text-align: start;
-  transition: border-color var(--motion-fast), background var(--motion-fast), transform var(--motion-fast), box-shadow var(--motion-fast);
+  transition: border-color var(--motion-micro), background var(--motion-micro), transform var(--motion-micro), box-shadow var(--motion-micro);
 }
 .welcome-job-card:nth-child(n + 4) { grid-column: span 3; }
 .welcome-job-card:hover {
@@ -15143,10 +15111,9 @@ html[data-welcome-orientation="unseen"] #welcomeOrientation[hidden] { display: b
   .welcome-jobs-heading > p { text-align: start; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .welcome-job-card { transition: none; }
-  .welcome-job-card:hover { transform: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .welcome-job-card { transition: none; }
+:where(:root[data-motion-mode="reduced"]) .welcome-job-card:hover { transform: none; }
 
 /* REPLAY-RAIL-NAV-001 ---------------------------------------------------
    Hand and Replay share one table-first composition. Canonical legality,
@@ -16492,7 +16459,8 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 .opponent-practice-review ol { padding-inline-start: 1.5rem; }
 .opponent-practice-review li { margin-block: .6rem; }
 @media (max-width: 1100px) { .personal-understanding-columns { grid-template-columns: minmax(0, 1fr); } }
-@media (prefers-reduced-motion: reduce) { .personal-understanding-panel * { scroll-behavior: auto; } }
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .personal-understanding-panel * { scroll-behavior: auto; }
 /* Policy-conditioned teaching uses existing quiet cards and native disclosures. */
 .exploit-teacher { margin-block: 1rem; text-align: start; overflow-wrap: anywhere; }
 .exploit-teacher summary { cursor: pointer; padding-block: .5rem; }
@@ -16679,11 +16647,11 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
   :root { --study-pad: 12px; }
   .table-environment { padding-inline: 6px; }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .study-disclosure > summary, .table-cast-avatar,
-  :is(.advanced-equity, .opponent-practice-setup, .personal-hand-stage) :is(button, select) {
-    transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-  }
+/* Motion: not Reduced (was @media prefers-reduced-motion: no-preference). */
+:where(:root:not([data-motion-mode="reduced"])) .study-disclosure > summary,
+:where(:root:not([data-motion-mode="reduced"])) .table-cast-avatar,
+:where(:root:not([data-motion-mode="reduced"])) :is(.advanced-equity, .opponent-practice-setup, .personal-hand-stage) :is(button, select) {
+  transition: background-color calc(120ms * var(--motion-scale)) ease, border-color calc(120ms * var(--motion-scale)) ease, box-shadow calc(120ms * var(--motion-scale)) ease;
 }
 .table-cast-seat:focus-within { box-shadow: var(--focus-ring); }
 
@@ -16903,16 +16871,17 @@ body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--a
 .advanced-equity-preview .advanced-mini-card.unused { opacity: .55; box-shadow: none; }
 .advanced-equity-help > summary { font-size: .8rem; color: var(--text-muted); padding-block: 5px; }
 
-@media (prefers-reduced-motion: no-preference) {
-  .mode-nav-item, .table-cast-seat { transition: translate 140ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
-  .table-cast-seat:hover { translate: 0 -1px; }
-  .table-seat-portrait { transition: opacity 170ms ease, filter 170ms ease; }
-  .mode-view.active { animation: riverline-unfold 180ms ease-out; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .riverline-shell *, .riverline-shell *::before, .riverline-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-  .table-cast-seat:hover { translate: none; }
-}
+/* Motion: not Reduced (was @media prefers-reduced-motion: no-preference). */
+:where(:root:not([data-motion-mode="reduced"])) .mode-nav-item,
+:where(:root:not([data-motion-mode="reduced"])) .table-cast-seat { transition: translate calc(140ms * var(--motion-scale)) ease, background-color calc(140ms * var(--motion-scale)) ease, border-color calc(140ms * var(--motion-scale)) ease, box-shadow calc(140ms * var(--motion-scale)) ease; }
+:where(:root:not([data-motion-mode="reduced"])) .table-cast-seat:hover { translate: 0 -1px; }
+:where(:root:not([data-motion-mode="reduced"])) .table-seat-portrait { transition: opacity calc(170ms * var(--motion-scale)) ease, filter calc(170ms * var(--motion-scale)) ease; }
+:where(:root:not([data-motion-mode="reduced"])) .mode-view.active { animation: riverline-unfold calc(180ms * var(--motion-scale)) ease-out; }
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .riverline-shell *,
+:where(:root[data-motion-mode="reduced"]) .riverline-shell *::before,
+:where(:root[data-motion-mode="reduced"]) .riverline-shell *::after { animation: none !important; scroll-behavior: auto !important; }
+:where(:root[data-motion-mode="reduced"]) .table-cast-seat:hover { translate: none; }
 @media (max-width: 1400px) {
   .workspace-canvas { padding-block-start: var(--space-5); }
   .rail-brand { padding-block-end: 9px; }
@@ -17056,7 +17025,8 @@ body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--a
 
 .welcome-job-grid > .welcome-job-card { grid-column: auto; }
 .welcome-job-card .welcome-job-action { grid-column: 1; }
-@media (prefers-reduced-motion: reduce) { .welcome-job-card:hover { transform: none; } }
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+:where(:root[data-motion-mode="reduced"]) .welcome-job-card:hover { transform: none; }
 
 /* BETA-DESIGN-CORRECTION-002: active decisions, quiet evidence, top-packed flow. */
 #recommendation { background: var(--analysis-primary-surface); box-shadow: var(--shadow-md); }
@@ -18582,9 +18552,8 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #rangeAdva
     grid-template-areas: "context" "decision";
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #teacherContent.is-analysis-entering { animation: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+html:where([data-motion-mode="reduced"])[data-layout-preset] #gtoMode[data-product-destination="analyze"] #teacherContent.is-analysis-entering { animation: none; }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .matrix-wrap {
   padding: 0;
   background: none;
@@ -18769,7 +18738,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   font: var(--weight-body) var(--t-small)/1 var(--font-ui);
-  transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
+  transition: border-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out);
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-spot-panel .control-value:hover { border-color: var(--text-muted); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-spot-panel .control-value:focus-within {
@@ -18844,7 +18813,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] :is(.playb
   padding: var(--space-5) 0;
   list-style: none;
   font: var(--weight-control) var(--t-body)/1.5 var(--font-ui);
-  transition: color var(--motion-fast) var(--ease-standard);
+  transition: color var(--motion-micro) var(--ease-out);
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] :is(.playbook-spot-disclosure, .analyze-provenance) > summary::-webkit-details-marker { display: none; }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] :is(.playbook-spot-disclosure, .analyze-provenance) > summary::marker { content: ""; }
@@ -18859,7 +18828,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-
   border-block-start: 1.5px solid var(--text-muted);
   border-inline-end: 1.5px solid var(--text-muted);
   transform: rotate(45deg);
-  transition: transform var(--motion-fast) var(--ease-standard);
+  transition: transform var(--motion-micro) var(--ease-out);
 }
 html[dir="rtl"][data-layout-preset] #gtoMode[data-product-destination="analyze"] :is(.playbook-spot-disclosure, .analyze-provenance) > summary::before,
 html[dir="rtl"][data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-table-toggle #toggleTableBtn::before { transform: rotate(-45deg); }
@@ -18904,7 +18873,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookA
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookAnalysisTabs .ui-tab {
   padding: 10px 0;
   margin-block-end: 0;
-  transition: color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+  transition: color var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out);
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookAnalysisTabs .ui-tab:not(.active):hover { border-block-end-color: var(--border-strong); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookAnalysisTabs .ui-tab:focus-visible {
@@ -18933,7 +18902,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookD
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-step + .path-step::before { width: 56px; background: var(--border-strong); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-step.completed + .path-step::before { background: var(--text-muted); }
-html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-node { transition: background-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard); }
+html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-node { transition: background-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-step.upcoming .path-body b { color: var(--text-muted); font-weight: var(--weight-control); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-step.completed .path-body b { color: var(--text-secondary); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #playbookDecisionPathPanel .path-cards {
@@ -19024,7 +18993,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #toggleFre
   color: var(--text-muted);
   font: var(--weight-control) var(--t-small)/1.5 var(--font-ui);
   text-decoration: none;
-  transition: color var(--motion-fast) var(--ease-standard);
+  transition: color var(--motion-micro) var(--ease-out);
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #toggleFrequencyAlternate:hover { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #toggleFrequencyAlternate:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; border-radius: 3px; }
@@ -19086,7 +19055,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .analyze-e
   border-radius: calc(var(--radius-control) - 1px);
   box-shadow: none;
   font: var(--weight-control) var(--t-small)/1.5 var(--font-ui);
-  transition: color var(--motion-fast) var(--ease-standard), background-color var(--motion-fast) var(--ease-standard);
+  transition: color var(--motion-micro) var(--ease-out), background-color var(--motion-micro) var(--ease-out);
 }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .analyze-explain-depth > .ui-tab:hover { color: var(--text-primary); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .analyze-explain-depth > .ui-tab[aria-pressed="true"],
@@ -19104,19 +19073,17 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #analysisT
 .rail-brand-copy span { white-space: nowrap; }
 
 /* Matrix cells: consistent hover / pressed / focus states (motion tokens). */
-html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .hand-cell { transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard); }
+html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .hand-cell { transition: border-color var(--motion-micro) var(--ease-out), box-shadow var(--motion-micro) var(--ease-out); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .hand-cell:active { box-shadow: inset 0 0 0 1px var(--border-focus); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-matrix-panel .hand-cell:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 
-@media (prefers-reduced-motion: reduce) {
-  html[data-layout-preset] #gtoMode[data-product-destination="analyze"] :is(.ui-tab, .path-node, .control-value, summary, summary::before, #toggleTableBtn, #toggleTableBtn::before, .hand-cell, #toggleFrequencyAlternate) { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+html:where([data-motion-mode="reduced"])[data-layout-preset] #gtoMode[data-product-destination="analyze"] :is(.ui-tab, .path-node, .control-value, summary, summary::before, #toggleTableBtn, #toggleTableBtn::before, .hand-cell, #toggleFrequencyAlternate) { transition: none; }
 /* Calm loading: a pending recompute fades only the verdict and mix card; no size change. */
-html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #recommendation :is(.analyze-verdict-copy, .frequency-visualization) { transition: opacity var(--motion-fast) var(--ease-standard); }
+html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #recommendation :is(.analyze-verdict-copy, .frequency-visualization) { transition: opacity var(--motion-micro) var(--ease-out); }
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #recommendation[data-recomputing="true"] :is(.analyze-verdict-copy, .frequency-visualization) { opacity: .55; }
-@media (prefers-reduced-motion: reduce) {
-  html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #recommendation :is(.analyze-verdict-copy, .frequency-visualization) { transition: none; }
-}
+/* Motion: Reduced (was @media prefers-reduced-motion: reduce). */
+html:where([data-motion-mode="reduced"])[data-layout-preset] #gtoMode[data-product-destination="analyze"] #recommendation :is(.analyze-verdict-copy, .frequency-visualization) { transition: none; }
 /* Rail fit (1920×1080): the head continues into Cards like the mockup's section head,
    and Stack setup puts its label and select on one row. */
 html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .playbook-spot-head { padding: var(--pad-surface) var(--pad-surface) 0; min-height: 0; }
@@ -19468,4 +19435,71 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-mat
 .training-lineup-roster small { color: var(--game-secondary); font-size: .78rem; line-height: 1.3; }
 @media (max-width: 680px) {
   .training-lineup-seat { flex-direction: column; text-align: center; }
+}
+
+/* MOTION-FOUNDATION-001 ---------------------------------------------------
+   One motion system. Rules time themselves with the scaled tokens
+   (--motion-micro, --motion-panel, --motion-dialog, --motion-table,
+   --motion-rare) and the curves (--ease-out, --ease-in-out, --ease-drawer,
+   --ease-spring). Guardrails: never `transition: all`; new rules animate
+   transform, opacity and clip-path only; hover effects sit under
+   @media (hover: hover) and (pointer: fine). */
+
+/* Scaled durations are recomputed on every data-motion element, so a tagged
+   moment picks up its own tempo. */
+:root,
+[data-motion] {
+  --motion-micro: calc(var(--motion-base-micro) * var(--motion-scale) / var(--motion-tempo));
+  --motion-panel: calc(var(--motion-base-panel) * var(--motion-scale) / var(--motion-tempo));
+  --motion-dialog: calc(var(--motion-base-dialog) * var(--motion-scale) / var(--motion-tempo));
+  --motion-table: calc(var(--motion-base-table) * var(--motion-scale) / var(--motion-tempo));
+  --motion-rare: calc(var(--motion-base-rare) * var(--motion-scale) / var(--motion-tempo));
+}
+
+/* Settings > Audio & Motion: the Motion control. */
+.settings-motion-control,
+.settings-motion-follow { justify-self: start; }
+.settings-motion-follow[hidden],
+.settings-motion-field .panel-note[hidden] { display: none; }
+
+/* Per-moment tempo hook (MOTION_SPEC tempos; later tickets only tag). */
+[data-motion="drill"],
+[data-motion="panel"],
+[data-motion="table"] { --motion-tempo: .7; }
+[data-motion="control"] { --motion-tempo: .85; }
+[data-motion="rare"] { --motion-tempo: .6; }
+[data-motion="nav"] { --motion-tempo: .5; }
+
+/* Global Motion setting (Settings > Audio & Motion). */
+:root[data-motion-mode="faster"] { --motion-scale: .625; }
+:root[data-motion-mode="instant"] { --motion-scale: 0; }
+
+/* Instant, and the keyboard rule: anything triggered by a key never
+   animates (data-motion-input="key" until the pointer moves). Loading
+   indicators keep turning: they report work, they are not transitions. */
+html:where([data-motion-mode="instant"], [data-motion-input="key"]) { scroll-behavior: auto !important; }
+:where(:root[data-motion-mode="instant"], :root[data-motion-input="key"]) *:not(.home-loading-spinner, .training-spinner, .progress-spinner, .calibration-spinner),
+:where(:root[data-motion-mode="instant"], :root[data-motion-input="key"]) *:not(.playbook-primary-decision[data-recommendation-state="loading"])::before,
+:where(:root[data-motion-mode="instant"], :root[data-motion-input="key"]) *:not(.ui-button.is-loading, .ui-button[aria-busy="true"])::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation-duration: .01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
+
+/* Reduced: opacity fades of at most 200 ms; nothing travels, scales or
+   flips. Full Hand comprehension pauses are script timings and stay. */
+html:where([data-motion-mode="reduced"]) { scroll-behavior: auto !important; }
+:where(:root[data-motion-mode="reduced"]) *,
+:where(:root[data-motion-mode="reduced"]) *::before,
+:where(:root[data-motion-mode="reduced"]) *::after {
+  transition-property: opacity !important;
+  transition-duration: var(--motion-fade) !important;
+  transition-delay: 0s !important;
+  animation-duration: .01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
 }

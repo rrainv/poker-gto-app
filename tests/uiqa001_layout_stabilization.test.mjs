@@ -308,7 +308,8 @@ test('RTL, reduced motion, and interaction-versus-state affordances remain expli
   root.setAttribute('dir', 'ltr');
   assert.equal(rtl[0], 'ltr', 'the board stays left-to-right');
   assert.notEqual(rtl[1], ltr[1], 'the collapse icon mirrors');
-  assert.ok(uiQa.rules.some((rule) => rule.conditions.some(({ query }) => query.includes('prefers-reduced-motion: reduce'))));
+  // Reduced rules follow the Motion setting (MOTION-FOUNDATION-001).
+  assert.ok(uiQa.rules.some((rule) => rule.selectors.some((selector) => selector.includes('[data-motion-mode="reduced"]'))));
   const derived = markup.querySelector('[data-state-surface="derived"]');
   assert.ok(derived);
   assert.ok(markup.querySelector('[data-interaction-surface="interactive"]'));

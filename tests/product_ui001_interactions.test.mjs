@@ -66,6 +66,10 @@ test('analysis navigation selects, reveals, and focuses its actual destination',
   const chartTab = app.$('[data-gto-view="chart"]');
   for (const reducedMotion of [false, true]) {
     app.environment.media.reducedMotion = reducedMotion;
+    // The Motion setting follows the system preference by default.
+    app.document.documentElement.dataset.motionMode = reducedMotion ? 'reduced' : 'standard';
+    // A pointer click (earlier tests pressed keys, which the keyboard rule keeps instant).
+    app.document.documentElement.dataset.motionInput = 'pointer';
     await app.click('[data-gto-view="context"]');
     app.byId('chartView')._scrolledIntoView = undefined;
     await app.click('#openCharts');
@@ -77,6 +81,7 @@ test('analysis navigation selects, reveals, and focuses its actual destination',
     assert.ok(app.document.activeElement === chartTab);
   }
   app.environment.media.reducedMotion = false;
+  app.document.documentElement.dataset.motionMode = 'standard';
 });
 
 test('sidebar state has concrete expanded and collapsed layout contracts at narrow desktop widths', async () => {

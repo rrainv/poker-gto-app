@@ -71,7 +71,7 @@ test('the semantic foundation exposes the required token families', () => {
     '--card-face', '--card-border', '--card-back', '--poker-felt-accent',
     '--suit-heart', '--suit-spade', '--suit-diamond', '--suit-club',
     '--shadow-panel', '--shadow-overlay', '--radius-control', '--radius-panel',
-    '--duration-fast', '--duration-normal', '--duration-slow', '--ease-standard',
+    '--motion-micro', '--motion-panel', '--motion-table', '--ease-out', '--ease-in-out', '--ease-drawer', '--ease-spring',
   ];
   for (const themeId of ['midnight', 'graphite', 'daylight']) {
     for (const name of requiredTokens) assert.ok(token(themeId, name), `${themeId} ${name}`);

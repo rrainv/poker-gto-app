@@ -364,8 +364,10 @@ export function installExperienceEventsBridge(browserWindow) {
     }
     if (!remember(event.eventId)) return Object.freeze({ accepted: false, reason: 'duplicate' });
     browserWindow.SoundFX?.consumeExperienceEvent?.(event);
-    const reducedMotion = browserWindow.matchMedia?.('(prefers-reduced-motion: reduce)')
-      ?.matches === true;
+    // The Motion setting (and the keyboard rule) decide whether things travel.
+    const reducedMotion = browserWindow.RiverlineMotion
+      ? !browserWindow.RiverlineMotion.allowsTravel()
+      : browserWindow.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
     const motion = motionIntentForExperienceEvent(event, { reducedMotion });
     if (typeof browserWindow.dispatchEvent === 'function'
       && typeof browserWindow.CustomEvent === 'function') {

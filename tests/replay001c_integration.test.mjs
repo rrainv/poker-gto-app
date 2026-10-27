@@ -308,9 +308,10 @@ test('motion has a paintable, cancellable lifecycle and settles without a timer 
 test('replay cues share the bounded semantic motion scale and stay restrained', () => {
   const root = markup.documentElement;
   const tokens = {
-    '--motion-fast-semantic': '110ms', '--motion-normal-semantic': '170ms', '--motion-poker-settle': '240ms',
-    '--motion-poker-ease': 'cubic-bezier(.2, .72, .25, 1)',
-    '--replay-motion-action': 'var(--motion-normal-semantic)', '--replay-motion-deal': 'var(--motion-poker-settle)',
+    // MOTION-FOUNDATION-001: the one motion scale.
+    '--motion-base-micro': '100ms', '--motion-base-panel': '180ms', '--motion-base-table': '260ms',
+    '--ease-out': 'cubic-bezier(.23, 1, .32, 1)',
+    '--replay-motion-action': 'var(--motion-panel)', '--replay-motion-deal': 'var(--motion-table)',
   };
   const table = markup.getElementById('visual-table-container');
   for (const [token, value] of Object.entries(tokens)) {
