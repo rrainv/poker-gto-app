@@ -4,6 +4,7 @@ import { parseExplicitEquityRange, weightedRangePlayer } from './weighted-equity
 import { advancedEquityCopy as copy, weightedEquityLanguage } from './advanced-equity-language.mjs';
 import { bindDisclosureDismissal } from '../ui/study-disclosure.mjs';
 import { appendCardFaceContents } from './card-presentation.mjs';
+import { formatLocaleFixed, formatLocaleInteger, formatLocaleNumber } from './locale-number-format.mjs';
 
 export function mountAdvancedEquity({ root, getRequest, language = () => 'en', signal = null,
   getPlayerLabel = () => null,
@@ -152,21 +153,24 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
       const languageFacts = weightedEquityLanguage(result, language());
       languageFacts.lines.forEach((line, index) => output.append(el('p', line,
         index === 0 ? result.conditionalOnKnownMass ? 'study-warning' : 'study-badge' : 'study-note')));
+      const lang = language();
       const values = el('div', undefined, 'advanced-equity-values');
       for (const player of result.players) {
         const row = el('div', undefined, 'advanced-equity-value');
-        const label = named('bdi', player.id), value = el('strong', `Equity ${(player.equity * 100).toFixed(2)}%`);
+        const label = named('bdi', player.id), value = el('strong', `Equity ${formatLocaleFixed(player.equity * 100, 2, lang)}%`);
         value.dir = 'ltr'; row.append(label, value); values.append(row);
       }
       output.append(values);
     }
+    const lang = language();
     const details = el('details'); details.append(el('summary', t('evidence')));
     const standing = result.presentation?.currentStanding;
-    if (standing) details.append(el('p', `${t('standing')}: ${[standing.ahead, standing.tied, standing.behind].map(value => `${(value * 100).toFixed(1)}%`).join(' / ')}`));
+    if (standing) details.append(el('p', `${t('standing')}: ${[standing.ahead, standing.tied, standing.behind].map(value => `${formatLocaleFixed(value * 100, 1, lang)}%`).join(' / ')}`));
     for (const coverage of result.coverage ?? []) {
-      const heading = el('p'); heading.append(named('bdi', coverage.playerId), el('span', ` · ${t('coverage')}: ${coverage.knownCombos} / ${coverage.eligibleCombos}`));
+      const heading = el('p'); heading.append(named('bdi', coverage.playerId), el('span', ` · ${t('coverage')}: ${formatLocaleInteger(coverage.knownCombos, lang)} / ${formatLocaleInteger(coverage.eligibleCombos, lang)}`));
+      const boundsText = (coverage.unknownMassBounds ?? []).map(bound => formatLocaleNumber(bound, { minimumFractionDigits: 0, maximumFractionDigits: 3 }, lang)).join('; ');
       details.append(heading,
-        el('p', `${t('mass')}: ${coverage.knownMass.toFixed(3)} / [${coverage.unknownMassBounds.join(', ')}] / ${coverage.blockedKnownMass.toFixed(3)}`));
+        el('p', `${t('mass')}: ${formatLocaleFixed(coverage.knownMass, 3, lang)} / [${boundsText}] / ${formatLocaleFixed(coverage.blockedKnownMass, 3, lang)}`));
     }
     details.append(el('p', `${t('seed')}: ${seed.value}`, 'study-note'));
     output.append(details);
@@ -174,6 +178,7 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
   function inspect(row, { force = false } = {}) {
     if (row === inspectedRow && !force) return;
     inspectedRow = row;
+    const lang = language();
     preview.replaceChildren(el('p', t('hypothetical'), 'study-badge'));
     const hero = draftRequest.players[0], hand = row.resultingHand;
     if (hand) {
@@ -189,10 +194,12 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
     if (row.categoryImproved) preview.append(el('p', t('improved')));
     if (row.enteredStanding) preview.append(el('p', t(row.enteredStanding)));
     if (row.deltaEstimated) preview.append(el('p', t('noise')));
-    if (row.equity !== null) preview.append(el('strong', `Equity ${(row.equity * 100).toFixed(1)}%`, 'runout-detail-equity'));
+    if (row.equity !== null) preview.append(el('strong', `Equity ${formatLocaleFixed(row.equity * 100, 1, lang)}%`, 'runout-detail-equity'));
     const detail = el('details'); detail.append(el('summary', t('evidence')), el('p', t('nextNote'), 'study-note'));
     for (const removal of row.removal ?? []) {
-      const line = el('p'); line.append(named('bdi', removal.playerId), el('span', ` · ${t('coverage')}: ${removal.after?.knownEligibleCombos ?? '-'} / ${removal.after?.eligibleCombos ?? '-'}`)); detail.append(line);
+      const knownText = removal.after?.knownEligibleCombos == null ? '-' : formatLocaleInteger(removal.after.knownEligibleCombos, lang);
+      const eligibleText = removal.after?.eligibleCombos == null ? '-' : formatLocaleInteger(removal.after.eligibleCombos, lang);
+      const line = el('p'); line.append(named('bdi', removal.playerId), el('span', ` · ${t('coverage')}: ${knownText} / ${eligibleText}`)); detail.append(line);
     }
     preview.append(detail);
     for (const node of cardsOutput.querySelectorAll('button')) node.setAttribute('aria-pressed', String(node.dataset.runout === row.cards.join(' ')));
@@ -200,19 +207,20 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
   function renderCards() {
     cardLife.abort(); cardLife = new AbortController();
     cardsOutput.replaceChildren();
+    const lang = language();
     const buckets = ['rank', 'suit', 'category'].includes(group.value) ? groupRunouts(rows, group.value) : groupPresentedRunouts(rows, group.value);
     for (const bucket of buckets) {
       const section = el('section'), list = el('div', undefined, 'advanced-equity-next-grid');
-      section.append(el('h4', `${t(bucket.key)} · ${bucket.rows.length}`));
+      section.append(el('h4', `${t(bucket.key)} · ${formatLocaleInteger(bucket.rows.length, lang)}`));
       for (const row of bucket.rows) {
         const button = el('button', undefined, 'ui-button runout-card');
         button.dataset.runout = row.cards.join(' '); button.setAttribute('aria-pressed', String(inspectedRow === row));
         button.dataset.equityChange = row.equityDelta === null ? 'unknown' : row.equityDelta > 0 ? 'up' : row.equityDelta < 0 ? 'down' : 'same';
         const faces = el('span', undefined, 'runout-card-faces'); faces.append(...row.cards.map(card => cardToken(card)));
-        button.append(faces, el('strong', row.equity === null ? '-' : `${(row.equity * 100).toFixed(1)}%`),
-          el('small', row.equityDelta === null ? t('unavailable') : `${row.deltaEstimated ? '≈ ' : ''}${row.equityDelta > 0 ? '+' : ''}${(row.equityDelta * 100).toFixed(1)} ${t('deltaUnit')}`),
+        button.append(faces, el('strong', row.equity === null ? '-' : `${formatLocaleFixed(row.equity * 100, 1, lang)}%`),
+          el('small', row.equityDelta === null ? t('unavailable') : `${row.deltaEstimated ? '≈ ' : ''}${row.equityDelta > 0 ? '+' : ''}${formatLocaleFixed(row.equityDelta * 100, 1, lang)} ${t('deltaUnit')}`),
           el('span', row.resultingHand ? `${t(row.resultingHand.category)}${row.categoryImproved ? ` · ${t('improved')}` : ''}` : t('range'), 'runout-card-category'));
-        button.type = 'button'; button.dir = language() === 'he' ? 'rtl' : 'ltr';
+        button.type = 'button'; button.dir = lang === 'he' ? 'rtl' : 'ltr';
         listen(button, 'focus', () => inspect(row), cardLife.signal); listen(button, 'mouseenter', () => inspect(row), cardLife.signal); listen(button, 'click', () => inspect(row), cardLife.signal); list.append(button);
       }
       section.append(list); cardsOutput.append(section);

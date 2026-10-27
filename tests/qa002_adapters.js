@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const vm = require('vm');
+const { installLocaleNumbers, logicNumberHelpersSource } = require('./helpers/locale-number-sandbox.cjs');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
@@ -200,7 +201,9 @@ function createHarness() {
   };
 
   vm.createContext(sandbox);
+  installLocaleNumbers(sandbox.window);
   vm.runInContext(`
+    ${logicNumberHelpersSource()}
     const ACTION_TYPES = Object.freeze({
       FOLD: 'fold', CHECK: 'check', CALL: 'call', BET: 'bet', RAISE: 'raise', ALL_IN: 'all_in'
     });

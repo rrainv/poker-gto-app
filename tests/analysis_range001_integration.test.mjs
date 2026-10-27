@@ -15,6 +15,7 @@ import { createRangeAnalysisFacts } from '../app/src/application/range-analysis.
 import { PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION } from '../app/src/tutorial/current-app-tutorials.mjs';
 import * as RiverlineCardPresentation from '../app/src/application/card-presentation.mjs';
 import { bootApp, indexDocument, strategyProviderProbe } from './helpers/app-under-test.mjs';
+import { installLocaleNumbers } from './helpers/locale-number-sandbox.cjs';
 
 // TEST-HYGIENE-001: the logic.js range-analysis seam is observed in the
 // booted app (spies, a provider probe, the real Analysis toggle) and markup is
@@ -128,6 +129,7 @@ function createTeacherRuntime(language = 'en') {
     RiverlineCardPresentation,
     t,
   };
+  installLocaleNumbers(runtime);
   vm.runInNewContext(RENDERER, runtime, { filename: 'teacher.js' });
   return {
     document,

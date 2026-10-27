@@ -1,3 +1,5 @@
+import { formatLocaleBb } from './locale-number-format.mjs';
+
 export const DECISION_FACING_SUMMARY_SCHEMA_VERSION = 'decision-facing-summary/v1';
 
 /**
@@ -90,22 +92,21 @@ export function describeDecisionFacing(decisionContext) {
   });
 }
 
-function formatBb(value) {
-  const rounded = Math.round(value * 100) / 100;
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : String(rounded)} bb`;
+function formatBb(value, language) {
+  return formatLocaleBb(value, language);
 }
 
 /**
  * Localized one-line copy. With `position` the line leads with it
  * ("BTN · unopened · 1 bb to call"); without it the line suits a "Facing" tile.
  */
-export function formatDecisionFacing(summary, { position = null, translate } = {}) {
+export function formatDecisionFacing(summary, { position = null, translate, language } = {}) {
   const t = typeof translate === 'function' ? translate : (key, values = {}) => (
     String(key).replace(/\{(\w+)\}/g, (match, name) => (name in values ? String(values[name]) : match))
   );
   const call = summary?.callAmountBb === null || summary?.callAmountBb === undefined
     ? null
-    : formatBb(summary.callAmountBb);
+    : formatBb(summary.callAmountBb, language);
   const price = call === null
     ? t('facing.price.unavailable')
     : t(summary.callIsAllIn ? 'facing.price.allInCall' : 'facing.price.toCall', { call });
@@ -114,7 +115,7 @@ export function formatDecisionFacing(summary, { position = null, translate } = {
     case DECISION_FACING_KINDS.FACING_WAGER:
       detail = summary.facingToBb === null || summary.facingToBb === 0
         ? price
-        : t('facing.detail.wager', { facing: formatBb(summary.facingToBb), price });
+        : t('facing.detail.wager', { facing: formatBb(summary.facingToBb, language), price });
       break;
     case DECISION_FACING_KINDS.UNOPENED:
       detail = t('facing.detail.unopened', { price });

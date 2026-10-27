@@ -2,6 +2,7 @@
 // (logic.js) and Saved Training history. It only formats already-frozen
 // DecisionContext facts; it computes no poker, strategy, or Equity.
 import { describeDecisionFacing, formatDecisionFacing } from './decision-facing-summary.mjs';
+import { formatLocaleBb } from './locale-number-format.mjs';
 
 export const TRAINING_MEMORY_ROW_FORMAT_SCHEMA_VERSION = 'training-memory-row-format/v1';
 
@@ -28,23 +29,23 @@ export function formatTrainingMemoryDate(isoTimestamp, locale = 'en') {
 }
 
 // Returns the two lines the Memory decision row shows: cards/board and the spot line.
-// `facing: 'summary'` (Saved Training history) words the price through
-// decision-facing-summary/v1 ("Unopened · 1 bb to call") instead of "Facing N bb".
-export function trainingMemoryContextSummary(context, translate, { facing = 'price' } = {}) {
+// `facing: 'summary'` words the price through decision-facing-summary/v1
+// ("Unopened · 1 bb to call") instead of "Facing N bb".
+export function trainingMemoryContextSummary(context, translate, { facing = 'price', language } = {}) {
   const t = typeof translate === 'function' ? translate : (value) => value;
   const facingPart = facing === 'summary'
-    ? formatDecisionFacing(describeDecisionFacing(context), { translate: t })
+    ? formatDecisionFacing(describeDecisionFacing(context), { translate: t, language })
     : Number.isFinite(context.callAmountBb) && context.callAmountBb > 0
-      ? `${t('Facing')} ${context.callAmountBb} bb`
+      ? `${t('Facing')} ${formatLocaleBb(context.callAmountBb, language)}`
       : null;
   const board = context.board?.length ? context.board.join(' ') : t('Preflop');
   const spotParts = Object.freeze([
     t(context.street.charAt(0).toUpperCase() + context.street.slice(1)),
     context.heroPosition,
     Number.isFinite(context.effectiveStackBb)
-      ? `${t('Effective stack')} ${context.effectiveStackBb} bb`
+      ? `${t('Effective stack')} ${formatLocaleBb(context.effectiveStackBb, language)}`
       : null,
-    Number.isFinite(context.currentPotBb) ? `${t('Pot')} ${context.currentPotBb} bb` : null,
+    Number.isFinite(context.currentPotBb) ? `${t('Pot')} ${formatLocaleBb(context.currentPotBb, language)}` : null,
     facingPart,
   ].filter(Boolean));
   return Object.freeze({

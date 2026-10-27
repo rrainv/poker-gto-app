@@ -190,11 +190,20 @@ function analysisDrawLabel(value) {
   return analysisConceptText(value);
 }
 
+// LOCALE-NUMBERS-001: numbers follow the UI language through the shared formatter.
+function analysisFormatNumber(value, options) {
+  return globalThis.RiverlineLocaleNumberFormat.formatNumber(value, options);
+}
+
+function analysisFormatFixed(value, digits = 1) {
+  return globalThis.RiverlineLocaleNumberFormat.formatFixed(value, digits);
+}
+
 function analysisRangeCompositionText(entries) {
   return (Array.isArray(entries) ? entries : []).map((entry) => {
-    const mass = Number(entry.knownComboMass).toFixed(2).replace(/\.00$/, '');
+    const mass = analysisFormatNumber(entry.knownComboMass, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     const share = Number.isFinite(entry.normalizedShare)
-      ? ` (${(entry.normalizedShare * 100).toFixed(1)}%)`
+      ? ` (${analysisFormatFixed(entry.normalizedShare * 100, 1)}%)`
       : '';
     return `${analysisConceptText(entry.key)} ${mass}${share}`;
   }).join(' · ');
@@ -207,13 +216,13 @@ function analysisRangeCompositionElement(entries) {
     const item = analysisElement('span', 'analysis-composition-item');
     item.appendChild(analysisElement('span', 'analysis-composition-label', analysisConceptText(entry.key)));
     item.appendChild(document.createTextNode(' '));
-    const mass = Number(entry.knownComboMass).toFixed(2).replace(/\.00$/, '');
+    const mass = analysisFormatNumber(entry.knownComboMass, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     const massToken = analysisLiteralElement('span', 'poker-data-token', mass);
     massToken.dataset.analysisToken = 'data';
     item.appendChild(massToken);
     if (Number.isFinite(entry.normalizedShare)) {
       item.appendChild(document.createTextNode(' ('));
-      const share = analysisLiteralElement('span', 'poker-data-token', `${(entry.normalizedShare * 100).toFixed(1)}%`);
+      const share = analysisLiteralElement('span', 'poker-data-token', `${analysisFormatFixed(entry.normalizedShare * 100, 1)}%`);
       share.dataset.analysisToken = 'data';
       item.append(share, document.createTextNode(')'));
     }
@@ -960,10 +969,12 @@ function buildAnalysisExplanation(container, explanation, options = {}) {
     source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.model', `Model ${explanation.provenance.modelVersion}`, { version: explanation.provenance.modelVersion })));
   }
   if (Number.isFinite(explanation.provenance.confidence)) {
-    source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.confidence', `Confidence ${(explanation.provenance.confidence * 100).toFixed(0)}%`, { value: (explanation.provenance.confidence * 100).toFixed(0) })));
+    const confidenceText = analysisFormatFixed(explanation.provenance.confidence * 100, 0);
+    source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.confidence', `Confidence ${confidenceText}%`, { value: confidenceText })));
   }
   if (Number.isFinite(explanation.provenance.coverage)) {
-    source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.coverage', `Coverage ${(explanation.provenance.coverage * 100).toFixed(0)}%`, { value: (explanation.provenance.coverage * 100).toFixed(0) })));
+    const coverageText = analysisFormatFixed(explanation.provenance.coverage * 100, 0);
+    source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.coverage', `Coverage ${coverageText}%`, { value: coverageText })));
   }
   footer.appendChild(source);
   const factSources = analysisFactSourcesElement(explanation);

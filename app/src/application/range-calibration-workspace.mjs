@@ -35,6 +35,7 @@ import {
   personalStrategyReasonLabelKey,
   personalStrategyStatusLabelKey,
 } from './personal-strategy-presentation.mjs';
+import { formatLocaleNumber } from './locale-number-format.mjs';
 
 let mountedWorkspace = null;
 
@@ -340,7 +341,7 @@ function createController(root, application, initialWorkspace, activationStarted
   function matrixActionDescription(cell) {
     if (cell.action.exactFrequencies) {
       return cell.action.exactFrequencies.map((entry) => (
-        `${actionLabel(entry.action.type)} ${Number((entry.probability * 100).toFixed(1))}%`
+        `${actionLabel(entry.action.type)} ${formatLocaleNumber(entry.probability * 100, { maximumFractionDigits: 1 })}%`
       )).join(' · ');
     }
     if (cell.action.dominantAction) {
@@ -439,7 +440,7 @@ function createController(root, application, initialWorkspace, activationStarted
     if (!value) return translated('Retracted');
     if (value.exactFrequencies) {
       return value.exactFrequencies.map((entry) => (
-        `${actionLabel(entry.action.type)} ${Number((entry.probability * 100).toFixed(1))}%`
+        `${actionLabel(entry.action.type)} ${formatLocaleNumber(entry.probability * 100, { maximumFractionDigits: 1 })}%`
       )).join(' · ');
     }
     if (value.dominantAction?.type) return `${translated('Dominant')} ${actionLabel(value.dominantAction.type)}`;
@@ -1289,7 +1290,7 @@ function createController(root, application, initialWorkspace, activationStarted
   function previousAnswerLabel(observation) {
     if (observation.dominantAction) return actionLabel(observation.dominantAction.type);
     return observation.frequencies.map((entry) => (
-      `${Number((entry.probability * 100).toFixed(6))}% ${actionLabel(entry.action.type)}`
+      `${formatLocaleNumber(entry.probability * 100, { maximumFractionDigits: 6 })}% ${actionLabel(entry.action.type)}`
     )).join(' \u00b7 ');
   }
 
@@ -2082,7 +2083,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function percentageLabel(value) {
-    return `${Number(Number(value).toFixed(6))}%`;
+    return `${formatLocaleNumber(value, { maximumFractionDigits: 6 })}%`;
   }
 
   function currentMixActions() {
