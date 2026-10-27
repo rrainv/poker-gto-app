@@ -43,7 +43,9 @@ test('the card picker builds its deck only while open and detaches it on close',
     assert.ok(records.length > 0);
     assert.equal(records.some((record) => record.type === 'childList'), false, 'selection does not rebuild the deck');
     const selected = app.$('#deck [data-deck-card="As"]');
-    assert.ok(records.every((record) => record.target === selected), 'only the selected control changes');
+    // A11Y-KEYS-001: the roving Tab stop may move off the previous stop.
+    assert.ok(records.every((record) => record.target === selected
+      || (record.attributeName === 'tabindex' && record.target.tabIndex === -1)), 'only the selected control changes');
     assert.equal(spy.count('renderDeck'), 0);
     assert.equal(spy.count('setEquityPending'), 0, 'selection does no analysis work');
     const after = deckCards();

@@ -393,9 +393,11 @@ test('the rendered dossier shows quantitative equity, one Board band and respons
     const percent = player.equity * 100;
     assert.equal(markup.querySelector('.equity-analysis-bar').getAttribute('aria-hidden'), 'true');
     assert.equal(markup.querySelector('.equity-analysis-bar > span').getAttribute('style'), `--equity-percent: ${percent.toFixed(3)}%`);
-    assert.ok(markup.querySelector('strong.poker-data-token').textContent.includes(percent.toFixed(1)));
+    // LOCALE-NUMBERS-001: the page formats through the shared formatter.
+    const fixed1 = (value) => app.window.RiverlineLocaleNumberFormat.formatFixed(value, 1);
+    assert.ok(markup.querySelector('strong.poker-data-token').textContent.includes(fixed1(percent)));
     const secondary = text(fragment(app.call('equityAnalysisSecondaryMetricsMarkup', player.id)));
-    for (const value of [player.winProbability, player.tieProbability]) assert.ok(secondary.includes((value * 100).toFixed(1)), secondary);
+    for (const value of [player.winProbability, player.tieProbability]) assert.ok(secondary.includes(fixed1(value * 100)), secondary);
   }
   // Postflop: one Board band; secondary metrics precede the current hand.
   content = await calculated([['As', 'Ah'], ['Ks', 'Kh'], ['Qs', 'Qh']], ['Qc', '7d', '2s']);

@@ -3,6 +3,7 @@ import vm from 'node:vm';
 
 import * as RiverlineCardPresentation from '../app/src/application/card-presentation.mjs';
 import * as RiverlineCardClearSemantics from '../app/src/application/card-clear-semantics.mjs';
+import { installLocaleNumbers, logicNumberHelpersSource } from './helpers/locale-number-sandbox.cjs';
 
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 
@@ -365,6 +366,7 @@ export function createProductionPickerHarness({
     ${extractFunction('unavailableCardsForPicker')}
     ${extractFunction('renderDeck')}
     ${extractFunction('updateDeckCardStates')}
+    ${extractFunction('syncDeckTabStop')}
     ${extractFunction('selectCard')}
     ${extractFunction('cardSetPickerFocusTarget')}
     ${extractFunction('replaceCardSetTarget')}
@@ -478,12 +480,13 @@ export function createEquityHandEntryHarness() {
       },
       querySelectorAll() { return []; },
     },
-    window: { RiverlineTutorials: null, clearTimeout() {}, setTimeout() {} },
+    window: installLocaleNumbers({ RiverlineTutorials: null, clearTimeout() {}, setTimeout() {} }),
   };
   sandbox.globalThis = sandbox;
   sandbox.__tile = tile;
   vm.createContext(sandbox);
   vm.runInContext(`
+    ${logicNumberHelpersSource()}
     const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
     const PLAYBOOK_DECISION_CARD_GROUPS = Object.freeze(['hero', 'board', 'dead']);
     const RANKS = ['A','K','Q','J','T','9','8','7','6','5','4','3','2'];
@@ -542,6 +545,7 @@ export function createEquityHandEntryHarness() {
     function renderEquityCardCounts() {}
     function renderEquitySharedCards() { renderEquityCards(); }
     function renderEquityHandAnalysis() {}
+    function reconcileEquityRandomizationStatus() {}
     function clearEquityResults() { lifecycleTrace.push('clear-results'); }
     ${extractFunction('equityHandGroup')}
     ${extractFunction('isEquityPrivateHandGroup')}
@@ -574,6 +578,7 @@ export function createEquityHandEntryHarness() {
     ${extractFunction('unavailableCardsForPicker')}
     ${extractFunction('renderDeck')}
     ${extractFunction('updateDeckCardStates')}
+    ${extractFunction('syncDeckTabStop')}
     ${extractFunction('selectCard')}
     ${extractFunction('cardSetPickerFocusTarget')}
     ${extractFunction('replaceCardSetTarget')}

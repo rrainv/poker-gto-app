@@ -8,6 +8,7 @@ import { createRangeAnalysisFacts } from './range-analysis.mjs';
 import { continuePersonalHandNode, inspectPersonalActionBranch, personalExactAmountFromBb, comparePersonalNodeStudies } from './personal-hand-study.mjs';
 import { createExactIntentAction, exactActionKey } from '../personal-strategy/exact-node-intent.mjs';
 import { continuationCopy, renderPersonalRangeMutations, personalNodeRegionLabel } from './personal-hand-continuation-language.mjs';
+import { formatLocaleNumber } from './locale-number-format.mjs';
 import { bindDisclosureDismissal } from '../ui/study-disclosure.mjs';
 
 // Ephemeral form drafts only. The application owns node identity, legal actions,
@@ -115,14 +116,14 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
     const index = study.actions.findIndex(candidate => candidate.action.type === type
       && candidate.action.amountToMilliBb === descriptor.action.amountToMilliBb);
     const fraction = type === 'bet' ? study.actionSizeHints?.[index]?.potFraction : null;
-    const sizing = Number.isFinite(fraction) ? ` (≈${Math.round(fraction * 100).toLocaleString(lang())}% ${copy('pot')})` : '';
-    return `${type === 'call' ? cc('call') : copy(type === 'all_in' ? 'allin' : type)}${amount !== null && amount !== undefined && type !== 'check' && type !== 'fold' ? ` ${(amount / 1000).toLocaleString(lang(), { maximumFractionDigits: 3 })}bb` : ''}${sizing}`;
+    const sizing = Number.isFinite(fraction) ? ` (≈${formatLocaleNumber(Math.round(fraction * 100), {}, lang())}% ${copy('pot')})` : '';
+    return `${type === 'call' ? cc('call') : copy(type === 'all_in' ? 'allin' : type)}${amount !== null && amount !== undefined && type !== 'check' && type !== 'fold' ? ` ${formatLocaleNumber(amount / 1000, { maximumFractionDigits: 3 }, lang())}bb` : ''}${sizing}`;
   }
   function currentIntent(node, subject) {
     const ids = new Set(headIds(node, subject));
     const records = (study.exactNodeIntents ?? []).filter((record) => ids.has(record.id));
     return records.length ? `${copy('current')}: ${records.map((record) => record.precision === 'exact'
-      ? record.distribution.map((item) => `${actionLabel(item.action)} ${(item.probability * 100).toLocaleString(lang())}%`).join(' / ')
+      ? record.distribution.map((item) => `${actionLabel(item.action)} ${formatLocaleNumber(item.probability * 100, {}, lang())}%`).join(' / ')
       : `${copy('preferred')}: ${actionLabel(record.preferredAction)}`).join(' · ')}${records.some(record => record.provenance?.contextNote) ? ` · ${records.map(record => record.provenance?.contextNote ?? '').filter(Boolean).join(' · ')}` : ''}` : '';
   }
   function headIds(node, subject) {
@@ -166,7 +167,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
       const candidate = study.preflopCandidates.find((item) => item.handClass === select.value);
       saved.textContent = currentIntent(study.preflopNode, { kind: 'hand_class', handClass: select.value });
       previous.textContent = candidate?.legacyRaiseFrequency !== null && candidate?.legacyRaiseFrequency !== undefined
-        ? `${copy('old')}: ${(candidate.legacyRaiseFrequency * 100).toLocaleString(lang())}%. ${copy('noSize')}` : copy('noSize');
+        ? `${copy('old')}: ${formatLocaleNumber(candidate.legacyRaiseFrequency * 100, {}, lang())}%. ${copy('noSize')}` : copy('noSize');
     };
     listen(select, 'change', update); update();
     const submit = button('saveOpen'); submit.type = 'submit'; submit.className = 'ui-button ui-button--primary';
@@ -310,7 +311,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
     for (const line of renderPersonalRangeMutations(study.mutations, lang())) detail.append(el('p', line));
     for (const region of facts.regions) detail.append(el('p', cc('region', { region: personalNodeRegionLabel(region.id, lang()),
       mapped: region.mappedCombos, total: region.eligibleCombos, unknown: region.unknownPolicyCombos })));
-    for (const entry of study.study.entries) detail.append(el('p', `${entry.cards.join(' ')} · ${entry.handClass} · ${copy(entry.precision === 'dominant' ? 'preferred' : entry.precision === 'exact' ? 'exact' : 'unknown')} · ${entry.priorWeight.toLocaleString(lang(), { maximumFractionDigits: 6 })}`));
+    for (const entry of study.study.entries) detail.append(el('p', `${entry.cards.join(' ')} · ${entry.handClass} · ${copy(entry.precision === 'dominant' ? 'preferred' : entry.precision === 'exact' ? 'exact' : 'unknown')} · ${formatLocaleNumber(entry.priorWeight, { maximumFractionDigits: 6 }, lang())}`));
     section.append(detail);
     if (study.trajectory) {
       const equityRoot = el('div'); section.append(equityRoot);

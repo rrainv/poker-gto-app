@@ -34,6 +34,7 @@
   <script src="src/locales/guide-translations.js?v=1" defer></script>
   <script src="src/locales/welcome-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=5" defer></script>
+  <script type="module" src="src/application/locale-number-format-bootstrap.mjs"></script>
 
 
 
@@ -674,7 +675,7 @@
       <div class="workspace-frame workspace-frame--wide">
 
       <div class="playbook-state-source" aria-label="Playbook workflow" data-i18n-aria-label="Playbook workflow" data-interaction-surface="interactive">
-        <p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite" data-i18n="Scenario controls are authoritative. This spot does not claim a legal hand history.">Scenario controls are authoritative. This spot does not claim a legal hand history.</p>
+        <p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite">Scenario controls are authoritative. This spot does not claim a legal hand history.</p>
         <button id="togglePlaybookContext" class="ui-button ui-button--quiet playbook-context-toggle" type="button" aria-expanded="true" aria-controls="playbookSpotPanel playbookHandWorkspace" data-i18n="Toggle context controls">Toggle context controls</button>
       </div>
 
@@ -687,7 +688,7 @@
             <header class="playbook-spot-head playbook-randomize-head">
               <h2 id="playbookSpotTitle" class="playbook-spot-title" data-i18n="Spot">Spot</h2>
               <div id="liveContextIndicator" class="live-indicator">
-                    <i class="dot"></i><span id="liveContextText" data-i18n="Live">Live</span>
+                    <i class="dot"></i><span id="liveContextText">Live</span>
               </div>
               <div class="playbook-randomize-compact">
                 <button id="scenarioRandomizeButton" class="playbook-randomize-trigger" type="button" aria-label="New random spot" data-i18n-aria-label="New random spot" title="New random spot" data-i18n-title="New random spot">
@@ -749,8 +750,8 @@
             <section id="savedSpotViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--spot" hidden aria-labelledby="savedSpotViewerTitle" data-tutorial-anchor="saved-spot-context">
               <div>
                 <span class="badge status-badge status-badge--info" data-i18n="Saved Spot">Saved Spot</span>
-                <strong id="savedSpotViewerTitle" dir="auto" data-i18n="Saved study spot">Saved study spot</strong>
-                <span id="savedSpotViewerTruth" data-i18n="History unavailable">History unavailable</span>
+                <strong id="savedSpotViewerTitle" dir="auto">Saved study spot</strong>
+                <span id="savedSpotViewerTruth">History unavailable</span>
               </div>
               <button id="savedSpotCloseButton" class="ui-button ui-button--quiet" type="button" data-i18n="Close saved context">Close saved context</button>
             </section>
@@ -868,7 +869,7 @@
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
                       <span data-i18n="Play Style">Play Style</span>
-                      <span id="tightnessLabel" data-i18n="Baseline">Baseline</span>
+                      <span id="tightnessLabel">Baseline</span>
                     </div>
                     <input type="range" class="control-range" id="tightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
                   </div>
@@ -877,7 +878,7 @@
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
                       <span data-i18n="Opponent Style">Opponent Style</span>
-                      <span id="oppTightnessLabel" data-i18n="Baseline">Baseline</span>
+                      <span id="oppTightnessLabel">Baseline</span>
                     </div>
                     <input type="range" class="control-range" id="oppTightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
                   </div>
@@ -931,14 +932,14 @@
                 <div class="panel-title" data-i18n="Setup, save, and replay">Setup, save, and replay</div>
                 <div class="panel-note" data-i18n="Live play stays at the table.">Live play stays at the table.</div>
               </div>
-              <span id="handSessionBadge" class="badge status-badge status-badge--info" data-i18n="Not started">Not started</span>
+              <span id="handSessionBadge" class="badge status-badge status-badge--info">Not started</span>
             </div>
 
             <div id="savedHandViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--hand" hidden aria-labelledby="savedHandViewerTitle" data-tutorial-anchor="saved-hand-context">
               <div>
                 <span class="badge status-badge status-badge--info" data-i18n="Saved Hand">Saved Hand</span>
                 <span class="badge status-badge status-badge--neutral" data-i18n="Read-only">Read-only</span>
-                <strong id="savedHandViewerTitle" dir="auto" data-i18n="Saved hand replay">Saved hand replay</strong>
+                <strong id="savedHandViewerTitle" dir="auto">Saved hand replay</strong>
               </div>
               <div class="saved-study-viewer-actions">
                 <button id="savedHandBackHomeButton" class="ui-button ui-button--secondary" type="button" data-i18n="Back to Home">Back to Home</button>
@@ -950,8 +951,8 @@
               <button id="handImportButton" class="ui-button ui-button--secondary" type="button" data-tutorial-anchor="hand-import" data-i18n="Import hand history">Import hand history</button>
               <details id="handSetupDisclosure" class="hand-disclosure hand-setup-disclosure" open>
                 <summary>
-                  <span><strong data-i18n="Hand setup">Hand setup</strong><small id="handSetupCompactSummary" data-i18n="Configure before the hand starts">Configure before the hand starts</small></span>
-                  <span id="handSetupDisclosureState" class="badge status-badge status-badge--info" data-i18n="Configure">Configure</span>
+                  <span><strong data-i18n="Hand setup">Hand setup</strong><small id="handSetupCompactSummary">Configure before the hand starts</small></span>
+                  <span id="handSetupDisclosureState" class="badge status-badge status-badge--info">Configure</span>
                 </summary>
               <section id="handSetupSection" class="hand-control-section" aria-labelledby="handSetupTitle" data-tutorial-anchor="hand-setup">
                 <div class="hand-section-head">
@@ -982,7 +983,7 @@
               <p id="handTableSizeError" class="field-error" role="alert" hidden></p>
               <p id="handAccountingPreview" class="hand-accounting-preview">No rake / collection</p>
                 <div class="hand-button-row">
-                  <button id="handStartButton" class="ui-button ui-button--primary" type="button" data-i18n="Start hand">Start hand</button>
+                  <button id="handStartButton" class="ui-button ui-button--primary" type="button">Start hand</button>
                 </div>
               </section>
               </details>
@@ -1447,7 +1448,7 @@
 
                 <div class="range-matrix-main">
 
-                <div class="matrix-wrap" tabindex="0" aria-label="Scrollable 13 by 13 starting hand strategy matrix" data-i18n-aria-label="Scrollable 13 by 13 starting hand strategy matrix">
+                <div class="matrix-wrap">
 
                 <div class="strategy-grid" id="strategyGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand strategy matrix" data-i18n-aria-label="13 by 13 starting hand strategy matrix"></div>
 
@@ -2411,7 +2412,7 @@
               <section id="trainingOpponentSetup" class="opponent-practice-setup" hidden></section>
               <div id="trainingFullHandCompactControls" class="training-full-hand-compact-controls" hidden>
                 <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">-</span></small></div>
-                <div><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button></div>
+                <div><button id="trainingFullHandSkipRest" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Skip to end">Skip to end</button><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button></div>
               </div>
               <div id="trainingVariedControls" class="training-mode-controls">
                 <label class="ui-field"><span data-i18n="Session length">Session length</span><select id="trainingSessionLength" class="control-select"><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option><option value="open" data-i18n="Open">Open</option></select></label>

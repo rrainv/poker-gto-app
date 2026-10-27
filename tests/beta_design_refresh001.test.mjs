@@ -9,6 +9,7 @@ import { mountAdvancedEquity } from '../app/src/application/advanced-equity-work
 import { advancedEquityCopy } from '../app/src/application/advanced-equity-language.mjs';
 import { installTrainingLineupPreview } from '../app/src/ui/training-lineup-preview.mjs';
 import { renderPersonalStrategyMap } from '../app/src/application/personal-strategy-understanding-workspace.mjs';
+import { installLocaleNumbers } from './helpers/locale-number-sandbox.cjs';
 
 // Mounted presentation harness. Native select/summary mechanics and geometry
 // still require the separately recorded real-browser/human acceptance.
@@ -198,7 +199,7 @@ test('dealer and actor facts use only projected flags, and ordinary Hands receiv
 });
 
 test('cast repaint changes shared table names and accessibility without rendering cards or recomputing state', () => {
-  const f = documentFixture(), sandbox = { window: {}, document: f.doc };
+  const f = documentFixture(), sandbox = { window: installLocaleNumbers({}), document: f.doc };
   vm.runInNewContext(fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8'), sandbox);
   const renderer = Object.create(sandbox.window.TableRenderer.prototype), container = f.root(), roster = seats();
   renderer.container = container; renderer.lastState = { seats: roster, street: 'flop', potMilliBb: 4000 };

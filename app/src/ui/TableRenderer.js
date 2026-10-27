@@ -338,10 +338,7 @@ class TableRenderer {
 
   formatMilliBb(milliBb) {
     if (!Number.isSafeInteger(milliBb) || milliBb < 0) return '';
-    const value = Number((milliBb / 1000).toFixed(3));
-    return new Intl.NumberFormat(document.documentElement.lang || 'en', {
-      maximumFractionDigits: 3,
-    }).format(value);
+    return window.RiverlineLocaleNumberFormat.formatNumber(milliBb / 1000, { maximumFractionDigits: 3 });
   }
 
   presenceSeatIdentity(player) {

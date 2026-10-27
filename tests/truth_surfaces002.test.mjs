@@ -12,6 +12,7 @@ import {
 } from '../app/src/application/analyze-verdict.mjs';
 import { shouldShowSourceBadge } from '../app/src/application/workspace-header.mjs';
 import { strategyTruthPresentation } from '../app/src/application/strategy-truth.mjs';
+import { installLocaleNumbers, logicNumberHelpersSource } from './helpers/locale-number-sandbox.cjs';
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
 const html = read('../app/index.html');
@@ -58,8 +59,9 @@ test('QA-SHELL-004 / OWNER-19: one provenance indicator per surface across Analy
     trainingActionLabel: (type) => type,
     evaluation: { chosenAction: { type: 'raise' }, chosenProbability: 0.7, bestProbability: 0.7, bestStrategyAction: { label: 'Open' } },
     exercise: { decisionContext: { street: 'flop' } },
+    window: installLocaleNumbers({}),
   };
-  vm.runInNewContext(`${renderTrainingSummary}; renderTrainingEvaluationSummary(evaluation, exercise);`, ctx);
+  vm.runInNewContext(`${logicNumberHelpersSource()}\n${renderTrainingSummary}; renderTrainingEvaluationSummary(evaluation, exercise);`, ctx);
   assert.equal(el('#trainingTruthHeading').textContent, 'Heuristic baseline');
   assert.equal(el('#trainingTier').hidden, false);
   assert.equal(el('#trainingFeedbackStreet').textContent, 'Flop');
@@ -162,8 +164,9 @@ test('REVIEW-MATH-03: estimated mixes round to 5% and hide actions under 5% with
     document: { createElement: (tag) => makeNode(tag) },
     trainingActionLabel: (type) => type,
     visualActionKind: (entry) => entry.action?.type || 'aggressive',
+    window: installLocaleNumbers({}),
   };
-  vm.runInNewContext(`${reviewFreqSource}\nglobalThis.renderReviewFreq = renderHandReviewFrequencyComparison;`, reviewVm);
+  vm.runInNewContext(`${logicNumberHelpersSource()}\n${reviewFreqSource}\nglobalThis.renderReviewFreq = renderHandReviewFrequencyComparison;`, reviewVm);
 
   const reviewDecisionEstimated = {
     source: { exactFrequencies: false },

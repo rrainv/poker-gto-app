@@ -68,7 +68,7 @@ function createLogicHarness() {
 
     let app = { equity: { board: [], dead: [], players: [] }, gto: { hero: [], board: [], dead: [] }, training: { hero: [], board: [] }, settings: { cardRankStyle: 'poker' } };
     let config = {};
-    let deckNode = { innerHTML: '' };
+    let deckNode = { innerHTML: '', querySelectorAll: () => [] };
 
     const $ = (selector) => selector === '#deck' ? deckNode : null;
     const allDeck = () => SUITS.flatMap((suit) => RANKS.map((rank) => rank + suit.id));
@@ -95,7 +95,7 @@ function createLogicHarness() {
         const group = player ? equityHandGroup(player.id) : picker.group;
         const committed = player ? player.cards.slice() : groupCards(group).filter(Boolean);
         app.picker = { ...picker, group, committed, draft: committed.slice() };
-        deckNode = { innerHTML: '' };
+        deckNode = { innerHTML: '', querySelectorAll: () => [] };
         renderDeck();
         return deckNode.innerHTML;
       }
