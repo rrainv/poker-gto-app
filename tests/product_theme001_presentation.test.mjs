@@ -80,9 +80,9 @@ function token(themeId, name) {
   return /^#[0-9a-f]{6}$/i.test(value ?? '') ? value.toLowerCase() : null;
 }
 
-test('built-in switching is live, persistent, announced, and limited to three serious themes', () => {
+test('built-in switching is live, persistent, announced, and limited to four serious themes', () => {
   const view = fixture();
-  assert.deepEqual(PRESENTATION_THEMES.map((theme) => theme.id), ['midnight', 'graphite', 'daylight']);
+  assert.deepEqual(PRESENTATION_THEMES.map((theme) => theme.id), ['midnight', 'graphite', 'daylight', 'slate']);
   assert.equal(view.controller.getTheme(), 'midnight');
 
   view.controller.apply('graphite');

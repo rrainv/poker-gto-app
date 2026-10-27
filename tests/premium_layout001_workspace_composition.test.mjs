@@ -29,10 +29,10 @@ function tracks(value) {
 }
 
 test('shared workspace primitives define bounded, readable, rail, and dense composition roles', () => {
-  // Protects: one 1680px canvas that every frame aliases; a 1120px readable
+  // Protects: one 1640px canvas (Style v4, D-14; DS-TOKENS-001) that every frame aliases; a 1120px readable
   // measure; frames are centred and capped; layouts and their stage/rail
   // children may shrink (min-width 0).
-  assert.equal(css.resolved(root, '--canvas-max'), '1680px');
+  assert.equal(css.resolved(root, '--canvas-max'), '1640px');
   for (const frame of ['standard', 'wide', 'dense']) {
     assert.equal(css.cascaded(root, `--workspace-frame-${frame}`), 'var(--canvas-max)', frame);
   }
@@ -40,7 +40,7 @@ test('shared workspace primitives define bounded, readable, rail, and dense comp
   const frames = markup.querySelectorAll('.workspace-frame');
   assert.ok(frames.length >= 5);
   for (const frame of frames) {
-    assert.equal(css.resolved(frame, 'width'), 'min(100%, 1680px)', frame.id || frame.className);
+    assert.equal(css.resolved(frame, 'width'), 'min(100%, 1640px)', frame.id || frame.className);
     assert.equal(css.cascaded(frame, 'min-width'), '0');
     assert.equal(css.cascaded(frame, 'margin-inline'), 'auto');
   }
@@ -90,7 +90,7 @@ test('Hand and Analyze share one wide frame while keeping deliberate stage and r
   const table = app.byId('visual-table-container');
   assert.equal(css.cascaded(table, 'inline-size'), '100%');
   assert.ok(app.$('#gtoMode .playbook-decision-workspace').contains(table));
-  assert.equal(css.resolved(table.closest('.workspace-frame'), 'width'), 'min(100%, 1680px)');
+  assert.equal(css.resolved(table.closest('.workspace-frame'), 'width'), 'min(100%, 1640px)');
 
   const dock = app.document.createElement('div');
   dock.className = 'hand-action-dock';

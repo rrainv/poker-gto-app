@@ -342,7 +342,7 @@ test('theme display names and Equity seed placeholder localize without changing 
   const runtime = createRuntime();
   for (const language of ['ru', 'he']) {
     runtime.context.window.setLanguage(language);
-    for (const name of ['Riverline Midnight', 'Riverline Graphite', 'Riverline Daylight']) {
+    for (const name of ['Riverline Midnight', 'Riverline Graphite', 'Riverline Daylight', 'Riverline Slate']) {
       assert.notEqual(runtime.context.window.t(name), name, `${language} retained theme display name ${name}`);
     }
     const placeholder = runtime.context.window.t('Generated automatically');
@@ -350,7 +350,7 @@ test('theme display names and Equity seed placeholder localize without changing 
     assert.match(placeholder, language === 'ru' ? /[\u0400-\u04FF]{2,}/u : /[\u0590-\u05FF]{2,}/u);
   }
   assert.equal(markup.getElementById('equitySeed').dataset.i18nPlaceholder, 'Generated automatically');
-  for (const id of ['midnight', 'graphite', 'daylight']) {
+  for (const id of ['midnight', 'graphite', 'daylight', 'slate']) {
     assert.match(themeSource, new RegExp(`id: '${id}'`));
   }
   assert.doesNotMatch(themeSource, /discord|terminal|brutalist/i);

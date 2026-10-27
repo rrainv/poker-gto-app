@@ -29,18 +29,21 @@ function presetBlock(id) {
   return new Proxy({}, { get: (_, name) => (typeof name === 'string' ? themeToken(id, name) : undefined) });
 }
 const RESTING = ['--surface-canvas', '--surface-shell', '--surface-panel', '--surface-elevated', '--surface-interactive', '--surface-inset'];
+// DS-TOKENS-001: a preset may also list its hover surface (it carries text too).
+const HOVER = '--surface-interactive-hover';
 
 test('preset surfaces used for text-role contrast mirror the painted preset blocks', () => {
   for (const theme of PRESENTATION_THEMES) {
     const block = presetBlock(theme.id);
-    assert.deepEqual([...theme.surfaces], RESTING.map((name) => block[name]), theme.id);
+    const painted = [...RESTING, ...(theme.surfaces.length > RESTING.length ? [HOVER] : [])].map((name) => block[name]);
+    assert.deepEqual([...theme.surfaces], painted, theme.id);
     assert.equal(theme.preview.accent, block['--accent-primary'], `${theme.id} preview accent = painted accent`);
   }
 });
 
 // Amendment 2: Midnight is the mockup palette (superseding the B / deeper-accent values);
 // Graphite and Daylight keep their surfaces with the jade accent family.
-test('final values: mockup Midnight, jade accents, B Daylight surfaces, radius 10/7, C heading sizes, B spacing', () => {
+test('final values: mockup Midnight, jade accents, B Daylight surfaces, Style v4 radius 16/7, C heading sizes, B spacing', () => {
   assert.equal(presetBlock('midnight')['--accent-primary'], '#42ad7b');
   assert.equal(presetBlock('daylight')['--accent-primary'], '#256044');
   assert.equal(presetBlock('graphite')['--accent-primary'], '#42ad7b');
@@ -50,11 +53,11 @@ test('final values: mockup Midnight, jade accents, B Daylight surfaces, radius 1
   // ANALYZE-COMPOSITION-001 superseded the C heading sizes with the mockups' global type scale
   // (title 20px, heading 15px, display 40px; DESIGN_SYSTEM.md "Type scale").
   for (const [name, value] of Object.entries({
-    '--radius-panel': '10px', '--radius-control': '7px', '--t-title': '1.25rem', '--t-heading': '0.9375rem',
-    '--t-display': '2.5rem', '--weight-bold': '700', '--gap-section': 'var(--space-8)', '--pad-surface': 'var(--space-6)',
+    '--radius-panel': '16px', '--radius-control': '7px', '--t-title': '1.25rem', '--t-heading': '0.9375rem',
+    '--t-display': '2.5rem', '--weight-bold': '700', '--gap-section': 'var(--space-8)', '--pad-surface': 'var(--pad-panel)', '--pad-panel': '22px',
   })) assert.equal(themeToken(null, name), value, name);
   assert.equal(themeToken(null, '--elevation-surface'), 'none');
-  assert.match(prepaint, /cache\?\.version === 'beta-b-2'/);
+  assert.match(prepaint, /cache\?\.version === 'beta-b-3'/);
 });
 
 function applied(themeId, customization = null) {

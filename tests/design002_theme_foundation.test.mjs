@@ -73,13 +73,17 @@ test('the semantic foundation exposes the required token families', () => {
     '--shadow-panel', '--shadow-overlay', '--radius-control', '--radius-panel',
     '--motion-micro', '--motion-panel', '--motion-table', '--ease-out', '--ease-in-out', '--ease-drawer', '--ease-spring',
   ];
-  for (const themeId of ['midnight', 'graphite', 'daylight']) {
+  for (const themeId of ['midnight', 'graphite', 'daylight', 'slate']) {
     for (const name of requiredTokens) assert.ok(token(themeId, name), `${themeId} ${name}`);
   }
 });
 
-test('the three supported themes define distinct restrained semantic palettes', () => {
-  assert.deepEqual(PRESENTATION_THEMES.map((theme) => theme.id), ['midnight', 'graphite', 'daylight']);
+test('the supported themes define distinct restrained semantic palettes', () => {
+  // DS-TOKENS-001 (DS-THEME-SLATE) added Slate as a fourth read-only built-in.
+  assert.deepEqual(PRESENTATION_THEMES.map((theme) => theme.id), ['midnight', 'graphite', 'daylight', 'slate']);
+  assert.equal(token('slate', 'color-scheme'), 'dark');
+  assert.equal(token('slate', '--surface-canvas'), '#121417');
+  assert.equal(token('slate', '--accent-primary'), '#5b9bd5');
   assert.equal(token('midnight', 'color-scheme'), 'dark');
   assert.equal(token('midnight', '--surface-canvas'), '#101311');
   assert.equal(token('graphite', 'color-scheme'), 'dark');
@@ -97,7 +101,7 @@ test('the three supported themes define distinct restrained semantic palettes', 
     '--border-focus', '--selection-background', '--accent-primary',
     '--status-positive', '--status-warning', '--status-danger', '--status-info', '--poker-felt-accent',
   ]) {
-    for (const themeId of ['midnight', 'graphite', 'daylight']) {
+    for (const themeId of ['midnight', 'graphite', 'daylight', 'slate']) {
       root.setAttribute('data-theme', themeId);
       const own = css.matchingRules(root).some((rule) => rule.selectorText.includes(`data-theme="${themeId}"`)
         && rule.declarations.some((declaration) => declaration.property === name));

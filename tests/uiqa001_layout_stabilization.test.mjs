@@ -112,7 +112,7 @@ test('responsive strategy is fluid rather than resolution-specific', () => {
   assert.match(values, /minmax\(/);
   assert.match(values, /clamp\(/);
   // SHELL-001: one canvas width (--canvas-max) replaces the 1840px canvas cap.
-  assert.equal(css.cascaded(markup.documentElement, '--canvas-max'), '1680px');
+  assert.equal(css.cascaded(markup.documentElement, '--canvas-max'), '1640px');
   assert.equal(css.rules.filter((rule) => rule.declarations.some(({ property, value }) => property === 'max-width' && value === '1840px')).length, 0);
   const queries = new Set(uiQa.rules.flatMap((rule) => rule.conditions.filter(({ type }) => type === 'media').map(({ query }) => query)));
   const widths = [...queries].join(' ');

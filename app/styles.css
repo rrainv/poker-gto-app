@@ -2,11 +2,56 @@
    the meaning of every token below; preset and custom themes override the color
    roles (inline from presentation-theme.mjs or [data-theme] blocks), never the
    type/space/radius/elevation scales. */
+
+/* DS-TOKENS-001: Rubik (SIL OFL 1.1, docs/THIRD_PARTY.md) for display and
+   headings, self-hosted variable woff2 (weights 300-900). Latin, Cyrillic and
+   Hebrew subsets only; body text keeps the system UI font. */
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("src/ui/assets/fonts/rubik/rubik-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("src/ui/assets/fonts/rubik/rubik-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("src/ui/assets/fonts/rubik/rubik-cyrillic-wght-normal.woff2") format("woff2");
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("src/ui/assets/fonts/rubik/rubik-cyrillic-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Rubik";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: block;
+  src: url("src/ui/assets/fonts/rubik/rubik-hebrew-wght-normal.woff2") format("woff2");
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+
 :root {
   color-scheme: dark;
 
-  /* Typography */
-  --font-display: "Avenir Next", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  /* Typography. Display = workspace titles, headings, verdicts, big numbers. */
+  --font-display: "Rubik", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --font-ui: "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   /* Poker numbers and amounts use the UI font with tabular figures (body sets
      font-variant-numeric: tabular-nums); mono is for technical strings only. */
@@ -80,13 +125,19 @@
   --gap-section: var(--space-8);
   --pad-control-block: var(--space-4);
   --pad-control-inline: var(--space-5);
-  --pad-surface: var(--space-6);
+  /* Style v4 (DS-TOKENS-001, D-14): panels pad 22 px on the inline edges and
+     the block end; the head starts at 16 px and keeps its hairline. */
+  --pad-panel: 22px;
+  --pad-panel-head: var(--space-6);
+  --pad-surface: var(--pad-panel);
   --pad-surface-reading: var(--space-8);
   --gutter-canvas: var(--space-8);
 
-  /* Control geometry: one field height, two button sizes. */
-  --control-height-md: 36px;
+  /* Control geometry (Style v4, D-14): fields, md buttons and icon buttons 40,
+     the view's main (primary) action 44, sm buttons and chips 32. */
+  --control-height-md: 40px;
   --control-height-sm: 32px;
+  --control-height-primary: 44px;
 
   /* Riverline Midnight semantic foundation */
   --surface-canvas: #101311;
@@ -100,7 +151,8 @@
 
   --text-primary: #f2f5f1;
   --text-secondary: #c1c8c3;
-  --text-muted: #8f9a94;
+  /* DS-TOKENS-001: #8f9a94 was 4.43:1 on the hover surface; #939e98 is 4.65:1. */
+  --text-muted: #939e98;
   --text-disabled: #616b65;
   --text-on-accent: #07120d;
 
@@ -207,10 +259,11 @@
   /* Feature cards (Welcome, coach, Ranges & runouts) keep a soft lift; legacy. */
   --elevation-feature: 0 12px 30px rgb(0 0 0 / .18), inset 0 1px rgb(255 255 255 / .045);
 
-  /* Radius: four values. Card faces keep --radius-card (PokerPrimitives owns it). */
+  /* Radius: four values. Card faces keep --radius-card (PokerPrimitives owns it).
+     Style v4 (D-14): soft panels and overlays 16. */
   --radius-cell: 4px;
   --radius-control: 7px;
-  --radius-panel: 10px;
+  --radius-panel: 16px;
   --radius-pill: 999px;
   --radius-overlay: var(--radius-panel);
   --radius-card: 7px;
@@ -324,6 +377,18 @@
   --card-size-representative-height: 74px;
   --card-size-full-width: 56px;
   --card-size-full-height: 80px;
+  /* Card size scale by context (DS-TOKENS-001; DESIGN_SYSTEM "Stability
+     rules"): inline (in text and rows) / mini (result and list previews) /
+     standard (pickers, hero answer) / table (the play stage). Hero = board =
+     dead within one context. Values are the measured app sizes above. */
+  --card-scale-inline-width: var(--card-size-mini-width);
+  --card-scale-inline-height: var(--card-size-mini-height);
+  --card-scale-mini-width: var(--card-size-result-width);
+  --card-scale-mini-height: var(--card-size-result-height);
+  --card-scale-standard-width: var(--card-size-standard-width);
+  --card-scale-standard-height: var(--card-size-standard-height);
+  --card-scale-table-width: var(--card-size-table-width);
+  --card-scale-table-height: var(--card-size-table-height);
   --poker-card-width: var(--card-size-slot-width);
   --poker-card-height: var(--card-size-slot-height);
   --poker-card-shadow: 0 3px 9px rgba(0, 0, 0, 0.24);
@@ -374,7 +439,7 @@
   /* SHELL-001: one canvas grid. Every workspace frame shares --canvas-max and
      the canvas owns the gutter (--gutter-canvas); workspaces pick column
      templates, never their own margins. The frame names remain as aliases. */
-  --canvas-max: 1680px;
+  --canvas-max: 1640px;
   --header-bar-height: 56px;
   --workspace-frame-standard: var(--canvas-max);
   --workspace-frame-wide: var(--canvas-max);
@@ -632,6 +697,9 @@
 
 .tutorial-offer {
   min-width: 0;
+  /* Sits beside the workspace frame: share its width so edges align (DS-TOKENS-001). */
+  max-width: var(--canvas-max);
+  margin-inline: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1904,7 +1972,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
   --surface-overlay: rgba(6, 9, 7, 0.82);
   --text-primary: #f2f5f1;
   --text-secondary: #c1c8c3;
-  --text-muted: #8f9a94;
+  --text-muted: #939e98;
   --text-disabled: #616b65;
   --text-on-accent: #07120d;
   --border-subtle: rgba(226, 236, 230, 0.08);
@@ -2034,6 +2102,56 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
   --theme-gradient: var(--surface-elevated);
   --page-glow: #dcd6ca;
   --elevation-surface: 0 1px 2px rgb(45 40 32 / .07), 0 2px 8px rgb(45 40 32 / .05);
+}
+
+/* DS-TOKENS-001 (DS-THEME-SLATE): Slate, a read-only built-in preset from the
+   kit's theme swatch (canvas #121417, panel #1b1f24, felt #2b3a4a, accent
+   #5b9bd5). Colour roles only; editing it makes a separate custom copy. */
+[data-theme="slate"] {
+  color-scheme: dark;
+  --surface-canvas: #121417;
+  --surface-shell: #16191d;
+  --surface-panel: #1b1f24;
+  --surface-elevated: #21262c;
+  --surface-interactive: #242a31;
+  --surface-interactive-hover: #2c333b;
+  --surface-inset: #15181c;
+  --surface-overlay: rgba(7, 9, 12, 0.84);
+  --text-primary: #eef1f5;
+  --text-secondary: #c3cad3;
+  --text-muted: #9aa5b1;
+  --text-disabled: #66707b;
+  --text-on-accent: #07111c;
+  --border-subtle: rgba(226, 232, 240, 0.08);
+  --border-default: #333b45;
+  --border-strong: #4a5664;
+  --border-focus: #7db3e2;
+  --border-invalid: #d66b70;
+  --selection-background: rgba(91, 155, 213, 0.24);
+  --selection-border: #7db3e2;
+  --accent-primary: #5b9bd5;
+  --accent-primary-hover: #7db3e2;
+  --accent-secondary: #9aaec4;
+  --status-positive: #68bd8d;
+  --status-warning: #d8aa5c;
+  --status-danger: #da747b;
+  --status-info: #72a9c5;
+  --status-success: var(--status-positive);
+  --card-face: #f5f1e8;
+  --card-border: #cbc5b9;
+  --card-back: #2f4459;
+  --poker-felt-accent: #2b3a4a;
+  --bg: var(--surface-canvas);
+  --panel: var(--surface-panel);
+  --panel2: var(--surface-interactive);
+  --line: var(--border-default);
+  --text: var(--text-primary);
+  --muted: var(--text-muted);
+  --primary: var(--accent-primary);
+  --primary-hover: var(--accent-primary-hover);
+  --primary-rgb: 91, 155, 213;
+  --theme-gradient: var(--surface-elevated);
+  --page-glow: #1d242c;
 }
 
 
@@ -3372,7 +3490,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
  * Cascade layers are deliberately deferred: most of this stylesheet is still
  * unlayered, and partially layering it would change legacy precedence.
  */
-html:not([data-theme="midnight"]):not([data-theme="graphite"]):not([data-theme="daylight"]) {
+html:not([data-theme="midnight"]):not([data-theme="graphite"]):not([data-theme="daylight"]):not([data-theme="slate"]) {
   --surface-canvas: var(--bg);
   --surface-shell: var(--panel);
   --surface-panel: var(--panel);
@@ -6528,7 +6646,11 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
 }
 
 /* Sizes. Legacy quiet/tertiary keep their compact height. Geometry stays at
-   single-class specificity so surface sections can still place and size. */
+   single-class specificity so surface sections can still place and size.
+   The view's main (primary) action is 44 px at md (Style v4, D-14). */
+.ui-button:where([data-variant="primary"], .ui-button--primary, .ui-button-primary):where(:not([data-size="sm"])) {
+  min-height: var(--control-height-primary);
+}
 .ui-button:where([data-size="sm"], .ui-button--tertiary, .ui-button--quiet) {
   min-height: var(--control-height-sm);
   padding: 0 var(--space-4);
@@ -7388,8 +7510,8 @@ button.ui-chip:hover:not(:disabled) { color: var(--text-primary); background: va
 .theme-library-heading { margin: 0; color: var(--text-muted); font-size: var(--t-label); font-weight: var(--weight-label); letter-spacing: .05em; text-transform: uppercase; }
 .theme-library-empty { margin: var(--space-2) 0 0; }
 .theme-library-empty[hidden] { display: none; }
-.theme-swatch-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-2); }
-.theme-swatch-grid--custom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Four built-ins read as 2x2, never 3+1 (DS-TOKENS-001: Slate). */
+.theme-swatch-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-2); }
 
 .theme-swatch-btn {
   --swatch-bg: var(--surface-interactive);
@@ -7696,7 +7818,8 @@ html[data-theme-editing="false"] .theme-color-controls { opacity: .62; }
 /* DESIGN-005: poker visual system --------------------------------------- */
 
 
-[data-theme="graphite"] {
+[data-theme="graphite"],
+[data-theme="slate"] {
   --poker-table-rail-start: color-mix(in srgb, var(--surface-elevated) 68%, var(--border-strong));
   --poker-table-rail-end: color-mix(in srgb, var(--surface-inset) 84%, #000000);
   --poker-table-surface-start: color-mix(in srgb, var(--poker-felt-accent) 76%, var(--surface-elevated));
@@ -8879,8 +9002,8 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 
 .hand-legal-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .hand-legal-actions .ui-button { min-height: 42px; flex: 1 1 92px; }
-.hand-legal-actions [data-canonical-action="fold"] { color: var(--action-fold); }
-.hand-legal-actions [data-canonical-action="all_in"] { color: var(--action-all-in); }
+.hand-legal-actions [data-canonical-action="fold"] { color: var(--action-fold-text); }
+.hand-legal-actions [data-canonical-action="all_in"] { color: var(--action-all-in-text); }
 .hand-action-sizing { margin-top: var(--space-4); }
 .hand-action-sizing small { color: var(--text-muted); font-weight: var(--weight-control); }
 
@@ -13563,7 +13686,7 @@ body.has-modal-open { overflow: hidden; }
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--action-aggressive) 30%, transparent);
 }
 .hand-action-dock [data-canonical-action="all_in"] {
-  color: var(--action-all-in);
+  color: var(--action-all-in-text);
   background: transparent;
   border-color: var(--action-all-in);
 }
@@ -13757,11 +13880,11 @@ body.has-modal-open { overflow: hidden; }
 [data-density="comfortable"] {
   --density-canvas-block-start: var(--space-7);
   --density-canvas-block-end: var(--space-9);
-  --density-panel-inline: 17px;
-  --density-panel-head-block-start: 14px;
+  --density-panel-inline: var(--pad-panel);
+  --density-panel-head-block-start: var(--pad-panel-head);
   --density-panel-head-block-end: 14px;
-  --density-panel-body-block-start: 15px;
-  --density-panel-body-block-end: 17px;
+  --density-panel-body-block-start: var(--pad-panel-head);
+  --density-panel-body-block-end: var(--pad-panel);
   --density-stack-gap: var(--space-4);
   --density-section-gap: var(--space-5);
   --density-row-block: var(--space-3);
@@ -16477,7 +16600,7 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 }
 .opponent-learning-comparison > article { min-width: 0; overflow-wrap: anywhere; }
 /* HAND-HISTORY-IMPORT-001: native focus-trapped dialog, source text stays LTR. */
-.hand-import-dialog { color: var(--text-primary); background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: 16px; box-sizing: border-box; width: min(720px, calc(100vw - 32px)); max-height: 88dvh; overflow: auto; padding: var(--space-8); }
+.hand-import-dialog { color: var(--text-primary); background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-panel); box-sizing: border-box; width: min(720px, calc(100vw - 32px)); max-height: 88dvh; overflow: auto; padding: var(--space-8); }
 .hand-import-dialog::backdrop { background: rgb(0 0 0 / .6); }
 .hand-import-dialog textarea { box-sizing: border-box; display: block; width: 100%; resize: vertical; margin-block: var(--space-4) var(--space-6); padding: var(--space-5); color: inherit; background: transparent; }
 .hand-import-dialog label { display: block; margin-block-start: var(--space-5); }
@@ -16667,7 +16790,7 @@ html[data-theme="midnight"] {
   --surface-inset: #171c19;
   --text-primary: #f2f5f1;
   --text-secondary: #c1c8c3;
-  --text-muted: #8f9a94;
+  --text-muted: #939e98;
   --text-on-accent: #07120d;
   --accent-primary: #42ad7b;
   --accent-primary-hover: #58c18f;
@@ -16966,7 +17089,7 @@ body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--a
 /* An idle setup roster contains no simulated in-progress hand. */
 #trainingIdle:has(.training-lineup-preview:not([hidden])) { display: block; padding: 0; border: 0; background: transparent; }
 #trainingIdle:has(.training-lineup-preview:not([hidden])) > :is(strong, span) { display: none; }
-.training-lineup-preview { padding: clamp(16px, 2vw, 28px); background: var(--game-background); color: var(--game-text); border: 1px solid var(--game-border); border-radius: 16px; }
+.training-lineup-preview { padding: clamp(16px, 2vw, 28px); background: var(--game-background); color: var(--game-text); border: 1px solid var(--game-border); border-radius: var(--radius-panel); }
 .training-lineup-preview header p { color: var(--game-secondary); margin-block: var(--space-4); }
 .training-lineup-preview h3 { color: var(--game-text); margin: 0; font-size: 1.35rem; }
 .training-lineup-eyebrow { font-size: .78rem; font-weight: var(--weight-heading); }

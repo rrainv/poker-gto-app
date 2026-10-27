@@ -3,9 +3,9 @@
   const root = document.documentElement;
   try {
     const cache = JSON.parse(localStorage.getItem('riverline_theme_prepaint'));
-    if (cache?.version === 'beta-b-2'
+    if (cache?.version === 'beta-b-3'
       && cache.library === localStorage.getItem('riverline_presentation_theme_customization')
-      && ['midnight', 'graphite', 'daylight'].includes(cache.theme)
+      && ['midnight', 'graphite', 'daylight', 'slate'].includes(cache.theme)
       && cache.properties && typeof cache.properties === 'object') {
       root.dataset.theme = cache.theme;
       root.dataset.presentationThemeId = cache.themeId;

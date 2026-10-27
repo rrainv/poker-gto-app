@@ -16,7 +16,7 @@ Riverline is a calm, premium No-Limit Hold'em study workstation: dark forest / j
 ## 2. Surface and tokens
 - Use role tokens from app/styles.css only; no raw hex in component rules. Midnight is the reference theme; every theme, custom ones included, must pass contrast (text 4.5:1, non-text 3:1).
 - Calm surface, deep data: the first look is clean; raw data is one hover, click or expand away ("All details", derivations on hover).
-- At most two containment levels; group with spacing first (gap between groups ≥ 2× gap within). Style v4: soft panels (target radius 16, padding 22; code still 10 px until DS-TOKENS-001), hero answer cards, number tiles, pills.
+- At most two containment levels; group with spacing first (gap between groups ≥ 2× gap within). Style v4: soft panels (radius 16, padding 22), hero answer cards, number tiles, pills.
 - One accent-filled primary action per view. Selection is an underline, thumb or tint, never an accent fill.
 - Never double-signal a state (accent border AND an "In use" label = wrong).
 - No dead space and no pseudo-dead space (long strips whose content would fit in less). Reserve heights for changing regions so nothing jumps; hover never changes layout.

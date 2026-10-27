@@ -954,6 +954,7 @@
   const themeNames = {
     'Riverline Midnight': ['Riverline: Полночь', 'Riverline: חצות'],
     'Riverline Graphite': ['Riverline: Графит', 'Riverline: גרפיט'],
+    'Riverline Slate': ['Riverline: Сланец', 'Riverline: צפחה'],
     'Riverline Daylight': ['Riverline: Дневная', 'Riverline: אור יום'],
     'Workstation theme': ['Тема рабочей среды', 'ערכת נושא לסביבת העבודה'],
     'Choose a built-in theme or create a named custom theme with three exact custom colors.': ['Выберите встроенную тему или создайте именованную пользовательскую тему с тремя цветами, сохраняемыми без изменений.', 'בחרו ערכת נושא מובנית או צרו ערכה מותאמת בשם עם שלושה צבעים שנשמרים בדיוק.'],

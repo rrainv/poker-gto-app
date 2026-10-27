@@ -10,8 +10,9 @@ export const PRESENTATION_THEMES = Object.freeze([
     id: 'midnight',
     name: 'Riverline Midnight',
     preview: Object.freeze({ accent: '#42ad7b', surface: '#101311', felt: '#2f6c52' }),
-    // Mirrors html[data-theme="midnight"] in styles.css (resting surfaces).
-    surfaces: Object.freeze(['#101311', '#151a17', '#1a201d', '#202824', '#222a26', '#171c19']),
+    // Mirrors html[data-theme="midnight"] in styles.css (resting surfaces, then
+    // the hover surface, which also carries text).
+    surfaces: Object.freeze(['#101311', '#151a17', '#1a201d', '#202824', '#222a26', '#171c19', '#2a342f']),
     // The mockup palette's provenance (brass), status colors and table felt/rail.
     status: Object.freeze({ warning: '#d5a34b', danger: '#d0646b', info: '#57a6b6', positive: '#58c18f' }),
     roles: Object.freeze({
@@ -20,7 +21,7 @@ export const PRESENTATION_THEMES = Object.freeze([
       '--table-rail-start': '#b9a777', '--table-rail-end': '#6f6447',
       // Analyze and evidence sit on the mockup's panel/elevated/inset with its text roles.
       '--analysis-surface': '#1a201d', '--analysis-surface-raised': '#202824', '--analysis-primary-surface': '#202824',
-      '--analysis-text': '#f2f5f1', '--analysis-secondary': '#c1c8c3', '--analysis-muted': '#8f9a94',
+      '--analysis-text': '#f2f5f1', '--analysis-secondary': '#c1c8c3', '--analysis-muted': '#939e98',
       '--evidence-surface': '#171c19', '--evidence-text': '#c1c8c3',
       '--navigation-active-surface': '#222a26', '--navigation-active-text': '#f2f5f1',
     }),
@@ -38,9 +39,17 @@ export const PRESENTATION_THEMES = Object.freeze([
     id: 'daylight',
     name: 'Riverline Daylight',
     preview: Object.freeze({ accent: '#256044', surface: '#e2ddd2', felt: '#477765' }),
-    // Mirrors [data-theme="daylight"] in styles.css (resting surfaces).
-    surfaces: Object.freeze(['#e2ddd2', '#d9d3c6', '#fbfaf6', '#fefdfb', '#ece7de', '#e5dfd3']),
+    // Mirrors [data-theme="daylight"] in styles.css (resting surfaces, then hover).
+    surfaces: Object.freeze(['#e2ddd2', '#d9d3c6', '#fbfaf6', '#fefdfb', '#ece7de', '#e5dfd3', '#ddd5c7']),
     tone: 'light',
+  }),
+  Object.freeze({
+    id: 'slate',
+    name: 'Riverline Slate',
+    preview: Object.freeze({ accent: '#5b9bd5', surface: '#121417', felt: '#2b3a4a' }),
+    // Mirrors [data-theme="slate"] in styles.css (resting surfaces, then hover).
+    surfaces: Object.freeze(['#121417', '#16191d', '#1b1f24', '#21262c', '#242a31', '#15181c', '#2c333b']),
+    tone: 'dark',
   }),
 ]);
 
@@ -600,7 +609,7 @@ function applyCustomProperties(root, theme, customization) {
 function cacheInitialTheme(root, storage) {
   const properties = Object.fromEntries(CUSTOM_PROPERTY_NAMES.map(name => [name, root.style?.getPropertyValue?.(name) ?? '']).filter(([, value]) => value));
   writeStorage(storage, 'riverline_theme_prepaint', JSON.stringify({
-    version: 'beta-b-2', library: readStorage(storage, PRESENTATION_THEME_STORAGE_KEY),
+    version: 'beta-b-3', library: readStorage(storage, PRESENTATION_THEME_STORAGE_KEY),
     theme: root.dataset.theme, themeId: root.dataset.presentationThemeId,
     kind: root.dataset.themeKind, properties,
   }));

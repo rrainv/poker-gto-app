@@ -52,7 +52,11 @@ test('the shared button system exposes all approved semantic variants', () => {
     assert.notEqual(looks.get(variant).split('|').slice(0, 3).join('|'), baseLook, variant);
   }
   assert.equal(new Set([...looks.values()]).size >= 8, true);
-  assert.equal(cascaded(root, '--control-height-md'), '36px');
+  // Style v4 (DS-TOKENS-001, D-14): 40 px controls, 44 px for the main action.
+  assert.equal(cascaded(root, '--control-height-md'), '40px');
+  assert.equal(cascaded(root, '--control-height-primary'), '44px');
+  assert.equal(cascaded(probe('<button class="ui-button" data-variant="primary">x</button>'), 'min-height'), 'var(--control-height-primary)');
+  assert.equal(cascaded(probe('<button class="ui-button" data-variant="primary" data-size="sm">x</button>'), 'min-height'), 'var(--control-height-sm)');
   assert.equal(cascaded(root, '--control-height'), 'var(--control-height-md)');
   assert.equal(cascaded(probe('<button class="ui-button is-loading">x</button>'), 'cursor'), 'progress');
   assert.equal(cascaded(probe('<button class="ui-button" disabled>x</button>'), 'cursor'), 'not-allowed');
@@ -219,7 +223,8 @@ test('poker actions retain stable semantics across Training and Hand Mode', asyn
     assert.equal(cascaded(probe(`<button class="ui-button ui-button--poker-${variant}">x</button>`), 'background'), `var(--action-${token})`, variant);
   }
   const allIn = probe('<div class="hand-legal-actions"><button class="ui-button" data-canonical-action="all_in">x</button></div>').firstElementChild;
-  assert.equal(cascaded(allIn, 'color'), 'var(--action-all-in)');
+  // DS-TOKENS-001: action-named text uses the contrast-derived text role, never the fill hue.
+  assert.equal(cascaded(allIn, 'color'), 'var(--action-all-in-text)');
   // Themes never redefine the action tokens.
   const tokens = eachTheme(() => ['fold', 'passive', 'aggressive', 'all-in'].map((token) => cascaded(root, `--action-${token}`)).join('|'));
   assert.equal(new Set(tokens).size, 1, tokens.join(' / '));

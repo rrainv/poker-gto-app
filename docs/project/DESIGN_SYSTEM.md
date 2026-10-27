@@ -43,7 +43,7 @@ Characters: original illustrated portraits (Cleo, Fern, Luma, Mika, Nova, Otto, 
 
 Owner-approved direction, 2026-10-14. The app style comes from Analyze v4 and is shown on the design kit's "Style v4" board. Every screen, mockup and polish pass follows it.
 
-- **Soft panels:** 16 px radius, a gentle vertical gradient (#1d2420 → #1a201d), a soft shadow, 22 px padding; panel titles in sentence case at 15 px / 650. No small-capital overlines except for tiny data labels. *(Code: flat panels, `--radius-panel` 10 px, no shadow in Midnight. Target values settled by D-14.)*
+- **Soft panels:** 16 px radius, a gentle vertical gradient (#1d2420 → #1a201d), a soft shadow, 22 px padding; panel titles in sentence case at 15 px / 650. No small-capital overlines except for tiny data labels. *(Code, DS-TOKENS-001: `--radius-panel` 16 px and `--pad-panel` 22 px are in the token layer; the panel gradient and soft shadow are still Target (no shadow in Midnight).)*
 - **A hero answer card** wherever a screen gives an answer: the big result, small pills right beside it (closeness, confidence tier with a coloured dot), a thick mix bar with labels inside the segments, one plain sentence of why, the primary action, and "All details ›" for the raw data.
 - **Number tiles** instead of fact tables for the 2–4 numbers that matter; full fact lists live behind "All details".
 - **Pills** for chips, context and quick links (tinted when selected); content-sized, never long strips.
@@ -55,7 +55,7 @@ Owner-approved direction, 2026-10-14. The app style comes from Analyze v4 and is
 
 The canonical base for mockups and for the M1 build: <https://claude.ai/artifact/SStpE2d5pkehonTDTfWadu> (shell template, components, table at a realistic size, Style v4 board). All screens re-drawn on it: <https://claude.ai/artifact/T3AFKWngjB7Wwt16S4Ghts>. The target look is these canvases, not the current app; only the real card backs and icons, and the current table's measurements, come from the app (MOCKUP-ASSETS-001).
 
-Target values (Style v4 wins where the kit disagreed; owner decision D-14, 2026-10-15): panels 16 px radius and 22 px padding; buttons 40 px tall (44–48 for the main action); content capped at ~1640 px. Kit values (*provisional*): sidebar 240 px; header 56 px; page padding 28 px; gaps 24 px; right rail 340–400 px. *(Code: header 56, gutter 24, `--canvas-max` 1680, controls 36 px.)*
+Target values (Style v4 wins where the kit disagreed; owner decision D-14, 2026-10-15): panels 16 px radius and 22 px padding; buttons 40 px tall (44–48 for the main action); content capped at ~1640 px. Kit values (*provisional*): sidebar 240 px; header 56 px; page padding 28 px; gaps 24 px; right rail 340–400 px. *(Code, DS-TOKENS-001: header 56, gutter 24, `--canvas-max` 1640, controls 40 px, primary 44 px, panels 16 / 22.)*
 
 ---
 
@@ -80,9 +80,21 @@ All colours come from role tokens (canvas, shell, panel, elevated, interactive, 
 
 **Contrast rules** (all themes): text pairs ≥ 4.5:1; non-text pairs (check glyph vs fill, checkbox boundary vs surface, switch thumb vs track, track vs surface) ≥ 3:1; provenance vs `--action-aggressive` RGB distance ≥ 60. The component sheet measures the rendered pairs per theme.
 
-**Contrast fixes from the mockup deep review (2026-10-26, register DS-CONTRAST-TOKENS, for DS-TOKENS-001):** the draft Daylight primary button (#ffffff on #2f8a5f = 4.27:1), the Midnight fold colour used as small text (#68716c = 3.29:1) and muted hint text miss WCAG AA for small text. Proposed tokens: Daylight button **#287a53** (5.1:1), fold **#828c86** (4.65:1); muted hints re-measured. *(Code: Daylight already uses a deeper accent, #256044, and `--action-*-text` roles are contrast-derived, so the failures are in the kit drafts and any place that uses the raw fold colour as text; DS-TOKENS-001 reconciles both.)*
+**Contrast fixes (DS-TOKENS-001, register DS-CONTRAST-TOKENS):** measured on every surface including the hover surface, through the theme controller (`tests/ds_tokens001.test.mjs`).
 
-**Built-in presets stay read-only (mockup review 2026-10-26, register DS-THEME-SLATE):** Slate is a built-in theme; "Your copy" is a separate slot / action (the kit Settings board overwrote Slate). *(Code has Midnight, Graphite and Daylight; Slate exists only in the kit and mockups so far.)*
+| Pair | Before | After |
+|---|---|---|
+| Midnight `--text-muted` on `--surface-interactive-hover` #2a342f | #8f9a94, 4.43:1 | **#939e98**, 4.65:1 (also `--analysis-muted`) |
+| Hand dock fold label (raw `--action-fold` #68716c on panel) | 3.29:1 | `--action-fold-text` #959c98, ≥ 4.59:1 |
+| Hand dock all-in label (raw `--action-all-in` #a85f70 on panel) | 3.58:1 | `--action-all-in-text`, ≥ 4.72:1 |
+| Midnight primary button #07120d on #42ad7b / hover #58c18f | 6.81 / 8.57:1 | unchanged |
+| Daylight primary button #ffffff on #256044 / hover #1e4f38 | 7.41 / 9.41:1 | unchanged (the kit draft #2f8a5f, 4.27:1, is not used) |
+| Daylight `--text-muted` #545e58, worst surface shell #d9d3c6 | 4.52:1 | unchanged |
+| Slate on-accent #07111c on #5b9bd5 / hover #7db3e2 | — | 6.41 / 8.52:1 |
+
+Preset `surfaces` lists (Midnight, Daylight, Slate) include the hover surface, so derived status, accent and action text roles reach 4.5:1 there too. Poker action fill hues are never text colour; action-named text uses `--action-*-text`. Graphite still misses on its hover surface: DS-CONTRAST-GRAPHITE.
+
+**Built-in presets stay read-only (mockup review 2026-10-26, register DS-THEME-SLATE):** Slate is a built-in theme; "Your copy" is a separate slot / action (the kit Settings board overwrote Slate). *(Code, DS-TOKENS-001: built-ins Midnight, Graphite, Daylight and Slate, shown 2×2; editing any built-in saves a separate custom copy.)*
 
 **Colour use:** colour carries meaning only: the one primary action, selection, active step, action data (mix bars, action buttons), status, provenance (brass). No decorative accent borders, gradient washes or coloured left-border cards. The accent is never a text-hierarchy colour; provenance (brass) and the aggressive action colour stay visibly distinct.
 
@@ -98,6 +110,10 @@ Target draft (language check canvas): canvas #f4f2ec · panel #ffffff · inset #
 
 Code today: Daylight accent deep jade #256044 / #1e4f38 (white text 7.4:1, ≥ 4.97:1 on every Daylight surface); Daylight never paints pure white (`--surface-elevated` #fefdfb). Reconcile in DS-TOKENS-001 (was DS-TOKENS-V4).
 
+### Slate (built-in, DS-TOKENS-001)
+
+From the kit's theme swatch: canvas #121417 · shell #16191d · panel #1b1f24 · elevated #21262c · interactive #242a31 · hover #2c333b · inset #15181c · lines #333b45 / #4a5664 · text #eef1f5 / #c3cad3 / #9aa5b1 · accent #5b9bd5 (hover/focus #7db3e2, on-accent #07111c) · felt #2b3a4a · card back #2f4459. Status, provenance and action text roles are derived by `presentation-theme.mjs`; poker action hues stay the shared ones.
+
 ### Custom themes and the table
 
 - **The table can have its own theme** (felt, rail, card back, later chips), separate from the app theme, so a calm app can sit around a richer table. Appearance shows a live preview that includes a mini table; later Chippy, bot characters and chips.
@@ -110,7 +126,7 @@ Code today: Daylight accent deep jade #256044 / #1e4f38 (white text 7.4:1, ≥ 4
 
 - **UI font:** `--font-ui` "Avenir Next", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif. On Windows Firefox, Segoe UI Variable Text renders (a variable font, so 650/750 are true weights).
 - **Numbers:** tabular digits everywhere (`body` sets `font-variant-numeric: tabular-nums`; `--font-data` resolves to `--font-ui`). Monospace (`--font-mono`) only for technical strings: `kbd`, `code`, `samp`, `.technical-id`.
-- **Heading face: Rubik** (P1-30, owner 2026-10-26: "looks good; tweaks possible once seen in real examples"; resolves D-10). One family covers Latin, Cyrillic and Hebrew. Serifs rejected. Workspace titles, verdicts and big numbers only. **Self-hosted** font files (no Google Fonts requests at runtime; the app's CSP allows only `font-src 'self' data:`), licence row in [THIRD_PARTY.md](../THIRD_PARTY.md) (SIL OFL). *(Code: `--font-display` is still the system stack; DS-TOKENS-001 adds Rubik; register DS-FONT-RUBIK.)*
+- **Heading face: Rubik** (P1-30, owner 2026-10-26: "looks good; tweaks possible once seen in real examples"; resolves D-10). One family covers Latin, Cyrillic and Hebrew. Serifs rejected. Workspace titles, verdicts and big numbers only. **Self-hosted** font files (no Google Fonts requests at runtime; the app's CSP allows only `font-src 'self' data:`), licence row in [THIRD_PARTY.md](../THIRD_PARTY.md) (SIL OFL). *(Code, DS-TOKENS-001: `--font-display` = "Rubik", then the system display stack; variable woff2 300–900 in `app/src/ui/assets/fonts/rubik/` (Latin, Latin Ext, Cyrillic, Cyrillic Ext, Hebrew), Latin preloaded, `font-display: block`; body keeps `--font-ui`. Display headings that set their own family are DS-DISPLAY-FONT-ADOPT.)*
 - **Line length:** explanatory text max ~70 characters per line.
 
 ### Scale
@@ -130,7 +146,7 @@ Nothing renders below 12 px except overline labels. Excluded: card faces, table 
 
 ### Weights
 
-| Role | Target (owner: 650 for labels, controls and fact values) | Code today |
+| Role | Target (owner: 650 for labels, controls and fact values) | Code (DS-TOKENS-001 verified) |
 |---|---|---|
 | `--weight-body` (prose, row meta, typed inputs) | 400 | 400 |
 | `--weight-control` (buttons, chips, selects, tabs, segments, nav items, disclosure summaries) | **650** | 650 |
@@ -151,9 +167,22 @@ The 600 → 650 change landed in TRUTH-FIXES-001. Surface CSS uses no literal we
 
 ### Spacing and geometry (code)
 
-- Spacing scale `--space-1…11` on a 4 px base (2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48). Roles: `--gap-control` 8, `--gap-group` 12, `--gap-section` 24, `--pad-control-block` 8, `--pad-control-inline` 12, `--pad-surface` 16 (dense) / `--pad-surface-reading` 24, `--gutter-canvas` 24, `--canvas-max` 1680, `--header-bar-height` 56. One spacing rhythm per screen.
-- Radius: `--radius-cell` 4 (matrix cells, mini cards in rows), `--radius-control` 7 (buttons, fields, chips), `--radius-panel` 10 (surfaces, overlays), `--radius-pill` 999. `--radius-sm/md/lg` alias cell/control/panel. *(Style v4 target, D-14: panels 16, controls 7–8, chips fully rounded.)*
-- Controls: `--control-height-md` 36 px (fields, md buttons, icon buttons), `--control-height-sm` 32 px (sm buttons, chips). *(Target, D-14: 40 px, 44–48 for the main action.)*
+- Spacing scale `--space-1…11` on a 4 px base (2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48). One spacing rhythm per screen:
+
+| Role | Value | Use |
+|---|---|---|
+| `--gap-control` / `--gap-group` / `--gap-section` | 8 / 12 / 24 | within a control group / between groups / between sections and panels |
+| `--pad-control-block` / `--pad-control-inline` | 8 / 12 | control padding |
+| `--pad-panel` | **22** (Style v4) | panel inline and block-end padding; comfortable density `--density-panel-inline` and `--density-panel-body-block-end` use it |
+| `--pad-panel-head` | 16 | panel head block-start and body block-start |
+| `--pad-surface` | = `--pad-panel` | legacy name for dense surfaces |
+| `--pad-surface-reading` | 24 | reading surfaces |
+| `--gutter-canvas` | 24 | the canvas gutter |
+| `--canvas-max` | **1640** (D-14) | every workspace frame, the header start edge and the tutorial offer |
+| `--header-bar-height` | 56 | the workspace header |
+- Radius: `--radius-cell` 4 (matrix cells, mini cards in rows), `--radius-control` 7 (buttons, fields, chips), `--radius-panel` **16** (surfaces, overlays; Style v4, D-14), `--radius-pill` 999. `--radius-sm/md/lg` alias cell/control/panel. Nested wells must not use `--radius-panel` (DS-TOKEN-ADOPTION).
+- Controls: `--control-height-md` **40** px (fields, md buttons, icon buttons), `--control-height-primary` **44** px (the view's one primary action at md size; sm primaries stay sm), `--control-height-sm` 32 px (sm buttons, chips). Compact density keeps its own heights.
+- Card size scale by context (`--card-scale-{inline,mini,standard,table}-{width,height}`): inline 28×40 (in text and rows), mini 38×54 (result and list previews), standard 52×74 (pickers, hero answer), table 40×57 (the play stage). They alias the measured `--card-size-*` values.
 - Elevation, maximum nesting surface → group: group (no box; separated by `--border-subtle` or space) · surface (`--surface-panel`, 1 px `--border-default`, `--radius-panel`, `--elevation-surface`) · overlay (`--surface-elevated`, `--border-strong`, `--elevation-overlay`) · primary press (`--elevation-primary`, `--elevation-pressed`, primary buttons only) · field well (`--elevation-inset`, inputs only, never a nested box). `--elevation-feature` (Welcome, coach and Ranges & runouts cards) is legacy debt.
 
 ### Structure
