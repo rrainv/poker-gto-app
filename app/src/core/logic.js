@@ -1899,12 +1899,63 @@ function renderDeck() {
           : isUnavailable
             ? t('{card}, unavailable', { card: accessibleCard })
             : t('Select {card}', { card: accessibleCard });
-        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" data-card-size="picker" aria-label="${accessibleLabel}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}>${globalThis.RiverlineCardPresentation.cardFaceMarkup({ rank, suit: suit.id, rankStyle: app.settings.cardRankStyle })}</button>`;
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" data-card-size="picker" tabindex="-1" aria-label="${accessibleLabel}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}>${globalThis.RiverlineCardPresentation.cardFaceMarkup({ rank, suit: suit.id, rankStyle: app.settings.cardRankStyle })}</button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
+    syncDeckTabStop(deck, [...deck.querySelectorAll('[data-deck-card]')]
+      .find((control) => control.dataset.deckCard === draft[0]) || null);
   }
 
+}
+
+// A11Y-KEYS-001: the 52-card deck is one Tab stop (roving tabindex); arrow
+// keys move between enabled cards by suit row and rank column.
+function deckCardRows(deck) {
+  return [...deck.querySelectorAll('.deck-suit-row')]
+    .map((row) => [...row.querySelectorAll('[data-deck-card]')]);
+}
+
+function syncDeckTabStop(deck, preferred) {
+  const cards = [...deck.querySelectorAll('[data-deck-card]')];
+  const usable = (card) => card && !card.disabled;
+  const stop = usable(preferred) ? preferred
+    : cards.find((card) => card.tabIndex === 0 && usable(card)) || cards.find(usable) || null;
+  cards.forEach((card) => {
+    const tabIndex = card === stop ? 0 : -1;
+    if (card.tabIndex !== tabIndex) card.tabIndex = tabIndex;
+  });
+}
+
+function deckKeyboardTarget(deck, current, event) {
+  const rows = deckCardRows(deck);
+  const rowIndex = rows.findIndex((row) => row.includes(current));
+  if (rowIndex < 0) return null;
+  const column = rows[rowIndex].indexOf(current);
+  const enabled = (card) => card && !card.disabled;
+  const rtl = globalThis.getComputedStyle?.(deck)?.direction === 'rtl';
+  const firstIn = (cards) => cards.find(enabled) || null;
+  const scanRow = (step) => {
+    for (let index = column + step; index >= 0 && index < rows[rowIndex].length; index += step) {
+      if (enabled(rows[rowIndex][index])) return rows[rowIndex][index];
+    }
+    return null;
+  };
+  const scanColumn = (step) => {
+    for (let index = rowIndex + step; index >= 0 && index < rows.length; index += step) {
+      if (enabled(rows[index][column])) return rows[index][column];
+    }
+    return null;
+  };
+  switch (event.key) {
+    case 'ArrowRight': return scanRow(rtl ? -1 : 1);
+    case 'ArrowLeft': return scanRow(rtl ? 1 : -1);
+    case 'ArrowDown': return scanColumn(1);
+    case 'ArrowUp': return scanColumn(-1);
+    case 'Home': return event.ctrlKey ? firstIn(rows.flat()) : firstIn(rows[rowIndex]);
+    case 'End': return event.ctrlKey ? firstIn(rows.flat().reverse()) : firstIn(rows[rowIndex].slice().reverse());
+    default: return null;
+  }
 }
 
 
@@ -1935,6 +1986,7 @@ function updateDeckCardStates(changedCards) {
     control.setAttribute('aria-pressed', String(isSelected));
     control.setAttribute('aria-label', accessibleLabel);
   });
+  syncDeckTabStop(deck, deck.contains(document.activeElement) ? document.activeElement : null);
 }
 
 
@@ -2192,10 +2244,13 @@ function clearCardSetPicker() {
 
 
 
+const DECK_NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']);
+
 function cardPickerFocusableElements() {
   return $$('#cardModal button:not([disabled]), #cardModal input:not([disabled])')
     .filter((element) => (
       !element.hidden
+      && element.tabIndex >= 0
       && element.getAttribute('aria-hidden') !== 'true'
       && element.getClientRects().length > 0
     ));
@@ -2209,6 +2264,22 @@ function handleCardPickerKeydown(event) {
     event.preventDefault();
     event.stopPropagation();
     closePicker();
+    return;
+  }
+  if (DECK_NAVIGATION_KEYS.has(event.key)) {
+    const deck = $('#deck');
+    const current = event.target?.closest?.('[data-deck-card]');
+    if (deck && current && deck.contains(current)) {
+      event.preventDefault();
+      const next = deckKeyboardTarget(deck, current, event);
+      if (next) {
+        syncDeckTabStop(deck, next);
+        next.focus();
+      }
+      return;
+    }
+    // Arrow keys never scroll the page behind the open picker.
+    if (event.key.startsWith('Arrow') && !event.target?.matches?.('input, select, textarea')) event.preventDefault();
     return;
   }
   if (event.key !== 'Tab') return;
@@ -6701,6 +6772,79 @@ function bindMatrixGridInteractions(grid) {
   grid.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') restoreSelectedMatrixInspector(grid);
   });
+  bindMatrixGridKeyboard(grid);
+}
+
+// A11Y-KEYS-001: 13×13 matrices are ARIA grids (row elements use
+// display:contents so the CSS grid stays flat) with one Tab stop.
+function buildMatrixGridCells(grid, className, configureCell) {
+  grid.replaceChildren();
+  RANKS.forEach((_, row) => {
+    const rowElement = document.createElement('div');
+    rowElement.className = 'matrix-grid-row';
+    rowElement.setAttribute('role', 'row');
+    rowElement.setAttribute('aria-rowindex', String(row + 1));
+    RANKS.forEach((__, col) => {
+      const btn = document.createElement('button');
+      btn.className = className;
+      btn.type = 'button';
+      btn.tabIndex = -1;
+      btn.setAttribute('role', 'gridcell');
+      btn.setAttribute('aria-colindex', String(col + 1));
+      configureCell?.(btn, row, col);
+      rowElement.appendChild(btn);
+    });
+    grid.appendChild(rowElement);
+  });
+}
+
+function matrixGridCells(grid) {
+  return [...grid.querySelectorAll('[role="gridcell"]')];
+}
+
+function syncMatrixTabStop(grid, preferred) {
+  const cells = matrixGridCells(grid);
+  const focused = cells.find((cell) => cell === document.activeElement);
+  const stop = preferred || focused
+    || cells.find((cell) => cell.getAttribute('aria-pressed') === 'true')
+    || cells.find((cell) => cell.tabIndex === 0)
+    || cells[0];
+  cells.forEach((cell) => {
+    const tabIndex = cell === stop ? 0 : -1;
+    if (cell.tabIndex !== tabIndex) cell.tabIndex = tabIndex;
+  });
+}
+
+function bindMatrixGridKeyboard(grid) {
+  if (grid.dataset.keyboardBound) return;
+  grid.dataset.keyboardBound = 'true';
+  grid.addEventListener('focusin', (event) => {
+    const cell = event.target.closest('[role="gridcell"]');
+    if (cell) syncMatrixTabStop(grid, cell);
+  });
+  grid.addEventListener('keydown', (event) => {
+    const cell = event.target.closest('[role="gridcell"]');
+    if (!cell) return;
+    const cells = matrixGridCells(grid);
+    const index = cells.indexOf(cell);
+    if (index < 0) return;
+    const size = RANKS.length;
+    const row = Math.floor(index / size);
+    const col = index % size;
+    // The matrix is never mirrored (P1-30), so arrows stay physical in RTL.
+    const target = {
+      ArrowRight: col < size - 1 ? index + 1 : index,
+      ArrowLeft: col > 0 ? index - 1 : index,
+      ArrowDown: row < size - 1 ? index + size : index,
+      ArrowUp: row > 0 ? index - size : index,
+      Home: event.ctrlKey ? 0 : row * size,
+      End: event.ctrlKey ? cells.length - 1 : row * size + size - 1,
+    }[event.key];
+    if (target === undefined) return;
+    event.preventDefault();
+    syncMatrixTabStop(grid, cells[target]);
+    cells[target].focus();
+  });
 }
 
 function matrixMixState(actions, dominantAction) {
@@ -6754,20 +6898,10 @@ function renderChart() {
     return;
   }
 
-  if (grid.children.length === 0) {
-    grid.innerHTML = '';
-    RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
-      const btn = document.createElement('button');
-      btn.className = 'hand-cell';
-      btn.type = 'button';
-      btn.setAttribute('role', 'gridcell');
-      btn.setAttribute('aria-rowindex', String(row + 1));
-      btn.setAttribute('aria-colindex', String(col + 1));
-      grid.appendChild(btn);
-    }));
-  }
+  if (grid.children.length === 0) buildMatrixGridCells(grid, 'hand-cell');
 
   bindMatrixGridInteractions(grid);
+  const gridCells = matrixGridCells(grid);
 
   
 
@@ -6796,7 +6930,7 @@ function renderChart() {
         : t('Strategy unavailable');
 
     const idx = row * 13 + column;
-    const button = grid.children[idx];
+    const button = gridCells[idx];
 
     const isSelected = app.selectedHand === hand || (!app.selectedHand && currentHeroClass === hand);
 
@@ -6905,6 +7039,7 @@ function renderChart() {
     /* grid.appendChild(button) removed for recycling */
 
   }));
+  syncMatrixTabStop(grid);
 
   const previewContainer = $('#chartSelectionPreview');
 
@@ -9397,6 +9532,10 @@ function bindEvents() {
     if (card && !card.disabled) selectCard(card.dataset.deckCard);
 
   });
+  if ($('#deck')) $('#deck').addEventListener('focusin', (event) => {
+    const card = event.target.closest('[data-deck-card]');
+    if (card) syncDeckTabStop($('#deck'), card);
+  });
 
   if ($('#closeModal')) $('#closeModal').addEventListener('click', closePicker);
 
@@ -10429,19 +10568,12 @@ function renderRangeGrid(gridId, hoverInfoId, comparisonFacts, statIds) {
 
   // Init grid once
   if (grid.children.length === 0) {
-    grid.innerHTML = '';
-    RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
-      const btn = document.createElement('button');
-      btn.className = 'hand-cell range-cell';
-      btn.type = 'button';
-      btn.setAttribute('role', 'gridcell');
-      btn.setAttribute('aria-rowindex', String(row + 1));
-      btn.setAttribute('aria-colindex', String(col + 1));
+    buildMatrixGridCells(grid, 'hand-cell range-cell', (btn, row, col) => {
       btn.dataset.hand = handCode(row, col);
       btn.dataset.index = row * 13 + col;
-      grid.appendChild(btn);
-    }));
-    
+    });
+    bindMatrixGridKeyboard(grid);
+
     // Event delegation
     const inspect = (e) => {
       const btn = e.target.closest('.range-cell');
@@ -10463,12 +10595,13 @@ function renderRangeGrid(gridId, hoverInfoId, comparisonFacts, statIds) {
     grid.addEventListener('focusout', clearInspection);
   }
 
+  const gridCells = matrixGridCells(grid);
   RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
     const hand = handCode(row, col);
     const cell = comparisonFacts?.cells?.[hand];
     const presentation = CATEGORY[cell?.category] || null;
     const idx = row * 13 + col;
-    const btn = grid.children[idx];
+    const btn = gridCells[idx];
     const fullyRemoved = cell?.state === 'fully_removed';
     const notInSample = cell?.state === 'not_in_sample';
     const state = fullyRemoved ? 'fully-removed' : notInSample ? 'not-in-sample' : 'eligible';
@@ -10486,6 +10619,7 @@ function renderRangeGrid(gridId, hoverInfoId, comparisonFacts, statIds) {
     btn.dataset.sampleState = state;
     btn.disabled = false;
   }));
+  syncMatrixTabStop(grid);
 
 
 

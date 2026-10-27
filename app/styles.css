@@ -19452,3 +19452,8 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-mat
   text-transform: none;
   color: inherit;
 }
+
+/* A11Y-KEYS-001: matrix rows are ARIA structure only; the CSS grid stays a
+   flat 13 by 13. Every matrix cell shows a keyboard focus ring. */
+.matrix-grid-row { display: contents; }
+.strategy-grid .hand-cell:focus-visible { position: relative; z-index: 2; outline: 2px solid var(--border-focus); outline-offset: 1px; }

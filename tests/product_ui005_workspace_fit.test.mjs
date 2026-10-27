@@ -80,7 +80,9 @@ test('preflop Matrix retains the provider-backed 13 by 13 model and readable loc
   const model = app.window.app.matrixModel;
   cells().forEach((cell, index) => {
     assert.equal(cell.dataset.hand, model.cells[index].hand);
-    assert.equal(cell.getAttribute('aria-rowindex'), String(Math.floor(index / 13) + 1));
+    // A11Y-KEYS-001: gridcells sit in role="row" elements that carry the row index.
+    assert.equal(cell.parentElement.getAttribute('role'), 'row');
+    assert.equal(cell.parentElement.getAttribute('aria-rowindex'), String(Math.floor(index / 13) + 1));
     assert.equal(cell.getAttribute('aria-colindex'), String((index % 13) + 1));
   });
   assert.equal(css.cascaded(app.document.documentElement, '--range-matrix-cell'), 'clamp(42px, 2.75vw, 46px)');

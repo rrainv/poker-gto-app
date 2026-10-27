@@ -366,6 +366,7 @@ export function createProductionPickerHarness({
     ${extractFunction('unavailableCardsForPicker')}
     ${extractFunction('renderDeck')}
     ${extractFunction('updateDeckCardStates')}
+    ${extractFunction('syncDeckTabStop')}
     ${extractFunction('selectCard')}
     ${extractFunction('cardSetPickerFocusTarget')}
     ${extractFunction('replaceCardSetTarget')}
@@ -577,6 +578,7 @@ export function createEquityHandEntryHarness() {
     ${extractFunction('unavailableCardsForPicker')}
     ${extractFunction('renderDeck')}
     ${extractFunction('updateDeckCardStates')}
+    ${extractFunction('syncDeckTabStop')}
     ${extractFunction('selectCard')}
     ${extractFunction('cardSetPickerFocusTarget')}
     ${extractFunction('replaceCardSetTarget')}

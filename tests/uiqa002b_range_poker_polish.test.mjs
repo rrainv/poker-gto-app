@@ -70,7 +70,9 @@ test('Range Matrix keeps the exact 13 by 13 hand-class mapping', () => {
 
 test('matrix cells are compact, fixed, scroll-contained, LTR, and never zoom', () => {
   const wrap = matrix.querySelector('.matrix-wrap');
-  assert.equal(wrap.getAttribute('tabindex'), '0');
+  // A11Y-KEYS-001: the grid's roving cell is the only Tab stop; focusing a
+  // cell scrolls it into view, so the wrap is no longer a second stop.
+  assert.equal(wrap.hasAttribute('tabindex'), false);
   const grid = matrix.querySelector('#strategyGrid');
   assert.equal(grid.getAttribute('role'), 'grid');
   // Effective cell token: a later PRODUCT-UI-005 value superseded 3.2vw/50px and
@@ -106,7 +108,9 @@ test('matrix selection, inspector, and unavailable states remain explicit', asyn
   assert.equal(inspector.getAttribute('aria-live'), 'polite');
   const cells = freshChart();
   cells.forEach((cell, index) => {
-    assert.equal(cell.getAttribute('aria-rowindex'), String(Math.floor(index / 13) + 1));
+    // A11Y-KEYS-001: gridcells sit in role="row" elements that carry the row index.
+    assert.equal(cell.parentElement.getAttribute('role'), 'row');
+    assert.equal(cell.parentElement.getAttribute('aria-rowindex'), String(Math.floor(index / 13) + 1));
     assert.equal(cell.getAttribute('aria-colindex'), String((index % 13) + 1));
     assert.match(cell.getAttribute('aria-pressed'), /^(?:true|false)$/);
   });
