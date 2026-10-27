@@ -149,6 +149,16 @@ test('the Training heading follows the state instead of always asking for a deci
   }
 });
 
+test('after a Hero fold the summary section does not repeat the workspace heading', () => {
+  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+  const terminal = logic.slice(logic.indexOf('function renderFullHandTerminal('), logic.indexOf('function renderFullHandTrainingSnapshot('));
+  assert.match(terminal, /\$\('#trainingFullHandCompletionTitle'\)\.classList\.toggle\('sr-only', heroComplete\)/,
+    'the section title is visually hidden only in the Hero-fold summary');
+  const section = markup.getElementById('trainingFullHandCompletion');
+  assert.equal(section.getAttribute('aria-labelledby'), 'trainingFullHandCompletionTitle', 'the hidden title still names the section');
+  assert.ok(section.querySelector('.training-eyebrow'), 'a quiet visible label remains');
+});
+
 test('opponent lineup tiles stack name, position and behaviour without clipping', () => {
   const host = app.document.createElement('div');
   host.innerHTML = '<ul class="training-lineup-roster"><li data-hero="false"><button class="training-lineup-seat" type="button"><img alt=""><div><strong>Mika</strong><bdi>BTN</bdi><small>Calling-heavy</small></div></button></li></ul>';

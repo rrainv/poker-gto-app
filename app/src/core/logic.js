@@ -14558,6 +14558,10 @@ function renderFullHandTerminal(snapshot) {
   if ($('#trainingFullHandResult')) $('#trainingFullHandResult').textContent = heroComplete ? t('Hero folded. No further cards or opponent actions have been played.') : fullHandTerminalResultCopy(snapshot);
   $('#trainingFullHandCompletionTitle').textContent = t(heroComplete ? 'Your hand summary' : 'Hand Complete');
   $('#trainingFullHandCompletionTitle').dataset.i18n = heroComplete ? 'Your hand summary' : 'Hand Complete';
+  // Never double-signal: after a Hero fold the workspace heading already says
+  // "Your hand summary", so the section title stays only as the section's
+  // accessible name and the quiet "Full Hand" eyebrow is the visible label.
+  $('#trainingFullHandCompletionTitle').classList.toggle('sr-only', heroComplete);
   $('#trainingReviewHand').hidden = heroComplete;
   $('#trainingWatchRest').hidden = !heroComplete;
   const foldDecisions = $('#trainingFoldDecisions');

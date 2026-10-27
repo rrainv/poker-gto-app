@@ -220,7 +220,9 @@ test('results prioritize equity while preserving per-player win and tie detail a
     assert.equal(tile.dataset.playerSeries, String(index));
     const player = result.players.find(({ id }) => id === equity().players[index].id);
     const values = tile.querySelectorAll('.equity-result-metrics strong').map((node) => text(node));
-    assert.deepEqual(values, [player.equity, player.winProbability, player.tieProbability].map((value) => `${(value * 100).toFixed(1)}%`));
+    // The app formats with Intl.NumberFormat (LOCALE-NUMBERS-001), whose rounding
+    // can differ from toFixed on a borderline value such as 81.85.
+    assert.deepEqual(values, [player.equity, player.winProbability, player.tieProbability].map((value) => app.call('formatUiPercent', value * 100, 1)));
     assert.equal(text(tile.querySelector('.equity-result-primary > span')), 'Equity');
   });
   const overview = equity().players.map((player, index) => app.call('equityOverviewPlayerMarkup', player, index));
