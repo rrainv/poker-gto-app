@@ -17,6 +17,7 @@ const rangeCalibrationTranslationsSource = fs.readFileSync(path.join(repoRoot, '
 const homeTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-translations.js'), 'utf8');
 const homeGameTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-game-translations.js'), 'utf8');
 const welcomeTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/welcome-translations.js'), 'utf8');
+const trainingQuickTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/training-quick-translations.js'), 'utf8');
 // TEST-HYGIENE-001: logic.js / index.html / styles.css assertions are
 // behavioural: the page's language and strategy-message paths run in a booted
 // app (booted lazily, once, with a provider probe), markup is parsed, and the
@@ -101,6 +102,7 @@ function createRuntime() {
   vm.runInNewContext(homeTranslationsSource, context, { filename: 'home-translations.js' });
   vm.runInNewContext(homeGameTranslationsSource, context, { filename: 'home-game-translations.js' });
   vm.runInNewContext(welcomeTranslationsSource, context, { filename: 'welcome-translations.js' });
+  vm.runInNewContext(trainingQuickTranslationsSource, context, { filename: 'training-quick-translations.js' });
   vm.runInNewContext(i18nSource, context, { filename: 'i18n.js' });
   return { clear, context, documentElement, events, languageSelect, storage };
 }

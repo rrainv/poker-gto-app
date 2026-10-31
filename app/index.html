@@ -35,6 +35,7 @@
   <script src="src/locales/tutorial-translations.js?v=1" defer></script>
   <script src="src/locales/guide-translations.js?v=1" defer></script>
   <script src="src/locales/welcome-translations.js?v=1" defer></script>
+  <script src="src/locales/training-quick-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=5" defer></script>
   <script type="module" src="src/application/locale-number-format-bootstrap.mjs"></script>
 
@@ -2319,6 +2320,7 @@
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
               <span data-i18n="Choose a mode in Session setup, then start Training.">Choose a mode in Session setup, then start Training.</span>
             </div>
+            <div id="quickDrillSetupMount" class="quick-drill-setup-mount"></div>
             <div id="trainingGenerating" class="training-state-message" hidden aria-live="polite">
               <span class="training-spinner" aria-hidden="true"></span>
               <div><strong id="trainingGeneratingTitle" data-i18n="Generating exercise">Generating exercise</strong><span id="trainingGeneratingText" data-i18n="Replaying a bounded legal hand trajectory.">Replaying a bounded legal hand trajectory.</span></div>
@@ -2329,6 +2331,38 @@
             </div>
 
             <div id="trainingExerciseSurface" class="training-exercise-surface" hidden>
+              <div id="trainingQuickDrill" class="quick-drill" data-motion="drill" hidden>
+                <header class="quick-drill-head">
+                  <div class="quick-drill-spot"><h3 id="quickDrillSpotTitle" class="quick-drill-spot-title"></h3><span id="quickDrillSpotSub" class="quick-drill-spot-sub"></span></div>
+                  <div id="quickDrillDots" class="quick-drill-dots"></div>
+                  <span id="quickDrillSource" class="quick-drill-source"></span>
+                  <div class="quick-drill-feel">
+                    <button id="quickDrillFeelButton" class="ui-button ui-button--quiet quick-drill-head-button" type="button" aria-expanded="false" aria-controls="quickDrillFeel" data-i18n="Feel">Feel</button>
+                    <div id="quickDrillFeel" class="quick-drill-feel-popover" role="group" aria-labelledby="quickDrillFeelButton" hidden>
+                      <span id="quickDrillAnswerModeLabel" class="quick-drill-feel-label" data-i18n="Choosing an action">Choosing an action</span>
+                      <div class="ui-segments quick-drill-answer-mode" role="group" aria-labelledby="quickDrillAnswerModeLabel">
+                        <button class="ui-tab" type="button" data-answer-mode-option="select" aria-pressed="true" data-i18n="Select + confirm">Select + confirm</button>
+                        <button class="ui-tab" type="button" data-answer-mode-option="one_click" aria-pressed="false" data-i18n="One click">One click</button>
+                      </div>
+                      <span id="quickDrillMotionLabel" class="quick-drill-feel-label" data-i18n="Motion">Motion</span>
+                      <div class="ui-segments quick-drill-motion" role="group" aria-labelledby="quickDrillMotionLabel">
+                        <button class="ui-tab" type="button" data-motion-option="instant" aria-pressed="false" data-i18n="Instant">Instant</button>
+                        <button class="ui-tab" type="button" data-motion-option="faster" aria-pressed="false" data-i18n="Faster">Faster</button>
+                        <button class="ui-tab active" type="button" data-motion-option="standard" aria-pressed="true" data-i18n="Standard">Standard</button>
+                        <button class="ui-tab" type="button" data-motion-option="reduced" aria-pressed="false" data-i18n="Reduced">Reduced</button>
+                      </div>
+                      <p id="quickDrillKeys" class="quick-drill-feel-keys"></p>
+                    </div>
+                  </div>
+                  <button id="quickDrillAdjust" class="ui-button ui-button--quiet quick-drill-head-button" type="button" data-i18n="Adjust drill">Adjust drill</button>
+                </header>
+                <div id="quickDrillFelt" class="quick-drill-felt" role="group" aria-label="Table" data-i18n-aria-label="Table"></div>
+                <div id="quickDrillFacts" class="quick-drill-facts" role="group" aria-label="Spot facts" data-i18n-aria-label="Spot facts"></div>
+                <div id="quickDrillZone" class="quick-drill-zone" data-zone-state="actions">
+                  <div id="quickDrillActionLayer" class="quick-drill-layer quick-drill-layer--actions"></div>
+                  <div id="quickDrillFeedbackLayer" class="quick-drill-layer quick-drill-layer--feedback"></div>
+                </div>
+              </div>
               <div id="trainingFullHandTimeline" class="full-hand-compact-timeline" hidden aria-label="Full Hand timeline" data-i18n-aria-label="Full Hand timeline"></div>
               <div id="trainingFullHandTableMount" class="table-wrapper training-full-hand-table-wrapper" data-replay-mode="live" hidden aria-label="Live Full Hand table" data-i18n-aria-label="Live Full Hand table"></div>
               <p id="trainingFullHandActionStatus" class="training-full-hand-action-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
@@ -2381,7 +2415,7 @@
 
             <div id="trainingFeedback" class="training-feedback" data-grade="none" hidden data-tutorial-anchor="training-feedback">
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback" hidden>Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
-              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><div id="trainingFeedbackProvenance" class="eyebrow training-feedback-provenance"><span id="trainingTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span><span id="trainingTier"> · <span id="trainingTierLabel" data-i18n="Estimated" title="Heuristic guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="trainingFeedbackStreet" data-i18n="Preflop">Preflop</span></div><h3 id="feedbackTitle" tabindex="-1" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
+              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><div id="trainingFeedbackProvenance" class="eyebrow training-feedback-provenance"><span id="trainingTruthHeading" data-i18n="quickDrill.term.baseline">Baseline</span><span id="trainingTier"> · <span id="trainingTierLabel" data-i18n="Estimated" title="Baseline guidance, not yet verified against references." data-i18n-title="Baseline guidance, not yet verified against references.">Estimated</span></span> · <span id="trainingFeedbackStreet" data-i18n="Preflop">Preflop</span></div><h3 id="feedbackTitle" tabindex="-1" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
               <dl id="trainingSameSpotComparison" class="training-same-spot-comparison" hidden aria-label="Same spot comparison" data-i18n-aria-label="Same spot comparison">
                 <div><dt data-i18n="Earlier answer">Earlier answer</dt><dd id="trainingSameSpotEarlierAnswer">-</dd></div>
                 <div><dt data-i18n="This try">This try</dt><dd id="trainingSameSpotThisTry">-</dd></div>
@@ -2423,6 +2457,7 @@
               <div id="trainingHandReviewMount" class="hand-review-mount hand-review-mount--training"></div>
             </section>
             <div id="trainingSessionCompletion" class="training-session-completion" hidden aria-live="polite">
+              <div id="quickDrillFinishRing" class="quick-drill-finish-ring" data-motion="drill"></div>
               <strong data-i18n="Session complete">Session complete</strong>
               <span id="trainingSessionCompletionText"></span>
               <div class="training-session-completion-actions">
@@ -2442,6 +2477,7 @@
         </main>
 
         <aside class="training-insight-column">
+          <div id="quickDrillPanels" class="quick-drill-panels" data-motion="panel" hidden></div>
           <section id="trainingFullHandActionDock" class="panel training-full-hand-action-dock" aria-labelledby="trainingFullHandActionDockTitle" hidden>
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p><h2 id="trainingFullHandActionDockTitle" data-i18n="Current legal actions">Current legal actions</h2></div></div>
             <div class="panel-body">
@@ -3180,6 +3216,16 @@
             <p class="panel-note" data-i18n="Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.">Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.</p>
           </header>
 
+          <section class="settings-system-status settings-answer-mode-field" data-setting-id="training-answer-mode" aria-labelledby="settingsAnswerModeTitle">
+            <div class="settings-system-status-head">
+              <div><strong id="settingsAnswerModeTitle" data-i18n="Choosing an action">Choosing an action</strong><small id="settingsAnswerModeHint" data-i18n="Training drills: select an action, then confirm it, or answer with one click.">Training drills: select an action, then confirm it, or answer with one click.</small></div>
+            </div>
+            <div class="ui-segments settings-answer-mode-control" role="group" aria-labelledby="settingsAnswerModeTitle" aria-describedby="settingsAnswerModeHint">
+              <button class="ui-tab" type="button" data-answer-mode-option="select" aria-pressed="true" data-i18n="Select + confirm">Select + confirm</button>
+              <button class="ui-tab" type="button" data-answer-mode-option="one_click" aria-pressed="false" data-i18n="One click">One click</button>
+            </div>
+          </section>
+
           <label class="settings-language-field" for="settingsLanguageSelect" data-setting-id="language">
             <span><strong data-i18n="Language">Language</strong><small data-i18n="Applies immediately and uses the same preference as the sidebar.">Applies immediately and uses the same preference as the sidebar.</small></span>
             <select id="settingsLanguageSelect" class="control-select" aria-label="Language" data-i18n-aria-label="Language">
@@ -3473,6 +3519,7 @@
   <script type="module" src="src/application/training-memory-row-format.mjs"></script>
   <script type="module" src="src/application/decision-facing-summary.mjs"></script>
   <script type="module" src="src/application/analyze-verdict-bridge.mjs"></script>
+  <script type="module" src="src/application/training-quick-drill-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-training-history-workspace.mjs"></script>
   <script src="src/core/logic.js?v=28" defer></script>
   <script src="src/ui/teacher.js" defer></script>

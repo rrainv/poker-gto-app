@@ -158,7 +158,8 @@ test('frozen earlier evidence and this try remain separately labelled', async ()
   const bridge = app.window.requireStrategyProviderBridge;
   try {
     for (const [state, label] of [
-      ['heuristic_comparison', 'Historical heuristic baseline'],
+      // TRAINING-QUICK-001: Training says "Baseline", never "heuristic".
+      ['heuristic_comparison', 'Historical baseline'],
       ['accepted_reference_comparison', 'Historical selected reference'],
       ['normative_assessment', 'Historical selected reference'],
     ]) {

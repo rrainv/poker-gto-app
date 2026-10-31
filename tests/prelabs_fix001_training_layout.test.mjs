@@ -53,6 +53,7 @@ test('the constrained desktop grid reflows before atomic values can split', asyn
 
   await app.navigate('training');
   strip().style.display = 'none';
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   assert.ok(app.window.app.training.currentExercise, 'a Training spot rendered');

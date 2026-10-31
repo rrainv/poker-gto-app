@@ -179,7 +179,9 @@ test('Training context is one semantic hierarchy driven by existing lifecycle st
   // COMPOSITION-001's decision column + 320–360px study rail with a
   // two-column stat grid.
   assert.equal(css.cascaded(workspace, 'display', wide), 'grid');
-  assert.equal(css.cascaded(workspace, 'grid-template-columns', wide), 'minmax(0, 1fr) minmax(320px, 360px)');
+  // TRAINING-QUICK-001: the quick drill's column is sized to its content; the rail takes the freed width.
+  const trainingColumns = () => (workspace.dataset.trainingQuick === 'true' ? 'minmax(0, 1000px) minmax(320px, 1fr)' : 'minmax(0, 1fr) minmax(320px, 360px)');
+  assert.equal(css.cascaded(workspace, 'grid-template-columns', wide), trainingColumns());
   assert.equal(css.cascaded(app.$('.training-session-panel .training-stat-grid'), 'grid-template-columns', wide), 'repeat(2, minmax(0, 1fr))');
 
   // Protects: feedback places the solution in the right-hand columns.
@@ -190,7 +192,7 @@ test('Training context is one semantic hierarchy driven by existing lifecycle st
   // Protects: no layout preset restyles the Training workspace.
   for (const preset of ['table-focus', 'controls-first', 'analysis-focus']) {
     await withPreset(preset, () => {
-      assert.equal(css.cascaded(workspace, 'grid-template-columns', wide), 'minmax(0, 1fr) minmax(320px, 360px)', preset);
+      assert.equal(css.cascaded(workspace, 'grid-template-columns', wide), trainingColumns(), preset);
     });
   }
 });

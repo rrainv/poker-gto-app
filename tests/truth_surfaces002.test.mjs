@@ -42,7 +42,7 @@ test('QA-SHELL-004 / OWNER-19: one provenance indicator per surface across Analy
   assert.match(html, /id="trainingStrategySource"[^>]*data-i18n="Source unavailable" hidden/);
   assert.match(html, /id="trainingReferenceSummary"[^>]*hidden/);
   assert.match(html, /id="trainingGradeBadge"[^>]*hidden/);
-  assert.match(html, /id="trainingFeedbackProvenance" class="eyebrow training-feedback-provenance"><span id="trainingTruthHeading"[^>]*>Heuristic baseline<\/span><span id="trainingTier"> · <span id="trainingTierLabel"[^>]*>Estimated<\/span><\/span> · <span id="trainingFeedbackStreet"[^>]*>Preflop<\/span><\/div><h3 id="feedbackTitle"/);
+  assert.match(html, /id="trainingFeedbackProvenance" class="eyebrow training-feedback-provenance"><span id="trainingTruthHeading"[^>]*>Baseline<\/span><span id="trainingTier"> · <span id="trainingTierLabel"[^>]*>Estimated<\/span><\/span> · <span id="trainingFeedbackStreet"[^>]*>Preflop<\/span><\/div><h3 id="feedbackTitle"/);
 
   const renderTrainingSummary = sourceBetween(logic, 'function renderTrainingEvaluationSummary(', 'function handleTrainingGuess(');
   const elements = new Map();
@@ -61,8 +61,10 @@ test('QA-SHELL-004 / OWNER-19: one provenance indicator per surface across Analy
     exercise: { decisionContext: { street: 'flop' } },
     window: installLocaleNumbers({}),
   };
-  vm.runInNewContext(`${logicNumberHelpersSource()}\n${renderTrainingSummary}; renderTrainingEvaluationSummary(evaluation, exercise);`, ctx);
-  assert.equal(el('#trainingTruthHeading').textContent, 'Heuristic baseline');
+  // TRAINING-QUICK-001: Training maps the shared label to its Baseline wording (trainingTerm).
+  const trainingTerms = sourceBetween(logic, 'const TRAINING_TERMS = ', 'function trainingTruthSummaryText(');
+  vm.runInNewContext(`${logicNumberHelpersSource()}\n${trainingTerms}\n${renderTrainingSummary}; renderTrainingEvaluationSummary(evaluation, exercise);`, ctx);
+  assert.equal(el('#trainingTruthHeading').textContent, 'quickDrill.term.baseline', 'the Baseline key, never "Heuristic baseline"');
   assert.equal(el('#trainingTier').hidden, false);
   assert.equal(el('#trainingFeedbackStreet').textContent, 'Flop');
 

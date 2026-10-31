@@ -5,6 +5,7 @@
 import { createPresentationThemeController, contrastRatio } from '/src/application/presentation-theme.mjs';
 import * as cards from '/src/application/card-presentation.mjs';
 import { createSavedPokerPreview } from '/src/application/saved-poker-preview.mjs';
+import * as drill from '/src/ui/drill-components.mjs';
 
 const CUSTOM = Object.freeze({ accent: '#e0a458', surface: '#1b2230', felt: '#5b3a6b' });
 const catalogs = Object.values(window).filter((value) => value && typeof value === 'object' && value.he && value.ru && value.en);
@@ -129,7 +130,55 @@ function render(column) {
       h('button', { class: 'ui-row', type: 'button' }, h('span', { class: 'ui-badge', 'data-variant': 'count', text: '2' }), h('span', { class: 'ui-row-title', text: 'Saved Spot · BB · Flop' }), h('span', { class: 'ui-row-meta', text: '200 bb' }))),
     section('Poker data island (cards and amounts stay left-to-right)',
       h('div', { class: 'sheet-preview' }, preview, amounts)),
+    drillSection(t),
   );
+}
+
+// TRAINING-QUICK-001 shared drill components. The price facts follow the
+// domain for BTN facing a 2.5 bb CO open (call 2.5 into a 6.5 bb pot after
+// the call); the mix and session results are illustrative.
+let drillPanelCount = 0;
+function drillSection(t) {
+  const group = h('div', { class: 'sheet-drill-actions', style: 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-5)' },
+    drill.createActionCard(document, { type: 'fold', kind: 'fold', name: t('Fold'), keyLabel: 'F' }),
+    drill.createActionCard(document, { type: 'call', kind: 'passive', name: t('Call'), amountText: '2.5 bb', detail: t('Needs {percent}').replace('{percent}', '38.5%'), keyLabel: 'C' }),
+    drill.createActionCard(document, { type: 'raise', kind: 'aggressive', name: t('3-Bet'), amountText: '5 bb to 100 bb', detail: t('Size is not graded'), keyLabel: 'R' }));
+  drill.selectActionCard(group, 'call');
+  const tiles = h('div', { style: 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-4)' },
+    drill.createFactTile(document, { name: 'pot', value: '4 bb', label: t('Pot'), derivation: t('Blinds and bets so far') }),
+    drill.createFactTile(document, { name: 'call', value: '2.5 bb', label: t('To call'), derivation: t('What it costs to call the bet you face') }),
+    drill.createFactTile(document, { name: 'equity', value: '38.5%', label: t('Equity needed · Exact · price only'), derivation: '2.5 bb ÷ 6.5 bb' }));
+  const locked = drill.createFactTile(document, { value: '38.5%', label: t('Equity needed · Exact · price only'), locked: true, lockedText: t('After you answer') });
+  const segments = [
+    { kind: 'aggressive', value: 45, label: `${t('3-Bet')} 45%`, name: t('3-Bet'), valueText: '45%' },
+    { kind: 'passive', value: 40, label: `${t('Call')} 40%`, name: t('Call'), valueText: '40%' },
+    { kind: 'fold', value: 15, label: `${t('Fold')} 15%`, name: t('Fold'), valueText: '15%' },
+  ];
+  const panel = (id, title, open, locked, text) => drill.createPanelCard(document, { id: `sheet-${id}-${(drillPanelCount += 1)}`, title, open, locked, body: h('p', { class: 'quick-drill-panel-note', text }) });
+  return section('Drill components (TRAINING-QUICK-001)',
+    label('Source / tier label'),
+    row(drill.createSourceTierLabel(document, { text: `${t('Heuristic baseline')} · ${t('Estimated')}` }), drill.createSourceTierLabel(document, { text: t('Equity needed · Exact · price only'), tier: 'exact' })),
+    label('Fact tiles (hover or focus for the derivation) · locked'),
+    tiles, locked,
+    label('Action cards · selected · Confirm carries the action and amount'),
+    group,
+    drill.createConfirmButton(document, { label: `${t('Confirm {action} {amount}').replace('{action}', t('Call')).replace('{amount}', '2.5 bb')}`, disabled: false }),
+    drill.createConfirmButton(document, { label: t('Choose an action') }),
+    drill.createAnswerModePrompt(document, { text: t("Don't want to confirm?"), acceptLabel: t('Answer with one click'), keepLabel: t('Keep confirming') }),
+    label('Sizes row (where the size is part of the answer)'),
+    drill.createSizesRow(document, { label: t('Raise'), sizes: ['7.5 bb', '8 bb', '9 bb', '11 bb'], selectedIndex: 1 }),
+    label('Verdict · dominant and close · mix bar with the "you" tick'),
+    drill.createVerdict(document, { kind: 'dominant', text: t('Call') }),
+    drill.createVerdict(document, { kind: 'close', text: t('{first} or {second} · close').replace('{first}', t('3-Bet')).replace('{second}', t('Call')) }),
+    drill.createMixBar(document, { segments, youAtPercent: 65, youLabel: t('you'), ariaLabel: segments.map((s) => s.label).join(', ') }),
+    label('Panel cards'),
+    panel('glance', t('Spot at a glance'), true, false, '4 bb · 2.5 bb · 38.5%'),
+    panel('plan', t('Your plan'), true, true, t('Shown after you answer, so it never hints at the decision.')),
+    panel('similar', t('Similar spots'), false, false, ''),
+    label('Session dots (10) · open session count · finish ring'),
+    drill.createSessionDots(document, { total: 10, results: [true, true, false, true, true, true, false] }),
+    drill.createSessionDots(document, { total: null, results: [true], countText: t('{count} answered').replace('{count}', '24') }),
+    h('div', { 'data-motion': 'drill' }, drill.createFinishRing(document, { inside: 8, total: 10, label: '8 / 10' })));
 }
 
 function measureContrast() {

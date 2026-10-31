@@ -213,7 +213,16 @@ test('poker actions retain stable semantics across Training and Hand Mode', asyn
   await app.training.start('focused');
   const buttons = app.training.answerButtons();
   assert.ok(buttons.length >= 2);
-  for (const button of buttons) assert.ok(button.classList.contains(`training-action-button--${button.dataset.action}`), button.className);
+  // TRAINING-QUICK-001: quick drills render shared action cards whose kind maps
+  // the type onto the same action colour roles.
+  const kindOf = { fold: 'fold', check: 'passive', call: 'passive', bet: 'aggressive', raise: 'aggressive', all_in: 'all-in' };
+  for (const button of buttons) {
+    if (button.classList.contains('rl-action-card')) assert.equal(button.dataset.kind, kindOf[button.dataset.action], button.dataset.action);
+    else assert.ok(button.classList.contains(`training-action-button--${button.dataset.action}`), button.className);
+  }
+  for (const [kind, token] of [['fold', 'fold'], ['passive', 'passive'], ['all-in', 'all-in']]) {
+    assert.equal(cascaded(probe(`<button class="rl-action-card" data-kind="${kind}">x</button>`), '--rl-action'), `var(--action-${token})`, kind);
+  }
   const accent = (type) => cascaded(probe(`<button class="training-action-button training-action-button--${type}">x</button>`), 'border-inline-start-color');
   assert.equal(accent('fold'), 'var(--action-fold)');
   for (const type of ['check', 'call']) assert.equal(accent(type), 'var(--action-passive)', type);

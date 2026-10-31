@@ -147,6 +147,7 @@ test('Training study hints and pricing copy remain truthful before and after an 
   assert.doesNotMatch(text(markup.body), /Study mode preview|Hints never reveal|never reveal the answer|does not change grading/i);
 
   await app.navigate('training');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   const exercise = app.window.app.training.currentExercise;
@@ -155,8 +156,10 @@ test('Training study hints and pricing copy remain truthful before and after an 
 
   const spy = app.spy(['callTrainingServiceBridge', 'renderTrainingDecisionAnalysis', 'showTrainingSolution']);
   try {
-    const answer = app.$$('#trainingMode .training-action-button[data-action]').find((button) => visible(button) && !button.disabled);
+    const answer = app.$$('#trainingMode :is(.training-action-button, .rl-action-card)[data-action]').find((button) => visible(button) && !button.disabled);
     await app.click(answer);
+    // TRAINING-QUICK-001: a quick-drill card is chosen, then confirmed.
+    if (answer.classList.contains('rl-action-card')) await app.click('#quickDrillConfirm');
     await app.settle(300);
     const answers = spy.calls.callTrainingServiceBridge.filter(([method]) => method === 'answer');
     assert.equal(answers.length, 1);

@@ -156,8 +156,13 @@ test('Training action count selects balanced four-action rows without changing D
   const legal = app.call('canonicalTrainingLegalActionTypes', app.window.app.training.currentExercise);
   assert.deepEqual(grid.children.map((button) => button.dataset.action), legal, 'canonical order is kept');
   grid.dataset.actionCount = '4';
-  assert.match(css.cascaded(grid, 'grid-template-columns', { width: 1400 }), /^repeat\(2/);
-  assert.match(css.cascaded(grid, 'grid-template-columns', { width: 1700 }), /^repeat\(4/);
+  // TRAINING-QUICK-001: quick drills keep every action card in one row on
+  // desktop (the prototype; keeps Confirm above the fold at 1366) and use two
+  // columns only on narrow screens.
+  assert.match(css.cascaded(grid, 'grid-template-columns', { width: 1366 }), /^repeat\(var\(--quick-drill-actions/);
+  assert.match(css.cascaded(grid, 'grid-template-columns', { width: 1920 }), /^repeat\(var\(--quick-drill-actions/);
+  assert.match(css.cascaded(grid, 'grid-template-columns', { width: 400 }), /^repeat\(2/);
+  assert.equal(grid.style.getPropertyValue('--quick-drill-actions'), String(grid.childElementCount));
   grid.dataset.actionCount = String(grid.childElementCount);
 });
 

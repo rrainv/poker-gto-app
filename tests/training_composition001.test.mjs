@@ -26,13 +26,16 @@ test('Training exposes one selected-configuration start action and retains a gua
   let asked = 0;
   app.window.confirm = () => { asked += 1; return false; };
   const exercise = app.window.app.training.currentExercise;
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   assert.equal(asked, 1, 'starting over asks');
   assert.equal(app.window.app.training.currentExercise, exercise);
-  await app.click('[data-training-session-mode="varied"]');
+  await app.training.selectMode('varied');
   assert.equal(asked, 2, 'changing mode asks');
   assert.equal(app.window.app.training.sessionMode, 'focused', 'declining keeps the mode');
   app.window.confirm = () => true;
+  // TRAINING-QUICK-001: the setup was opened from Adjust drill; close it again.
+  if (app.byId('trainingSetupPanel').open) await app.click('#quickDrillAdjust');
 });
 
 test('one stable decision and study-rail skeleton owns ready and feedback states', async () => {
@@ -45,7 +48,8 @@ test('one stable decision and study-rail skeleton owns ready and feedback states
   assert.ok(app.$('.training-insight-column').classList.contains('training-study-rail'));
   const node = workspace();
   const ready = css.cascaded(node, 'grid-template-columns');
-  assert.equal(ready, 'minmax(0, 1fr) minmax(320px, 360px)');
+  // TRAINING-QUICK-001: the quick drill's column is sized to its content; the rail takes the freed width.
+  assert.equal(ready, node.dataset.trainingQuick === 'true' ? 'minmax(0, 1000px) minmax(320px, 1fr)' : 'minmax(0, 1fr) minmax(320px, 360px)');
   await app.training.answer();
   assert.equal(node.dataset.trainingState, 'feedback');
   assert.equal(css.cascaded(node, 'grid-template-columns'), ready);
@@ -59,7 +63,8 @@ test('setup is a single disclosure that compacts on start and Adjust Drill reope
   assert.equal(setup.open, true);
   assert.ok(trainingMarkup.querySelector('.training-setup-summary'));
   assert.equal(app.byId('trainingSetupPanel').open, false, 'starting compacts the setup');
-  await app.click('#trainingAdjustDrill');
+  // TRAINING-QUICK-001: a quick drill's Adjust drill sits in the drill head.
+  await app.click(workspace().dataset.trainingQuick === 'true' ? '#quickDrillAdjust' : '#trainingAdjustDrill');
   assert.equal(app.byId('trainingSetupPanel').open, true);
   assert.ok(app.document.activeElement === app.byId('trainingStreet'), 'Adjust Drill focuses the first drill control');
   app.call('clearTrainingSessionState');
@@ -138,7 +143,7 @@ test('completion routes to existing longitudinal views without inventing mastery
   assert.match(text(trainingMarkup.querySelector('#trainingCompletionRecent')), /Recent sessions/);
   assert.match(text(trainingMarkup.querySelector('#trainingRestartSession')), /Start another session/);
   // The completion actions appear once a bounded Varied session completes.
-  await app.click('[data-training-session-mode="varied"]');
+  await app.training.selectMode('varied');
   await app.setValue('#trainingSessionLength', '10');
   await app.training.start('varied');
   for (let index = 0; index < 10; index += 1) {
@@ -161,9 +166,9 @@ test('completion routes to existing longitudinal views without inventing mastery
 
 test('Focused and Full Hand retain their canonical controls within the shared composition', async () => {
   for (const mode of ['varied', 'focused', 'full_hand']) assert.ok(trainingMarkup.querySelector(`[data-training-session-mode="${mode}"]`), mode);
-  await app.click('[data-training-session-mode="focused"]');
+  await app.training.selectMode('focused');
   assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, false, 'Focused shows the decision target');
-  await app.click('[data-training-session-mode="full_hand"]');
+  await app.training.selectMode('full_hand');
   assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, true);
   for (const id of ['trainingFullHandTableMount', 'trainingFullHandTimeline']) assert.ok(trainingMarkup.querySelector(`#${id}`), id);
   const node = workspace();
@@ -176,7 +181,7 @@ test('Adjust drill after a Full Hand focuses the pressed mode button', async () 
   // TRAINING-F12-001 (F13): the completed Full Hand phase hides the setup
   // fields, so focus moves to the pressed mode button, else the first control
   // the drill setup still shows.
-  await app.click('[data-training-session-mode="full_hand"]');
+  await app.training.selectMode('full_hand');
   await app.training.playFullHand();
   await app.click('#trainingAdjustDrill');
   assert.equal(app.byId('trainingSetupPanel').open, true);
@@ -231,7 +236,7 @@ test('keyboard answers, disclosures, focus, and reduced motion remain explicit',
   const street = app.byId('trainingStreet');
   const focus = street.focus.bind(street);
   street.focus = (options) => { focusOptions = options; return focus(options); };
-  await app.click('[data-training-session-mode="focused"]');
+  await app.training.selectMode('focused');
   app.call('setTrainingSetupExpanded', true, { focus: true });
   assert.deepEqual(focusOptions, { preventScroll: false });
 });

@@ -21,8 +21,13 @@ const visible = (node) => {
   }
   return true;
 };
-const answerButtons = () => app.$$('#trainingMode .training-action-button[data-action]').filter((button) => visible(button) && !button.disabled);
+const answerButtons = () => app.$$('#trainingMode :is(.training-action-button, .rl-action-card)[data-action]').filter((button) => visible(button) && !button.disabled);
 async function answer() {
+  // TRAINING-QUICK-001: quick drills select, then confirm; Full Hand answers directly.
+  if (app.$('.training-workspace').dataset.trainingQuick === 'true') {
+    await app.training.answer(answerButtons()[0].dataset.action);
+    return;
+  }
   await app.click(answerButtons()[0]);
   await app.settle(500);
 }
@@ -32,7 +37,8 @@ test('Replay this decision remounts the current canonical exercise instead of a 
   // Protects: the replay button remounts the same exercise through the
   // service's replayExercise as a 'replay' attempt, without generating or
   // advancing the seed.
-  await app.click('[data-training-session-mode="focused"]');
+  await app.training.selectMode('focused');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   await answer();
@@ -40,6 +46,7 @@ test('Replay this decision remounts the current canonical exercise instead of a 
   const nextSeed = training().nextSeed;
   const spy = app.spy(['callTrainingServiceBridge', 'newRandomTrainingHand', 'replayTrainingExercise']);
   try {
+    await app.training.openDetails();
     await app.click('#trainingReplayDecisionBtn');
     await app.settle(300);
     const methods = spy.calls.callTrainingServiceBridge.map(([method]) => method);
@@ -89,9 +96,11 @@ test('repeated replay evidence keeps same-spot provenance rooted in the primary 
     await app.click('#trainingNextHandBtn');
     await app.settle(500);
     await answer();
+    await app.training.openDetails();
     await app.click('#trainingReplayDecisionBtn');
     await app.settle(500);
     await answer();
+    await app.training.openDetails();
     await app.click('#trainingReplayDecisionBtn');
     await app.settle(500);
   } finally {
@@ -110,7 +119,8 @@ test('repeated replay evidence keeps same-spot provenance rooted in the primary 
 });
 
 async function playFullHand() {
-  await app.click('[data-training-session-mode="full_hand"]');
+  await app.training.selectMode('full_hand');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   const workspace = app.$('.training-workspace');
   for (let round = 0; round < 200 && workspace.dataset.trainingFullHandPhase === 'live'; round += 1) {

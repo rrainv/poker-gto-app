@@ -693,7 +693,7 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       /** Choose a Training mode and start a session (confirming over an active one). */
       async start(mode = 'focused') {
         if (harness.$('.riverline-shell').dataset.activeMode !== 'training') await harness.navigate('training');
-        await harness.click(`[data-training-session-mode="${mode}"]`);
+        await harness.training.selectMode(mode);
         // While a Full Hand is live or complete, its own New Hand control
         // replaces the setup one.
         const newHand = ['trainingNewHand', 'trainingFullHandLiveNewHand', 'trainingFullHandNewHand']
@@ -702,8 +702,24 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         await harness.click(newHand);
         await harness.settle(500);
       },
+      /** TRAINING-QUICK-001: during a quick drill the setup opens from Adjust drill. */
+      async openSetup() {
+        const setup = harness.byId('trainingSetupPanel');
+        const adjust = harness.byId('quickDrillAdjust');
+        if (setup && !harness.isShown(setup) && adjust && harness.isShown(adjust)) await harness.click(adjust);
+      },
+      /** Choose a Training mode the way a user does (opening the setup first if needed). */
+      async selectMode(mode) {
+        await harness.training.openSetup();
+        await harness.click(`[data-training-session-mode="${mode}"]`);
+      },
+      /** TRAINING-QUICK-001: the deeper feedback sits behind Explain in a quick drill. */
+      async openDetails() {
+        const explain = harness.byId('quickDrillExplain');
+        if (explain && harness.isShown(explain) && explain.getAttribute('aria-expanded') !== 'true') await harness.click(explain);
+      },
       answerButtons() {
-        return harness.$$('#trainingMode .training-action-button[data-action]')
+        return harness.$$('#trainingMode :is(.training-action-button, .rl-action-card)[data-action]')
           .filter((button) => harness.isShown(button) && !button.disabled);
       },
       /** Answer with the given action type (or the first available one). */
@@ -713,6 +729,11 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         if (!button) throw new Error('No Training answer is available');
         const fullHand = harness.$('.training-workspace')?.dataset.trainingFullHandPhase === 'live';
         await harness.click(button);
+        // TRAINING-QUICK-001: quick drills select first, then confirm (P1-03).
+        const confirm = harness.byId('quickDrillConfirm');
+        if (!fullHand && button.classList.contains('rl-action-card') && confirm && harness.isShown(confirm) && !confirm.disabled) {
+          await harness.click(confirm);
+        }
         await harness.settle(500);
         // Strategy resolution can finish outside the fake clock under load.
         if (!fullHand) await harness.waitFor(() => globalThis.app.training.currentEvaluation, 'the Training answer to be evaluated');

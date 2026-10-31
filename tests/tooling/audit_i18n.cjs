@@ -14,6 +14,7 @@ const rangeCalibrationTranslationsPath = path.join(repoRoot, 'app', 'src', 'loca
 const homeTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'home-translations.js');
 const homeGameTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'home-game-translations.js');
 const welcomeTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'welcome-translations.js');
+const trainingQuickTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'training-quick-translations.js');
 const guideTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'guide-translations.js');
 const productSources = [
   path.join(repoRoot, 'app', 'index.html'),
@@ -66,6 +67,9 @@ function loadTranslations(
   }
   if (includeProductCatalog && fs.existsSync(welcomeTranslationsPath)) {
     vm.runInNewContext(fs.readFileSync(welcomeTranslationsPath, 'utf8'), context, { filename: welcomeTranslationsPath });
+  }
+  if (includeProductCatalog && fs.existsSync(trainingQuickTranslationsPath)) {
+    vm.runInNewContext(fs.readFileSync(trainingQuickTranslationsPath, 'utf8'), context, { filename: trainingQuickTranslationsPath });
   }
   if (includeProductCatalog && fs.existsSync(guideTranslationsPath)) {
     vm.runInNewContext(fs.readFileSync(guideTranslationsPath, 'utf8'), context, { filename: guideTranslationsPath });

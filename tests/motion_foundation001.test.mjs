@@ -108,14 +108,17 @@ test('Reduced follows the system by default; an explicit choice persists and win
 test('the Settings control persists per device and applies to the app', async () => {
   assert.equal(root.dataset.motionMode, 'standard');
   assert.equal(root.dataset.motionSource, 'system');
-  const options = app.$$('[data-motion-option]').map((button) => button.dataset.motionOption);
+  const options = app.$$('#settingsMotionControl [data-motion-option]').map((button) => button.dataset.motionOption);
   assert.deepEqual(options, ['instant', 'faster', 'standard', 'reduced']);
+  // TRAINING-QUICK-001: the drill's Feel popover offers the same one setting.
+  assert.deepEqual(app.$$('#quickDrillFeel [data-motion-option]').map((button) => button.dataset.motionOption), options);
   assert.equal(app.byId('settingsMotionFollowDevice').hidden, true);
 
   await chooseMotion('faster');
   assert.equal(root.dataset.motionMode, 'faster');
   assert.equal(app.storage.getItem(MOTION_PREFERENCE_STORAGE_KEY), 'faster');
   assert.equal(app.$('[data-motion-option="faster"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(app.$('#quickDrillFeel [data-motion-option="faster"]').getAttribute('aria-pressed'), 'true', 'Feel follows the setting');
   assert.equal(app.$('[data-motion-option="standard"]').getAttribute('aria-pressed'), 'false');
   assert.equal(app.byId('settingsMotionFollowDevice').hidden, false);
   assert.equal(app.byId('settingsMotionSource').hidden, true);

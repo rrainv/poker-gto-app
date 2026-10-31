@@ -104,7 +104,7 @@ test('Training exposes Full Hand beside preserved Varied Session and Focused Dri
   // Only the three modes are accepted; Focused controls hide only for Varied.
   await app.navigate('training');
   for (const [mode, focusedHidden, noteHidden] of [['varied', true, true], ['focused', false, true], ['full_hand', false, false]]) {
-    await app.click(`[data-training-session-mode="${mode}"]`);
+    await app.training.selectMode(mode);
     assert.equal(app.call('trainingSessionMode'), mode);
     assert.equal(app.byId('trainingFocusedControls').hidden, focusedHidden, mode);
     assert.equal(app.byId('trainingFullHandSetupNote').hidden, noteHidden, mode);

@@ -238,7 +238,9 @@ test('shared feedback renders neutral heuristic state and translates every truth
     app.byId('trainingScoreBadge').hidden = false;
     app.byId('trainingEvFact').hidden = false;
     app.call('renderTrainingEvaluationSummary', evaluation, exercise);
-    assert.equal(app.byId('trainingGradeBadge').textContent, product[locale]['Differs from heuristic baseline']);
+    // TRAINING-QUICK-001: Training maps the shared title to its Baseline wording.
+    assert.equal(app.byId('trainingGradeBadge').textContent, app.call('t', 'Differs from the baseline'));
+    assert.doesNotMatch(app.byId('trainingGradeBadge').textContent, /heuristic|эвристи|היוריסט/i);
     assert.match(app.byId('trainingGradeBadge').className, /--neutral$/);
     assert.equal(app.byId('trainingFeedback').dataset.truthState, 'heuristic_comparison');
     assert.equal(app.byId('trainingScoreBadge').hidden, true);

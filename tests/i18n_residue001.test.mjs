@@ -43,6 +43,7 @@ function loadCatalogWindow() {
     'app/src/locales/tutorial-translations.js',
     'app/src/locales/guide-translations.js',
     'app/src/locales/welcome-translations.js',
+    'app/src/locales/training-quick-translations.js',
     'app/src/locales/i18n.js',
   ];
   for (const file of files) {

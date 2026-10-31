@@ -21,7 +21,8 @@ const visible = (node) => {
 };
 const bridgeCalls = (spy, method) => spy.calls.callTrainingServiceBridge.filter(([name]) => name === method);
 async function startFocused() {
-  await app.click('[data-training-session-mode="focused"]');
+  await app.training.selectMode('focused');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   assert.equal(app.window.app.training.lifecycle, 'ready');
@@ -67,6 +68,8 @@ test('Training controls and feedback remain contract-honest', async () => {
     const answer = app.$$('#trainingGuessButtons button').find((button) => visible(button) && !button.disabled);
     assert.equal(app.window.app.training.currentEvaluation, null, 'a fresh spot starts unanswered');
     await app.click(answer);
+    // TRAINING-QUICK-001: a click selects; Confirm answers.
+    if (app.byId('quickDrillConfirm') && app.isShown(app.byId('quickDrillConfirm'))) await app.click('#quickDrillConfirm');
     await app.waitFor(() => app.window.app.training.currentEvaluation, 'the answer to be evaluated');
     assert.equal(bridgeCalls(spy, 'answer')[0][1], exercise.id);
   } finally {
@@ -96,41 +99,51 @@ test('Training keyboard handling is mode-scoped and input-safe', async () => {
     return event;
   };
   await startFocused();
-  assert.match(text(training), /1/);
   assert.ok(training.querySelector('kbd'));
   const exercise = () => app.window.app.training.currentExercise;
+  // TRAINING-QUICK-001: quick drills answer with the action letters (F, C,
+  // B/R, A) and Enter confirms; digits are size presets (none here).
+  const letter = () => app.$('#trainingGuessButtons .rl-action-card kbd').textContent.toLowerCase();
+  const key = letter();
   for (const blocked of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }]) {
-    keydown('1', blocked);
+    keydown(key, blocked);
     await app.flush();
     assert.equal(app.window.app.training.lifecycle, 'ready', JSON.stringify(blocked));
   }
-  keydown('1', {}, app.byId('trainingSeedInput'));
+  keydown(key, {}, app.byId('trainingSeedInput'));
   await app.flush();
-  assert.equal(app.window.app.training.lifecycle, 'ready', 'typing in an input does not answer');
+  assert.equal(app.$('#trainingGuessButtons .rl-action-card[aria-pressed="true"]'), null, 'typing in an input does not select');
   app.byId('cardModal').classList.add('show');
-  keydown('1');
+  keydown(key);
   await app.flush();
   app.byId('cardModal').classList.remove('show');
-  assert.equal(app.window.app.training.lifecycle, 'ready', 'the card picker blocks shortcuts');
-
+  assert.equal(app.$('#trainingGuessButtons .rl-action-card[aria-pressed="true"]'), null, 'the card picker blocks shortcuts');
   keydown('1');
+  await app.flush();
+  assert.equal(app.window.app.training.lifecycle, 'ready', 'digits do not answer in a quick drill');
+
+  keydown(key);
+  await app.flush();
+  assert.equal(app.window.app.training.lifecycle, 'ready', 'a letter selects without answering');
+  keydown('Enter');
   await app.settle(300);
-  assert.equal(app.window.app.training.lifecycle, 'feedback', '1 answers with the first action');
+  assert.equal(app.window.app.training.lifecycle, 'feedback', 'Enter confirms the selected action');
   const answered = exercise();
   keydown('Enter');
   await app.settle(500);
   assert.notEqual(exercise(), answered, 'Enter advances to the next exercise');
+  // R is raise in a quick drill (DESIGN_SYSTEM keyboard contract), never a replay.
   const spy = app.spy(['replayCurrentTrainingSeed']);
   try {
     keydown('r');
-    assert.equal(spy.count('replayCurrentTrainingSeed'), 1);
+    assert.equal(spy.count('replayCurrentTrainingSeed'), 0);
   } finally {
     spy.restore();
   }
   await app.settle(500);
   await app.navigate('home');
   const lifecycle = app.window.app.training.lifecycle;
-  keydown('1');
+  keydown(key);
   await app.flush();
   assert.equal(app.window.app.training.lifecycle, lifecycle, 'shortcuts are scoped to visible Training');
   await app.navigate('training');

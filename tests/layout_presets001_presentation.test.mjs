@@ -322,14 +322,18 @@ test('Training and Equity use meaningful Balanced compositions without hidden la
   assert.equal(training.dataset.trainingFullHandPhase, 'off');
   for (const preset of PRESETS) {
     app.document.documentElement.dataset.layoutPreset = preset;
-    assert.equal(css.cascaded(training, 'grid-template-columns', { width: 1440 }), 'minmax(0, 1fr) minmax(320px, 360px)');
+    // TRAINING-QUICK-001: the quick drill's column is sized to its content; the rail takes the rest.
+    assert.equal(css.cascaded(training, 'grid-template-columns', { width: 1440 }), training.dataset.trainingQuick === 'true' ? 'minmax(0, 1000px) minmax(320px, 1fr)' : 'minmax(0, 1fr) minmax(320px, 360px)');
     assert.equal(css.cascaded(training, 'grid-template-areas', { width: 1440 }), '"decision insight"');
     assert.equal(css.cascaded(app.$('.training-decision-column'), 'grid-area', { width: 1440 }), 'decision');
     assert.equal(css.cascaded(rail, 'grid-area', { width: 1440 }), 'insight');
-    for (const panel of ['trainingSetupPanel', 'trainingHistoryPanel']) {
-      assert.ok(app.byId(panel).parentElement === rail, panel);
-      assert.equal(css.cascaded(app.byId(panel), 'grid-column', { width: 1440 }), 'auto', panel);
-    }
+    // TRAINING-QUICK-001: the idle quick drill shows its setup in the
+    // decision column; the history panel stays on the rail.
+    assert.ok(app.byId('trainingSetupPanel').parentElement === app.byId('quickDrillSetupMount'), 'trainingSetupPanel');
+    assert.ok(app.byId('trainingHistoryPanel').parentElement === rail, 'trainingHistoryPanel');
+    assert.equal(css.cascaded(app.byId('trainingSetupPanel'), 'grid-column', { width: 1440 }), 'auto', 'trainingSetupPanel');
+    // The quick drill's rail can pair short panels; full-width ones span it.
+    assert.equal(css.cascaded(app.byId('trainingHistoryPanel'), 'grid-column', { width: 1440 }), '1 / -1', 'trainingHistoryPanel');
   }
   app.document.documentElement.dataset.layoutPreset = 'balanced';
 });

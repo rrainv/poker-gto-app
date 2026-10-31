@@ -17,7 +17,7 @@ async function completeVariedSession({ uncertainLast = false } = {}) {
   if (app.call('trainingSameSpotIsActive')) await app.call('exitTrainingSameSpot');
   app.call('clearTrainingSessionState');
   await app.settle(300);
-  await app.click('[data-training-session-mode="varied"]');
+  await app.training.selectMode('varied');
   await app.setValue('#trainingSessionLength', '10');
   await app.training.start('varied');
   for (let index = 0; index < 10; index += 1) {
@@ -77,7 +77,7 @@ test('Full Hand: a Full Hand after a completed Varied session can be answered', 
     await app.training.answer();
   }
   await app.call('clearTrainingSessionState');
-  await app.click('[data-training-session-mode="varied"]');
+  await app.training.selectMode('varied');
 });
 
 test('Same Spot: re-drilling a decision after a completed Varied session can be answered', async () => {

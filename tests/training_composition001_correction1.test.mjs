@@ -64,6 +64,7 @@ test('Review later and Mark difficult are persisted, reversible, and visibly ack
   await app.training.answer();
   await app.settle(500);
   app.byId('trainingMemoryPanel').open = true;
+  await app.training.openDetails();
   const spy = app.spy(['callTrainingMemoryBridge', 'refreshTrainingMemoryPanel']);
   try {
     for (const [id, field, active] of [['trainingMarkReview', 'review', /Added to review|Remove from review/], ['trainingMarkDifficult', 'difficult', /Marked difficult|Clear difficult mark/]]) {
@@ -123,7 +124,9 @@ test('Full Hand keeps one shared table and moves the one canonical action surfac
   assert.equal(training.querySelectorAll('#trainingFullHandTableMount').length, 1);
   assert.equal(training.querySelectorAll('#trainingDecisionControls').length, 1);
   assert.match(tablePresentation, /TABLE_PRESENTATION_SCHEMA_VERSION/);
-  assert.ok(app.byId('trainingDecisionActionMount').contains(app.byId('trainingDecisionControls')));
+  // TRAINING-QUICK-001: outside Full Hand the controls rest in the quick drill's action layer.
+  const restingMount = workspace().dataset.trainingQuick === 'true' ? 'quickDrillActionLayer' : 'trainingDecisionActionMount';
+  assert.ok(app.byId(restingMount).contains(app.byId('trainingDecisionControls')));
   await app.training.start('full_hand');
   for (let round = 0; round < 30 && workspace().dataset.trainingState !== 'ready'; round += 1) await app.settle(1000);
   assert.ok(app.byId('trainingFullHandTableMount').querySelector('.riverline-poker-table, #visual-table-container'), 'the shared table is mounted beside Training');

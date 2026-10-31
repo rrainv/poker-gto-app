@@ -21,7 +21,7 @@ const visible = (node) => {
   return true;
 };
 const bridgeCalls = (spy, method) => spy.calls.callTrainingServiceBridge.filter(([name]) => name === method);
-const actionButtons = () => app.$$('#trainingMode .training-action-button[data-action]').filter((button) => visible(button));
+const actionButtons = () => app.$$('#trainingMode :is(.training-action-button, .rl-action-card)[data-action]').filter((button) => visible(button));
 
 test('production Training route uses the canonical bridge and shared StrategyProvider instance', async () => {
   // Protects: Focused and Varied generation go through the Training service
@@ -32,7 +32,8 @@ test('production Training route uses the canonical bridge and shared StrategyPro
   const provider = app.evaluate('strategyProvider');
   const spy = app.spy(['callTrainingServiceBridge', 'startConfiguredTrainingSessionWithGuard', 'handleTrainingGuess', 'finishTrainingMemorySession']);
   try {
-    await app.click('[data-training-session-mode="focused"]');
+    await app.training.selectMode('focused');
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(500);
     assert.equal(spy.count('startConfiguredTrainingSessionWithGuard'), 1);
@@ -43,6 +44,8 @@ test('production Training route uses the canonical bridge and shared StrategyPro
     const exercise = app.window.app.training.currentExercise;
     const button = actionButtons().find((candidate) => !candidate.disabled);
     await app.click(button);
+    assert.equal(spy.calls.handleTrainingGuess.length, 0, 'TRAINING-QUICK-001: a click selects; Confirm answers');
+    await app.click('#quickDrillConfirm');
     await app.settle(300);
     assert.deepEqual(spy.calls.handleTrainingGuess.map(([type]) => type), [button.dataset.action]);
     const [answer] = bridgeCalls(spy, 'answer');
@@ -53,13 +56,15 @@ test('production Training route uses the canonical bridge and shared StrategyPro
     await app.settle(300);
     const active = app.window.app.training.currentExercise;
     app.window.confirm = () => false;
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(300);
     assert.equal(app.window.app.training.currentExercise, active, 'declining keeps the active session');
     app.window.confirm = () => true;
     spy.reset();
-    await app.click('[data-training-session-mode="varied"]');
+    await app.training.selectMode('varied');
     assert.deepEqual(spy.calls.finishTrainingMemorySession.map(([status]) => status), ['abandoned']);
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(500);
     const [planned] = bridgeCalls(spy, 'generatePlanned');
@@ -76,7 +81,8 @@ test('production Training route uses the canonical bridge and shared StrategyPro
 
 test('Full Hand sizing actions open the sizing choice instead of answering directly', async () => {
   // Protects: in Full Hand, bet/raise go to the sizing chooser; other actions answer.
-  await app.click('[data-training-session-mode="full_hand"]');
+  await app.training.selectMode('full_hand');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(2000);
   const spy = app.spy(['handleTrainingGuess', 'chooseFullHandTrainingSizedAction']);
@@ -88,7 +94,8 @@ test('Full Hand sizing actions open the sizing choice instead of answering direc
   } finally {
     spy.restore();
   }
-  await app.click('[data-training-session-mode="focused"]');
+  await app.training.selectMode('focused');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
 });
@@ -161,13 +168,16 @@ test('canonical feedback retains source provenance and avoids unsupported GTO or
   // never claims GTO/solver authority; Training shows a source element.
   const training = app.window.app.training;
   // Answer a fresh spot so there is a live evaluation to present.
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   assert.equal(training.currentEvaluation, null, 'a fresh spot starts unanswered');
   await app.training.answer();
   const evaluation = await app.waitFor(() => training.currentEvaluation, 'the answer to be evaluated');
   const truth = app.call('truthPresentation', app.call('trainingTruth', evaluation));
-  const expected = { title: app.call('t', truth.title), text: app.call('t', truth.description) };
+  // TRAINING-QUICK-001: Training says "Baseline", never "heuristic" (trainingTerm).
+  const expected = { title: app.call('t', app.call('trainingTerm', truth.title)), text: app.call('t', truth.description) };
+  assert.doesNotMatch(expected.title, /heuristic/i);
   assert.ok(expected.title, 'the truth presentation has a title');
   assert.deepEqual(app.call('canonicalTrainingFeedback', evaluation, training.currentStrategyResult), expected);
   // The rendered feedback is that presentation.
@@ -197,6 +207,7 @@ test('canonical Training errors remain explicit without an alternate fallback ro
   const original = app.window.callTrainingServiceBridge;
   app.window.callTrainingServiceBridge = (method, ...args) => (method === 'generatePlanned' || method === 'generate' ? null : original(method, ...args));
   try {
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(500);
     assert.equal(spy.calls.renderTrainingGenerationError.at(-1)[0].code, 'service_unavailable');

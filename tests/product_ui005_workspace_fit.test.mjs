@@ -146,9 +146,10 @@ test('range category comparison keeps both complete matrices aligned without an 
 test('Training compacts only an actually empty board while retaining Hero cards', async () => {
   // Protects: the summary marks an empty board; Hero cards always render.
   await app.navigate('training');
-  await app.click('[data-training-session-mode="focused"]');
+  await app.training.selectMode('focused');
   const street = app.byId('trainingStreet');
   street.value = 'preflop';
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   const summary = app.$('.training-table-summary');
@@ -156,6 +157,7 @@ test('Training compacts only an actually empty board while retaining Hero cards'
   assert.equal(app.$$('#trainingHeroCards .riverline-card').length, 2);
   assert.equal(css.cascaded(summary, 'grid-template-columns'), 'minmax(108px, .55fr) 1px minmax(0, 1.45fr)');
   street.value = 'flop';
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   assert.equal(summary.dataset.boardState, 'board');

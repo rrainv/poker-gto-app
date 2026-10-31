@@ -1950,6 +1950,12 @@ if (window.riverlineGuideTranslations) {
   });
 }
 
+if (window.riverlineTrainingQuickTranslations) {
+  Object.entries(window.riverlineTrainingQuickTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
+
 if (window.riverlineWelcomeTranslations) {
   Object.entries(window.riverlineWelcomeTranslations).forEach(([language, entries]) => {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);

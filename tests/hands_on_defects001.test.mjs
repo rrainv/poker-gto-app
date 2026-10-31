@@ -201,6 +201,7 @@ test('welcome, Home Game, action, Analyze, Replay, and Training repairs retain a
   const prompts = [];
   app.window.confirm = (message) => { prompts.push(message); return true; };
   try {
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(500);
     assert.equal(spy.count('startConfiguredTrainingSessionWithGuard'), 1);

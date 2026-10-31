@@ -30,7 +30,7 @@ const EXPECTED_SETTINGS = Object.freeze({
     'workstation-theme',
   ]),
   audio: Object.freeze(['audio-enabled', 'audio-volume', 'audio-poker', 'audio-study', 'motion']),
-  language: Object.freeze(['language']),
+  language: Object.freeze(['language', 'training-answer-mode']),
   account: Object.freeze([]),
 });
 
@@ -44,7 +44,7 @@ test('every visible preference has exactly one category and the inventory stays 
   for (const category of Object.keys(EXPECTED_SETTINGS)) {
     assert.deepEqual(inventory[category], [...EXPECTED_SETTINGS[category]].sort(), category);
   }
-  assert.equal(occurrences.length, 12);
+  assert.equal(occurrences.length, 13);
   for (const id of ['tutorial', 'guide', 'account-status', 'sound-preview', 'reduced-motion']) {
     assert.equal(settings.querySelector(`[data-setting-id="${id}"]`), null, id);
   }

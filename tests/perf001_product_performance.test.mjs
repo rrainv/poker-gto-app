@@ -284,7 +284,7 @@ test('Training and Equity card/readiness work stays within its active workspace'
     // Training mode is initialised once: one click runs one handler.
     await app.navigate('training');
     spy.reset();
-    await app.click('[data-training-session-mode="focused"]');
+    await app.training.selectMode('focused');
     assert.equal(spy.count('setTrainingSessionMode'), 1);
   } finally {
     spy.restore();

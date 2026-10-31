@@ -768,6 +768,9 @@ test('H: Training keyboard hint lists exactly the available action keys', async 
   const help = app.byId('trainingShortcutHelp');
   const range = app.byId('trainingShortcutRange');
   const render = (count) => app.call('renderTrainingShortcutHint', count);
+  // Digits are the Full Hand hint; TRAINING-QUICK-001 quick drills list letters (below).
+  const quickApplies = app.window.quickDrillApplies;
+  app.window.quickDrillApplies = () => false;
   render(4);
   assert.equal(range.textContent, '1-4');
   assert.equal(help.hidden, false);
@@ -777,12 +780,15 @@ test('H: Training keyboard hint lists exactly the available action keys', async 
   assert.equal(range.textContent, '1');
   render(0);
   assert.equal(help.hidden, true);
+  app.window.quickDrillApplies = quickApplies;
   // The live hint follows the rendered answer buttons.
   const spy = app.spy(['renderTrainingShortcutHint']);
   try {
     await app.training.start('focused');
     assert.ok(spy.count('renderTrainingShortcutHint') >= 1);
     assert.equal(spy.calls.renderTrainingShortcutHint.at(-1)[0], app.byId('trainingGuessButtons').childElementCount);
+    const letters = app.$$('#trainingGuessButtons .rl-action-card kbd').map((kbd) => kbd.textContent);
+    assert.equal(range.textContent, [...letters, 'Enter'].join(' '), 'the quick drill hint lists exactly its bound keys');
   } finally {
     spy.restore();
   }

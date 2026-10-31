@@ -24,9 +24,12 @@ const visible = (node) => {
 };
 const bridgeCalls = (spy, method) => spy.calls.callTrainingServiceBridge.filter(([name]) => name === method);
 async function answerAndContinue() {
-  const action = app.$$('#trainingMode .training-action-button[data-action]').find((button) => visible(button) && !button.disabled);
+  const action = app.$$('#trainingMode :is(.training-action-button, .rl-action-card)[data-action]').find((button) => visible(button) && !button.disabled);
   assert.ok(action, 'an answer is available');
   await app.click(action);
+  // TRAINING-QUICK-001: a click selects; Confirm answers.
+  const confirm = app.byId('quickDrillConfirm');
+  if (confirm && visible(confirm) && !confirm.disabled) await app.click(confirm);
   await app.settle(300);
   const next = app.byId('trainingNextHandBtn');
   if (!next.disabled && visible(next)) {
@@ -52,14 +55,14 @@ test('Varied Session is the accessible default and Focused Drill retains its exa
 
   const spy = app.spy(['callTrainingServiceBridge']);
   try {
-    await app.click('[data-training-session-mode="focused"]');
+    await app.training.selectMode('focused');
     assert.equal(app.window.app.training.sessionMode, 'focused');
     assert.equal(app.$('[data-training-session-mode="focused"]').getAttribute('aria-pressed'), 'true');
     assert.equal(app.$('[data-training-session-mode="varied"]').getAttribute('aria-pressed'), 'false');
     assert.equal(app.byId('trainingVariedControls').hidden, true);
     assert.equal(app.byId('trainingFocusedControls').hidden, false);
     assert.ok(bridgeCalls(spy, 'reset').length >= 1, 'switching mode resets the Training session');
-    await app.click('[data-training-session-mode="varied"]');
+    await app.training.selectMode('varied');
     assert.equal(app.byId('trainingVariedControls').hidden, false);
     assert.equal(app.byId('trainingFocusedControls').hidden, true);
   } finally {
@@ -87,6 +90,7 @@ test('Varied controls map only broad preferences to one planned TrainingSessionI
   await app.setValue('#trainingSessionLength', '10');
   const spy = app.spy(['callTrainingServiceBridge']);
   try {
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(500);
     const [[, intentInput]] = bridgeCalls(spy, 'createPracticeIntent');
@@ -128,6 +132,7 @@ test('an open session started after a completed one can be answered and never co
   const spy = app.spy(['callTrainingServiceBridge']);
   try {
     await app.setValue('#trainingSessionLength', 'open');
+    await app.training.openSetup();
     await app.click('#trainingNewHand');
     await app.settle(500);
     const [[, intentInput]] = bridgeCalls(spy, 'createPracticeIntent');
@@ -153,6 +158,7 @@ test('planned bridge APIs, session-safe replay, errors, and localizations are ex
   assert.match(text(app.byId('trainingErrorText')), /Varied Session preferences/);
   // Protects: seed replay goes through the Training service with the provider.
   await app.setValue('#trainingSessionLength', '10');
+  await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(500);
   const spy = app.spy(['callTrainingServiceBridge']);
