@@ -1,17 +1,5 @@
 # Contributing to Riverline
 
-Bug reports, focused fixes, tests, documentation improvements, and feature proposals are welcome.
-
-## Workflow
-
-1. Inspect the relevant code, tests, and project documentation before making changes.
-2. Keep each change focused. Use a separate branch for risky or substantial work.
-3. Add or update tests when behavior changes, especially for poker mathematics.
-4. Run the relevant tests and review the diff before submitting the change.
-5. Open a pull request when contributing through GitHub and explain the behavior and verification clearly.
-
-The repository does not declare enforced Git Flow, branch protection, or CI requirements. Follow any additional maintainer guidance provided for a specific contribution.
-
-## Commit messages
-
-Use short, descriptive commit messages. [Conventional Commits](https://www.conventionalcommits.org/) are welcome, but the repository does not currently enforce them.
+All working rules (roles, tickets, verification tiers, git and file safety, module rule, report format) are in [AGENTS.md](AGENTS.md); project context is in [docs/BRIEF.md](docs/BRIEF.md) and the live queue in [docs/STATE.md](docs/STATE.md).
+Keep each change focused, add tests when behaviour changes (especially poker maths), and explain the behaviour and verification in the pull request.
+CI runs on pull requests, the integration branch and manual dispatch once the CI ticket lands (see [OWNER_DECISIONS](docs/design/decisions/OWNER_DECISIONS.md)); until then run the focused tests locally.

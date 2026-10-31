@@ -2,7 +2,7 @@
 
 The visual contract: design direction (Style v4), tokens, components, composition and stability rules, and the acceptance standard. It merges the former design-system document (tokens, components and cascade facts that match the code) with Design Language v2 (the Manager's 2026-10-12/13 spec, authoritative for direction). Direction comes from [NORTH_STAR §8](../NORTH_STAR.md#8-design-language); this file says how. A guide, not an ultimatum: the owner's judgement is final.
 
-Where the target and the current code differ, both are stated: **Target** is what M1 builds toward, **Code** is what `app/styles.css` and `presentation-theme.mjs` do today. Values marked *provisional* are proposals to confirm on the PC (open items in [STATE.md](../STATE.md#open-decisions); D-14 resolved 2026-10-15; D-10, D-11 and D-13 resolved 2026-10-26 by P1-30).
+Where the target and the current code differ, both are stated: **Target** is what M1 builds toward, **Code** is what `app/styles.css` and `presentation-theme.mjs` do today. Values marked *provisional* are proposals to confirm on the PC (open items in [STATE.md](../design/decisions/OWNER_DECISIONS.md#open-decisions-from-statemd-as-of-2026-10-27); D-14 resolved 2026-10-15; D-10, D-11 and D-13 resolved 2026-10-26 by P1-30).
 
 **Phase 1 decisions (DOCS-PHASE1-001, 2026-10-26).** The owner's design decisions of 2026-10-18 → 26 are applied below with their IDs, dates and reasons; the full logs are in [design/decisions/](../design/decisions/README.md) (P1-xx = PHASE1_DECISIONS). Companion references: [MOTION_SPEC.md](../design/MOTION_SPEC.md) (41 moments), [VOICE_GUIDE.md](../design/VOICE_GUIDE.md), [MOCKUP_QA.md](../design/MOCKUP_QA.md), [ACHIEVEMENTS_CATALOGUE.md](../design/ACHIEVEMENTS_CATALOGUE.md). The `riverline-design` agent skill summarises these rules for UI work.
 
@@ -466,6 +466,6 @@ The M1 refresh reserves space and patterns so M2/M3 features slot in without ano
 
 ## Open design decisions
 
-Tracked in [STATE.md › Open decisions](../STATE.md#open-decisions): which mode uses cards vs seat buttons (D-05); Daylight values, the contrast tokens and table theme scope (D-12); whose turn at the table, A halo + timer or C quiet pill (D-23); kit text notes (D-24); the Equity PC bug list (D-25); card back final art with the "R" monogram (P1-30).
+Tracked in [STATE.md › Open decisions](../design/decisions/OWNER_DECISIONS.md#open-decisions-from-statemd-as-of-2026-10-27): which mode uses cards vs seat buttons (D-05); Daylight values, the contrast tokens and table theme scope (D-12); whose turn at the table, A halo + timer or C quiet pill (D-23); kit text notes (D-24); the Equity PC bug list (D-25); card back final art with the "R" monogram (P1-30).
 
 Resolved: kit-number conflicts (D-14, Style v4 values win); shell and hubs (D-03, D-04 → P1-01); drill with or without a table (D-06 → both modes, panels P1-05); Equity layout (D-07 → B look, A density, P1-30); Learn mix (D-08 → leaning to B with A's content, P1-30); heading face (D-10 → Rubik); card back direction (D-11 → "R" monogram, real card-back look); Hebrew mix bar (D-13 → bar LTR, legend follows).

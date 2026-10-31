@@ -4,12 +4,13 @@ The owner's decisions made in the Manager chat between 2026-10-18 and 2026-10-26
 
 - [NORTH_STAR.md](../../NORTH_STAR.md): product direction (Personal Strategy, Training, Equity, Hand, Learn, achievements, phone version, trust and solvers, data).
 - [DESIGN_SYSTEM.md](../../project/DESIGN_SYSTEM.md): shell, controls, panels, empty states, illustration, motion, sound, Chippy, stickers.
-- [STATE.md](../../STATE.md): the short decisions table, open decisions and the M1 queue.
+- [STATE.md](../../STATE.md): the live queue (decision tables moved to OWNER_DECISIONS.md).
 
-When a living doc and a log disagree, the newer owner decision wins; raise the conflict in your report. Do not edit these logs to record new decisions: add a new dated log (or a new row in a Manager-owned copy) and update the living docs.
+When a living doc and a log disagree, the newer owner decision wins; raise the conflict in your report. Do not edit these logs to record new decisions. Since 2026-10-31 [OWNER_DECISIONS.md](OWNER_DECISIONS.md) is the single log: add new dated entries there (it also holds the decisions that used to sit in STATE.md and NORTH_STAR §11b, §11c, §12).
 
 | File | IDs | Dates | Topic |
 |---|---|---|---|
+| [OWNER_DECISIONS.md](OWNER_DECISIONS.md) | D-xx, dated entries | 2026-10-10 → | The single log: decisions since 2026-10-31, the former STATE decisions/open/resolved tables, former NORTH_STAR §11b, §11c, §12 |
 | [PHASE1_DECISIONS.md](PHASE1_DECISIONS.md) | P1-01 … P1-30 | 2026-10-18 → 10-26 | Shell and hubs, select + confirm, decision controls, Training panels, motion tempo and catalog, Motion setting, sound, empty states, illustration, Chippy, Orbit stacks, onboarding, achievements, mockup quality, PC first, PC picks |
 | [PS_DESIGN_DECISIONS.md](PS_DESIGN_DECISIONS.md) | PS-01 … PS-08 | 2026-10-19 → 10-21 | Personal Strategy question flow |
 | [HAND_DESIGN_DECISIONS.md](HAND_DESIGN_DECISIONS.md) | HAND-01 … HAND-07 | 2026-10-20 → 10-22 | Hand input and phone capture |
@@ -20,4 +21,4 @@ When a living doc and a log disagree, the newer owner decision wins; raise the c
 
 Related design references (living, in [docs/design/](../)): [MOTION_SPEC.md](../MOTION_SPEC.md) (41 moments), [VOICE_GUIDE.md](../VOICE_GUIDE.md), [MOCKUP_QA.md](../MOCKUP_QA.md), [ACHIEVEMENTS_CATALOGUE.md](../ACHIEVEMENTS_CATALOGUE.md). Research behind several decisions: [docs/research/](../../research/README.md).
 
-Mockup links in these logs are claude.ai artifacts (owner's account); the full list is in [STATE.md › Design canvases](../../STATE.md#design-canvases).
+Mockup links in these logs are claude.ai artifacts (owner's account); the full list is in [STATE.md › Design canvases](../CANVASES.md).

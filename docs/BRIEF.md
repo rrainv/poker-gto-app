@@ -2,7 +2,7 @@
 
 Read this before any Riverline task. It explains what Riverline is, what has been decided, and how to work. [AGENTS.md](../AGENTS.md) holds the working rules for code; this brief holds the context. The owner's judgement is final; when something here seems wrong, say so instead of working around it.
 
-Installed in the repo by DOCS-PHASE1-001 (2026-10-26) from the Manager's RIVERLINE_BRIEF.md, with the round-3 research changes the owner adopted on 2026-10-26 (anonymised sharing, the fair-play line, sound and motion as separate settings). Direction in full: [NORTH_STAR.md](NORTH_STAR.md); live status: [STATE.md](STATE.md); decision logs with reasons: [design/decisions/](design/decisions/README.md). The research "master synthesis" in [research/](research/README.md) is **not** a brief.
+Installed in the repo by DOCS-PHASE1-001 (2026-10-26) from the Manager's RIVERLINE_BRIEF.md, with the round-3 research changes the owner adopted on 2026-10-26 (anonymised sharing, the fair-play line, sound and motion as separate settings). Direction in full: [NORTH_STAR.md](NORTH_STAR.md); live status: [STATE.md](STATE.md); decision logs with reasons: [design/decisions/OWNER_DECISIONS.md](design/decisions/OWNER_DECISIONS.md) (the single log; older per-area logs in [design/decisions/](design/decisions/README.md)). The research "master synthesis" in [research/](research/README.md) is **not** a brief.
 
 ## 1. What Riverline is
 - A **No-Limit Texas Hold'em study workstation**: "the honest poker coach for the hands you actually play". It connects reconstructing or playing hands, replay and review, analysis, the player's own intended strategy, training drills and learning, in one loop.
@@ -21,7 +21,7 @@ Installed in the repo by DOCS-PHASE1-001 (2026-10-26) from the Manager's RIVERLI
 8. **Private by default.** Shared hands are **anonymised automatically** (Hero / positions instead of screen names or friends' names); nothing leaves the device unless the user sends it.
 
 ## 3. Technology (today)
-Plain JavaScript (no React/Vue/Tailwind): one large classic script `app/src/core/logic.js` (~14k lines) plus ES modules; one stylesheet `app/styles.css`; shared poker domain in `shared/poker-domain/`; Node's built-in test runner with a custom DOM harness (~2,750 tests); Firefox on Windows for visual checks; Supabase client exists but accounts/sync are off the critical path.
+Plain JavaScript (no React/Vue/Tailwind): one large classic script `app/src/core/logic.js` (16,213 lines on 2026-10-31; it must only shrink, new UI code goes into mounted modules, see [AGENTS.md](../AGENTS.md#module-rule-decided-2026-10-31)) plus ES modules; one stylesheet `app/styles.css`; shared poker domain in `shared/poker-domain/`; Node's built-in test runner with a custom DOM harness (~2,750 tests); Firefox on Windows for visual checks; Supabase client exists but accounts/sync are off the critical path.
 
 ## 4. Design direction (decided)
 - **Look:** dark forest / jade / brass, "calm surface, deep data" (clean first look, raw data one hover/click away), soft panels, hero answer cards, number tiles; one primary action per view; never double-signal a state; no dead space.

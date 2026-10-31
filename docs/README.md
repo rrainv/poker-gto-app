@@ -5,7 +5,7 @@ Executable code and passing tests are final implementation truth. If code contra
 ## Live set
 
 - [North Star](NORTH_STAR.md): product direction, decisions, principles, milestones, workflow.
-- [State](STATE.md): the one live status file (milestone, gates, ordered queue, recent work, open decisions).
+- [State](STATE.md): the one live status file (milestone, done work from git log, next queue, gates, waiting on the owner).
 - [Issue register](ISSUE_REGISTER.md): bugs, debt, pending acceptance and small wants (search by ID).
 - [Terminology](TERMINOLOGY.md): EN/RU/HE terms, the i18n source of truth.
 - [Idea bank](IDEA_BANK.md): ideas, not commitments; never required reading.
@@ -14,7 +14,8 @@ Executable code and passing tests are final implementation truth. If code contra
 
 ## Design and research
 
-- [Owner decision logs](design/decisions/README.md): Phase 1, Personal Strategy, Hand, phone, long-term (dated record, unchanged copies).
+- [Owner decisions](design/decisions/OWNER_DECISIONS.md): the single decision log (dated, with reasons; includes the open decisions). Older per-area logs: [Phase 1, Personal Strategy, Hand, phone, long-term](design/decisions/README.md).
+- [Design canvases](design/CANVASES.md): mockup links. [Area direction](project/AREA_DIRECTION.md): per-area product detail. [Spec index](project/README.md): current vs dormant specs.
 - [Motion spec](design/MOTION_SPEC.md), [voice guide](design/VOICE_GUIDE.md), [mockup QA checklist](design/MOCKUP_QA.md), [achievements catalogue](design/ACHIEVEMENTS_CATALOGUE.md).
 - [Research](research/README.md): filed reports and analyses (evidence, not authority; not legal advice).
 
