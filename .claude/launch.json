@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "riverline-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/dev-web-server.mjs"],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000"
+    }
+  ]
+}

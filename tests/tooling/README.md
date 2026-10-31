@@ -245,3 +245,11 @@ Personal/Saved, and folded/all-in table geometry. Reports and screenshots go to
 an OS temporary `riverline-quick-sweep-*` directory. Run alongside the existing
 `verify_beta_coherence_firefox.mjs` for teaching, matrices and 2-10-seat checks.
 These verifiers provide agent evidence, not human Beta acceptance.
+
+## Archived one-off scripts
+
+`tests/tooling/archive/` holds historical per-ticket audit, smoke, benchmark and
+payload scripts that nothing in the repository references (moved by
+HOUSEKEEPING-001). They are kept for history only: relative import paths were not
+updated and they are not expected to run from the archive folder. Move one back
+to `tests/tooling/` before reviving it.

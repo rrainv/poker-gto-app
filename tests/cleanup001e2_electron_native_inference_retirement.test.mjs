@@ -7,13 +7,11 @@ const preloadUrl = new URL('../app/preload.js', import.meta.url);
 const modelDirectoryUrl = new URL('../shared_models/', import.meta.url);
 const modelUrl = new URL('../shared_models/model.onnx', import.meta.url);
 const manifestUrl = new URL('../app/package.json', import.meta.url);
-const lockUrl = new URL('../package-lock.json', import.meta.url);
 const appLockUrl = new URL('../app/package-lock.json', import.meta.url);
 
 const main = fs.readFileSync(mainUrl, 'utf8');
 const preload = fs.readFileSync(preloadUrl, 'utf8');
 const manifest = JSON.parse(fs.readFileSync(manifestUrl, 'utf8'));
-const lock = JSON.parse(fs.readFileSync(lockUrl, 'utf8'));
 const appLock = JSON.parse(fs.readFileSync(appLockUrl, 'utf8'));
 
 test('Electron main process is only a desktop host for the current app', () => {
@@ -35,8 +33,6 @@ test('obsolete native inference bridge and model assets are absent while the aut
 test('Electron package and lock metadata contain no native inference resources', () => {
   assert.equal(manifest.dependencies?.['onnxruntime-node'], undefined);
   assert.equal(manifest.dependencies?.['onnxruntime-web'], undefined);
-  assert.equal(lock.packages?.['']?.dependencies?.['onnxruntime-node'], undefined);
-  assert.equal(lock.packages?.['node_modules/onnxruntime-node'], undefined);
   assert.equal(appLock.packages?.['']?.dependencies?.['onnxruntime-node'], undefined);
   assert.equal(appLock.packages?.['node_modules/onnxruntime-node'], undefined);
   assert.doesNotMatch(

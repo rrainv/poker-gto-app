@@ -45,7 +45,7 @@ Columns: **Ships** = whether the thing is distributed with Riverline (in the app
 |---|---|---|---|---|---|---|
 | `puppeteer-core` | 25.10.0 | `tests/tooling/package.json` | Apache-2.0 | no | any | Drives Firefox for the Beta smoke and audits |
 | Mozilla Firefox | installed | browser acceptance | MPL-2.0 | no (user-installed tool) | any | Primary acceptance browser |
-| Python 3 standard library | 3.12 | `solver/`, `tests/solver/`, `server.py` | PSF licence | no | any | Solver research uses the standard library only (no third-party Python packages found) |
+| Python 3 standard library | 3.12 | `solver/`, `tests/solver/` | PSF licence | no | any | Solver research uses the standard library only (no third-party Python packages found) |
 
 ### Vendored agent skills (dev only)
 
