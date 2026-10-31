@@ -1,6 +1,6 @@
 # DOCS-RESET-002: agent core reset, accurate STATE, single decision log
 
-Work session, Claude Code (Sonnet 5.5). Tier T0, docs only. Base `codex/stabilization` at `7904a23`; `git fetch` showed nothing new upstream, so there was nothing to pull. TRAINING-QUICK-001 is **not committed** in this checkout (its files are in the working tree), so STATE records it as uncommitted with no hash.
+Work session, Claude Code (Sonnet 5.5). Tier T0, docs only. Base `codex/stabilization` at `7904a23`; `git fetch` showed nothing new upstream, so there was nothing to pull. TRAINING-QUICK-001 was committed by the owner as `432c27b` while this ticket ran; the first DOCS-RESET-002 commit (`b15334c`) still said "uncommitted" in STATE, and a follow-up commit fixed it.
 
 ## 1. Outcome
 
@@ -23,8 +23,8 @@ Work session, Claude Code (Sonnet 5.5). Tier T0, docs only. Base `codex/stabiliz
 ## 3. Files
 
 Changed by this ticket: `AGENTS.md`, `CONTRIBUTING.md`, `docs/BRIEF.md`, `docs/STATE.md`, `docs/NORTH_STAR.md`, `docs/README.md`, `docs/THIRD_PARTY.md`, `docs/design/decisions/README.md`; new `docs/design/decisions/OWNER_DECISIONS.md`, `docs/design/CANVASES.md`, `docs/project/AREA_DIRECTION.md`, `docs/project/README.md`, `docs/archive/2026-10/STATE_SNAPSHOT_2026-10-31.md`, this report.
-`docs/ISSUE_REGISTER.md` and `docs/project/DESIGN_SYSTEM.md` were already dirty from TRAINING-QUICK-001. Only this ticket's edits were staged for them (built from the `HEAD` blob with the same replacements); their working-tree files still hold the TRAINING-QUICK-001 changes, unstaged.
-Pre-existing dirty files left alone: everything under `app/`, `tests/`, `tools/`, `.codex/config.toml`, `.claude/`, `logic_outline.txt`, `riverline_snapshot.txt`, the TRAINING-QUICK-001 report and files.
+`docs/ISSUE_REGISTER.md` and `docs/project/DESIGN_SYSTEM.md` were dirty from TRAINING-QUICK-001 when I started; I staged only this ticket's edits for them (applied to the `HEAD` blob), and the owner's `432c27b` commit landed before mine, so the result is clean.
+Left alone: `.codex/config.toml`, `.claude/`, `logic_outline.txt`, `riverline_snapshot.txt`.
 
 ## 4. Verification
 
@@ -46,4 +46,4 @@ Pre-existing dirty files left alone: everything under `app/`, `tests/`, `tools/`
 
 ## 7. Git status
 
-Committed with an exact file list as authorized (see the commit); `.codex/config.toml` and `.claude/` not staged. See the final message for the push result.
+Commits `b15334c` and a small follow-up, both with exact file lists, pushed to `origin/codex/stabilization`. Still untracked or dirty and never staged: `.codex/config.toml`, `.claude/`, `logic_outline.txt`, `riverline_snapshot.txt`.

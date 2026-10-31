@@ -18,7 +18,7 @@ Goal: docs and truth fixed, design and motion foundation, Training and Settings 
 | DS-TOKENS-001 | `ddd4840` | Style v4 values, contrast pass, Slate preset, self-hosted Rubik |
 | MOTION-FOUNDATION-001 | `7ab2bfe` | One motion system, Motion setting, keyboard-instant |
 | MERGE-003 | `b3ef6d4`, `245d7d1` | Argon batch 3 (B7 locale numbers, B8 keyboard access, B9 Full Hand quality, B10 Saved flake); Hero-fold title and Equity formatter fix |
-| TRAINING-QUICK-001 | not yet committed (working tree on `codex/stabilization`) | Quick refresher on the prototype, correction 1 delivered 2026-10-30; report [TRAINING-QUICK-001](archive/agent-reports/2026-10/TRAINING-QUICK-001.md). Owner acceptance pending |
+| TRAINING-QUICK-001 | `432c27b` | Quick refresher on the prototype, correction 1 delivered 2026-10-30; report [TRAINING-QUICK-001](archive/agent-reports/2026-10/TRAINING-QUICK-001.md). Owner acceptance pending |
 | COMPONENTS-001 | folded in | Not a separate ticket: `app/src/ui/drill-components.mjs` (from TRAINING-QUICK-001) is the seed of the shared component set; further components land with the tickets that need them |
 
 Earlier work (MERGE-001/002, batch 1 and 2, TRAINING-F12-001, SKILLS-001, DOCS-PHASE1/SMALL-001, ANALYZE-COMPOSITION-001): git log and the snapshot.
@@ -48,7 +48,7 @@ The owner's open decisions (D-23 … D-38, Rust toolchain, Daylight values, Game
 
 ## Waiting on the owner
 
-Branch move (`codex/stabilization` → `main`); acceptance of TRAINING-QUICK-001 and of the DS-TOKENS-001 / SHELL-002 / MOTION-FOUNDATION-001 visuals; commit of TRAINING-QUICK-001; Rust toolchain yes/no (SOLVER-PILOT-001); the open decisions above.
+Branch move (`codex/stabilization` → `main`); acceptance of TRAINING-QUICK-001 and of the DS-TOKENS-001 / SHELL-002 / MOTION-FOUNDATION-001 visuals; Rust toolchain yes/no (SOLVER-PILOT-001); the open decisions above.
 
 ## Pointers
 
