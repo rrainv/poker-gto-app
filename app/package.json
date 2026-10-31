@@ -33,6 +33,7 @@
       "index.html",
       "styles.css",
       "src/**/*",
+      "!src/**/*.png",
       "node_modules/@supabase/supabase-js/dist/umd/supabase.js",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!**/node_modules/*/{test,tests,example,examples}",

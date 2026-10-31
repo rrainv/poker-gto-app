@@ -4,7 +4,7 @@
 concept is accepted; the painterly style is not final. Replace through the
 `opponentPortrait` asset seam with consistent graphic avatars readable at 24–48px.
 Current originals are 1254×1254 each, 20,501,764 bytes total (about 60 MiB decoded
-RGBA). BETA-REPAIR-SWEEP-B retains these source bytes and delivers 128×128 seat
+RGBA). ASSETS-SHIP-001 moved these ten source PNGs out of `app/src` (kept outside the repository; they remain in git history; names and hashes are in `docs/archive/agent-reports/2026-11/ASSETS-SHIP-001.md`), and BETA-REPAIR-SWEEP-B delivers 128×128 seat
 WebPs plus 320×320 preview WebPs, 174,474 bytes across all twenty derivatives.
 Welcome requests only its three seat derivatives. Final-art replacement and
 subjective/performance acceptance remain in `QA-BETA-DESIGN-CORRECTION-002`;

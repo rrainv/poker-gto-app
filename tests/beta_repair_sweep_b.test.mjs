@@ -79,7 +79,7 @@ test('product formatting localizes names and dashes before interpolating user co
   }
   assert.match(source, /interpolateTranslation\(resolveTranslation\(resolvedKey, lang\)\.value, params\)/);
 });
-test('portrait delivery uses bounded WebP derivatives, retaining source art', () => {
+test('portrait delivery uses bounded WebP derivatives; source masters stay out of the shipped tree', () => {
   let total = 0;
   for (const id of OPPONENT_IDENTITIES) {
     for (const size of ['seat','preview']) {
@@ -88,7 +88,9 @@ test('portrait delivery uses bounded WebP derivatives, retaining source art', ()
       assert.equal(buffer.subarray(8,12).toString(), 'WEBP');
       assert.ok(buffer.length < (size === 'seat' ? 10000 : 30000)); total += buffer.length;
     }
-    assert.ok(fs.statSync(new URL(`../app/src/ui/assets/opponents/${id}.png`,import.meta.url)).size > 100000);
+    // ASSETS-SHIP-001: the 2 MB master PNGs live outside app/src (the runtime reads only the WebPs).
+    assert.equal(fs.existsSync(new URL(`../app/src/ui/assets/opponents/${id}.png`,import.meta.url)), false);
   }
   assert.ok(total < 250000);
+  assert.ok(JSON.parse(read('app/package.json')).build.files.includes('!src/**/*.png'));
 });
