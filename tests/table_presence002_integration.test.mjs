@@ -31,7 +31,7 @@ test('visible Hand composition is table-first with one adjacent action and repla
     .map((id) => markup.getElementById(id));
   order.slice(1).forEach((node, index) => assert.ok(precedes(order[index], node), `${order[index].id} before ${node.id}`));
   assert.equal(markup.getElementById('handActionAmountRange').type, 'range');
-  assert.equal(markup.getElementById('handActionAmountBb').type, 'number');
+  assert.equal(markup.getElementById('handActionAmountBb').type, 'text'); // LOCALE-NUMBERS-003
   assert.equal(markup.getElementById('handCommitSizedAction').type, 'button');
 
   await app.startHand(['As', 'Kd']);

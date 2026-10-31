@@ -66,7 +66,7 @@ async function observeLiveHand() {
         const hiddenBefore = panel.hidden;
         await app.click(sized);
         await app.settle(50);
-        const input = panel.querySelector('input[type="number"]');
+        const input = panel.querySelector('input[inputmode="decimal"]');
         observed.sizing = {
           action: sized.dataset.action,
           hiddenBefore,

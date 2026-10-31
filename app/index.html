@@ -918,13 +918,13 @@
               <div class="fields playbook-context-sliders">
                 <div class="field">
                   <div class="slider-container">
-                    <div class="slider-header"><span data-i18n="Facing size">Facing size</span><span class="control-value"><input id="facingSizeNum" class="control-input control-input--inline" type="number" min="0" max="100" step="0.5" value="0"><span class="control-unit">bb</span></span></div>
+                    <div class="slider-header"><span data-i18n="Facing size">Facing size</span><span class="control-value"><input id="facingSizeNum" class="control-input control-input--inline" type="text" inputmode="decimal" data-locale-number min="0" max="100" step="0.5" value="0"><span class="control-unit">bb</span></span></div>
                     <input id="facingSize" class="control-range" type="range" min="0" max="100" step="0.5" value="0">
                   </div>
                 </div>
                 <div class="field">
                   <div class="slider-container">
-                    <div class="slider-header"><span data-i18n="Pot before action">Pot before action</span><span class="control-value"><input id="potSizeNum" class="control-input control-input--inline" type="number" min="0.5" max="200" step="0.5" value="1.5"><span class="control-unit">bb</span></span></div>
+                    <div class="slider-header"><span data-i18n="Pot before action">Pot before action</span><span class="control-value"><input id="potSizeNum" class="control-input control-input--inline" type="text" inputmode="decimal" data-locale-number min="0.5" max="200" step="0.5" value="1.5"><span class="control-unit">bb</span></span></div>
                     <input id="potSize" class="control-range" type="range" min="0.5" max="200" step="0.5" value="1.5">
                   </div>
                 </div>
@@ -955,7 +955,7 @@
                   <div class="slider-container">
                     <div class="slider-header">
                       <span data-i18n="Starting stack">Starting stack</span>
-                      <span class="control-value"><input id="stackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30"><span class="control-unit">bb</span></span>
+                      <span class="control-value"><input id="stackNum" class="control-input control-input--inline" type="text" inputmode="decimal" data-locale-number min="10" max="500" step="1" value="30"><span class="control-unit">bb</span></span>
                     </div>
                     <input id="stack" class="control-range" type="range" min="10" max="500" step="1" value="30">
                   </div>
@@ -1008,7 +1008,7 @@
                   <div class="slider-container">
                     <div class="slider-header">
                       <span data-i18n="Ante">Ante</span>
-                      <span class="control-value"><input id="anteNum" class="control-input control-input--inline" type="number" min="0" max="5" step="0.5" value="0"></span>
+                      <span class="control-value"><input id="anteNum" class="control-input control-input--inline" type="text" inputmode="decimal" data-locale-number min="0" max="5" step="0.5" value="0"></span>
                     </div>
                     <input id="ante" class="control-range" type="range" min="0" max="5" step="0.5" value="0">
                   </div>
@@ -1076,11 +1076,11 @@
                 <div class="hand-setup-grid">
                   <label class="hand-collection-field"><span data-i18n="Rake / collection">Rake / collection</span><select id="handCollectionType" class="control-select"><option value="none" data-i18n="No rake / collection">No rake / collection</option><option value="fixed_per_seated_player" data-i18n="Fixed collection">Fixed collection</option></select></label>
                   <label><span data-i18n="Players">Players</span><input id="handTableSize" class="control-input poker-data-token" type="number" min="2" max="10" step="1" value="2" aria-describedby="handTableSizeError"></label>
-                  <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit poker-data-token"><input id="handStackBb" class="control-input" type="number" min="1" max="500" step="1" value="100"><em>bb</em></span></label>
+                  <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit poker-data-token"><input id="handStackBb" class="control-input" type="text" inputmode="decimal" data-locale-number min="1" max="500" step="1" value="100"><em>bb</em></span></label>
                   <label><span data-i18n="Button seat">Button seat</span><select id="handButtonSeat" class="control-select"></select></label>
                   <label><span data-i18n="Hero position">Hero position</span><select id="handHeroSeat" class="control-select"></select></label>
                   <label><span data-i18n="Ante type">Ante type</span><select id="handAnteType" class="control-select"><option value="none" data-i18n="None">None</option><option value="per_player" data-i18n="Per player">Per player</option><option value="big_blind" data-i18n="Big blind ante">Big blind ante</option></select></label>
-                  <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit poker-data-token"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
+                  <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit poker-data-token"><input id="handAnteBb" class="control-input" type="text" inputmode="decimal" data-locale-number min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
                 </div>
               <p id="handTableSizeError" class="field-error" role="alert" hidden></p>
               <p id="handAccountingPreview" class="hand-accounting-preview">No rake / collection</p>
@@ -1282,7 +1282,7 @@
                   <button id="handSizingMaxPreset" class="ui-button ui-button--secondary" type="button" data-hand-sizing-preset="max" data-i18n="Maximum non-all-in">Maximum non-all-in</button>
                 </div>
                 <label class="hand-sizing-range"><span data-i18n="Bet size">Bet size</span><input id="handActionAmountRange" class="control-range" type="range" min="0" max="0" step="0.1" value="0"></label>
-                <label class="hand-custom-sizing"><span data-i18n="Custom size">Custom size</span><span class="input-with-unit poker-data-token"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span></label>
+                <label class="hand-custom-sizing"><span data-i18n="Custom size">Custom size</span><span class="input-with-unit poker-data-token"><input id="handActionAmountBb" class="control-input" type="text" inputmode="decimal" data-locale-number step="0.1"><em>bb</em></span></label>
                 <small id="handActionAmountBounds" class="poker-data-token"></small>
                 <button id="handCommitSizedAction" class="ui-button ui-button--primary" type="button" hidden data-i18n="Apply">Apply</button>
               </div>
@@ -2562,7 +2562,7 @@
               <label class="ui-field"><span data-i18n="Decision target">Decision target</span><select id="trainingDecisionTarget" class="control-select"><option value="any" selected data-i18n="Any compatible target">Any compatible target</option><optgroup label="Preflop" data-i18n-label="Preflop"><option value="preflop_unopened" data-i18n="Unopened / RFI">Unopened / RFI</option><option value="preflop_facing_open" data-i18n="Facing an open">Facing an open</option><option value="preflop_facing_3bet" data-i18n="Facing a 3-bet">Facing a 3-bet</option><option value="preflop_facing_4bet" data-i18n="Facing a 4-bet">Facing a 4-bet</option><option value="preflop_bb_option" data-i18n="Big blind check option">Big blind check option</option></optgroup><optgroup label="Postflop" data-i18n-label="Postflop"><option value="postflop_first_action" data-i18n="First action / checked to">First action / checked to</option><option value="postflop_facing_bet" data-i18n="Facing a bet">Facing a bet</option><option value="postflop_facing_raise" data-i18n="Facing a raise">Facing a raise</option></optgroup></select></label>
               <label class="ui-field"><span data-i18n="Hero position">Hero position</span><select id="trainingHeroPos" class="control-select poker-data-token"><option value="UTG" selected>UTG</option><option value="HJ">HJ</option><option value="CO">CO</option><option value="BTN">BTN</option><option value="SB">SB</option><option value="BB">BB</option></select></label>
               <div class="training-slider-field"><div class="slider-header"><span data-i18n="Table size">Table size</span><span class="control-value poker-data-token"><input id="trainingPlayersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">-max</span></div><input id="trainingPlayers" class="control-range" type="range" min="2" max="10" step="1" value="8"></div>
-              <div class="training-slider-field"><div class="slider-header"><span data-i18n="Starting stack">Starting stack</span><span class="control-value poker-data-token"><input id="trainingStackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30"> bb</span></div><input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30"></div>
+              <div class="training-slider-field"><div class="slider-header"><span data-i18n="Starting stack">Starting stack</span><span class="control-value poker-data-token"><input id="trainingStackNum" class="control-input control-input--inline" type="text" inputmode="decimal" data-locale-number min="10" max="500" step="1" value="30"> bb</span></div><input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30"></div>
               </div>
               <label class="ui-field"><span data-i18n="Assistance">Assistance</span><select id="trainingDifficulty" class="control-select"><option value="hard" selected data-i18n="Hard · no odds shown">Hard · no odds shown</option><option value="easy" data-i18n="Easy · pot odds and MDF">Easy · pot odds and MDF</option><option value="guided" data-i18n="Guided · odds and prompt">Guided · odds and prompt</option></select></label>
               <div id="trainingFilterMessage" class="training-filter-message" role="status"></div>

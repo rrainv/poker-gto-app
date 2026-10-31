@@ -304,7 +304,9 @@ test('action dock renders only canonical legal options and keeps amount-to prese
   const doc = indexDocument();
   assert.equal(doc.getElementById('handSizingMinPreset').getAttribute('data-hand-sizing-preset'), 'min');
   assert.equal(doc.getElementById('handSizingMaxPreset').getAttribute('data-hand-sizing-preset'), 'max');
-  assert.equal(doc.getElementById('handActionAmountBb').getAttribute('type'), 'number');
+  // LOCALE-NUMBERS-003: the custom size is a decimal text field in the app language.
+  assert.equal(doc.getElementById('handActionAmountBb').getAttribute('type'), 'text');
+  assert.equal(doc.getElementById('handActionAmountBb').getAttribute('inputmode'), 'decimal');
 });
 
 test('leaving, returning, and repeated mode switches preserve the exact canonical Hand and controller', async () => {
