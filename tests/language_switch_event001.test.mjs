@@ -201,7 +201,9 @@ test('Training source badge and baseline panel keep the same claim across EN →
   const claim = text(badge);
   assert.ok(claim);
   assert.notEqual(claim, 'Source unavailable');
-  const key = Object.keys(DICTIONARY.en).find((candidate) => DICTIONARY.en[candidate] === claim) || claim;
+  // TERMS-HEURISTIC-001: other keys now also display "Baseline" in English, so the reverse lookup by text can pick a
+  // different key than the badge uses; take the badge's own key when it has one.
+  const key = badge.dataset.i18n || Object.keys(DICTIONARY.en).find((candidate) => DICTIONARY.en[candidate] === claim) || claim;
   for (const language of ['ru', 'he', 'en']) {
     app.window.setLanguage(language);
     await app.settle(50);

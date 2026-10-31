@@ -121,7 +121,7 @@ test('strategy source status is truthful, noninteractive fallback copy', () => {
   assert.equal(status.localName, 'div');
   assert.ok(status.classList.contains('strategy-source-status') && status.classList.contains('ui-badge'));
   assert.equal(status.dataset.variant, 'source');
-  assert.equal(text(status.querySelector('strong')), 'Heuristic fallback');
+  assert.equal(text(status.querySelector('strong')), 'Baseline'); // TERMS-HEURISTIC-001
   assert.ok(css.rulesMentioning('.strategy-source-status').length > 0);
   for (const id of ['connectApiBtn', 'apiStatusText']) assert.equal(markup.getElementById(id), null);
   assert.equal(markup.querySelector('#strategySourceStatus [data-status]'), null);

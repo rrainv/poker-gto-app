@@ -263,7 +263,7 @@ test('heuristic source comparison requires full region coverage and stays compar
   assert.equal(region(full, 'pairs').permission.comparison, true);
   assert.equal(region(full, 'pairs').permission.normative, false);
   assert.equal(region(full, 'pairs').quantitative, null);
-  assert.match(renderPersonalRangeComparison(full).join(' '), /heuristic baseline/);
+  assert.match(renderPersonalRangeComparison(full).join(' '), /the baseline/); // TERMS-HEURISTIC-001
   const sparse = createStrategyRangeLanguageFacts({ personalFacts: facts, entries: entries.slice(0, 1), expectedRole: 'heuristic' });
   assert.equal(region(sparse, 'pairs').permission.comparison, false);
   const disguised = createStrategyRangeLanguageFacts({ personalFacts: facts, entries, expectedRole: 'reference' });
@@ -331,7 +331,7 @@ test('real custom canonical v2 RFI scope supports baseline comparison and preser
     const personalFacts = factsFor([observation('AA', 'fold', { context })], { context });
     const comparison = createStrategyRangeLanguageFacts({ personalFacts, entries, sourceContext: context, expectedRole: 'heuristic' });
     assert.equal(region(comparison, 'pairs').permission.comparison, true);
-    assert.match(renderPersonalRangeComparison(comparison).join(' '), /heuristic baseline/);
+    assert.match(renderPersonalRangeComparison(comparison).join(' '), /the baseline/); // TERMS-HEURISTIC-001
     const missingBinding = entries.map(({ calibrationContext, ...entry }) => entry);
     assert.equal(region(createStrategyRangeLanguageFacts({ personalFacts, entries: missingBinding, expectedRole: 'heuristic' }), 'pairs').permission.comparison, false);
   }

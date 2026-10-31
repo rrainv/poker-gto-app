@@ -67,7 +67,7 @@ test('global utilities live in the lower sidebar and not the workspace header', 
   assert.ok(precedes(language, audio) && precedes(audio, settings));
   for (const id of ['langToggle', 'audioToggleBtn', 'openSettings']) assert.equal(header.querySelector(`#${id}`), null, id);
   const status = header.querySelector('#strategySourceStatus');
-  assert.equal(status.getAttribute('aria-label'), 'Strategy source: Heuristic fallback');
+  assert.equal(status.getAttribute('aria-label'), 'Strategy source: Baseline'); // TERMS-HEURISTIC-001
   assert.notEqual(status.localName, 'button');
   assert.equal(header.querySelector('#connectApiBtn'), null);
   // SHELL-001: one translated tooltip per footer icon; the audio label is

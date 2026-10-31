@@ -126,7 +126,7 @@ test('Range comparison is descriptive, limitation-labelled, and context-safe in 
   const analysis = text(app.byId('rangeAdvantageAnalysis')) + ' ' + text(app.byId('rangeAdvantageStatus'));
   assert.doesNotMatch(analysis, /Significant Nut Advantage|Villain Nut Advantage|overbets|distributing equity evenly/);
   for (const phrase of [
-    /heuristic fixed-range\/category analysis/,
+    /baseline fixed-range\/category analysis/, // TERMS-HEURISTIC-001
     /one canonical surviving representative per eligible sampled class/,
     /category does not describe every combo in that class/,
     /not solver range advantage, range-vs-range equity/,

@@ -167,7 +167,7 @@ test('actual comparison application uses custom canonical v2 states and shared b
   const pairs = comparison.regions.find((r) => r.id === 'pairs');
   assert.equal(pairs.permission.comparison, true);
   assert.equal(pairs.permission.normative, false);
-  assert.match(renderPersonalRangeComparison(comparison).join(' '), /heuristic baseline/);
+  assert.match(renderPersonalRangeComparison(comparison).join(' '), /the baseline/); // TERMS-HEURISTIC-001: the comparison names "the baseline"
   assert.deepEqual(await app.repository.loadSnapshot(), before);
 });
 

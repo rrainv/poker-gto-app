@@ -32,7 +32,7 @@ function invalidContextReason(context) {
 
 function fallbackFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
-  return createUnavailableStrategyResult('Heuristic fallback is unavailable.', {
+  return createUnavailableStrategyResult('The baseline strategy is unavailable.', {
     providerReason: 'fallback_error',
     error: {
       name: error instanceof Error ? error.name : 'Error',
