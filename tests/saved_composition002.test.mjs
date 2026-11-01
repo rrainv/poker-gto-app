@@ -2,6 +2,7 @@
 // auto-titles from stored facts, Archive, completed-Hand pot and Training facing wording.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
@@ -16,6 +17,7 @@ const page = await bootApp();
 // Imported after boot: several of these modules self-install page bridges.
 const { mountSavedLibrary } = await import('../app/src/application/saved-library-workspace.mjs');
 const { mountSavedTrainingHistory } = await import('../app/src/application/saved-training-history-workspace.mjs');
+const { savedTrainingHistorySpotObjectId } = await import('../app/src/application/saved-training-history.mjs');
 const { createHomeSavedItem } = await import('../app/src/application/home-view-model.mjs');
 const { createSavedStudyPreviewFacts } = await import('../app/src/application/saved-study-preview-facts.mjs');
 const {
@@ -457,6 +459,16 @@ test('Training history words the price through decision-facing-summary (QA-DECIS
   assert.match(history, /trainingMemoryContextSummary\(item\.context, t, \{ facing: 'summary' \}\)/);
 });
 
+// SAVED-FLAKE-002: Web Crypto's digest settles on the thread pool after 1 to 30+
+// event-loop turns, so counted settle() calls raced it. The same SHA-256, settled
+// as a microtask, makes each Saved lookup land before the next settle().
+const syncSubtle = Object.freeze({
+  digest: async (algorithm, data) => {
+    assert.equal(algorithm, 'SHA-256');
+    return new Uint8Array(createHash('sha256').update(data).digest()).buffer;
+  },
+});
+
 function mountHistory(records) {
   const dom = createFakeDom();
   const section = dom.document.createElement('section');
@@ -469,6 +481,7 @@ function mountHistory(records) {
     presentationGate: () => ({ feedbackEmbargoed: false, revealAnswerAndReference: true, revealReviewReasons: true }),
     openRedrill: (id, kind) => calls.redrill.push([id, kind]),
     publishContext: (parts) => calls.context.push(parts),
+    subtle: syncSubtle,
   });
   const input = section.querySelectorAll('[data-saved-view-option]').find((node) => node.value === 'training');
   return { dom, section, controller, calls, input, rows: () => section.querySelectorAll('[data-training-history-id]') };
@@ -515,10 +528,10 @@ test('Training history keyboard browsing coalesces the Saved lookup to the row t
   f.dom.dispatch(f.input, 'change');
   await settle();
   const [r1] = f.rows();
+  const [t1Id, t3Id] = await Promise.all(['t1', 't3'].map((id) => savedTrainingHistorySpotObjectId(id)));
   f.dom.dispatch(r1, 'click');
   await settle();
-  await settle();
-  assert.equal(f.calls.getById.length, 1, 'a click looks up its decision immediately');
+  assert.deepEqual(f.calls.getById, [t1Id], 'a click looks up its decision immediately, by the real stable ID');
   const list = f.section.querySelector('[data-training-history-list]');
   const before = [...list.childNodes];
   f.dom.dispatch(f.rows()[0], 'keydown', { key: 'ArrowDown' });
@@ -530,8 +543,7 @@ test('Training history keyboard browsing coalesces the Saved lookup to the row t
   assert.equal(f.dom.pendingTimers(), 1);
   f.dom.flushTimers();
   await settle();
-  await settle();
-  assert.equal(f.calls.getById.length, 2, 'one more lookup, for t3 only');
+  assert.deepEqual(f.calls.getById, [t1Id, t3Id], 'one more lookup, for t3 only');
   const escape = f.dom.dispatch(f.dom.document, 'keydown', { key: 'Escape' });
   assert.equal(escape.defaultPrevented, true);
   assert.equal(f.controller.getState().expandedId, null);

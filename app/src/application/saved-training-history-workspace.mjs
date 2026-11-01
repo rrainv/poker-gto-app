@@ -49,6 +49,9 @@ export function mountSavedTrainingHistory(container, deps = {}) {
   const locale = () => deps.locale?.() || 'en';
   const setTimer = deps.timers?.set ?? ((callback, delay) => view.setTimeout(callback, delay));
   const clearTimer = deps.timers?.clear ?? ((id) => view.clearTimeout(id));
+  // Web Crypto for the stable Saved object ID. Its digest settles off the event
+  // loop, so tests inject a synchronous SHA-256 to make lookups deterministic.
+  const subtle = deps.subtle ?? globalThis.crypto?.subtle;
   const limit = deps.limit ?? SAVED_TRAINING_HISTORY_LIMIT;
   const coalesceMs = deps.coalesceMs ?? 80;
   const library = deps.library ?? null;
@@ -669,7 +672,7 @@ export function mountSavedTrainingHistory(container, deps = {}) {
   async function checkSavedState(item) {
     const owner = generation;
     try {
-      const objectId = await savedTrainingHistorySpotObjectId(item.id);
+      const objectId = await savedTrainingHistorySpotObjectId(item.id, subtle);
       if (owner !== generation) return;
       const existing = await deps.savedService.getById(objectId);
       if (owner !== generation) return;
@@ -695,7 +698,7 @@ export function mountSavedTrainingHistory(container, deps = {}) {
       scope = (await deps.captureScope?.()) ?? null;
       scope?.assertCurrent();
       if (owner !== generation) return;
-      const objectId = await savedTrainingHistorySpotObjectId(id);
+      const objectId = await savedTrainingHistorySpotObjectId(id, subtle);
       if (owner !== generation) return;
       const existing = await deps.savedService.getById(objectId);
       scope?.assertCurrent();
