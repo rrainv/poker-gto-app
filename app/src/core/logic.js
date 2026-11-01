@@ -10518,12 +10518,23 @@ function init() {
 
 
 
+// Start only once every module script has finished evaluating (startup-gate.js):
+// modules with a top-level await install their bridges after DOMContentLoaded.
+function scheduleInit() {
+  const gate = window.RiverlineStartup;
+  if (!gate) {
+    setTimeout(init, 10);
+    return;
+  }
+  void gate.whenReady().then(() => setTimeout(init, 10));
+}
+
 if (document.readyState === 'loading') {
 
-  document.addEventListener('DOMContentLoaded', () => setTimeout(init, 10));
+  document.addEventListener('DOMContentLoaded', scheduleInit);
 
 } else {
-  setTimeout(init, 10);
+  scheduleInit();
 
 }
 
