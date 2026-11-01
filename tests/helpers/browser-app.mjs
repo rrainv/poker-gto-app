@@ -314,6 +314,8 @@ function scriptSources(document) {
 export const DEFAULT_SKIP_SCRIPTS = Object.freeze([
   // Third-party bundle; the app treats a missing Supabase client as signed-out/offline.
   'node_modules/@supabase/supabase-js/dist/umd/supabase.js',
+  // bootApp() awaits every module script in order, so the gate has nothing to wait for.
+  'src/application/startup-gate.js',
 ]);
 
 let booted = null;
