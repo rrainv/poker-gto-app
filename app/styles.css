@@ -2274,104 +2274,6 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 
 
 
-[data-theme="felt"] {
-
-  --bg: #0a2e1a;
-
-  --panel: #0d3a22;
-
-  --panel2: #124629;
-
-  --line: #1a5a33;
-
-  --text: #e8f5e9;
-
-  --muted: #81c784;
-
-  --primary: #4caf50;
-
-  --primary-hover: #66bb6a;
-
-  --primary-rgb: 76, 175, 80;
-
-  --theme-act1: #ff5252;
-
-  --theme-act2: #4caf50;
-
-  --theme-act3: #2196f3;
-
-  --theme-gradient: rgba(10, 46, 26, 0.95);
-
-  --page-glow: #061f12;
-
-  --theme-panel: rgba(8, 35, 18, 0.98);
-
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-
-  --matrix-open: #ff5252;
-
-  --matrix-call: #4caf50;
-
-  --matrix-mix: #ff9800;
-
-  --matrix-fold: #1b5e20;
-
-  --matrix-check: #8bc34a;
-
-}
-
-
-
-[data-theme="felt"] .card-slot {
-
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-  border-radius: 6px;
-
-}
-
-
-
-[data-theme="felt"] .card-slot.filled {
-
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.15);
-
-}
-
-
-
-[data-theme="felt"] .cta,
-
-[data-theme="felt"] .btn-action {
-
-  border-radius: 8px;
-
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-
-}
-
-
-
-[data-theme="felt"] .cta:hover,
-
-[data-theme="felt"] .btn-action:hover {
-
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-
-}
-
-
-
-[data-theme="felt"] .panel {
-
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-
-}
-
-
-
 /*
  * Legacy themes remain selectable while component CSS migrates. They expose
  * the new semantic surface contract through their existing theme variables.
@@ -3006,18 +2908,6 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
   background-position: center;
 
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-
-}
-
-
-
-/* Blue Card Back for Red/Warm Themes */
-
-[data-theme="felt"] .card-slot.facedown {
-
-  background-color: #2563eb;
-
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="90" height="122" viewBox="0 0 90 122"><rect width="90" height="122" rx="7" fill="%23ffffff"/><rect x="4" y="4" width="82" height="114" rx="5" fill="%231d4ed8"/><pattern id="b" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M6 0 L12 6 L6 12 L0 6 Z" fill="none" stroke="%23ffffff" stroke-width="0.8" opacity="0.85"/><path d="M6 0 L6 12 M0 6 L12 6" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.65"/><polygon points="6,2 10,6 6,10 2,6" fill="none" stroke="%23ffffff" stroke-width="0.6" opacity="0.75"/></pattern><rect x="4" y="4" width="82" height="114" rx="5" fill="url(%23b)"/><polygon points="45,18 55,30 45,42 35,30" fill="%23ffffff" stroke="%231d4ed8" stroke-width="1.5"/><text x="45" y="34" font-size="11" font-weight="bold" fill="%231d4ed8" text-anchor="middle" font-family="sans-serif">♠</text><polygon points="45,80 55,92 45,104 35,92" fill="%23ffffff" stroke="%231d4ed8" stroke-width="1.5"/><text x="45" y="96" font-size="11" font-weight="bold" fill="%231d4ed8" text-anchor="middle" font-family="sans-serif">♠</text></svg>');
 
 }
 
