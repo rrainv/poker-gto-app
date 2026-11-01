@@ -208,7 +208,10 @@ test('select + confirm: a click selects, Confirm answers and the feedback swaps 
   assert.equal($('#quickDrillActionLayer').hasAttribute('inert'), true, 'the hidden layer cannot be reached');
   const verdict = $('#quickDrillFeedbackLayer .rl-verdict');
   assert.ok(['dominant', 'close'].includes(verdict.dataset.verdict), 'two verdict states only');
-  assert.match($('.quick-drill-answer-pill').textContent, /(inside|outside) the baseline's mix/);
+  // The spot is random: the chosen action is sometimes absent from the baseline mix, and the pill then reads "not in".
+  const pill = $('.quick-drill-answer-pill');
+  assert.equal(pill.dataset.inside, String(app.window.app.training.quick.answer.inside));
+  assert.match(pill.textContent, pill.dataset.inside === 'true' ? /· inside the baseline's mix$/ : /· not in the baseline's mix$/);
   for (const segment of app.$$('#quickDrillFeedbackLayer .rl-mix__segment')) {
     const share = Number(segment.style.getPropertyValue('--rl-mix-share').replace('%', ''));
     assert.equal(share % 5, 0, 'estimated mixes in 5% steps');
