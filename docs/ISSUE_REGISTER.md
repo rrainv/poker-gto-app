@@ -203,6 +203,8 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | TERMS-HEURISTIC-001 | TRAINING-QUICK-001 | User-facing text outside Training still says "heuristic" (Analyze "Heuristic baseline" heading and HEURISTIC badge, Hand Review provenance, "Heuristic fallback" status, range-comparison notes, About/Help copy) in EN/RU/HE | P2 | Open | M1 | Owner rule 2026-10-30: say "Baseline" with its tier ("Baseline · Estimated"; RU «Базовая стратегия», HE «אסטרטגיית בסיס»); "heuristic" only in technical docs and Source details. Training is done (TRAINING-QUICK-001); app-wide sweep |
 | TRAINING-QUICK-BAND | TRAINING-QUICK-001 | At 1920 a wide empty band (about 1360 × 140 px) remains at the bottom of the quick drill column, under the Study hints strip | P3 | Open (follow-up TRAINING-QUICK-002) | M1 | Dead-space audit numbers in the TRAINING-QUICK-001 report §0.2 |
 | TRAINING-QUICK-1366-RAIL | TRAINING-QUICK-001 | At 1366×768 the one-column study rail runs 56–70 px below the fold while the drill fits | P3 | Open (follow-up TRAINING-QUICK-002) | M1 | Dead-space audit numbers in the TRAINING-QUICK-001 report §0.2 |
+| QUICKDRILL-STALE-LABELS | EXTRACT-QUICKDRILL-001 | Skip and Confirm labels are not re-translated on a language switch mid-drill | P3 | Open (fold into TRAINING-QUICK-002) | M1 | Recorded as-is in the characterization test |
+| QUICKDRILL-DOM-IDS | EXTRACT-QUICKDRILL-001 | The extracted quick drill module still reads the DOM by id instead of receiving its elements | P3 | Open | Later | training-quick-drill-workspace.mjs |
 
 ## D. Repository, tests, docs and workflow
 

@@ -3,7 +3,10 @@
 // through one frozen window object (installed before logic.js runs).
 import * as view from './training-quick-drill.mjs';
 import * as components from '../ui/drill-components.mjs';
+import * as workspace from './training-quick-drill-workspace.mjs';
 
+// EXTRACT-QUICKDRILL-001: `workspace` is the mounted drill controller
+// (mount(container, deps)); logic.js mounts it once and calls it back.
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'RiverlineQuickDrill', {
     configurable: true,
@@ -13,6 +16,7 @@ if (typeof window !== 'undefined') {
       schemaVersion: view.QUICK_DRILL_VIEW_SCHEMA_VERSION,
       view: Object.freeze({ ...view }),
       components: Object.freeze({ ...components }),
+      workspace: Object.freeze({ ...workspace }),
     }),
   });
 }
