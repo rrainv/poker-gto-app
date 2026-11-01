@@ -72,6 +72,60 @@ export function formatLocaleBb(value, language) {
   return text === UNKNOWN_NUMBER_TEXT ? text : `${text} bb`;
 }
 
+// LOCALE-NUMBERS-003: number entry. Typed or pasted text accepts "." and ","
+// whatever the UI language is; the app language only decides how a value is
+// displayed back (RU "1,5", EN and HE "1.5"). Presentation only.
+const BIDI_MARKS = /[‎‏؜]/g;
+const SPACE_LIKE = /[\s'’]/g;
+const MINUS_LIKE = /[−–‐]/g;
+
+function groupedPattern(separator) {
+  return separator === '.' ? /^\d{1,3}(?:\.\d{3})+$/ : /^\d{1,3}(?:,\d{3})+$/;
+}
+
+// Returns a finite number, or NaN for anything that is not one complete number.
+// A single "." or "," is a decimal separator ("1,234" is 1.234); several of the
+// same kind, or both kinds together ("1,234.5", "1.234,5"), mark thousands groups
+// when the groups are three digits wide. "2." and ".5" are accepted drafts.
+export function parseLocaleNumber(text) {
+  if (typeof text === 'number') return Number.isFinite(text) ? text : Number.NaN;
+  if (typeof text !== 'string') return Number.NaN;
+  const cleaned = text.replace(BIDI_MARKS, '').replace(MINUS_LIKE, '-').replace(SPACE_LIKE, '');
+  const match = /^([+-]?)([\d.,]+)$/.exec(cleaned);
+  if (!match) return Number.NaN;
+  const negative = match[1] === '-';
+  const body = match[2];
+  const dots = body.split('.').length - 1;
+  const commas = body.split(',').length - 1;
+  let normalized;
+  if (dots > 0 && commas > 0) {
+    const decimal = body.lastIndexOf('.') > body.lastIndexOf(',') ? '.' : ',';
+    const group = decimal === '.' ? ',' : '.';
+    const parts = body.split(decimal);
+    if (parts.length !== 2 || !/^\d*$/.test(parts[1]) || !groupedPattern(group).test(parts[0])) return Number.NaN;
+    normalized = `${parts[0].split(group).join('')}.${parts[1]}`;
+  } else if (dots + commas > 1) {
+    const separator = dots > 0 ? '.' : ',';
+    if (!groupedPattern(separator).test(body)) return Number.NaN;
+    normalized = body.split(separator).join('');
+  } else {
+    normalized = body.replace(',', '.');
+  }
+  if (!/\d/.test(normalized)) return Number.NaN;
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) return Number.NaN;
+  return value === 0 ? 0 : (negative ? -value : value);
+}
+
+// Display text for an input field: the app language's decimal separator, no
+// thousands grouping, no padding. A non-number is an empty field, never "-" or 0.
+export function formatLocaleInputNumber(value, language, maximumFractionDigits = 6) {
+  const numeric = typeof value === 'number' ? value : parseLocaleNumber(String(value ?? ''));
+  if (!Number.isFinite(numeric)) return '';
+  return formatLocaleNumber(numeric, { minimumFractionDigits: 0, maximumFractionDigits, useGrouping: false }, language)
+    .replace(BIDI_MARKS, '');
+}
+
 // The page bridge (window.RiverlineLocaleNumberFormat) as a plain object.
 export function createLocaleNumberFormatBridge() {
   return Object.freeze({
@@ -82,5 +136,7 @@ export function createLocaleNumberFormatBridge() {
     formatInteger: formatLocaleInteger,
     formatPercent: formatLocalePercent,
     formatBb: formatLocaleBb,
+    parseNumber: parseLocaleNumber,
+    formatInputNumber: formatLocaleInputNumber,
   });
 }

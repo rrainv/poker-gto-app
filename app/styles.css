@@ -4819,7 +4819,8 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 .equity-big,
 .equity-row b,
 .chart-summary,
-input[type="number"] {
+input[type="number"],
+input[data-locale-number] {
   font-family: var(--font-data);
   font-variant-numeric: tabular-nums;
 }

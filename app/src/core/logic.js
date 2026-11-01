@@ -13718,6 +13718,8 @@ function renderFullHandTrainingSizingControls(actionType = app.training.fullHand
   input.max = sizing.maxValueBb;
   input.step = sizing.stepValueBb;
   input.value = sizing.initialValueBb;
+  // LOCALE-NUMBERS-003: a text field in the app language; input.value stays dot-decimal.
+  window.RiverlineLocaleNumberInput?.bind(input);
   input.setAttribute('aria-label', t('{action} to, in big blinds', { action: actionLabel }));
   input.setAttribute('aria-describedby', `${boundsId} ${validationId}`);
   const unit = document.createElement('span');

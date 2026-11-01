@@ -62,13 +62,26 @@ function catalog(path, globalName) {
 // A. Slider-pair numeric drafts
 // ---------------------------------------------------------------------------
 
+// LOCALE-NUMBERS-003: Analyze amount fields are locale text inputs. A user's keystrokes write the
+// field's own text (typeText); `input.value` stays canonical dot-decimal text for the app, so what
+// the field shows is read with displayedText.
+function nativeValueAccess(input) {
+  for (let proto = Object.getPrototypeOf(input); proto; proto = Object.getPrototypeOf(proto)) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (descriptor?.get && descriptor?.set) return descriptor;
+  }
+  throw new Error('no native value accessor');
+}
+const typeText = (input, text) => nativeValueAccess(input).set.call(input, text);
+const displayedText = (input) => nativeValueAccess(input).get.call(input);
+
 function sliderHarness(rangeId, numberId) {
   const range = app.byId(rangeId);
   const number = app.byId(numberId);
   const spy = app.spy(['schedulePlaybookUpdate', 'commitPlaybookUpdate']);
   const type = (value) => {
     number.focus();
-    number.value = value;
+    typeText(number, value);
     number.dispatchEvent(new app.window.Event('input', { bubbles: true }));
   };
   const blur = () => {
@@ -131,7 +144,7 @@ test('A: every slider-pair field keeps intermediate text exactly and commits onl
       for (const text of ['2.', '2.5', '', '0.', '2.50']) {
         const inputsBefore = harness.calls.input;
         harness.type(text);
-        assert.equal(harness.number.value, text, `${field.numberId} rewrote "${text}"`);
+        assert.equal(displayedText(harness.number), text, `${field.numberId} rewrote "${text}"`);
         assert.equal(harness.calls.input, inputsBefore + 1, 'one coalesced update request per keystroke');
         const parsed = Number(text);
         const valid = text.trim() !== '' && Number.isFinite(parsed)
@@ -160,7 +173,7 @@ test('A: Analyze facing 2.5 and pot 6.5 stay as typed and are the committed valu
     const initial = harness.range.value;
     try {
       for (const value of texts) harness.type(value);
-      assert.equal(harness.number.value, texts.at(-1));
+      assert.equal(displayedText(harness.number), texts.at(-1));
       assert.equal(harness.api.sliderPairValue(rangeId, 0), expected);
     } finally {
       await harness.restore();
@@ -246,14 +259,14 @@ test('A: programmatic facing resets never overwrite a focused draft', async () =
   const number = app.byId('facingSizeNum');
   const initial = app.byId('facingSize').value;
   number.focus();
-  number.value = '2.';
+  typeText(number, '2.');
   number.dispatchEvent(new app.window.Event('input', { bubbles: true }));
   try {
     // Metrics refresh (which resets facing for an unopened spot) and the
     // reset itself leave the focused draft alone.
     app.call('updateMetrics');
     app.call('setSliderPairDisplay', 'facingSize', 'facingSizeNum', 0);
-    assert.equal(number.value, '2.');
+    assert.equal(displayedText(number), '2.');
   } finally {
     number.blur();
   }

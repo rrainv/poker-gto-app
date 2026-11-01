@@ -152,7 +152,7 @@ test('Full Hand action family selection gates canonical amount-to sizing', async
   await app.click(sized);
   assert.equal(sizingSurface.hidden, false);
   const model = app.call('callTrainingServiceBridge', 'getFullHandSizingModel').actions[sized.dataset.action];
-  const input = sizingSurface.querySelector('input[type="number"]');
+  const input = sizingSurface.querySelector('input[inputmode="decimal"]');
   assert.equal(String(input.min), String(model.minValueBb));
   assert.equal(String(input.max), String(model.maxValueBb));
   assert.ok(sizingSurface.querySelectorAll('button').some((button) => text(button) === 'Apply'));

@@ -93,6 +93,7 @@ test('A2: fact-cell omission rule — unavailable facts leave the table, reflow 
 });
 
 test('A3: rail numeric rows are label above, slider + boxed value field with a unit suffix; ids and bounds unchanged', async () => {
+  // LOCALE-NUMBERS-003: bb amounts are decimal text fields in the app language; the table-size count stays a number field.
   for (const [id, unit, min, max] of [['facingSizeNum', 'bb', '0', '100'], ['potSizeNum', 'bb', '0.5', '200'], ['playersNum', 'max', '2', '10'], ['stackNum', 'bb', '10', '500']]) {
     const input = rail.querySelector(`#${id}`);
     const box = input.parentElement;
@@ -100,7 +101,7 @@ test('A3: rail numeric rows are label above, slider + boxed value field with a u
     assert.equal(input.nextElementSibling?.className, 'control-unit', id);
     assert.equal(text(input.nextElementSibling), unit, id);
     assert.equal(input.className, 'control-input control-input--inline', id);
-    assert.equal(input.getAttribute('type'), 'number', id);
+    assert.equal(input.getAttribute('type'), id === 'playersNum' ? 'number' : 'text', id);
     assert.equal(input.getAttribute('min'), min, id);
     assert.equal(input.getAttribute('max'), max, id);
   }
