@@ -13,7 +13,7 @@ const css = appStyleSheet();
 const app = await bootApp();
 // Imported after boot: the adapter loads a self-installing bootstrap module.
 const { createProductionPickerHarness } = await import('./uiqa001r_card_picker_adapter.mjs');
-const PROVENANCE = 'Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.';
+const PROVENANCE = 'Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.'; // TERMS-HEURISTIC-001
 const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
 const productTranslations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 

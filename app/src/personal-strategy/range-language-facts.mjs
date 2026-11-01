@@ -438,7 +438,7 @@ export function renderPersonalRangeComparison(comparison, { language = 'en', lef
     const label = regionLabel(region.id, language);
     const source = comparison.kind === 'personal_to_source';
     const namedRight = source ? region.sourceKind === 'heuristic'
-      ? ({ en: 'heuristic baseline', ru: 'эвристическая база', he: 'בסיס היוריסטי' })[language]
+      ? ({ en: 'the baseline', ru: 'базовая стратегия', he: 'אסטרטגיית הבסיס' })[language]
       : ({ en: 'selected reference', ru: 'выбранный эталон', he: 'אסטרטגיית הייחוס שנבחרה' })[language] : rightName;
     const preferred = region.preferredParticipation;
     const removed = preferred?.removedContinues.filter((hand) => !described.has(hand)) ?? [];

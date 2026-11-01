@@ -473,9 +473,9 @@
               <button id="playbookHandMode" class="ui-tab" type="button" data-playbook-mode="hand" aria-pressed="false"><span class="workspace-mode-label" aria-hidden="true" data-i18n="Hand">Hand</span><strong class="sr-only" data-i18n="Hand Mode">Hand Mode</strong><small class="sr-only" data-i18n="Play a legal hand">Play a legal hand</small></button>
             </div>
           </div>
-          <div id="strategySourceStatus" class="strategy-source-status ui-badge" data-variant="source" role="note" aria-label="Strategy source: Heuristic fallback" data-i18n-aria-label="Strategy source: Heuristic fallback" hidden>
+          <div id="strategySourceStatus" class="strategy-source-status ui-badge" data-variant="source" role="note" aria-label="Strategy source: Baseline" data-i18n-aria-label="Strategy source: Heuristic fallback" hidden>
             <span class="sr-only" data-i18n="Strategy source">Strategy source</span>
-            <strong data-i18n="Heuristic fallback">Heuristic fallback</strong>
+            <strong data-i18n="Heuristic fallback">Baseline</strong>
           </div>
           <button id="workspaceLearnButton" class="ui-button ui-button--quiet workspace-learn-button" type="button" aria-label="Learn Riverline" data-i18n-aria-label="Learn Riverline">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
@@ -1135,14 +1135,14 @@
               <!-- ANALYZE-COMPOSITION-001: verdict block (eyebrow, verdict, summary, honest limits) beside the strategy mix card. -->
               <div class="recommend-top analyze-verdict">
                 <div class="analyze-verdict-copy">
-                  <div class="eyebrow"><span id="strategyTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span><span id="strategyTier"> · <span id="strategyTierLabel" data-i18n="Estimated" title="Heuristic guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="streetLabel" data-i18n="Preflop">Preflop</span></div>
+                  <div class="eyebrow"><span id="strategyTruthHeading" data-i18n="Heuristic baseline">Baseline</span><span id="strategyTier"> · <span id="strategyTierLabel" data-i18n="Estimated" title="Baseline guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="streetLabel" data-i18n="Preflop">Preflop</span></div>
                   <div class="action-name" id="bestAction" data-verdict-kind="dominant">Open</div>
                   <div class="action-sizing" id="bestSizing" hidden></div>
                   <p class="analyze-verdict-close" id="bestActionClose" hidden></p>
                   <div class="action-copy" id="bestReason">Strong opening candidate in this position.</div>
                   <p id="strategyTruthNote" class="strategy-truth-note" data-i18n="Approximate exploratory guidance. Agreement is not correctness.">Approximate exploratory guidance. Agreement is not correctness.</p>
-                  <div class="badge status-badge status-badge--info" id="sourceBadge" hidden data-i18n="HEURISTIC" aria-label="Strategy source: Heuristic fallback" data-i18n-aria-label="Strategy source: Heuristic fallback" aria-describedby="strategySourceProvenance" title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy." data-i18n-title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">HEURISTIC</div>
-                  <span id="strategySourceProvenance" class="sr-only" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.</span>
+                  <div class="badge status-badge status-badge--info" id="sourceBadge" hidden data-i18n="HEURISTIC" aria-label="Strategy source: Baseline" data-i18n-aria-label="Strategy source: Heuristic fallback" aria-describedby="strategySourceProvenance" title="Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy." data-i18n-title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">BASELINE</div>
+                  <span id="strategySourceProvenance" class="sr-only" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.</span>
                 </div>
 
                 <div class="frequency-visualization">
@@ -1358,7 +1358,7 @@
 
                 <article class="hand-review-decision-detail" aria-labelledby="handReviewDecisionTitle">
                   <header class="hand-review-decision-header">
-                    <div><div id="handReviewProvenance" class="eyebrow hand-review-provenance-eyebrow"><span id="handReviewTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span><span id="handReviewTier"> · <span id="handReviewTierLabel" data-i18n="Estimated" title="Heuristic guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="handReviewDecisionStreet" class="hand-review-street poker-data-token"></span></div><h3 id="handReviewDecisionTitle"></h3><p id="handReviewDecisionContext"></p></div>
+                    <div><div id="handReviewProvenance" class="eyebrow hand-review-provenance-eyebrow"><span id="handReviewTruthHeading" data-i18n="Heuristic baseline">Baseline</span><span id="handReviewTier"> · <span id="handReviewTierLabel" data-i18n="Estimated" title="Baseline guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="handReviewDecisionStreet" class="hand-review-street poker-data-token"></span></div><h3 id="handReviewDecisionTitle"></h3><p id="handReviewDecisionContext"></p></div>
                     <span id="handReviewComparisonBadge" class="badge status-badge status-badge--info"></span>
                   </header>
 
@@ -1455,7 +1455,7 @@
           <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle" data-tutorial-anchor="playbook-analysis-navigation">
             <div class="playbook-analysis-switcher-copy sr-only">
               <strong id="playbookAnalysisNavigationTitle" data-i18n="Current spot views">Current spot views</strong>
-              <small data-i18n="Decision, provider-backed Matrix, or heuristic category comparison">Decision, provider-backed Matrix, or heuristic category comparison</small>
+              <small data-i18n="Decision, provider-backed Matrix, or heuristic category comparison">Decision, provider-backed Matrix, or baseline category comparison</small>
             </div>
           <div id="playbookAnalysisTabs" class="sub-tabs ui-tabs" role="tablist" aria-label="Playbook analysis views" data-i18n-aria-label="Playbook analysis views">
               <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
@@ -1619,7 +1619,7 @@
               <div class="panel-head range-comparison-head">
                 <div>
                   <div class="panel-title" data-i18n="Range Category Comparison">Range Category Comparison</div>
-                  <div class="panel-note"><span data-i18n="Compare fixed heuristic preflop samples by made-hand and draw category.">Compare fixed heuristic preflop samples by made-hand and draw category.</span></div>
+                  <div class="panel-note"><span data-i18n="Compare fixed heuristic preflop samples by made-hand and draw category.">Compare fixed baseline preflop samples by made-hand and draw category.</span></div>
                 </div>
 
                 <div class="range-comparison-selectors">
@@ -1644,7 +1644,7 @@
               </div>
               <div class="panel-body">
                 <div id="rangeAdvantageStatus" class="ui-callout" data-tone="info" data-state="waiting" role="status" aria-live="polite" data-i18n="Add at least a flop to compare the manually selected heuristic range samples.">
-                  Add at least a flop to compare the manually selected heuristic range samples.
+                  Add at least a flop to compare the manually selected baseline range samples.
                 </div>
                 <div id="rangeAdvantageAnalysis" hidden>
                   <section class="range-comparison-matrices" aria-label="Hero and opponent sample matrices" data-i18n-aria-label="Hero and opponent sample matrices">
@@ -2754,7 +2754,7 @@
           <div>
             <p class="guide-kicker" data-i18n="Product guide">Product guide</p>
             <h2 id="guideTitle" data-i18n="Learn Riverline by workflow">Learn Riverline by workflow</h2>
-            <p data-i18n="Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.">Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance-not solved-GTO truth.</p>
+            <p data-i18n="Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.">Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and baseline guidance-not solved-GTO truth.</p>
           </div>
           <aside class="guide-first-path" aria-labelledby="guideFirstPathTitle"><strong id="guideFirstPathTitle" data-i18n="A good first path">A good first path</strong><ol><li data-i18n="Play a legal Hand and review its decisions.">Play a legal Hand and review its decisions.</li><li data-i18n="Open Training to practise similar decisions.">Open Training to practise similar decisions.</li></ol></aside>
         </header>
@@ -2776,7 +2776,7 @@
             <div><dt data-i18n="Observed">Observed</dt><dd data-i18n="What happened in the Hand.">What happened in the Hand.</dd></div>
             <div><dt data-i18n="Personal Strategy">Personal Strategy</dt><dd data-i18n="How you told Riverline you intend to play.">How you told Riverline you intend to play.</dd></div>
             <div><dt data-i18n="Selected reference">Selected reference</dt><dd data-i18n="Strategy from an accepted source, only within its coverage.">Strategy from an accepted source, only within its coverage.</dd></div>
-            <div><dt data-i18n="Heuristic fallback">Heuristic fallback</dt><dd data-i18n="Exploratory guidance, not solved strategy or a correctness grade.">Exploratory guidance, not solved strategy or a correctness grade.</dd></div>
+            <div><dt data-i18n="Heuristic fallback">Baseline</dt><dd data-i18n="Exploratory guidance, not solved strategy or a correctness grade.">Exploratory guidance, not solved strategy or a correctness grade.</dd></div>
             <div><dt data-i18n="Calculated">Calculated</dt><dd data-i18n="Poker rules, Equity, pot economics and hand strength from the supplied inputs.">Poker rules, Equity, pot economics and hand strength from the supplied inputs.</dd></div>
             <div><dt data-i18n="Opponent assumption">Opponent assumption</dt><dd data-i18n="Synthetic behavior for practice and exploit questions, not a read on a real player.">Synthetic behavior for practice and exploit questions, not a read on a real player.</dd></div>
             <div><dt data-i18n="Normative assessment">Normative assessment</dt><dd data-i18n="A grade only when an accepted source and assessment policy permit it.">A grade only when an accepted source and assessment policy permit it.</dd></div>
@@ -2791,7 +2791,7 @@
             <details><summary data-i18n="Facts vs Explain">Facts vs Explain</summary><p data-i18n="Facts are structured trusted evidence. Explain offers a bounded interpretation of that evidence; it never becomes poker, Equity, or strategy authority.">Facts are structured trusted evidence. Explain offers a bounded interpretation of that evidence; it never becomes poker, Equity, or strategy authority.</p></details>
             <details><summary data-i18n="Equity is not strategy">Equity is not strategy</summary><p data-i18n="Equity compares possible outcomes; it does not recommend an action. A card that structurally completes a hand is not automatically a winning out against every entered hand.">Equity compares possible outcomes; it does not recommend an action. A card that structurally completes a hand is not automatically a winning out against every entered hand.</p></details>
             <details><summary data-i18n="Saved keeps current truth limits">Saved keeps current truth limits</summary><p data-i18n="Saved is intentional study knowledge. Current saved Hands retain canonical history; saved Spots retain Scenario limitations. These are the implemented saved kinds today.">Saved is intentional study knowledge. Current saved Hands retain canonical history; saved Spots retain Scenario limitations. These are the implemented saved kinds today.</p></details>
-            <details><summary data-i18n="Current strategy source">Current strategy source</summary><p data-i18n="Riverline currently falls back to a deterministic heuristic strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.">Riverline currently falls back to a deterministic heuristic strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.</p></details>
+            <details><summary data-i18n="Current strategy source">Current strategy source</summary><p data-i18n="Riverline currently falls back to a deterministic heuristic strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.">Riverline currently falls back to a deterministic baseline strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.</p></details>
           </div>
         </section>
 

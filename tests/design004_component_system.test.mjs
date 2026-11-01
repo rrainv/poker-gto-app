@@ -168,7 +168,7 @@ test('badges and state patterns use a bounded semantic vocabulary', () => {
     assert.equal(cascaded(probe(`<div class="state-block state-block--${state}">x</div>`), 'color'), color, state);
   }
   const source = markup.getElementById('sourceBadge');
-  assert.equal(text(source), 'HEURISTIC');
+  assert.equal(text(source), 'BASELINE'); // TERMS-HEURISTIC-001
   assert.doesNotMatch(text(source), /GTO|DEEP CFR/i);
 });
 

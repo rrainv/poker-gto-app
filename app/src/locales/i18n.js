@@ -3300,6 +3300,44 @@ for (const [key, en, ru, he] of [
 ]) {
   appTranslations.en[key] = en; appTranslations.ru[key] = ru; appTranslations.he[key] = he;
 }
+
+// TERMS-HEURISTIC-001: "heuristic" is not user-facing wording (owner, 2026-10-31). The English text changes;
+// the lookup keys stay, so every call site and the RU/HE catalogs keep resolving. Explain's source details keep it.
+for (const [key, text] of [
+  ['A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.', 'A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed baseline preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.'],
+  ['Add at least a flop to compare the manually selected heuristic range samples.', 'Add at least a flop to compare the manually selected baseline range samples.'],
+  ['Compare fixed heuristic preflop samples by made-hand and draw category.', 'Compare fixed baseline preflop samples by made-hand and draw category.'],
+  ['Decision, provider-backed Matrix, or heuristic category comparison', 'Decision, provider-backed Matrix, or baseline category comparison'],
+  ['HEURISTIC', 'BASELINE'],
+  ['Heuristic fallback', 'Baseline'],
+  ['Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.', 'Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.'],
+  ['Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.', 'Riverline currently uses a deterministic baseline strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are baseline estimates, and the preflop Matrix reflects the same source.'],
+  ['Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.', 'Source: baseline fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.'],
+  ['This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.', 'This baseline range sample contains a higher share of strong and very strong made-hand categories for Hero.'],
+  ['Use Riverline to structure study and compare its recommendations with your own review. Heuristic recommendations and Training comparisons are not proof of objectively correct or optimal poker strategy.', 'Use Riverline to structure study and compare its recommendations with your own review. Baseline recommendations and Training comparisons are not proof of objectively correct or optimal poker strategy.'],
+  ['Source: heuristic fixed-range/category analysis. Uses one canonical surviving representative per eligible sampled class; its category does not describe every combo in that class. This is not solver range advantage, range-vs-range equity, or sizing/frequency evidence.', 'Source: baseline fixed-range/category analysis. Uses one canonical surviving representative per eligible sampled class; its category does not describe every combo in that class. This is not solver range advantage, range-vs-range equity, or sizing/frequency evidence.'],
+  ['Hero · fixed heuristic class sample ({position})', 'Hero · fixed baseline class sample ({position})'],
+  ['Opponent · fixed heuristic class sample ({position})', 'Opponent · fixed baseline class sample ({position})'],
+  ['Source: heuristic fixed-range/category analysis. Fixed approximate preflop class samples; one canonical surviving representative per eligible sampled class, whose category does not describe every combo in that class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.', 'Source: baseline fixed-range/category analysis. Fixed approximate preflop class samples; one canonical surviving representative per eligible sampled class, whose category does not describe every combo in that class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.'],
+  ['Heuristic baseline', 'Baseline'],
+  ['Heuristic guidance, not yet verified against references.', 'Baseline guidance, not yet verified against references.'],
+  ['Matches heuristic baseline', 'Matches the baseline'],
+  ['Close to heuristic baseline', 'Close to the baseline'],
+  ['Differs from heuristic baseline', 'Differs from the baseline'],
+  ['Heuristic comparison', 'Baseline comparison'],
+  ['Historical heuristic baseline', 'Historical baseline'],
+  ['Your preference differs from the heuristic baseline on this example. That difference is a discussion prompt, not a mistake.', 'Your preference differs from the baseline on this example. That difference is a discussion prompt, not a mistake.'],
+  ['Riverline heuristic guidance, preflop, at the time', 'Riverline baseline guidance, preflop, at the time'],
+  ['Riverline heuristic guidance, postflop, at the time', 'Riverline baseline guidance, postflop, at the time'],
+  ['The action mix is Riverline’s current StrategyProvider result. Keep the source and provenance visible: heuristic guidance is useful study input, not solved GTO or proof of an optimum.', 'The action mix is Riverline’s current StrategyProvider result. Keep the source and provenance visible: baseline guidance is useful study input, not solved GTO or proof of an optimum.'],
+  ['Decision explains the selected spot, Range Matrix adds preflop surrounding-range context, and Range Category Comparison describes fixed heuristic samples on a board.', 'Decision explains the selected spot, Range Matrix adds preflop surrounding-range context, and Range Category Comparison describes fixed baseline samples on a board.'],
+  ['This view compares fixed heuristic preflop samples by made-hand and draw category on the supplied board. It supplements the spot; it is not weighted range-versus-range analysis.', 'This view compares fixed baseline preflop samples by made-hand and draw category on the supplied board. It supplements the spot; it is not weighted range-versus-range analysis.'],
+  ['Heuristic comparisons describe agreement, not correctness. Only an accepted assessment can judge whether an action is supported.', 'Baseline comparisons describe agreement, not correctness. Only an accepted assessment can judge whether an action is supported.'],
+  ['Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.', 'Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and baseline guidance—not solved-GTO truth.'],
+  ['Riverline currently falls back to a deterministic heuristic strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.', 'Riverline currently falls back to a deterministic baseline strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.'],
+]) {
+  appTranslations.en[key] = text;
+}
 window.appTranslations = appTranslations;
 const I18N_STORAGE_KEY = 'language';
 const I18N_LEGACY_STORAGE_KEY = 'appLang';

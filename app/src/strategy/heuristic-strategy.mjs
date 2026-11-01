@@ -182,7 +182,7 @@ export function resolveHeuristicStrategy(
   if (postflopContextFacesWager(decisionContext)
     && (!trustedCallPrice || !trustedActorEconomics)) {
     return unavailableCandidate(
-      'Exact actor-relative call economics are required for a postflop facing-wager heuristic strategy.',
+      'Exact actor-relative call economics are required for a postflop facing-wager baseline strategy.',
       { providerReason: 'exact_decision_economics_unavailable' },
       {
         kind: 'unsupported',

@@ -174,7 +174,7 @@ test('frequency bars expose exact values and a primary stacked representation', 
 
 test('recommendations distinguish decision, provenance, metadata, and warnings', async () => {
   assert.ok(markup.getElementById('recommendation'));
-  assert.equal(text(markup.getElementById('sourceBadge')), 'HEURISTIC');
+  assert.equal(text(markup.getElementById('sourceBadge')), 'BASELINE'); // TERMS-HEURISTIC-001
   assert.equal(markup.getElementById('strategyMeta').hidden, true);
   const warningsMarkup = markup.getElementById('strategyWarnings');
   assert.equal(warningsMarkup.getAttribute('role'), 'note');

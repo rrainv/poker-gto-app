@@ -69,7 +69,7 @@ test('strategy source provenance is static, truthful, and noninteractive', async
   assert.equal(status.localName, 'div');
   assert.ok(status.classList.contains('strategy-source-status') && status.classList.contains('ui-badge'));
   assert.equal(status.dataset.variant, 'source');
-  assert.equal(text(status.querySelector('strong')), 'Heuristic fallback');
+  assert.equal(text(status.querySelector('strong')), 'Baseline'); // TERMS-HEURISTIC-001: no "heuristic" in user-facing text
   assert.equal(status.querySelector('button, a, input, select'), null, 'noninteractive');
   for (const id of ['connectApiBtn', 'apiStatusText', 'toggleOnnx']) assert.equal(markup.getElementById(id), null, id);
   assert.doesNotMatch(text(markup.body), /Loading model|Model unavailable/i);

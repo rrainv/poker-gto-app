@@ -46,7 +46,7 @@ test('Guide exposes misuse-preventing distinctions through native disclosures', 
 });
 
 test('Guide states strategy, account, and current-capability boundaries truthfully', () => {
-  assert.match(guideText, /deterministic heuristic strategy source/);
+  assert.match(guideText, /deterministic baseline strategy source/);
   assert.match(guideText, /not solved GTO, Nash, exact EV, exploitability evidence/);
   assert.match(guideText, /These are the implemented saved kinds today/);
   assert.match(guideText, /signing in alone does not guarantee cloud sync or backup/);

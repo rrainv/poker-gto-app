@@ -1072,18 +1072,18 @@
       'Strategy source status': 'Strategy source status',
       'Riverline Themes': 'Riverline Themes', 'Legacy / Experimental': 'Legacy / Experimental',
       '4-Color Deck (Pro)': '4-Color Deck (Pro)',
-      'Strategy source: Heuristic fallback': 'Strategy source: Heuristic fallback',
+      'Strategy source: Heuristic fallback': 'Strategy source: Baseline',
       'Playbook workflow': 'Playbook workflow',
       'Choose Playbook workflow': 'Choose Playbook workflow',
       'Playbook context and configuration': 'Playbook context and configuration',
       '13 by 13 starting hand strategy matrix': '13 by 13 starting hand strategy matrix',
       'Practice decisions against the current strategy sources.': 'Practice decisions against the current strategy sources.',
-      'Choose two hero cards to calculate a heuristic strategy.': 'Choose two Hero cards to calculate a heuristic strategy.',
+      'Choose two hero cards to calculate a heuristic strategy.': 'Choose two Hero cards to calculate the baseline strategy.',
       'Generated automatically': 'Generated automatically',
       'Set {count} players': 'Set {count} players',
       'Exact enumeration and Monte Carlo win probability.': 'Exact enumeration and Monte Carlo win probability.',
-      'strategy.heuristic.preflopExplanation': 'The heuristic baseline prefers {action} using approximate hand and position rules.',
-      'strategy.heuristic.postflopExplanation': 'Heuristic sampled equity: {sampledPercent}% against an assumed opponent range ({candidatePercent}% of unblocked combinations).',
+      'strategy.heuristic.preflopExplanation': 'The baseline prefers {action} using approximate hand and position rules.',
+      'strategy.heuristic.postflopExplanation': 'Baseline sampled equity: {sampledPercent}% against an assumed opponent range ({candidatePercent}% of unblocked combinations).',
       'STRATEGY UNAVAILABLE': 'STRATEGY UNAVAILABLE',
       'PREFLOP': 'PREFLOP', 'FLOP': 'FLOP', 'TURN': 'TURN', 'RIVER': 'RIVER',
       'UNOPENED': 'UNOPENED', 'FACING OPEN': 'FACING OPEN', 'FACING 3-BET': 'FACING 3-BET',
@@ -1106,17 +1106,17 @@
       'Strategy source status': 'Состояние источника стратегии',
       'Riverline Themes': 'Темы Riverline', 'Legacy / Experimental': 'Устаревшие / экспериментальные',
       '4-Color Deck (Pro)': '4-цветная колода (профессиональная)',
-      'Strategy source: Heuristic fallback': 'Источник стратегии: эвристическая оценка',
+      'Strategy source: Heuristic fallback': 'Источник стратегии: базовая стратегия',
       'Playbook workflow': 'Режим Анализа',
       'Choose Playbook workflow': 'Выберите режим Анализа',
       'Playbook context and configuration': 'Контекст и настройки Анализа',
       '13 by 13 starting hand strategy matrix': 'Матрица стратегии стартовых рук 13 на 13',
       'Practice decisions against the current strategy sources.': 'Тренируйте решения по текущим источникам стратегии.',
-      'Choose two hero cards to calculate a heuristic strategy.': 'Выберите две карты Hero для расчёта эвристической стратегии.',
+      'Choose two hero cards to calculate a heuristic strategy.': 'Выберите две карты Hero для расчёта базовой стратегии.',
       'Generated automatically': 'Создаётся автоматически',
       'Set {count} players': 'Выбрать игроков: {count}',
       'Exact enumeration and Monte Carlo win probability.': 'Точная переборная и Монте-Карло оценка вероятности победы.',
-      'strategy.heuristic.preflopExplanation': 'Эвристический ориентир предпочитает {action} по приближённым правилам для руки и позиции.',
+      'strategy.heuristic.preflopExplanation': 'Базовая стратегия предпочитает {action} по приближённым правилам для руки и позиции.',
       'strategy.heuristic.postflopExplanation': 'Оценка эквити по эвристической выборке: {sampledPercent}% против предполагаемого диапазона соперника ({candidatePercent}% незаблокированных комбинаций).',
       'STRATEGY UNAVAILABLE': 'СТРАТЕГИЯ НЕДОСТУПНА',
       'PREFLOP': 'ПРЕФЛОП', 'FLOP': 'ФЛОП', 'TURN': 'ТЁРН', 'RIVER': 'РИВЕР',
@@ -1153,18 +1153,18 @@
       'Strategy source status': 'מצב מקור האסטרטגיה',
       'Riverline Themes': 'ערכות הנושא של Riverline', 'Legacy / Experimental': 'מורשת / ניסיוני',
       '4-Color Deck (Pro)': 'חפיסה מקצועית ב-4 צבעים',
-      'Strategy source: Heuristic fallback': 'מקור אסטרטגיה: הערכה היוריסטית',
+      'Strategy source: Heuristic fallback': 'מקור אסטרטגיה: אסטרטגיית בסיס',
       'Playbook workflow': 'מצב ניתוח',
       'Choose Playbook workflow': 'בחירת מצב ניתוח',
       'Playbook context and configuration': 'הקשר והגדרות ניתוח',
       '13 by 13 starting hand strategy matrix': 'מטריצת אסטרטגיית ידיים פותחות 13 על 13',
       'Practice decisions against the current strategy sources.': 'תרגלו החלטות מול מקורות האסטרטגיה הנוכחיים.',
-      'Choose two hero cards to calculate a heuristic strategy.': 'בחרו שני קלפים של הירו לחישוב אסטרטגיה היוריסטית.',
+      'Choose two hero cards to calculate a heuristic strategy.': 'בחרו שני קלפים של הירו לחישוב אסטרטגיית הבסיס.',
       'Generated automatically': 'נוצר אוטומטית',
       'Set {count} players': 'בחירת {count} שחקנים',
       'Exact enumeration and Monte Carlo win probability.': 'הסתברות ניצחון בחישוב מדויק ובמונטה קרלו.',
-      'strategy.heuristic.preflopExplanation': 'קו הבסיס ההיוריסטי מעדיף {action} לפי כללים מקורבים ליד ולעמדה.',
-      'strategy.heuristic.postflopExplanation': 'אומדן אקוויטי מדגימה היוריסטית: {sampledPercent}% מול ריינג\' יריב משוער ({candidatePercent}% מהצירופים שאינם חסומים).',
+      'strategy.heuristic.preflopExplanation': 'אסטרטגיית הבסיס מעדיפה {action} לפי כללים מקורבים ליד ולעמדה.',
+      'strategy.heuristic.postflopExplanation': 'אומדן אקוויטי מדגימת אסטרטגיית הבסיס: {sampledPercent}% מול ריינג\' יריב משוער ({candidatePercent}% מהצירופים שאינם חסומים).',
       'STRATEGY UNAVAILABLE': 'האסטרטגיה אינה זמינה',
       'PREFLOP': 'פרה-פלופ', 'FLOP': 'פלופ', 'TURN': 'טרן', 'RIVER': 'ריבר',
       'UNOPENED': 'ללא פתיחה', 'FACING OPEN': 'מול פתיחה', 'FACING 3-BET': 'מול 3-בט',
@@ -1289,7 +1289,7 @@
     '💡 Exploitative Tip (Raise Your Prices): The board is draw-heavy and you have a strong hand. Recreational players will overpay to chase draws—bet big and make them pay the maximum price.': '💡 טיפ אקספלויטטיבי: הבורד עמוס בדרואים והיד שלכם חזקה. שחקנים חובבים משלמים יותר מדי כדי לרדוף דרו — תנו בט גדול וגבו את המחיר המרבי.',
     "💡 Exploitative Tip (Big Hand, Big Bet): You hit a premium hand. Don't slow-play on a wet board; fire a large bet to build the pot and extract maximum value.": '💡 טיפ אקספלויטטיבי: פגעתם ביד פרימיום. אל תשחקו לאט על בורד רטוב; תנו בט גדול, בנו קופה והוציאו מקסימום ואליו.',
     'Raise / Bet %': 'רייז / בט %',
-    'Decision, provider-backed Matrix, or heuristic category comparison': 'החלטה, מטריצה ממקור האסטרטגיה או השוואת קטגוריות היוריסטית',
+    'Decision, provider-backed Matrix, or heuristic category comparison': 'החלטה, מטריצה ממקור האסטרטגיה או השוואת קטגוריות לפי אסטרטגיית הבסיס',
     'Generated at run time': 'נוצר בזמן הריצה',
     'The canonical hand is waiting for explicit chance cards.': 'היד הקנונית ממתינה לקלפי הבורד הבאים.'
   });
@@ -1324,7 +1324,7 @@
     'analysis.fact.heuristicRangeFraction': 'Доля предполагаемого диапазона',
     'analysis.value.assumedRange': 'против предполагаемого диапазона оппонента',
     'analysis.heuristicSample.rangeFraction': 'Предполагаемый диапазон включает {rangeFraction} доступных стартовых комбинаций.',
-    'strategy.heuristic.postflopExplanation': 'Оценка эквити по эвристической выборке: {sampledPercent}% против предполагаемого диапазона оппонента ({candidatePercent}% незаблокированных комбинаций).',
+    'strategy.heuristic.postflopExplanation': 'Оценка эквити по выборке базовой стратегии: {sampledPercent}% против предполагаемого диапазона оппонента ({candidatePercent}% незаблокированных комбинаций).',
     'Early position dictates a very tight, premium-heavy range.': 'На ранней позиции играйте очень узкий диапазон с преобладанием премиум-рук.',
     'This spot represents a mixed equilibrium frequency. Balance your range to remain unexploitable.': 'В этом споте частоты смешанные. Балансируйте диапазон, чтобы не стать уязвимым для эксплуатации.',
     'Out of Position (OOP), Hero must play tighter ranges to protect against position disadvantage.': 'Без позиции Hero следует играть более узкий диапазон, компенсируя позиционный недостаток.',
@@ -1348,17 +1348,17 @@
     'Betting a range consisting of very strong hands and bluffs, but very few medium-strength hands.': 'Полярный диапазон бета: очень сильные руки и блефы, почти без рук средней силы.',
     "The 'Decision' tab will give you a bottom-line recommendation. The 'Full range chart' lets you explore how you should play every possible starting hand in this specific spot.": 'Во вкладке «Решение» показана итоговая рекомендация. «Полный диапазон» позволяет изучить розыгрыш каждой стартовой руки в этом споте.',
     'Tighten your range from early positions and only play speculative hands in position with deep stacks.': 'Сужайте диапазон на ранних позициях и разыгрывайте спекулятивные руки только в позиции с глубокими стеками.',
-    'This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.': 'В эвристической выборке диапазона Hero выше доля сильных и очень сильных готовых рук.',
+    'This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.': 'В выборке диапазона базовой стратегии у Hero выше доля сильных и очень сильных готовых рук.',
     "Villain's sampled range contains a higher share of strong and very strong made-hand categories.": 'В выборке диапазона оппонента выше доля сильных и очень сильных готовых рук.',
     'Scrollable aligned Hero and Villain range category matrices': 'Прокручиваемые сопоставленные матрицы категорий диапазонов Hero и оппонента',
     'Unopened/Checked spot in {position}. Consider positional advantage and range-building when deciding between opening/betting or checking.': 'Спот без опен-рейза или после чека на позиции {position}. Выбирая между опен-рейзом/бетом и чеком, учитывайте позиционное преимущество и построение диапазона.',
     'The nominal wager is {facing} bb; Hero must call {call} bb in {position}. Pot odds require at least {odds}% raw equity to call. MDF ({mdf}%) is a range-level reference, not a threshold for this hand. Consider position and blockers before choosing.': 'Номинальная ставка — {facing} bb; Hero должен доставить {call} bb на позиции {position}. Для колла по шансам банка нужно не менее {odds}% чистого эквити. MDF ({mdf}%) — ориентир для диапазона, а не порог для этой руки. Учитывайте позицию и блокеры.'
-    , 'A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.': 'Полной постфлоп-матрицы пока нет. Рекомендацию для конкретной руки смотрите в «Решении». «Сравнение категорий диапазонов» сопоставляет фиксированные эвристические префлоп-выборки по категориям рук на борде. Это описательный результат, а не взвешенный расчёт диапазон против диапазона.'
-    , 'Add at least a flop to compare the manually selected heuristic range samples.': 'Добавьте хотя бы флоп, чтобы сравнить выбранные вручную эвристические выборки диапазонов.'
+    , 'A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.': 'Полной постфлоп-матрицы пока нет. Рекомендацию для конкретной руки смотрите в «Решении». «Сравнение категорий диапазонов» сопоставляет фиксированные префлоп-выборки базовой стратегии по категориям рук на борде. Это описательный результат, а не взвешенный расчёт диапазон против диапазона.'
+    , 'Add at least a flop to compare the manually selected heuristic range samples.': 'Добавьте хотя бы флоп, чтобы сравнить выбранные вручную выборки диапазонов базовой стратегии.'
     , 'Choose a workspace from the rail: Playbook to build or progress a spot, Training for generated decisions, and Equity to calculate win chances. Select cards from a card slot; unavailable cards are already in use in that workspace.': 'Выберите раздел на боковой панели: «Анализ» — для разбора спота, «Тренировка» — для упражнений, «Эквити» — для расчёта шансов на победу. Карты выбираются нажатием на слот; недоступные карты уже заняты в этом разделе.'
     , 'Choose or build a spot, set cards where needed, and inspect the primary recommendation and Strategy Mix. Open “What goes into this decision?” for the supporting facts, then use Current spot views to switch between Decision, Range Matrix, and Range Category Comparison. The table can be collapsed when you want more room for analysis.': 'Выберите или создайте спот, задайте карты и посмотрите основную рекомендацию с миксом стратегии. В разделе «Что влияет на это решение?» собраны ключевые факты. Переключайтесь между «Решением», «Матрицей диапазона» и «Сравнением категорий диапазонов». Если нужно больше места, сверните стол.'
     , 'Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.': 'Постфлоп-стратегия для конкретной руки доступна в «Решении», но текущий источник стратегии не предоставляет полной развёртки постфлоп-диапазона.'
-    , 'Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.': 'Источник: эвристический анализ фиксированных диапазонов и категорий. Используются примерные префлоп-диапазоны, по одной доступной комбинации на класс руки, без весов комбинаций. Это не солверное преимущество диапазона, не эквити диапазон против диапазона и не обоснование размера или частоты ставки.'
+    , 'Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.': 'Источник: анализ фиксированных диапазонов и категорий по базовой стратегии. Используются примерные префлоп-диапазоны, по одной доступной комбинации на класс руки, без весов комбинаций. Это не солверное преимущество диапазона, не эквити диапазон против диапазона и не обоснование размера или частоты ставки.'
     , 'Unavailable in Hand Mode. Canonical hand history does not establish weighted ranges, so Scenario cards and manual range assumptions are not used.': 'Недоступно в режиме раздачи. Каноническая история не задаёт взвешенные диапазоны, поэтому карты сценария и ручные допущения о диапазонах не используются.'
     , 'analysis.warning.heuristic_conditional_sample': 'Показатель рассчитан против приблизительных диапазонов оппонентов и не является каноническим эквити.'
   });
@@ -1393,7 +1393,7 @@
     'analysis.fact.heuristicRangeFraction': "חלק מהריינג' המשוער",
     'analysis.value.assumedRange': "מול ריינג' יריב משוער",
     'analysis.heuristicSample.rangeFraction': "הריינג' המשוער כולל {rangeFraction} מצירופי הפתיחה הזמינים.",
-    'strategy.heuristic.postflopExplanation': "אומדן אקוויטי מדגימה היוריסטית: {sampledPercent}% מול ריינג' יריב משוער ({candidatePercent}% מהצירופים שאינם חסומים).",
+    'strategy.heuristic.postflopExplanation': "אומדן אקוויטי מדגימת אסטרטגיית הבסיס: {sampledPercent}% מול ריינג' יריב משוער ({candidatePercent}% מהצירופים שאינם חסומים).",
     'Pot': 'קופה', 'Pot Odds': 'סיכויי קופה', 'Pot odds': 'סיכויי קופה', 'Pot Odds:': 'סיכויי קופה:',
     'Your pot odds are roughly': 'סיכויי הקופה שלכם הם בערך',
     'Hard (Standard GTO - No Odds)': 'קשה (GTO רגיל — ללא סיכויי קופה)',
@@ -1429,23 +1429,23 @@
     'This holding fits well into a passive calling range, catching bluffs while controlling pot size.': "היד מתאימה לריינג' קול פסיבי: היא תופסת בלופים ושומרת על קופה קטנה.",
     'This spot represents a mixed equilibrium frequency. Balancing your range with both calls and raises maintains unexploitability.': "בספוט הזה המיקס כולל קול ורייז כדי לשמור על ריינג' מאוזן.",
     'GTO splits frequency in this spot. The decision balances range coverage against opponent tendencies.': "GTO מפצל תדירויות בספוט הזה. ההחלטה מאזנת את כיסוי הריינג' מול נטיות היריב.",
-    'This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.': "בדגימת הריינג' ההיוריסטית של הירו יש שיעור גבוה יותר של ידיים מוכנות חזקות וחזקות מאוד.",
+    'This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.': "בדגימת הריינג' של אסטרטגיית הבסיס יש להירו שיעור גבוה יותר של ידיים מוכנות חזקות וחזקות מאוד.",
     "Villain's sampled range contains a higher share of strong and very strong made-hand categories.": "בדגימת הריינג' של היריב יש שיעור גבוה יותר של ידיים מוכנות חזקות וחזקות מאוד.",
     'Scrollable aligned Hero and Villain range category matrices': "מטריצות קטגוריות ריינג'ים מיושרות ונגללות של הירו והיריב",
     'Unopened/Checked spot in {position}. Consider positional advantage and range-building when deciding between opening/betting or checking.': "ספוט ללא רייז או אחרי צ'ק בעמדה {position}. בבחירה בין אופן-רייז/בט לצ'ק, שקלו יתרון עמדה ובניית ריינג'.",
     'The nominal wager is {facing} bb; Hero must call {call} bb in {position}. Pot odds require at least {odds}% raw equity to call. MDF ({mdf}%) is a range-level reference, not a threshold for this hand. Consider position and blockers before choosing.': "הבט הנומינלי הוא {facing} bb; על הירו להשלים {call} bb בעמדה {position}. סיכויי הקופה דורשים לפחות {odds}% אקוויטי גולמי לקול. MDF ({mdf}%) הוא ייחוס ברמת הריינג', לא סף ליד הזו. שקלו עמדה ובלוקרים לפני הבחירה."
     , 'This combo lacks the raw equity or playability to defend profitably. Surrendering this pot is the optimal line.': 'לקומבו הזה חסר אקוויטי או יכולת משחק להגנה רווחית. ויתור על הקופה הוא הקו המועדף.'
-    , 'A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.': "עדיין אין מטריצת פוסטפלופ מלאה. להמלצה על יד מסוימת עברו להחלטה. השוואת קטגוריות ריינג'ים בוחנת דגימות פרה-פלופ היוריסטיות וקבועות לפי סוגי הידיים שהן יוצרות בבורד. זו השוואה תיאורית, לא חישוב משוקלל של ריינג' מול ריינג'."
-    , 'Add at least a flop to compare the manually selected heuristic range samples.': "הוסיפו לפחות פלופ כדי להשוות את דגימות הריינג' ההיוריסטיות שנבחרו ידנית."
+    , 'A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.': "עדיין אין מטריצת פוסטפלופ מלאה. להמלצה על יד מסוימת עברו להחלטה. השוואת קטגוריות ריינג'ים בוחנת דגימות פרה-פלופ קבועות של אסטרטגיית הבסיס לפי סוגי הידיים שהן יוצרות בבורד. זו השוואה תיאורית, לא חישוב משוקלל של ריינג' מול ריינג'."
+    , 'Add at least a flop to compare the manually selected heuristic range samples.': "הוסיפו לפחות פלופ כדי להשוות את דגימות הריינג' של אסטרטגיית הבסיס שנבחרו ידנית."
     , 'Choose a workspace from the rail: Playbook to build or progress a spot, Training for generated decisions, and Equity to calculate win chances. Select cards from a card slot; unavailable cards are already in use in that workspace.': 'בחרו אזור עבודה בסרגל: ניתוח לבניית ספוט או להתקדמות ביד, אימון לתרגול החלטות ואקוויטי לחישוב סיכויי זכייה. בוחרים קלפים בלחיצה על משבצת; קלפים לא זמינים כבר נמצאים בשימוש באותו אזור.'
     , 'Choose or build a spot, set cards where needed, and inspect the primary recommendation and Strategy Mix. Open “What goes into this decision?” for the supporting facts, then use Current spot views to switch between Decision, Range Matrix, and Range Category Comparison. The table can be collapsed when you want more room for analysis.': "בחרו או בנו ספוט, הגדירו קלפים ובדקו את ההמלצה הראשית ואת מיקס האסטרטגיה. ב„מה משפיע על ההחלטה?” תמצאו את העובדות החשובות. אפשר לעבור בין החלטה, מטריצת ריינג' והשוואת קטגוריות ריינג'ים, ולכווץ את השולחן כשצריך יותר מקום לניתוח."
     , 'Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.': "אסטרטגיית פוסטפלופ ליד מסוימת זמינה בהחלטה, אך מקור האסטרטגיה הנוכחי אינו מספק הרחבה מלאה של ריינג' הפוסטפלופ."
-    , 'Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.': "מקור: ניתוח היוריסטי של ריינג'ים וקטגוריות קבועים. נעשה שימוש בריינג'י פרה-פלופ משוערים וקבועים, עם קומבו זמין מייצג אחד לכל מחלקת יד וללא משקלי קומבואים. אין זה יתרון ריינג' מסולבר, אקוויטי של ריינג' מול ריינג' או תמיכה בגודל או בתדירות בט."
+    , 'Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.': "מקור: ניתוח ריינג'ים וקטגוריות קבועים לפי אסטרטגיית הבסיס. נעשה שימוש בריינג'י פרה-פלופ משוערים וקבועים, עם קומבו זמין מייצג אחד לכל מחלקת יד וללא משקלי קומבואים. אין זה יתרון ריינג' מסולבר, אקוויטי של ריינג' מול ריינג' או תמיכה בגודל או בתדירות בט."
     , 'Unavailable in Hand Mode. Canonical hand history does not establish weighted ranges, so Scenario cards and manual range assumptions are not used.': "לא זמין במצב יד. היסטוריית היד הקנונית אינה מגדירה ריינג'ים משוקללים, ולכן אין שימוש בקלפי התרחיש או בהנחות ריינג' ידניות."
     , 'analysis.warning.heuristic_conditional_sample': "הנתון מחושב מול ריינג'ים משוערים של יריבים ואינו אקוויטי קנוני."
-    , 'Compare fixed heuristic preflop samples by made-hand and draw category.': "השוו דגימות פרה-פלופ היוריסטיות קבועות לפי קטגוריות של יד מוכנה ודרו."
+    , 'Compare fixed heuristic preflop samples by made-hand and draw category.': "השוו דגימות פרה-פלופ קבועות של אסטרטגיית הבסיס לפי קטגוריות של יד מוכנה ודרו."
     , 'Preflop Matrix cells represent hand classes. Their tint shows the dominant action and the stacked band shows the full strategy mix. Hover or focus a cell for a quick frequency cue; select it for exact action detail in the inspector.': "תאי מטריצת הפרה-פלופ מייצגים מחלקות ידיים. הגוון מציג את הפעולה הדומיננטית והפס המורכב מציג את מיקס האסטרטגיה המלא. רחפו או התמקדו בתא לרמז מהיר על התדירויות; בחרו בו לפרטי פעולה מדויקים בבוחן."
-    , 'Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.': 'Riverline משתמש כעת במקור אסטרטגיה היוריסטי ודטרמיניסטי להמלצות החלטה ולתדירויות הייחוס באימון. המלצות פוסטפלופ ליד מסוימת הן היוריסטיות, ומטריצת הפרה-פלופ משקפת את אותו מקור.'
+    , 'Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.': 'Riverline משתמש כעת באסטרטגיית בסיס דטרמיניסטית להמלצות החלטה ולתדירויות הייחוס באימון. המלצות פוסטפלופ ליד מסוימת מבוססות על אסטרטגיית הבסיס, ומטריצת הפרה-פלופ משקפת את אותו מקור.'
   });
   Object.assign(residualUi.en, {
     'Randomize': 'Randomize',

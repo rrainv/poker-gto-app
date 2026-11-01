@@ -77,7 +77,7 @@ test('QA-SHELL-004 / OWNER-19: one provenance indicator per surface across Analy
   assert.equal(el('#trainingFeedbackStreet').textContent, 'Turn');
 
   // Hand Review: single provenance eyebrow above decision title; duplicate source badge and overview row hidden.
-  assert.match(html, /id="handReviewProvenance" class="eyebrow hand-review-provenance-eyebrow"><span id="handReviewTruthHeading"[^>]*>Heuristic baseline<\/span><span id="handReviewTier"> · <span id="handReviewTierLabel"[^>]*>Estimated<\/span><\/span> · <span id="handReviewDecisionStreet"/);
+  assert.match(html, /id="handReviewProvenance" class="eyebrow hand-review-provenance-eyebrow"><span id="handReviewTruthHeading"[^>]*>Baseline<\/span><span id="handReviewTier"> · <span id="handReviewTierLabel"[^>]*>Estimated<\/span><\/span> · <span id="handReviewDecisionStreet"/);
   assert.match(html, /id="handReviewSourceBadge"[^>]*hidden/);
   assert.match(html, /<div hidden><dt data-i18n="Strategy source">Strategy source<\/dt><dd id="handReviewOverviewSource">-<\/dd><\/div>/);
   const reviewRender = sourceBetween(logic, 'function renderActiveHandReview()', 'function selectActiveHandReviewDecision(');

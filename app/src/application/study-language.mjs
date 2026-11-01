@@ -29,7 +29,7 @@ export const STUDY_COPY = freeze({
   observedAction: ['Observed action', 'Наблюдаемое действие', 'הפעולה שנצפתה'],
   personalIntent: ['Current Personal intent', 'Текущее личное намерение', 'כוונה אישית נוכחית'],
   selectedReference: ['Selected reference', 'Выбранный референс', 'ייחוס נבחר'],
-  heuristicBaseline: ['Heuristic baseline', 'Эвристический ориентир', 'בסיס היוריסטי'],
+  heuristicBaseline: ['Baseline', 'Базовая стратегия', 'אסטרטגיית בסיס'],
   opponentPolicy: ['Opponent policy / model', 'Политика / модель оппонента', 'מדיניות / מודל היריב'],
   exploitAnalysis: ['Assumption-labelled exploit analysis', 'Эксплойт-анализ с явными предположениями', 'ניתוח ניצול עם הנחות מפורשות'],
   normativeAssessment: ['Normative assessment', 'Нормативная оценка', 'הערכה נורמטיבית'],
