@@ -520,18 +520,21 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
       harness.checkErrors();
     },
     /**
-     * Settle until `predicate()` is truthy, bounded by real time (work that
-     * resolves outside the fake clock, e.g. module-level async strategy
-     * resolution, can take longer under parallel test load). Throws on timeout.
+     * Settle until `predicate()` is truthy. The bound counts settle rounds,
+     * never wall-clock time: work that resolves outside the fake clock (async
+     * strategy resolution, thread-pool Web Crypto) is slower under parallel
+     * load but needs the same number of rounds, so load cannot fail the wait.
+     * Only a condition that never becomes true throws.
      */
-    async waitFor(predicate, description = 'condition', { timeoutMs = 10000, stepMs = 50 } = {}) {
-      const deadline = performance.now() + timeoutMs;
-      for (;;) {
+    async waitFor(predicate, description = 'condition', { maxRounds = 20000, stepMs = 50 } = {}) {
+      for (let round = 0; round < maxRounds; round += 1) {
         const value = predicate();
         if (value) return value;
-        if (performance.now() > deadline) throw new Error(`waitFor: timed out after ${timeoutMs}ms waiting for ${description}`);
         await harness.settle(stepMs);
       }
+      const value = predicate();
+      if (value) return value;
+      throw new Error(`waitFor: ${description} did not happen within ${maxRounds} settle rounds`);
     },
     async flush() {
       for (let round = 0; round < 5; round += 1) {
