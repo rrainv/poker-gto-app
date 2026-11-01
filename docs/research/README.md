@@ -20,5 +20,6 @@ Prompts: [RESEARCH_TICKETS.md](RESEARCH_TICKETS.md) (R-01 … R-10). Manager ana
 | [2026-10-23_R-10_learn-path.pdf](2026-10-23_R-10_learn-path.pdf) | R-10 | analysed (its RU/HE terms are not ours; [TERMINOLOGY.md](../TERMINOLOGY.md) wins) |
 | [2026-10-23_master-synthesis_NOT-A-BRIEF.pdf](2026-10-23_master-synthesis_NOT-A-BRIEF.pdf) | synthesis | **research only, not a brief**: contradicts owner decisions D-30 / D-32; three ideas kept (anonymise shared hands, fair-play line, optional poker-client self-lock) |
 | [MOCKUP_REVIEW_GEMINI_2026-10-26.md](MOCKUP_REVIEW_GEMINI_2026-10-26.md) | mockup deep review | Manager triage; "Accept" items are register rows |
+| [ROUND5_HOME_SETTINGS.md](ROUND5_HOME_SETTINGS.md) | R-14 Home, R-15 Settings | Manager analysis (PDFs stay in Riverline_archive); adopted points are in the decision log (HOME RULES, SETTINGS RULES) |
 
 The project brief for agents and researchers is [docs/BRIEF.md](../BRIEF.md) (the master synthesis is not).
