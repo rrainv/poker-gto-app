@@ -17,6 +17,11 @@ const [homeSource, homeBootstrap, personalRepository, translations] = await Prom
 const markup = indexDocument();
 const css = appStyleSheet();
 const app = await bootApp();
+// EXTRACT-HOME-001: Home renders through the mounted Home workspace controller.
+const renderHome = (sections) => app.evaluate('homeWorkspaceController').render({
+  sessionMode: 'account',
+  sections: { continue: { status: 'ready', items: [] }, recent: { status: 'ready', items: [] }, review: {}, ...sections },
+});
 const bootedHome = {
   continueText: text(app.byId('homeContinueContent')),
   playbookResolution: app.window.app.playbookResolution ?? null,
@@ -47,22 +52,13 @@ test('Home is the real landing workspace with bounded recurring study sections',
   assert.equal(mistakes.dataset.homeDestination, 'review_mistakes');
   assert.equal(mistakes.previousElementSibling, reviewTitle.parentElement, 'the link follows the Review heading');
 
-  // Calibration continuations and Personal Strategy summaries route to Personal Strategy.
-  app.call('renderHomeContinue', { items: [{ kind: 'range_calibration', title: 'Saturday', answeredCount: 3, totalCount: 9, context: {} }] });
+  // Calibration continuations route to Personal Strategy. (EXTRACT-HOME-001: the
+  // Personal Strategy summary card had no DOM target in index.html and was deleted.)
+  renderHome({ continue: { items: [{ kind: 'range_calibration', title: 'Saturday', answeredCount: 3, totalCount: 9, context: {} }] } });
   const resume = app.$('#homeContinueContent button');
   assert.equal(resume.dataset.homeDestination, 'personal-strategy');
   assert.equal(text(resume), 'Resume calibration');
-  const strategyRoot = app.document.createElement('div');
-  strategyRoot.id = 'homeStrategyContent';
-  app.document.body.appendChild(strategyRoot);
-  try {
-    for (const section of [{ status: 'unavailable' }, { status: 'ok', profileCount: 0 }]) {
-      app.call('renderHomePersonalStrategy', section);
-      assert.equal(strategyRoot.querySelector('button').dataset.homeDestination, 'personal-strategy');
-    }
-  } finally {
-    strategyRoot.remove();
-  }
+  assert.equal(app.byId('homeStrategyContent'), null);
 });
 
 test('Home queries are bounded and contain no compute or full-library authority', () => {
@@ -78,14 +74,14 @@ test('Home and saved viewers expose accessible actions, error states, RTL copy, 
   // Protects: saved rows expose a named open action; load failures render an
   // error state; saved viewers explain read-only / unavailable history; the
   // Home flow is a shrinkable grid that never forces horizontal overflow.
-  app.call('renderHomeRecent', { status: 'ok', items: [{
+  renderHome({ recent: { status: 'ok', items: [{
     id: 'saved-1', kind: 'spot', title: 'River bluff catch', tags: [], updatedAt: '2026-09-01T00:00:00.000Z',
     annotations: { title: 'River bluff catch', tags: [] },
-  }] });
+  }] } });
   const open = app.$('#homeRecentContent .home-open-button');
   assert.equal(open.dataset.homeSavedId, 'saved-1');
   assert.match(open.getAttribute('aria-label'), /^Open spot: .+/);
-  app.call('renderHomeRecent', { status: 'error' });
+  renderHome({ recent: { status: 'error' } });
   assert.match(text(app.$('#homeRecentContent .home-error-state')), /could not be loaded/);
 
   assert.match(text(markup.getElementById('savedHandViewerBanner')), /Read-only/);
@@ -123,13 +119,15 @@ test('Home initialization stays cheap under orientation and Playbook initializes
   assert.equal(bootedHome.playbookResolution, null, 'the Playbook was not resolved at boot');
   assert.equal(bootedHome.decisionContext, null);
 
-  const spy = app.spy(['updateContext', 'refreshHomeWorkspace']);
+  // EXTRACT-HOME-001: navigation and the refresh timer reach the Home workspace
+  // controller directly, so a Home refresh is observed as a Home bridge load.
+  const spy = app.spy(['updateContext', 'callHomeBridge']);
   try {
     await app.navigate('analyze');
     assert.deepEqual(spy.calls.updateContext.map(([reason]) => reason), ['Playbook opened']);
-    assert.equal(spy.count('refreshHomeWorkspace'), 0);
+    assert.equal(spy.count('callHomeBridge'), 0);
     await app.navigate('home');
-    assert.ok(spy.count('refreshHomeWorkspace') >= 1, 'returning Home refreshes it');
+    assert.ok(spy.count('callHomeBridge') >= 1, 'returning Home refreshes it');
 
     // While the welcome orientation is showing, Home does not load.
     spy.reset();
@@ -139,7 +137,7 @@ test('Home initialization stays cheap under orientation and Playbook initializes
       app.call('scheduleHomeRefresh');
       app.advance(500);
       await app.flush();
-      assert.equal(spy.count('refreshHomeWorkspace'), 0);
+      assert.equal(spy.count('callHomeBridge'), 0);
     } finally {
       app.window.welcomeOrientationIsVisible = orientationVisible;
     }

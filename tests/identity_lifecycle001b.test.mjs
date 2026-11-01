@@ -503,7 +503,10 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
   heroPos.value = [...heroPos.options].find((option) => !option.defaultSelected && option !== heroPos.options[0])?.value ?? heroPos.value;
   // A Saved Scenario owned by A is presented; its viewer banner was dismissed.
   page.evaluate('savedScenarioOwnerActive = true; savedPlaybookScenarioPresentation = { ownerPrivate: "cached A presentation" }; activeSavedSpotContext = null');
-  page.evaluate('homeViewModel = { ownerPrivate: "A home" }');
+  // EXTRACT-HOME-001: Home's model lives in the Home workspace controller.
+  const home = page.evaluate('homeWorkspaceController');
+  home.render({ sessionMode: 'account', identity: { profile: { displayName: 'Owner A' } }, sections: { continue: { items: [] }, recent: { status: 'ready', items: [] }, review: {} } });
+  assert.equal(home.getModel().identity.profile.displayName, 'Owner A');
   page.window.__ownerObject = { ownerPrivate: 'A object' };
   page.evaluate('savedStudyCurrentObject = window.__ownerObject');
   delete page.window.__ownerObject;
@@ -559,7 +562,8 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
   assert.equal(page.evaluate('savedScenarioOwnerActive'), false);
   assert.equal(page.evaluate('savedPlaybookScenarioPresentation'), null);
   assert.equal(page.evaluate('savedStudyCurrentObject'), null);
-  assert.equal(page.evaluate('homeViewModel'), null);
+  assert.equal(home.getModel(), null);
+  assert.equal(page.byId('homeWorkspaceContent').hidden, true);
   assert.ok(library && history, 'both Saved controllers are mounted');
   assert.equal(ownerChanged.library, 1, 'Saved library private state clears with the owner');
   assert.equal(ownerChanged.history, 1, 'Saved Training history view state and toggle reset with the owner');

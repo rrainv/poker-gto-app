@@ -46,13 +46,15 @@ test('Home exposes stable semantic anchors and one consistent manual restart act
     return anchored.length === 1 && anchored[0] === panel;
   };
   assert.ok(overviewIs(app.byId('homeGuestAccount')));
-  const model = app.evaluate('homeViewModel');
+  // EXTRACT-HOME-001: Home's model and rendering live in the Home workspace controller.
+  const home = app.evaluate('homeWorkspaceController');
+  const model = home.getModel();
   assert.ok(model, 'Home rendered a view model');
   try {
-    app.call('renderHomeWorkspace', { ...model, sessionMode: 'signed_in' });
+    home.render({ ...model, sessionMode: 'signed_in' });
     assert.ok(overviewIs(app.byId('homeAccountOverview')), 'signed-in users get the account overview');
   } finally {
-    app.call('renderHomeWorkspace', model);
+    home.render(model);
   }
   assert.ok(overviewIs(app.byId('homeGuestAccount')));
 

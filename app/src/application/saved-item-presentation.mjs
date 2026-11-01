@@ -73,6 +73,25 @@ export function savedItemTitle(item, translate) {
   return text(item?.title) ?? savedItemAutoTitle(item, translate);
 }
 
+// EXTRACT-HOME-001: "Updated" recency shared by Home rows and the Saved library
+// (moved from logic.js homeRecency): a relative day within a week, else a short date.
+export function savedItemRecency(isoTimestamp, locale = 'en') {
+  const timestamp = Date.parse(isoTimestamp);
+  if (!Number.isFinite(timestamp)) return '';
+  const elapsedDays = Math.round((timestamp - Date.now()) / 86400000);
+  try {
+    if (Math.abs(elapsedDays) <= 7) {
+      return new Intl.RelativeTimeFormat(locale || 'en', { numeric: 'auto' })
+        .format(elapsedDays, 'day');
+    }
+    return new Intl.DateTimeFormat(locale || 'en', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    }).format(new Date(timestamp));
+  } catch (_) {
+    return new Date(timestamp).toLocaleDateString();
+  }
+}
+
 export function savedItemHasUserTitle(item) {
   return text(item?.title) !== null;
 }
@@ -126,6 +145,7 @@ if (typeof window !== 'undefined') {
       metaFacts: savedItemMetaFacts,
       factGrid: savedItemFactGrid,
       kindLabelKey: savedItemKindLabelKey,
+      recency: savedItemRecency,
     }),
     writable: false,
   });

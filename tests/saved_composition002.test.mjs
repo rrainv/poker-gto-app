@@ -394,16 +394,17 @@ test('auto-titles come only from stored preview facts; missing facts are omitted
   const spot = createHomeSavedItem(spotObject({ id: 's' }));
   assert.equal(spot.aggressorPosition, 'BB', 'the aggressor comes from the frozen DecisionContext');
   assert.equal(savedItemTitle(spot), 'K♠J♠ · BTN vs BB · River');
-  // The page's titles are the shared presentation's titles.
-  const calls = [];
+  // The page's titles are the shared presentation's titles. EXTRACT-HOME-001:
+  // the Home workspace module imports the shared presentation directly, so a
+  // Home row is compared with it instead of spying the window bridge.
   const presentation = page.window.RiverlineSavedItemPresentation;
-  await withBridge('RiverlineSavedItemPresentation', {
-    title: (...args) => { calls.push(args); return presentation.title(...args); },
-  }, () => page.call('homeSavedItemTitle', spot));
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], spot);
-  assert.equal(calls[0][1], page.window.t);
-  assert.equal(page.call('homeSavedItemTitle', spot), page.window.RiverlineSavedItemPresentation.title(spot, page.window.t));
+  page.evaluate('homeWorkspaceController').render({
+    sessionMode: 'account',
+    sections: { continue: { items: [] }, recent: { status: 'ready', items: [spot] }, review: {} },
+  });
+  const rowTitle = page.$('#homeRecentContent .home-saved-item-title-row strong').textContent;
+  assert.equal(rowTitle, presentation.title(spot, page.window.t));
+  assert.equal(rowTitle, savedItemTitle(spot, page.window.t));
 });
 
 test('a user title always wins over the auto-title', async () => {
@@ -431,8 +432,9 @@ test('completed saved Hands never show "Pot 0 bb" (QA-SWEEP-024); live Hands kee
   assert.match(savedItemMetaFacts(createHomeSavedItem(handObject({ id: 'live' }))).join(' · '), /Pot 1\.5 bb/);
   assert.doesNotMatch(savedItemMetaFacts({ kind: 'spot', potBb: 0 }).join(' '), /Pot 0/);
   // Home Recent reads the same omitted pot.
-  assert.doesNotMatch(page.call('homeSavedItemFacts', doneItem).join(' '), /Pot/);
-  assert.match(page.call('homeSavedItemFacts', createHomeSavedItem(handObject({ id: 'live', potMilliBb: 4500 }))).join(' '), /Pot/);
+  const homeFacts = (item) => page.window.RiverlineHomeWorkspace.savedItemFacts(item, page.window.t);
+  assert.doesNotMatch(homeFacts(doneItem).join(' '), /Pot/);
+  assert.match(homeFacts(createHomeSavedItem(handObject({ id: 'live', potMilliBb: 4500 }))).join(' '), /Pot/);
 });
 
 // ---------------------------------------------------------------- Training history

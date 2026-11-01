@@ -191,10 +191,11 @@ test('one accent-filled action per view in the key states', async () => {
   assert.ok(markup.getElementById('handReviewAnalyze').classList.contains('ui-button--secondary'));
   // Home: only the first continuation leads.
   await app.navigate('home');
-  app.call('renderHomeContinue', { status: 'ready', items: [
+  // EXTRACT-HOME-001: Home renders through the mounted Home workspace controller.
+  app.evaluate('homeWorkspaceController').render({ sessionMode: 'account', sections: { continue: { status: 'ready', items: [
     { kind: 'range_calibration', profileName: 'P', modeName: 'M', answeredCount: 1, totalCount: 169 },
     { kind: 'live_hand' },
-  ] });
+  ] }, recent: { status: 'ready', items: [] }, review: {} } });
   const resumes = app.$$('#homeContinueContent .home-calibration-actions .ui-button');
   assert.deepEqual(resumes.map((button) => button.className), ['ui-button ui-button--primary', 'ui-button ui-button--secondary']);
   // Training: Start leads before a session, Next exercise after an answer.
@@ -273,7 +274,7 @@ test('Home has no Destinations panel and links Review Mistakes from the Review h
   assert.equal(app.byId('homeReviewMistakesLink').hidden, true, 'guest Home does not offer it');
   const loaded = await app.call('callHomeBridge', 'load');
   const model = { ...loaded, sections: { ...loaded.sections, quickStart: { ...loaded.sections.quickStart, destinations: [...(loaded.sections.quickStart?.destinations || []), 'review_mistakes'] } } };
-  app.call('renderHomeWorkspace', model);
+  app.evaluate('homeWorkspaceController').render(model);
   assert.equal(app.byId('homeReviewMistakesLink').hidden, false);
   const spy = app.spy(['navigateToProductDestination']);
   try {

@@ -227,15 +227,18 @@ test('prepaint layers Welcome over recurring Home without selecting a false work
   // Welcome for Home loads it once.
   assert.equal(app.call('welcomeOrientationIsVisible'), true);
   assert.equal(app.$('.riverline-shell').dataset.activeMode, 'home');
-  assert.equal(app.evaluate('homeViewModel'), null);
-  const spy = app.spy(['refreshHomeWorkspace', 'updateContext']);
+  // EXTRACT-HOME-001: the model lives in the Home workspace controller, and the
+  // navigation to Home reaches it directly, so its one load is a bridge call.
+  const home = app.evaluate('homeWorkspaceController');
+  assert.equal(home.getModel(), null);
+  const spy = app.spy(['callHomeBridge', 'updateContext']);
   try {
     await app.click('[data-welcome-destination="home"]');
     await app.settle(500);
     assert.equal(app.call('welcomeOrientationIsVisible'), false);
-    assert.equal(spy.count('refreshHomeWorkspace'), 1);
+    assert.equal(spy.count('callHomeBridge'), 1);
     assert.equal(spy.count('updateContext'), 0);
-    assert.ok(app.evaluate('homeViewModel'));
+    assert.ok(home.getModel());
   } finally {
     spy.restore();
   }

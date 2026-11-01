@@ -8469,11 +8469,8 @@ function bindSliderPair(rangeId, numberId, callback) {
 
 }
 
-let homeViewModel = null;
 let savedLibraryController = null;
 let savedTrainingHistoryController = null;
-let homeRefreshSequence = 0;
-let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
 let savedScenarioOwnerActive = false;
 
@@ -8515,81 +8512,55 @@ function activateNavigationItem(button) {
   return true;
 }
 
-function resolveHomeDestinationPresentation(destination, {
-  sessionMode = 'account',
-  hasContinuation = false,
-} = {}) {
-  const normalizedDestination = destination === 'saved' ? 'saved' : 'home';
-  const guest = sessionMode === 'guest';
-  const visibleSections = normalizedDestination === 'saved'
-    ? ['library']
-    : guest
-      ? ['guest', 'continue', 'review', 'recent']
-      : ['overview', 'continue', 'review', 'recent'];
-  return Object.freeze({
-    destination: normalizedDestination,
-    visibleSections: Object.freeze(visibleSections),
-    guestCopy: normalizedDestination === 'saved'
-      ? Object.freeze({
-        eyebrow: 'Saved study',
-        title: 'Saved Hands & Spots',
-        primary: 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.',
-        secondary: 'Signing in does not enable sync or cloud backup.',
-      })
-      : Object.freeze({
-        eyebrow: 'Guest Mode',
-        title: 'Riverline is ready to use',
-        primary: 'Analyze hands, train decisions, and calculate Equity without an account.',
-        secondary: 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.',
-      }),
-  });
-}
-
 function setTranslatedElement(element, key) {
   if (!element) return;
   element.dataset.i18n = key;
   element.textContent = t(key);
 }
 
-function applyHomeDestinationPresentation(destination = activeNavigationDestination()) {
-  const content = $('#homeWorkspaceContent');
-  const state = resolveHomeDestinationPresentation(destination, {
-    sessionMode: content?.dataset.sessionMode || homeViewModel?.sessionMode || 'account',
-    hasContinuation: content?.dataset.hasContinuation === 'true',
-  });
-  const homeMode = $('#homeMode');
-  if (homeMode) {
-    homeMode.dataset.productDestination = state.destination;
-    const labelKey = state.destination === 'saved' ? 'Saved study' : 'Home dashboard';
-    homeMode.dataset.i18nAriaLabel = labelKey;
-    homeMode.setAttribute('aria-label', t(labelKey));
-  }
-  if (content) content.dataset.productDestination = state.destination;
+// EXTRACT-HOME-001: Home (view model rendering, Home vs Saved destination
+// presentation, the refresh sequence and timer, Home's clicks) lives in
+// application/home-workspace.mjs, mounted on #homeMode. logic.js keeps the
+// coordination it owns (navigation, Saved open, live Hand, owner reset) and
+// injects it here, late-bound so page-function spies and overrides apply.
+let homeWorkspaceController = null;
 
-  const sections = {
-    overview: $('#homeAccountOverview'),
-    guest: $('#homeGuestAccount'),
-    continue: $('#homeContinueContent')?.closest('.home-section'),
-    review: $('#homeReviewContent')?.closest('.home-section'),
-    recent: $('#homeRecentContent')?.closest('.home-section'),
-    library: $('#savedLibrarySection'),
-    strategy: $('#homeStrategyContent')?.closest('.home-section'),
-    other: $('#homeOtherTitle')?.closest('.home-section'),
-  };
-  const visible = new Set(state.visibleSections);
-  Object.entries(sections).forEach(([key, section]) => {
-    if (section) section.hidden = !visible.has(key);
+function mountHomeWorkspace() {
+  const container = $('#homeMode');
+  const workspace = window.RiverlineHomeWorkspace;
+  if (!container || !workspace || homeWorkspaceController) return homeWorkspaceController;
+  homeWorkspaceController = workspace.mount(container, {
+    translate: (key, values) => t(key, values),
+    locale: () => window.appLang || 'en',
+    load: () => callHomeBridge('load'),
+    activeMode: () => activeWorkspaceMode(),
+    activeDestination: () => activeNavigationDestination(),
+    welcomeVisible: () => welcomeOrientationIsVisible(),
+    header: () => window.RiverlineWorkspaceHeader,
+    tutorials: () => window.RiverlineTutorials,
+    navigate: (destination) => navigateToProductDestination(destination),
+    showSavedMistakes: () => {
+      navigateToProductDestination('saved');
+      savedLibraryController?.showMistakesOnly?.();
+    },
+    returnToLiveHand: () => returnToHomeLiveHand(),
+    openAccount: () => window.RiverlineAuthentication?.openAccount?.(),
+    openSavedItem: (id, control) => openHomeSavedItem(id, control),
+    syncSavedLibraryVisibility: () => syncSavedLibraryVisibility(),
+    clearOwnerPresentation: () => clearSavedOwnerPresentation(),
+    reportError: (error) => console.error('[Riverline Home]', error),
+    setTimer: (callback, delay) => window.setTimeout(callback, delay),
+    clearTimer: (timer) => window.clearTimeout(timer),
   });
-  // Study Inbox is Home's lazy disclosure; it does not belong to the Saved library.
-  const studyInbox = $('#studyInboxPanel');
-  if (studyInbox) studyInbox.hidden = state.destination === 'saved';
-  syncSavedLibraryVisibility();
+  return homeWorkspaceController;
+}
 
-  setTranslatedElement($('#homeGuestAccountEyebrow'), state.guestCopy.eyebrow);
-  setTranslatedElement($('#homeGuestAccountTitle'), state.guestCopy.title);
-  setTranslatedElement($('#homeGuestAccountPrimary'), state.guestCopy.primary);
-  setTranslatedElement($('#homeGuestAccountSecondary'), state.guestCopy.secondary);
-  return state;
+function homeWorkspace() {
+  return homeWorkspaceController ?? mountHomeWorkspace();
+}
+
+function applyHomeDestinationPresentation(destination) {
+  return homeWorkspace()?.applyDestination(destination);
 }
 
 function resolvePlaybookDestinationPresentation(destination, playbookMode) {
@@ -8676,130 +8647,6 @@ async function returnToHomeLiveHand() {
   await updateContext('Returned to live hand');
 }
 
-function homeEmptyState(messageKey, error = false) {
-  const message = document.createElement('p');
-  message.className = error ? 'home-error-state' : 'home-empty-state';
-  message.textContent = t(messageKey);
-  return message;
-}
-
-function homeEmptyAction(messageKey, actionKey, destination, { primary = false } = {}) {
-  const root = document.createElement('div');
-  root.className = 'home-empty-state';
-  const message = document.createElement('p');
-  message.textContent = t(messageKey);
-  const action = document.createElement('button');
-  action.type = 'button';
-  action.className = `ui-button ${primary ? 'ui-button--primary' : 'ui-button--quiet'}`;
-  action.dataset.homeDestination = destination;
-  action.textContent = t(actionKey);
-  root.append(message, action);
-  return root;
-}
-
-function homeRecency(isoTimestamp) {
-  const timestamp = Date.parse(isoTimestamp);
-  if (!Number.isFinite(timestamp)) return '';
-  const elapsedDays = Math.round((timestamp - Date.now()) / 86400000);
-  try {
-    if (Math.abs(elapsedDays) <= 7) {
-      return new Intl.RelativeTimeFormat(window.appLang || 'en', { numeric: 'auto' })
-        .format(elapsedDays, 'day');
-    }
-    return new Intl.DateTimeFormat(window.appLang || 'en', {
-      year: 'numeric', month: 'short', day: 'numeric'
-    }).format(new Date(timestamp));
-  } catch (_) {
-    return new Date(timestamp).toLocaleDateString();
-  }
-}
-
-// SAVED-COMPOSITION-002: a user title wins; otherwise the auto-title from stored facts.
-function homeSavedItemTitle(item) {
-  return window.RiverlineSavedItemPresentation.title(item, t);
-}
-
-function homeSavedItemFacts(item) {
-  const facts = [];
-  if (Number.isInteger(item.tableSize)) facts.push(t('{count}-handed', { count: item.tableSize }));
-  if (item.heroPosition) facts.push(item.heroPosition);
-  if (item.street) facts.push(t(item.street[0].toUpperCase() + item.street.slice(1)));
-  if (Number.isFinite(item.stackBb)) facts.push(`${item.stackBb} bb`);
-  if (Number.isFinite(item.potBb)) facts.push(`${t('Pot')} ${item.potBb} bb`);
-  if (item.kind === 'spot') {
-    facts.push(item.derivation === 'scenario' ? t('Scenario') : t('Hand-derived'));
-  }
-  const recency = homeRecency(item.updatedAt);
-  if (recency) facts.push(`${t('Updated')} ${recency}`);
-  return facts;
-}
-
-function createHomeSavedItemElement(item, { compact = false } = {}) {
-  const row = document.createElement('article');
-  row.className = 'home-saved-item';
-  const main = document.createElement('div');
-  main.className = 'home-saved-item-main';
-  const titleRow = document.createElement('div');
-  titleRow.className = 'home-saved-item-title-row';
-  const kind = document.createElement('span');
-  kind.className = 'home-saved-item-kind';
-  kind.textContent = t(item.kind === 'hand' ? 'Saved Hand' : 'Saved Spot');
-  const title = document.createElement('strong');
-  title.dir = 'auto';
-  title.textContent = homeSavedItemTitle(item);
-  titleRow.append(kind, title);
-  main.appendChild(titleRow);
-
-  const meta = document.createElement('div');
-  meta.className = 'home-saved-item-meta poker-data-token';
-  meta.dir = 'ltr';
-  homeSavedItemFacts(item).forEach((fact) => {
-    const token = document.createElement('span');
-    token.textContent = fact;
-    meta.appendChild(token);
-  });
-  main.appendChild(meta);
-
-  const badges = document.createElement('div');
-  badges.className = 'home-saved-item-badges';
-  if (item.hasNote) {
-    const note = document.createElement('span');
-    note.className = 'home-saved-badge';
-    note.textContent = t('Note');
-    badges.appendChild(note);
-  }
-  if (item.reviewState === 'review_later') {
-    const review = document.createElement('span');
-    review.className = 'home-saved-badge home-saved-badge--review';
-    review.textContent = t('Review later');
-    badges.appendChild(review);
-  }
-  if (item.isMistake) {
-    const mistake = document.createElement('span');
-    mistake.className = 'home-saved-badge home-saved-badge--mistake';
-    mistake.textContent = t('Marked as a mistake');
-    badges.appendChild(mistake);
-  }
-  if (item.tags.length > 0) {
-    const tags = document.createElement('span');
-    tags.className = 'home-saved-badge';
-    tags.dir = 'auto';
-    tags.textContent = item.tags.slice(0, 2).join(' · ');
-    badges.appendChild(tags);
-  }
-  if (badges.childElementCount > 0) main.appendChild(badges);
-
-  const open = document.createElement('button');
-  open.type = 'button';
-  open.className = `ui-button ${compact ? 'ui-button--quiet' : 'ui-button--secondary'} home-open-button`;
-  open.dataset.homeSavedId = item.id;
-  const action = t(item.kind === 'hand' ? 'Open replay' : 'Open spot');
-  open.textContent = action;
-  open.setAttribute('aria-label', `${action}: ${homeSavedItemTitle(item)}`);
-  row.append(main, open);
-  return row;
-}
-
 function syncSavedLibraryVisibility() {
   // The Saved bridge can install after init (QA-SAVED-COMPOSITION-003): mount on first need.
   if (!savedLibraryController) mountSavedLibraryWorkspace();
@@ -8866,9 +8713,9 @@ function mountSavedLibraryWorkspace() {
     whenReady: () => window.RiverlineAuthentication?.ready?.(),
     translate: t,
     presentation: {
-      itemTitle: homeSavedItemTitle,
+      itemTitle: (item) => window.RiverlineSavedItemPresentation.title(item, t),
       itemFacts: (item) => window.RiverlineSavedItemPresentation.metaFacts(item, t),
-      recency: homeRecency,
+      recency: (isoTimestamp) => window.RiverlineSavedItemPresentation.recency(isoTimestamp, window.appLang || 'en'),
     },
     overlay: $('#savedQuickPreviewOverlay'),
     getCardPresentation: () => window.RiverlineCardPresentation,
@@ -8904,275 +8751,6 @@ function mountSavedLibraryWorkspace() {
   syncSavedLibraryVisibility();
 }
 
-function renderHomeContinue(section) {
-  const root = $('#homeContinueContent');
-  if (!root) return;
-  root.replaceChildren();
-  const hasContinuation = Boolean(section?.items?.length);
-  setTranslatedElement($('#homeContinueEyebrow'), hasContinuation ? 'Pick up where you left off' : 'Your next action');
-  setTranslatedElement($('#homeContinueTitle'), hasContinuation ? 'Continue' : 'Start study');
-  if (!section?.items?.length) {
-    root.appendChild(homeEmptyAction('Play or reconstruct a legal hand.', 'Start a Hand', 'hand', { primary: true }));
-    return;
-  }
-  const list = document.createElement('div');
-  list.className = 'home-continue-list';
-  section.items.forEach((item, index) => {
-    const card = document.createElement('div');
-    card.className = item.kind === 'live_hand'
-      ? 'home-calibration-card home-live-hand-card'
-      : 'home-calibration-card';
-    const title = document.createElement('strong');
-    title.textContent = t(item.kind === 'live_hand' ? 'Live Hand' : 'Personal Strategy');
-    const context = document.createElement('p');
-    context.dir = 'auto';
-    if (item.kind === 'live_hand') {
-      context.textContent = t('Your current in-memory hand is ready to continue.');
-    } else {
-      const facts = [item.profileName, item.modeName];
-      if (Number.isInteger(item.context?.tableSize)) {
-        facts.push(t('{count}-handed', { count: item.context.tableSize }));
-      }
-      context.textContent = facts.join(' · ');
-    }
-    const progress = document.createElement('p');
-    if (item.kind === 'range_calibration') {
-      progress.textContent = t('{answered} of {total} directly answered', {
-        answered: item.answeredCount, total: item.totalCount
-      });
-    }
-    const actions = document.createElement('div');
-    actions.className = 'home-calibration-actions';
-    const resume = document.createElement('button');
-    resume.type = 'button';
-    // One accent action per view: only the first continuation is primary.
-    resume.className = `ui-button ${index === 0 ? 'ui-button--primary' : 'ui-button--secondary'}`;
-    if (item.kind === 'live_hand') resume.dataset.homeAction = 'return-live-hand';
-    else resume.dataset.homeDestination = 'personal-strategy';
-    resume.textContent = t(item.kind === 'live_hand' ? 'Return to live hand' : 'Resume calibration');
-    actions.appendChild(resume);
-    card.append(title, context);
-    if (progress.textContent) card.appendChild(progress);
-    card.appendChild(actions);
-    list.appendChild(card);
-  });
-  root.appendChild(list);
-}
-
-function renderHomeRecent(section) {
-  const root = $('#homeRecentContent');
-  if (!root) return;
-  root.replaceChildren();
-  if (section?.status === 'error') {
-    root.appendChild(homeEmptyState('Saved items could not be loaded.', true));
-    return;
-  }
-  if (!section?.items?.length) {
-    root.appendChild(homeEmptyAction('No saved study yet.', 'Analyze a Hand', 'analyze'));
-    return;
-  }
-  section.items.forEach((item) => root.appendChild(createHomeSavedItemElement(item)));
-}
-
-function renderHomeReviewGroup(root, titleKey, section, emptyKey) {
-  const group = document.createElement('section');
-  group.className = 'home-review-group';
-  const heading = document.createElement('h3');
-  heading.textContent = t(titleKey);
-  const list = document.createElement('div');
-  list.className = 'home-review-list';
-  if (section?.status === 'error') list.appendChild(homeEmptyState('Saved items could not be loaded.', true));
-  else if (!section?.items?.length) list.appendChild(homeEmptyState(emptyKey));
-  else section.items.forEach((item) => list.appendChild(createHomeSavedItemElement(item, { compact: true })));
-  group.append(heading, list);
-  root.appendChild(group);
-}
-
-function renderHomeReview(section) {
-  const root = $('#homeReviewContent');
-  if (!root) return;
-  root.replaceChildren();
-  renderHomeReviewGroup(root, 'Review later', section?.reviewLater, 'Nothing marked for review.');
-  renderHomeReviewGroup(root, 'Marked as a mistake', section?.mistakes, 'No mistakes marked.');
-}
-
-function renderHomePersonalStrategy(section) {
-  const root = $('#homeStrategyContent');
-  if (!root) return;
-  root.replaceChildren();
-  if (section?.status === 'unavailable') {
-    const card = document.createElement('div');
-    card.className = 'home-strategy-summary';
-    const copy = document.createElement('p');
-    copy.textContent = t('Your learning workspace is saved on this device.');
-    const action = document.createElement('button');
-    action.type = 'button';
-    action.className = 'ui-button ui-button--secondary';
-    action.dataset.homeDestination = 'personal-strategy';
-    action.textContent = t('Open Personal Strategy');
-    card.append(copy, action);
-    root.appendChild(card);
-    return;
-  }
-  if (section?.status === 'error') {
-    root.appendChild(homeEmptyState('Personal Strategy could not be loaded.', true));
-    return;
-  }
-  const card = document.createElement('div');
-  card.className = 'home-strategy-summary';
-  const action = document.createElement('button');
-  action.type = 'button';
-  action.className = 'ui-button ui-button--secondary';
-  action.dataset.homeDestination = 'personal-strategy';
-  if (!section?.selectedProfile) {
-    const empty = document.createElement('p');
-    empty.textContent = t(section?.profileCount > 0
-      ? 'Open Personal Strategy to choose a profile.'
-      : 'Create a profile to start building your ranges.');
-    action.textContent = t(section?.profileCount > 0
-      ? 'Open Personal Strategy'
-      : 'Create your first strategy profile');
-    card.append(empty, action);
-    root.appendChild(card);
-    return;
-  }
-  const title = document.createElement('strong');
-  title.dir = 'auto';
-  title.textContent = `${section.selectedProfile.displayName} · ${section.selectedMode.displayName}`;
-  const progress = document.createElement('p');
-  progress.textContent = t('{answered} of {total} directly answered', {
-    answered: section.answeredCount, total: section.totalCount
-  });
-  const facts = document.createElement('div');
-  facts.className = 'home-strategy-facts';
-  const factValues = [
-    t('{count} strategy profiles', { count: section.profileCount }),
-    t('{count} direct evidence records', { count: section.directEvidenceCount })
-  ];
-  factValues.forEach((value) => {
-    const fact = document.createElement('span');
-    fact.className = 'home-strategy-fact';
-    fact.textContent = value;
-    facts.appendChild(fact);
-  });
-  if (section.contradictionCount > 0) {
-    const contradiction = document.createElement('span');
-    contradiction.className = 'home-strategy-fact home-strategy-fact--warning';
-    contradiction.textContent = t('{count} contradictory evidence records', {
-      count: section.contradictionCount
-    });
-    facts.appendChild(contradiction);
-  }
-  action.textContent = t(section.resumable ? 'Resume calibration' : 'Open Personal Strategy');
-  card.append(title, progress, facts, action);
-  root.appendChild(card);
-}
-
-function homeSyncCopy(sync) {
-  if (sync?.status === 'error') return ['Sync issue', 'Study data remains available on this device.'];
-  if (!sync || sync.status === 'unavailable') return ['Saved on this device', 'Cloud study sync is unavailable.'];
-  if (sync.state === 'conflict') return ['Conflict needs attention', '{count} conflicts need review.'];
-  if (sync.state === 'error') return ['Sync issue', 'Study data remains available on this device.'];
-  if (sync.state === 'syncing') return ['Syncing', 'Updating your enabled study domains.'];
-  if (sync.state === 'offline') {
-    return sync.pendingCount > 0
-      ? ['Offline', '{count} changes waiting. They will sync when Riverline is online.']
-      : ['Offline', 'Study data remains available on this device.'];
-  }
-  if (sync.state === 'synced') return ['Synced', 'Enabled study data is up to date.'];
-  if (sync.state === 'auth_paused') return ['Sync paused', 'Sign in again to continue study sync.'];
-  return ['Saved on this device', 'Cloud study sync is not enabled.'];
-}
-
-function renderHomeAccountOverview(model) {
-  const overview = $('#homeAccountOverview');
-  if (!overview) return;
-  const guest = model.sessionMode === 'guest';
-  overview.hidden = guest;
-  if (guest) return;
-  const profile = model.identity?.profile;
-  const displayName = $('#homeIdentityDisplayName');
-  const username = $('#homeIdentityUsername');
-  displayName.textContent = profile?.displayName || t('Riverline player');
-  username.textContent = profile?.username ? `@${profile.username}` : '';
-  username.hidden = !profile?.username;
-  const syncRoot = $('#homeSyncStatus');
-  const [labelKey, detailKey] = homeSyncCopy(model.sync);
-  syncRoot.dataset.state = model.sync?.state || 'unavailable';
-  $('#homeSyncStatusLabel').textContent = t(labelKey);
-  $('#homeSyncStatusDetail').textContent = t(detailKey, {
-    count: model.sync?.conflictCount || model.sync?.pendingCount || 0
-  });
-  $('#homeSyncReview').hidden = !['conflict', 'error'].includes(model.sync?.state);
-}
-
-// SHELL-001: Home's Destinations panel was removed (its links duplicated the
-// sidebar). "Review Mistakes" survives as a link in the Review section header,
-// shown under the same rule as before (at least one marked mistake).
-function renderHomeReviewMistakesLink(model) {
-  const link = $('#homeReviewMistakesLink');
-  if (!link) return;
-  link.hidden = !(model.sections.quickStart?.destinations || []).includes('review_mistakes');
-}
-
-function renderHomeWorkspace(model) {
-  homeViewModel = model;
-  const guest = model.sessionMode === 'guest';
-  const restricted = [
-    $('#homeReviewContent')?.closest('.home-section'),
-    $('#homeRecentContent')?.closest('.home-section')
-  ];
-  restricted.forEach((section) => { if (section) section.hidden = false; });
-  const guestAccount = $('#homeGuestAccount');
-  if (guestAccount) guestAccount.hidden = !guest;
-  // The Home tour's first step explains the session panel that is shown.
-  const overviewPanels = [guestAccount, $('#homeAccountOverview')];
-  overviewPanels.forEach((panel) => panel?.removeAttribute('data-tutorial-anchor'));
-  overviewPanels[guest ? 0 : 1]?.setAttribute('data-tutorial-anchor', 'home-overview');
-  renderHomeAccountOverview(model);
-  // The Home description lives in Help; the header context names the session.
-  window.RiverlineWorkspaceHeader?.setDescription('home', guest
-    ? 'Your learning workspace is saved on this device.'
-    : 'Your saved study, review queue, and next useful action.');
-  window.RiverlineWorkspaceHeader?.setContext('home', guest
-    ? [t('Guest Mode')]
-    : [model.identity?.profile?.displayName || t('Riverline player'), t(homeSyncCopy(model.sync)[0])]);
-  // SHELL-002: the header chip names the selected Game and Approach that
-  // Home's view model already loaded (nothing extra is read).
-  const personalStrategy = model.sections.personalStrategy;
-  if (personalStrategy?.status === 'ready' && personalStrategy.selectedProfile) {
-    window.RiverlineWorkspaceHeader?.setPlayContext?.({
-      game: personalStrategy.selectedProfile.displayName,
-      approach: personalStrategy.selectedMode?.displayName || '',
-    });
-  }
-  renderHomeReviewMistakesLink(model);
-  renderHomeContinue(model.sections.continue);
-  renderHomePersonalStrategy(model.sections.personalStrategy);
-  renderHomeRecent(model.sections.recent);
-  renderHomeReview(model.sections.review);
-  const workspace = $('#homeWorkspace');
-  const loading = $('#homeLoadingState');
-  const content = $('#homeWorkspaceContent');
-  if (content) content.dataset.sessionMode = guest ? 'guest' : 'account';
-  if (content) content.dataset.hasContinuation = String(Boolean(model.sections.continue?.items?.length));
-  if (workspace) workspace.setAttribute('aria-busy', 'false');
-  if (loading) loading.hidden = true;
-  if (content) content.hidden = false;
-  applyHomeDestinationPresentation();
-  const tutorialWorkspace = activeNavigationDestination() === 'saved' ? 'saved' : 'home';
-  window.RiverlineTutorials?.offerForWorkspace?.(tutorialWorkspace, workspace);
-}
-
-function beginHomeLoading() {
-  const workspace = $('#homeWorkspace');
-  const loading = $('#homeLoadingState');
-  const content = $('#homeWorkspaceContent');
-  if (workspace) workspace.setAttribute('aria-busy', 'true');
-  if (loading) loading.hidden = false;
-  if (content) content.hidden = true;
-}
-
 function clearSavedScenarioOwnerPresentation() {
   savedScenarioOwnerActive = false;
   savedPlaybookScenarioPresentation = null;
@@ -9201,13 +8779,8 @@ function clearSavedScenarioOwnerPresentation() {
 
 function clearSavedOwnerPresentation() {
   handReviewDecisionSaver?.clear();
-  ++homeRefreshSequence;
-  homeViewModel = null;
-  $('#homeWorkspaceContent')?.setAttribute('hidden', '');
-  $('#homeReviewContent')?.replaceChildren();
-  $('#homeContinueContent')?.replaceChildren();
-  $('#homePersonalStrategyContent')?.replaceChildren();
-  $('#homeRecentContent')?.replaceChildren();
+  // Home drops its model, makes in-flight loads stale and clears its content.
+  homeWorkspace()?.ownerChanged();
   // Saved library query, filters, preview and detail clear before any new owner can render.
   savedLibraryController?.ownerChanged();
   // Training history view state and the toggle reset to Saved items for the new owner.
@@ -9243,42 +8816,12 @@ function clearSavedOwnerPresentation() {
   if (!$('#savedStudyModal')?.hidden) closeSavedStudyEditor();
 }
 
-async function refreshHomeWorkspace({ preserveVisible = false } = {}) {
-  if (welcomeOrientationIsVisible()) return;
-  const sequence = ++homeRefreshSequence;
-  if (!preserveVisible || !homeViewModel) beginHomeLoading();
-  try {
-    const model = await callHomeBridge('load');
-    if (sequence !== homeRefreshSequence || activeWorkspaceMode() !== 'home') return;
-    renderHomeWorkspace(model);
-  } catch (error) {
-    if (sequence !== homeRefreshSequence) return;
-    console.error('[Riverline Home]', error);
-    const fallback = {
-      sections: {
-        continue: { status: 'ready', items: [] },
-        recent: { status: 'error' },
-        review: { reviewLater: { status: 'error' }, mistakes: { status: 'error' } },
-        personalStrategy: { status: 'error' }
-      }
-    };
-    renderHomeWorkspace(fallback);
-  }
+function refreshHomeWorkspace(options) {
+  return homeWorkspace()?.refresh(options) ?? Promise.resolve();
 }
 
-function scheduleHomeRefresh({ clearPrivateState = false } = {}) {
-  homeViewModel = null;
-  if (clearPrivateState) clearSavedOwnerPresentation();
-  if (homeRefreshTimer !== null) {
-    window.clearTimeout(homeRefreshTimer);
-    homeRefreshTimer = null;
-  }
-  if (activeWorkspaceMode() !== 'home' || welcomeOrientationIsVisible()) return;
-  if (clearPrivateState) beginHomeLoading();
-  homeRefreshTimer = window.setTimeout(() => {
-    homeRefreshTimer = null;
-    void refreshHomeWorkspace();
-  }, 80);
+function scheduleHomeRefresh(options) {
+  homeWorkspace()?.schedule(options);
 }
 
 function restoreSavedSpotPresentation(result) {
@@ -9462,34 +9005,6 @@ function bindEvents() {
 
   document.addEventListener('click', (event) => {
 
-    const homeDestination = event.target.closest('[data-home-destination]');
-    if (homeDestination) {
-      const destination = homeDestination.dataset.homeDestination;
-      if (destination === 'review_mistakes') {
-        // The link sits in the Review section header, so it opens every
-        // marked mistake in Saved rather than scrolling to itself.
-        navigateToProductDestination('saved');
-        savedLibraryController?.showMistakesOnly?.();
-      } else navigateToProductDestination(destination);
-      return;
-    }
-
-    const homeAction = event.target.closest('[data-home-action]');
-    if (homeAction?.dataset.homeAction === 'return-live-hand') {
-      void returnToHomeLiveHand();
-      return;
-    }
-    if (homeAction?.dataset.homeAction === 'review-sync') {
-      window.RiverlineAuthentication?.openAccount?.();
-      return;
-    }
-
-    const homeSavedItem = event.target.closest('[data-home-saved-id]');
-    if (homeSavedItem) {
-      void openHomeSavedItem(homeSavedItem.dataset.homeSavedId, homeSavedItem);
-      return;
-    }
-
     const handModeControl = event.target.closest('[data-equity-hand-mode]');
     if (handModeControl) {
       return setEquityHandMode(
@@ -9671,10 +9186,11 @@ function bindEvents() {
       renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
     }
     if (mode === 'equity') updateEquityReadiness();
-    if (mode === 'hub') window.RiverlineShellNavigation?.showHub(destination, { homeModel: homeViewModel });
+    if (mode === 'hub') {
+      window.RiverlineShellNavigation?.showHub(destination, { homeModel: homeWorkspace()?.getModel() ?? null });
+    }
     if (mode === 'home') {
-      applyHomeDestinationPresentation(destination);
-      void refreshHomeWorkspace({ preserveVisible: Boolean(homeViewModel) });
+      homeWorkspace()?.setVisible(true, { destination });
       window.requestAnimationFrame(revealHomeDestination);
     }
     if (mode === 'gto') {
@@ -10381,7 +9897,7 @@ function refreshLocalizedRuntime() {
     if ($('#modalTitle')) $('#modalTitle').textContent = t('Choose a card');
     if ($('#modalCopy')) $('#modalCopy').textContent = t('Only cards remaining in the deck can be selected.');
   }
-  if (activeWorkspaceMode() === 'home' && homeViewModel) renderHomeWorkspace(homeViewModel);
+  homeWorkspaceController?.refreshLanguage();
   refreshLocalizedPlaybookRuntime();
   refreshLocalizedEquityRuntime();
   refreshLocalizedTrainingRuntime();
@@ -10459,6 +9975,9 @@ function init() {
     bindCanonicalHandWorkspace();
 
     bindSavedStudyObjectsUx();
+
+    // Home clicks are delegated on #homeMode by the mounted Home workspace.
+    mountHomeWorkspace();
 
     mountSavedLibraryWorkspace();
 
@@ -11093,7 +10612,7 @@ function syncCardPresentationState(presentation, { refresh = true } = {}) {
   app.settings.cardBackStyle = presentation.backStyle;
   if (!refresh) return;
   renderAllCards();
-  if (activeWorkspaceMode() === 'home' && homeViewModel) renderHomeWorkspace(homeViewModel);
+  homeWorkspaceController?.refreshLanguage();
   if (activeWorkspaceMode() === 'gto' && playbookSurfaceIsVisible('analysis')) {
     renderPlaybookDecisionAnalysis(
       app.decisionContext,

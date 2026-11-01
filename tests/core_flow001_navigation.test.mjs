@@ -23,7 +23,12 @@ const markup = indexDocument();
 const css = appStyleSheet();
 const app = await bootApp();
 const navigation = markup.querySelector('nav.mode-navigation');
-const resolveHomeDestination = (destination, options) => app.call('resolveHomeDestinationPresentation', destination, options);
+// EXTRACT-HOME-001: Home's presentation lives in the mounted Home workspace module.
+const resolveHomeDestination = (destination, options) => app.window.RiverlineHomeWorkspace.resolveDestinationPresentation(destination, options);
+const renderHome = (sections) => app.evaluate('homeWorkspaceController').render({
+  sessionMode: 'account',
+  sections: { continue: { status: 'ready', items: [] }, recent: { status: 'ready', items: [] }, review: {}, ...sections },
+});
 const resolvePlaybookDestination = (destination, mode) => app.call('resolvePlaybookDestinationPresentation', destination, mode);
 const allTemplates = () => [markup, ...markup.querySelectorAll('template').map((template) => template.content)];
 
@@ -151,7 +156,7 @@ test('Saved guest and empty presentation remains intentionally Saved instead of 
   assert.match(savedGuest.guestCopy.primary, /stay on this device in Guest Mode/);
   assert.match(savedGuest.guestCopy.secondary, /does not enable sync or cloud backup/);
   // An empty Recent section offers Analyze a Hand.
-  app.call('renderHomeRecent', { status: 'ready', items: [] });
+  renderHome({ recent: { status: 'ready', items: [] } });
   const empty = app.$('#homeRecentContent .home-empty-state');
   assert.equal(text(empty.querySelector('p')), 'No saved study yet.');
   assert.equal(text(empty.querySelector('button')), 'Analyze a Hand');
@@ -261,10 +266,9 @@ test('Home offers real workflow entries and the Core Flow shell has EN, RU, HE, 
     assert.match(homeModel, new RegExp(`['"]${destination}['"]`));
   }
   assert.equal(markup.getElementById('homeReviewMistakesLink').dataset.homeDestination, 'review_mistakes');
-  // A Personal Strategy summary routes to Personal Strategy.
+  // A Personal Strategy continuation routes to Personal Strategy.
   await app.navigate('home');
-  app.call('renderHomePersonalStrategy', { status: 'unavailable' });
-  app.call('renderHomeContinue', { status: 'ready', items: [{ kind: 'range_calibration', profileName: 'P', answeredCount: 1, totalCount: 169 }] });
+  renderHome({ continue: { status: 'ready', items: [{ kind: 'range_calibration', profileName: 'P', answeredCount: 1, totalCount: 169 }] } });
   assert.ok(app.$('#homeMode [data-home-destination="personal-strategy"]'));
   // 'Hand workflow' / 'Analysis source' remain translated catalog keys (the strip
   // kicker they labelled moved into the SHELL-001 header mode switch).

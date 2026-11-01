@@ -626,17 +626,19 @@ test('logic.js keeps only wiring and routing; Home Recent keeps its own six-item
     delete page.window.__wrappedLibrary;
   }
   // Home Recent renders each item through its own element factory and never
-  // routes into the Saved library.
-  const spy = page.spy(['createHomeSavedItemElement', 'activeNavigationDestination']);
-  try {
-    const item = { id: 'recent-1', kind: 'spot', title: 'Recent', tags: [], tableSize: 6, heroPosition: 'BTN', street: 'flop' };
-    page.call('renderHomeRecent', { status: 'ready', items: [item, { ...item, id: 'recent-2' }] });
-    assert.equal(spy.count('createHomeSavedItemElement'), 2);
-    assert.equal(page.byId('homeRecentContent').children.length, 2);
-    assert.equal(spy.count('activeNavigationDestination'), 0);
-  } finally {
-    spy.restore();
-  }
+  // routes into the Saved library. EXTRACT-HOME-001: the factory moved into the
+  // Home workspace module, so its rows are observed in the DOM.
+  const libraryRows = page.byId('savedLibrarySection').innerHTML;
+  const item = { id: 'recent-1', kind: 'spot', title: 'Recent', tags: [], tableSize: 6, heroPosition: 'BTN', street: 'flop' };
+  page.evaluate('homeWorkspaceController').render({
+    sessionMode: 'account',
+    sections: { continue: { items: [] }, recent: { status: 'ready', items: [item, { ...item, id: 'recent-2' }] }, review: {} },
+  });
+  const recent = page.byId('homeRecentContent');
+  assert.equal(recent.children.length, 2);
+  assert.ok([...recent.children].every((row) => row.localName === 'article' && row.className === 'home-saved-item'));
+  assert.deepEqual([...recent.querySelectorAll('[data-home-saved-id]')].map((node) => node.dataset.homeSavedId), ['recent-1', 'recent-2']);
+  assert.equal(page.byId('savedLibrarySection').innerHTML, libraryRows, 'the Saved library is untouched');
   const markup = indexDocument();
   const section = markup.getElementById('savedLibrarySection');
   assert.equal(section.dataset.tutorialAnchor, 'saved-library');

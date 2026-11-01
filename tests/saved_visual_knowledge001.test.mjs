@@ -324,11 +324,14 @@ test('empty, Guest, type, note, and locale truth remain explicit without fabrica
   assert.match(library, /item\.note[\s\S]*?Study note/);
   assert.match(library, /item\.kind === 'hand' \? 'Hand' : item\.kind === 'spot' \? 'Spot'/);
   // Home rows say when an item was updated, from its stored timestamp only.
-  const updated = page.call('homeSavedItemFacts', { kind: 'hand', updatedAt: new Date(Date.now() - 60_000).toISOString() });
-  const recency = page.call('homeRecency', new Date(Date.now() - 60_000).toISOString());
+  // EXTRACT-HOME-001: the facts moved into the Home workspace module and the
+  // recency into the shared Saved item presentation.
+  const homeFacts = (item) => page.window.RiverlineHomeWorkspace.savedItemFacts(item, page.window.t, page.window.appLang || 'en');
+  const updated = homeFacts({ kind: 'hand', updatedAt: new Date(Date.now() - 60_000).toISOString() });
+  const recency = page.window.RiverlineSavedItemPresentation.recency(new Date(Date.now() - 60_000).toISOString(), page.window.appLang || 'en');
   assert.ok(recency);
   assert.deepEqual(updated, [`${page.call('t', 'Updated')} ${recency}`]);
-  assert.deepEqual(page.call('homeSavedItemFacts', { kind: 'hand' }), [], 'no timestamp, no recency');
+  assert.deepEqual(homeFacts({ kind: 'hand' }), [], 'no timestamp, no recency');
   assert.doesNotMatch(`${modelSource}\n${library}`, /mastery|EV loss|solver correctness|progress percentage|resolveStrategy|calculateEquity/iu);
   for (const key of ['Stored poker preview', 'Open Hand', 'Open Spot', 'Study note', 'Unknown card', 'Updated', 'View details', 'Close details']) {
     assert.equal((translations.match(new RegExp(`'${key}'`, 'g')) || []).length >= 2, true, key);
@@ -343,7 +346,6 @@ test('identity invalidation clears private Saved presentation before a late owne
   const object = { id: 'owner-a', kind: 'spot', revision: 1, lifecycle: { state: 'active' }, source: {}, payload: {},
     annotations: { title: 'A', note: '', tags: [], reviewState: 'none', classifications: [] } };
   page.call('openSavedStudyEditor', object);
-  const sequence = page.evaluate('homeRefreshSequence');
   const controller = page.evaluate('savedLibraryController');
   let ownerChanged = 0;
   page.window.__wrappedLibrary = Object.create(controller, { ownerChanged: { value: (...args) => { ownerChanged += 1; return controller.ownerChanged(...args); } } });
@@ -366,7 +368,10 @@ test('identity invalidation clears private Saved presentation before a late owne
     page.evaluate('savedLibraryController = window.__wrappedLibrary');
     delete page.window.__wrappedLibrary;
   }
-  assert.equal(page.evaluate('homeRefreshSequence'), sequence + 1);
+  // EXTRACT-HOME-001: the Home refresh sequence is private to the Home
+  // workspace controller; its owner reset is observed as a dropped model.
+  assert.equal(page.evaluate('homeWorkspaceController').getModel(), null);
+  assert.equal(page.byId('homeWorkspaceContent').hidden, true);
   assert.equal(page.byId('homeRecentContent').children.length, 0);
   assert.equal(ownerChanged, 1);
   assert.equal(page.evaluate('activeSavedSpotContext'), null);
@@ -375,17 +380,19 @@ test('identity invalidation clears private Saved presentation before a late owne
   assert.equal(page.byId('savedStudyModal').hidden, true);
   // Identity and auth owner changes clear private state synchronously, before
   // the delayed reload.
-  const refresh = page.spy(['scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'refreshHomeWorkspace']);
+  // The delayed reload is observed as a Home bridge load (the timer reaches the
+  // Home workspace controller directly since EXTRACT-HOME-001).
+  const refresh = page.spy(['scheduleHomeRefresh', 'clearSavedOwnerPresentation', 'callHomeBridge']);
   try {
     page.window.dispatchEvent(new page.window.CustomEvent('riverline:identitychange', { detail: { reason: 'identity_activated' } }));
     assert.ok(refresh.calls.scheduleHomeRefresh.some(([options]) => options?.clearPrivateState === true));
     assert.ok(refresh.count('clearSavedOwnerPresentation') >= 1, 'cleared synchronously');
-    assert.equal(refresh.count('refreshHomeWorkspace'), 0, 'the reload is deferred');
+    assert.equal(refresh.count('callHomeBridge'), 0, 'the reload is deferred');
     refresh.reset();
     page.window.dispatchEvent(new page.window.CustomEvent('riverline:authchange', { detail: { status: 'guest', signedIn: false, ownerKey: 'visual-knowledge-owner' } }));
     assert.ok(refresh.calls.scheduleHomeRefresh.some(([options]) => options?.clearPrivateState === true));
     await page.settle(300);
-    assert.ok(refresh.count('refreshHomeWorkspace') >= 1);
+    assert.ok(refresh.count('callHomeBridge') >= 1);
   } finally {
     refresh.restore();
   }

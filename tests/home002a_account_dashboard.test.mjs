@@ -175,14 +175,22 @@ test('Home v2 UI is responsive, accessible, coalesced, and remains a lightweight
   // Refreshes are sequenced: only the latest of overlapping loads renders.
   await app.navigate('home');
   await app.settle(300);
-  const spy = app.spy(['renderHomeWorkspace', 'callHomeBridge', 'requestPlaybookMode', 'scheduleHomeRefresh']);
+  // EXTRACT-HOME-001: Home renders inside the Home workspace module; each
+  // render offers the Home tour once, so renders are counted there.
+  const tutorials = app.window.RiverlineTutorials;
+  let renders = 0;
+  Object.defineProperty(app.window, 'RiverlineTutorials', {
+    configurable: true,
+    value: { ...tutorials, offerForWorkspace: (...args) => { renders += 1; return tutorials.offerForWorkspace(...args); } },
+  });
+  const spy = app.spy(['callHomeBridge', 'requestPlaybookMode', 'scheduleHomeRefresh']);
   try {
     const first = app.call('refreshHomeWorkspace');
     const second = app.call('refreshHomeWorkspace');
     await Promise.all([first, second]);
     await app.settle(100);
     assert.equal(spy.count('callHomeBridge'), 2);
-    assert.equal(spy.count('renderHomeWorkspace'), 1, 'a superseded load does not render');
+    assert.equal(renders, 1, 'a superseded load does not render');
     // Scheduled refreshes are timer-deferred and coalesced.
     spy.reset();
     app.call('scheduleHomeRefresh');
@@ -201,6 +209,7 @@ test('Home v2 UI is responsive, accessible, coalesced, and remains a lightweight
     assert.ok(spy.calls.requestPlaybookMode.every(([mode]) => mode === 'hand'));
   } finally {
     spy.restore();
+    Object.defineProperty(app.window, 'RiverlineTutorials', { configurable: true, value: tutorials });
     await app.navigate('home');
   }
   assert.match(bootstrapSource, /createGuestHomeViewModel/);
