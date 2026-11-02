@@ -196,7 +196,7 @@ test('one accent-filled action per view in the key states', async () => {
     { kind: 'range_calibration', profileName: 'P', modeName: 'M', answeredCount: 1, totalCount: 169 },
     { kind: 'live_hand' },
   ] }, recent: { status: 'ready', items: [] }, review: {} } });
-  const resumes = app.$$('#homeContinueContent .home-calibration-actions .ui-button');
+  const resumes = app.$$('#homeContinueContent .home-continue-item > .ui-button');
   assert.deepEqual(resumes.map((button) => button.className), ['ui-button ui-button--primary', 'ui-button ui-button--secondary']);
   // Training: Start leads before a session, Next exercise after an answer.
   await app.navigate('training');
@@ -263,7 +263,7 @@ test('Home has no Destinations panel and links Review Mistakes from the Review h
   assert.equal(home.querySelector('.home-destinations-rail, .home-quick-links, #homeQuickStartTitle'), null);
   const link = home.querySelector('#homeReviewMistakesLink');
   const head = link.parentElement;
-  assert.ok(head.matches('header.home-section-head'));
+  assert.ok(head.matches('header.home-card-head'));
   assert.equal(head.firstElementChild.localName, 'div');
   assert.ok(head.firstElementChild.querySelector('#homeReviewTitle'));
   assert.equal(link.dataset.homeDestination, 'review_mistakes');
@@ -273,7 +273,10 @@ test('Home has no Destinations panel and links Review Mistakes from the Review h
   await app.settle(300);
   assert.equal(app.byId('homeReviewMistakesLink').hidden, true, 'guest Home does not offer it');
   const loaded = await app.call('callHomeBridge', 'load');
-  const model = { ...loaded, sections: { ...loaded.sections, quickStart: { ...loaded.sections.quickStart, destinations: [...(loaded.sections.quickStart?.destinations || []), 'review_mistakes'] } } };
+  const marked = { id: 'marked-1', kind: 'hand', title: 'Marked hand', tags: [], isMistake: true, updatedAt: '2026-09-01T00:00:00.000Z' };
+  const model = { ...loaded, sections: { ...loaded.sections,
+    review: { status: 'ready', reviewLater: { status: 'ready', items: [] }, mistakes: { status: 'ready', items: [marked] } },
+    quickStart: { ...loaded.sections.quickStart, destinations: [...(loaded.sections.quickStart?.destinations || []), 'review_mistakes'] } } };
   app.evaluate('homeWorkspaceController').render(model);
   assert.equal(app.byId('homeReviewMistakesLink').hidden, false);
   const spy = app.spy(['navigateToProductDestination']);

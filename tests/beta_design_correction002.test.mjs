@@ -75,8 +75,9 @@ test('construction outlines are absent, Home auto-flows, and resting identity do
   assert.equal(homeContent.dataset.productDestination, 'home');
   assert.equal(css.cascaded(homeContent, 'grid-template-areas'), 'none');
   for (const section of app.$$('#homeMode .home-section')) {
-    assert.equal(css.cascaded(section, 'grid-area'), 'auto');
-    assert.equal(css.cascaded(section, 'min-height'), '0');
+    // HOME-001: no named grid area and no forced height (unset or auto/0).
+    assert.ok([undefined, 'auto'].includes(css.cascaded(section, 'grid-area')));
+    assert.ok([undefined, '0'].includes(css.cascaded(section, 'min-height')));
   }
   const handLabel = app.$('.playbook-table-label[data-playbook-hand]');
   handLabel.hidden = false;

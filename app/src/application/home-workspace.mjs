@@ -1,8 +1,9 @@
-// EXTRACT-HOME-001: the Home workspace (HOME-001 / HOME-002A), moved out of
-// core/logic.js as a mounted controller. Rendering of the account/guest
-// panels, Continue, Review, Recent and the Review Mistakes link, the Home vs
+// EXTRACT-HOME-001 / HOME-001: the Home workspace, a mounted controller. It
+// renders the greeting, the account/guest strip and up to six cards (Continue
+// or Welcome, Today's session, the night after, What Riverline noticed,
+// Review, Recent; which cards show is decided by home-cards.mjs), the Home vs
 // Saved destination presentation, the refresh sequence and 80 ms coalescing
-// timer, and Home's delegated clicks all live here. Home does no poker maths
+// timer, and Home's delegated clicks. Home does no poker maths
 // and owns no Saved, Hand or Analyze state: it renders the view model
 // window.RiverlineHome loads (home-workspace-bootstrap.mjs) and hands actions
 // back to logic.js through injected callbacks.
@@ -36,7 +37,16 @@
 //   clearOwnerPresentation()    logic.js owner-change reset (calls ownerChanged())
 //   reportError(error)          console report for a failed load
 //   setTimer(fn, ms), clearTimer(id)    optional; default to the global timers
+//   now()                       optional; the clock for the greeting (default new Date())
 import { savedItemRecency, savedItemTitle } from './saved-item-presentation.mjs';
+import {
+  HOME_PLAN_VS_PLAYED_MIN_HANDS,
+  deriveSessionPlan,
+  homeGreetingPart,
+  homeSampleTier,
+  planHomeCards,
+  selectNoticedItems,
+} from './home-cards.mjs';
 
 export const HOME_WORKSPACE_SCHEMA_VERSION = 'home-workspace-controller/v1';
 export const HOME_REFRESH_DELAY_MS = 80;
@@ -50,8 +60,8 @@ export function resolveHomeDestinationPresentation(destination, {
   const visibleSections = normalizedDestination === 'saved'
     ? ['library']
     : guest
-      ? ['guest', 'continue', 'review', 'recent']
-      : ['overview', 'continue', 'review', 'recent'];
+      ? ['guest', 'greeting', 'cards']
+      : ['overview', 'greeting', 'cards'];
   return Object.freeze({
     destination: normalizedDestination,
     visibleSections: Object.freeze(visibleSections),
@@ -113,16 +123,46 @@ const LOAD_FAILURE_MODEL = Object.freeze({
   }),
 });
 
+// How long the opening motion owns the cards container. A timeout, not
+// animationend, clears it (MOCKUP_QA 1: never rely only on animation events).
+export const HOME_ENTRANCE_MS = 1900;
+export const HOME_COMPACT_ROW_LIMIT = 3;
+export const HOME_RECENT_ROW_LIMIT = 5;
+
+const CARD_IDS = Object.freeze({
+  welcome: 'homeWelcomeCard',
+  continue: 'homeContinueCard',
+  session: 'homeSessionCard',
+  night: 'homeNightCard',
+  noticed: 'homeNoticedCard',
+  review: 'homeReviewCard',
+  recent: 'homeRecentCard',
+});
+
+const CARD_CONTENT_IDS = Object.freeze({
+  welcome: 'homeWelcomeActions',
+  continue: 'homeContinueContent',
+  session: 'homeSessionContent',
+  night: 'homeNightContent',
+  noticed: 'homeNoticedContent',
+  review: 'homeReviewContent',
+  recent: 'homeRecentContent',
+});
+
 export function mountHomeWorkspace(container, deps) {
   const document = container.ownerDocument;
   const byId = (id) => document.getElementById(id);
   const t = (key, values) => deps.translate(key, values);
   const setTimer = deps.setTimer ?? ((fn, ms) => globalThis.setTimeout(fn, ms));
   const clearTimer = deps.clearTimer ?? ((id) => globalThis.clearTimeout(id));
+  const now = () => (deps.now ? deps.now() : new Date());
 
   let model = null;
   let refreshSequence = 0;
   let refreshTimer = null;
+  let entranceTimer = null;
+  let entrancePending = true;
+  let lastInput = 'pointer';
   let disposed = false;
 
   function setTranslated(element, key) {
@@ -130,6 +170,9 @@ export function mountHomeWorkspace(container, deps) {
     element.dataset.i18n = key;
     element.textContent = t(key);
   }
+
+  // Cards: the elements, looked up at call time (the markup is static).
+  const card = (id) => byId(CARD_IDS[id]);
 
   function applyDestination(destination = deps.activeDestination()) {
     const content = byId('homeWorkspaceContent');
@@ -146,9 +189,8 @@ export function mountHomeWorkspace(container, deps) {
     const sections = {
       overview: byId('homeAccountOverview'),
       guest: byId('homeGuestAccount'),
-      continue: byId('homeContinueContent')?.closest('.home-section'),
-      review: byId('homeReviewContent')?.closest('.home-section'),
-      recent: byId('homeRecentContent')?.closest('.home-section'),
+      greeting: byId('homeGreeting'),
+      cards: byId('homeCards'),
       library: byId('savedLibrarySection'),
     };
     const visible = new Set(state.visibleSections);
@@ -167,147 +209,329 @@ export function mountHomeWorkspace(container, deps) {
     return state;
   }
 
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
   function emptyState(messageKey, error = false) {
-    const message = document.createElement('p');
-    message.className = error ? 'home-error-state' : 'home-empty-state';
-    message.textContent = t(messageKey);
-    return message;
+    return el('p', error ? 'home-error-state' : 'home-empty-state', t(messageKey));
   }
 
-  function emptyAction(messageKey, actionKey, destination, { primary = false } = {}) {
-    const root = document.createElement('div');
-    root.className = 'home-empty-state';
-    const message = document.createElement('p');
-    message.textContent = t(messageKey);
-    const action = document.createElement('button');
-    action.type = 'button';
-    action.className = `ui-button ${primary ? 'ui-button--primary' : 'ui-button--quiet'}`;
-    action.dataset.homeDestination = destination;
-    action.textContent = t(actionKey);
-    root.append(message, action);
-    return root;
+  // One solid primary action per view (docs/design/decisions HOME RULES): the
+  // render decides which button is primary and passes it here.
+  function button(label, { primary = false, quiet = false, destination, action, savedId } = {}) {
+    const control = document.createElement('button');
+    control.type = 'button';
+    control.className = `ui-button ${primary ? 'ui-button--primary' : quiet ? 'ui-button--quiet' : 'ui-button--secondary'}`;
+    if (destination) control.dataset.homeDestination = destination;
+    if (action) control.dataset.homeAction = action;
+    if (savedId) control.dataset.homeSavedId = savedId;
+    control.textContent = label;
+    return control;
   }
 
-  function createSavedItemElement(item, { compact = false } = {}) {
+  // A fixed-height row that is one native button (no controls nested inside).
+  function row({ lead, title, titleAuto = false, sub, label, destination, savedId }) {
+    const control = document.createElement('button');
+    control.type = 'button';
+    control.className = 'home-row';
+    if (destination) control.dataset.homeDestination = destination;
+    if (savedId) control.dataset.homeSavedId = savedId;
+    if (label) control.setAttribute('aria-label', label);
+    if (lead) control.append(el('span', 'home-row-lead', lead));
+    const copy = el('span', 'home-row-copy');
+    const heading = el('strong', 'home-row-title', title);
+    if (titleAuto) heading.dir = 'auto';
+    copy.append(heading);
+    if (sub) {
+      const subline = el('span', 'home-row-sub');
+      // Parts are plain text, or { text, island } for poker data (an LTR island in Hebrew).
+      (Array.isArray(sub) ? sub : [sub]).forEach((part, index) => {
+        if (index) subline.append(' · ');
+        if (typeof part === 'string') {
+          subline.append(part);
+          return;
+        }
+        const island = el('span', part.island ? 'poker-data-token' : null, part.text);
+        if (part.island) island.dir = 'ltr';
+        subline.append(island);
+      });
+      copy.append(subline);
+    }
+    control.append(copy);
+    return control;
+  }
+
+  function savedRow(item, { reasonKey = null, lead = null } = {}) {
     const itemTitle = savedItemTitle(item, t);
-    const row = document.createElement('article');
-    row.className = 'home-saved-item';
-    const main = document.createElement('div');
-    main.className = 'home-saved-item-main';
-    const titleRow = document.createElement('div');
-    titleRow.className = 'home-saved-item-title-row';
-    const kind = document.createElement('span');
-    kind.className = 'home-saved-item-kind';
-    kind.textContent = t(item.kind === 'hand' ? 'Saved Hand' : 'Saved Spot');
-    const title = document.createElement('strong');
-    title.dir = 'auto';
-    title.textContent = itemTitle;
-    titleRow.append(kind, title);
-    main.appendChild(titleRow);
-
-    const meta = document.createElement('div');
-    meta.className = 'home-saved-item-meta poker-data-token';
-    meta.dir = 'ltr';
-    homeSavedItemFacts(item, t, deps.locale()).forEach((fact) => {
-      const token = document.createElement('span');
-      token.textContent = fact;
-      meta.appendChild(token);
-    });
-    main.appendChild(meta);
-
-    const badges = document.createElement('div');
-    badges.className = 'home-saved-item-badges';
-    if (item.hasNote) {
-      const note = document.createElement('span');
-      note.className = 'home-saved-badge';
-      note.textContent = t('Note');
-      badges.appendChild(note);
-    }
-    if (item.reviewState === 'review_later') {
-      const review = document.createElement('span');
-      review.className = 'home-saved-badge home-saved-badge--review';
-      review.textContent = t('Review later');
-      badges.appendChild(review);
-    }
-    if (item.isMistake) {
-      const mistake = document.createElement('span');
-      mistake.className = 'home-saved-badge home-saved-badge--mistake';
-      mistake.textContent = t('Marked as a mistake');
-      badges.appendChild(mistake);
-    }
-    if (item.tags.length > 0) {
-      const tags = document.createElement('span');
-      tags.className = 'home-saved-badge';
-      tags.dir = 'auto';
-      tags.textContent = item.tags.slice(0, 2).join(' · ');
-      badges.appendChild(tags);
-    }
-    if (badges.childElementCount > 0) main.appendChild(badges);
-
-    const open = document.createElement('button');
-    open.type = 'button';
-    open.className = `ui-button ${compact ? 'ui-button--quiet' : 'ui-button--secondary'} home-open-button`;
-    open.dataset.homeSavedId = item.id;
+    const facts = homeSavedItemFacts(item, t, deps.locale());
+    const kind = t(item.kind === 'hand' ? 'Saved Hand' : 'Saved Spot');
     const action = t(item.kind === 'hand' ? 'Open replay' : 'Open spot');
-    open.textContent = action;
-    open.setAttribute('aria-label', `${action}: ${itemTitle}`);
-    row.append(main, open);
-    return row;
+    return row({
+      lead,
+      title: itemTitle,
+      titleAuto: true,
+      sub: reasonKey ? [`${t(reasonKey)} · ${kind}`] : [kind, { text: facts.slice(0, 2).join(' · '), island: true }],
+      label: `${action}: ${itemTitle}`,
+      savedId: item.id,
+    });
+  }
+
+  function greetingTitle(next) {
+    const part = homeGreetingPart(now());
+    const name = next.sessionMode === 'guest' ? '' : (next.identity?.profile?.displayName || '');
+    const base = { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' }[part];
+    return name ? t(`${base}, {name}`, { name }) : t(base);
+  }
+
+  function renderGreeting(next) {
+    const title = byId('homeGreetingTitle');
+    const sub = byId('homeGreetingSub');
+    if (title) {
+      title.textContent = greetingTitle(next);
+      title.dir = 'auto';
+    }
+    if (sub) {
+      let text = '';
+      try {
+        text = new Intl.DateTimeFormat(deps.locale() || 'en', { weekday: 'long', month: 'long', day: 'numeric' }).format(now());
+      } catch (_) {
+        text = '';
+      }
+      sub.textContent = text;
+    }
+    // Read-only context: the selected Game and Approach Home already loaded.
+    // Changing the format belongs with Table rules (M2), not here.
+    const chip = byId('homeContextChip');
+    if (chip) {
+      const strategy = next.sections.personalStrategy;
+      const ready = strategy?.status === 'ready' && strategy.selectedProfile;
+      chip.hidden = !ready;
+      chip.replaceChildren();
+      if (ready) {
+        const game = el('bdi', null, strategy.selectedProfile.displayName);
+        game.dir = 'auto';
+        chip.append(game);
+        if (strategy.selectedMode?.displayName) {
+          chip.append(' · ');
+          const approach = el('bdi', null, strategy.selectedMode.displayName);
+          approach.dir = 'auto';
+          chip.append(approach);
+        }
+      }
+    }
+  }
+
+  function renderWelcome() {
+    setTranslated(byId('homeWelcomeTitle'), "Let's start with a few quick spots");
+    setTranslated(byId('homeWelcomeText'), 'A short drill shows how Riverline works. You can stop at any time.');
+    const actions = byId('homeWelcomeActions');
+    actions.replaceChildren(button(t('Start the first drill'), { primary: true, destination: 'training' }));
   }
 
   function renderContinue(section) {
     const root = byId('homeContinueContent');
     if (!root) return;
     root.replaceChildren();
-    const hasContinuation = Boolean(section?.items?.length);
-    setTranslated(byId('homeContinueEyebrow'), hasContinuation ? 'Pick up where you left off' : 'Your next action');
-    setTranslated(byId('homeContinueTitle'), hasContinuation ? 'Continue' : 'Start study');
-    if (!section?.items?.length) {
-      root.appendChild(emptyAction('Play or reconstruct a legal hand.', 'Start a Hand', 'hand', { primary: true }));
-      return;
-    }
-    const list = document.createElement('div');
-    list.className = 'home-continue-list';
-    section.items.forEach((item, index) => {
-      const card = document.createElement('div');
-      card.className = item.kind === 'live_hand'
-        ? 'home-calibration-card home-live-hand-card'
-        : 'home-calibration-card';
-      const title = document.createElement('strong');
-      title.textContent = t(item.kind === 'live_hand' ? 'Live Hand' : 'Personal Strategy');
-      const context = document.createElement('p');
-      context.dir = 'auto';
+    const items = section?.items ?? [];
+    items.forEach((item, index) => {
+      const entry = el('div', item.kind === 'live_hand' ? 'home-continue-item home-continue-item--live' : 'home-continue-item');
+      const copy = el('div', 'home-continue-copy');
+      copy.append(el('strong', 'home-continue-title', t(item.kind === 'live_hand' ? 'Live Hand' : 'Personal Strategy')));
       if (item.kind === 'live_hand') {
-        context.textContent = t('Your current in-memory hand is ready to continue.');
+        copy.append(el('p', 'home-continue-context', t('Your current in-memory hand is ready to continue.')));
       } else {
         const facts = [item.profileName, item.modeName];
-        if (Number.isInteger(item.context?.tableSize)) {
-          facts.push(t('{count}-handed', { count: item.context.tableSize }));
+        if (Number.isInteger(item.context?.tableSize)) facts.push(t('{count}-handed', { count: item.context.tableSize }));
+        const context = el('p', 'home-continue-context', facts.join(' · '));
+        context.dir = 'auto';
+        copy.append(context);
+        const total = item.totalCount;
+        if (Number.isFinite(total) && total > 0) {
+          const bar = el('div', 'home-progress');
+          bar.setAttribute('role', 'progressbar');
+          bar.setAttribute('aria-valuemin', '0');
+          bar.setAttribute('aria-valuemax', String(total));
+          bar.setAttribute('aria-valuenow', String(item.answeredCount));
+          bar.setAttribute('aria-label', t('{answered} of {total} directly answered', { answered: item.answeredCount, total }));
+          const fill = el('i');
+          fill.style.setProperty('--home-progress', String(Math.min(1, Math.max(0, item.answeredCount / total))));
+          bar.append(fill);
+          copy.append(bar);
+          copy.append(el('p', 'home-continue-progress', t('{answered} of {total} directly answered', {
+            answered: item.answeredCount, total,
+          })));
         }
-        context.textContent = facts.join(' · ');
       }
-      const progress = document.createElement('p');
-      if (item.kind === 'range_calibration') {
-        progress.textContent = t('{answered} of {total} directly answered', {
-          answered: item.answeredCount, total: item.totalCount,
-        });
-      }
-      const actions = document.createElement('div');
-      actions.className = 'home-calibration-actions';
-      const resume = document.createElement('button');
-      resume.type = 'button';
-      // One accent action per view: only the first continuation is primary.
-      resume.className = `ui-button ${index === 0 ? 'ui-button--primary' : 'ui-button--secondary'}`;
-      if (item.kind === 'live_hand') resume.dataset.homeAction = 'return-live-hand';
-      else resume.dataset.homeDestination = 'personal-strategy';
-      resume.textContent = t(item.kind === 'live_hand' ? 'Return to live hand' : 'Resume calibration');
-      actions.appendChild(resume);
-      card.append(title, context);
-      if (progress.textContent) card.appendChild(progress);
-      card.appendChild(actions);
-      list.appendChild(card);
+      // Resuming is the one solid action while something is in progress; the
+      // session below is then secondary.
+      const resume = button(t(item.kind === 'live_hand' ? 'Return to live hand' : 'Resume calibration'), {
+        primary: index === 0,
+        destination: item.kind === 'live_hand' ? undefined : 'personal-strategy',
+        action: item.kind === 'live_hand' ? 'return-live-hand' : undefined,
+      });
+      entry.append(copy, resume);
+      root.append(entry);
     });
-    root.appendChild(list);
+  }
+
+  function renderSession(next, plan, { continuing }) {
+    const content = byId('homeSessionContent');
+    content.replaceChildren();
+    if (plan.state === 'first_visit') {
+      setTranslated(byId('homeSessionEyebrow'), 'Where to begin');
+      setTranslated(byId('homeSessionTitle'), 'Three things to try');
+      const list = el('div', 'home-rows');
+      list.append(
+        row({ lead: '1', title: t('Practice a few spots'), sub: t('Decisions in a short drill'), destination: 'training' }),
+        row({ lead: '2', title: t('Reconstruct a hand you remember'), sub: t('Step through each street'), destination: 'hand' }),
+        row({ lead: '3', title: t('Analyze a spot'), sub: t("Build a situation and see the baseline's mix"), destination: 'analyze' }),
+      );
+      content.append(list);
+      return;
+    }
+    const session = deriveSessionPlan(next);
+    setTranslated(byId('homeSessionEyebrow'), "Today's session");
+    if (session.state === 'unavailable') {
+      setTranslated(byId('homeSessionTitle'), 'Saved items could not be loaded.');
+      const actions = el('div', 'home-card-actions');
+      actions.append(button(t('Practice a quick drill'), { primary: !continuing, destination: 'training' }));
+      content.append(actions);
+      return;
+    }
+    if (session.state === 'nothing_due') {
+      setTranslated(byId('homeSessionTitle'), 'Nothing is due');
+      content.append(el('p', 'home-card-text', t('Nothing is marked for another look. Practice when you want to.')));
+      content.append(el('div', 'home-card-actions'));
+      content.lastChild.append(button(t('Practice a quick drill'), { primary: !continuing, destination: 'training' }));
+      return;
+    }
+    setTranslated(byId('homeSessionTitle'), 'Picked from what you saved');
+    const list = el('div', 'home-rows');
+    session.steps.forEach((step, index) => {
+      if (step.kind === 'practice') {
+        list.append(row({
+          lead: String(index + 1), title: t('Practice a quick drill'), sub: t('A few spots in Training'), destination: 'training',
+        }));
+        return;
+      }
+      const reasonKey = step.kind === 'review_later' ? 'Marked for review later' : 'Marked as a mistake';
+      list.append(savedRow(step.item, { reasonKey, lead: String(index + 1) }));
+    });
+    content.append(list);
+    const first = session.steps[0];
+    const actions = el('div', 'home-card-actions');
+    actions.append(button(t("Start today's session"), {
+      primary: !continuing,
+      destination: first.kind === 'practice' ? 'training' : undefined,
+      savedId: first.kind === 'practice' ? undefined : first.savedId,
+    }));
+    content.append(actions);
+  }
+
+  function renderNight(next, plan) {
+    const content = byId('homeNightContent');
+    content.replaceChildren();
+    setTranslated(byId('homeNightEyebrow'), 'Game night');
+    if (plan.state === 'first_visit' || !next.sections.nightAfter?.night) {
+      setTranslated(byId('homeNightTitle'), 'Keep score with friends');
+      content.append(el('p', 'home-card-text', t('Buy-ins, rebuys and a fair settle-up at the end of the night.')));
+      const actions = el('div', 'home-card-actions');
+      actions.append(button(t('Open game night'), { destination: 'home-game' }));
+      content.append(actions);
+      return;
+    }
+    const night = next.sections.nightAfter.night;
+    const active = night.state === 'active';
+    setTranslated(byId('homeNightEyebrow'), active ? 'Game night in progress' : 'The night after');
+    const title = byId('homeNightTitle');
+    title.removeAttribute('data-i18n');
+    title.textContent = night.title || t('Game night');
+    title.dir = 'auto';
+    // Only stored facts: a value that is not known is left out, never zero.
+    const tiles = el('div', 'home-tiles');
+    const tile = (value, labelKey) => {
+      const entry = el('div', 'home-tile');
+      entry.append(el('strong', 'home-tile-value', value), el('span', 'home-tile-label', t(labelKey)));
+      tiles.append(entry);
+    };
+    tile(String(night.playerCount), 'Players');
+    if (!active && night.transferCount !== null) tile(String(night.transferCount), 'Transfers to settle');
+    if (!active && night.settledText) tile(night.settledText, 'Moved in the settle-up');
+    content.append(tiles);
+    const when = savedItemRecency(night.endedAt || night.updatedAt, deps.locale());
+    if (when) content.append(el('p', 'home-card-text', t(active ? 'Updated {when}' : 'Finished {when}', { when })));
+    const actions = el('div', 'home-card-actions');
+    actions.append(button(t('Open game night'), { destination: 'home-game' }));
+    content.append(actions);
+  }
+
+  function renderNoticed(next) {
+    const content = byId('homeNoticedContent');
+    content.replaceChildren();
+    const section = next.sections.noticed;
+    if (section?.status === 'error') {
+      content.append(emptyState('Saved items could not be loaded.', true));
+      return;
+    }
+    const items = selectNoticedItems(section);
+    if (items.length === 0) {
+      content.append(el('p', 'home-card-text', t('Nothing to report yet.')));
+      content.append(el('p', 'home-card-note', t(
+        'Riverline compares your plan with the hands you play once there are at least {count} of them.',
+        { count: HOME_PLAN_VS_PLAYED_MIN_HANDS },
+      )));
+      return;
+    }
+    const list = el('div', 'home-noticed-list');
+    items.forEach((item) => {
+      // The whole item is the link to its spots (one native control, nothing nested).
+      const entry = el(item.destination ? 'button' : 'div', 'home-noticed-item');
+      if (item.destination) {
+        entry.type = 'button';
+        entry.dataset.homeDestination = item.destination;
+        entry.setAttribute('aria-label', `${t('Look at the spots')}: ${item.spotLabel}`);
+      }
+      const title = el('strong', 'home-noticed-title');
+      const island = el('bdi', null, item.spotLabel);
+      island.dir = 'auto';
+      title.append(island);
+      const evidence = item.kind === 'drift'
+        ? t('Played {played}% over {total} hands · plan {plan}%', {
+          played: item.playedPercent, total: item.sampleSize, plan: item.planPercent,
+        })
+        : t('Played {played} of {total} hands · your plan {plan}%', {
+          played: item.playedCount, total: item.sampleSize, plan: item.planPercent,
+        });
+      const tier = homeSampleTier(item.sampleSize);
+      const sourceKey = `${item.kind === 'drift' ? 'Played hands · mixed baseline' : 'Played hands · your plan'} · ${tier} sample`;
+      entry.append(title, el('span', 'home-noticed-evidence', evidence), el('span', 'home-noticed-source', t(sourceKey)));
+      list.append(entry);
+    });
+    content.append(list);
+  }
+
+  function renderReview(next) {
+    const root = byId('homeReviewContent');
+    if (!root) return;
+    root.replaceChildren();
+    const reviewLater = next.sections.review?.reviewLater;
+    const mistakes = next.sections.review?.mistakes;
+    if (reviewLater?.status === 'error' || mistakes?.status === 'error') {
+      root.append(emptyState('Saved items could not be loaded.', true));
+      return;
+    }
+    const entries = [];
+    (reviewLater?.items ?? []).forEach((item) => entries.push({ item, reasonKey: 'Review later' }));
+    (mistakes?.items ?? []).forEach((item) => {
+      if (!entries.some((entry) => entry.item.id === item.id)) entries.push({ item, reasonKey: 'Marked as a mistake' });
+    });
+    const list = el('div', 'home-rows');
+    entries.slice(0, HOME_COMPACT_ROW_LIMIT).forEach(({ item, reasonKey }) => list.append(savedRow(item, { reasonKey })));
+    root.append(list);
   }
 
   function renderRecent(section) {
@@ -315,36 +539,12 @@ export function mountHomeWorkspace(container, deps) {
     if (!root) return;
     root.replaceChildren();
     if (section?.status === 'error') {
-      root.appendChild(emptyState('Saved items could not be loaded.', true));
+      root.append(emptyState('Saved items could not be loaded.', true));
       return;
     }
-    if (!section?.items?.length) {
-      root.appendChild(emptyAction('No saved study yet.', 'Analyze a Hand', 'analyze'));
-      return;
-    }
-    section.items.forEach((item) => root.appendChild(createSavedItemElement(item)));
-  }
-
-  function renderReviewGroup(root, titleKey, section, emptyKey) {
-    const group = document.createElement('section');
-    group.className = 'home-review-group';
-    const heading = document.createElement('h3');
-    heading.textContent = t(titleKey);
-    const list = document.createElement('div');
-    list.className = 'home-review-list';
-    if (section?.status === 'error') list.appendChild(emptyState('Saved items could not be loaded.', true));
-    else if (!section?.items?.length) list.appendChild(emptyState(emptyKey));
-    else section.items.forEach((item) => list.appendChild(createSavedItemElement(item, { compact: true })));
-    group.append(heading, list);
-    root.appendChild(group);
-  }
-
-  function renderReview(section) {
-    const root = byId('homeReviewContent');
-    if (!root) return;
-    root.replaceChildren();
-    renderReviewGroup(root, 'Review later', section?.reviewLater, 'Nothing marked for review.');
-    renderReviewGroup(root, 'Marked as a mistake', section?.mistakes, 'No mistakes marked.');
+    const list = el('div', 'home-rows');
+    (section?.items ?? []).slice(0, HOME_RECENT_ROW_LIMIT).forEach((item) => list.append(savedRow(item)));
+    root.append(list);
   }
 
   function renderAccountOverview(next) {
@@ -352,10 +552,16 @@ export function mountHomeWorkspace(container, deps) {
     if (!overview) return;
     const guest = next.sessionMode === 'guest';
     overview.hidden = guest;
-    if (guest) return;
-    const profile = next.identity?.profile;
     const displayName = byId('homeIdentityDisplayName');
     const username = byId('homeIdentityUsername');
+    if (guest) {
+      // A guest view must not keep a previous owner's identity in hidden DOM.
+      displayName.textContent = '';
+      username.textContent = '';
+      username.hidden = true;
+      return;
+    }
+    const profile = next.identity?.profile;
     displayName.textContent = profile?.displayName || t('Riverline player');
     username.textContent = profile?.username ? `@${profile.username}` : '';
     username.hidden = !profile?.username;
@@ -370,7 +576,7 @@ export function mountHomeWorkspace(container, deps) {
   }
 
   // SHELL-001: Home's Destinations panel was removed (its links duplicated the
-  // sidebar). "Review Mistakes" survives as a link in the Review section header,
+  // sidebar). "Review Mistakes" survives as a link in the Review card header,
   // shown under the same rule as before (at least one marked mistake).
   function renderReviewMistakesLink(next) {
     const link = byId('homeReviewMistakesLink');
@@ -378,14 +584,58 @@ export function mountHomeWorkspace(container, deps) {
     link.hidden = !(next.sections.quickStart?.destinations || []).includes('review_mistakes');
   }
 
+  // Places the shown cards in the two columns and hides the rest. A card with
+  // nothing to show is not placed at all (no blank placeholder).
+  function layoutCards(plan) {
+    const start = byId('homeColumnStart');
+    const end = byId('homeColumnEnd');
+    const shown = new Set(plan.cards);
+    Object.keys(CARD_IDS).forEach((id) => {
+      const element = card(id);
+      if (!element) return;
+      element.hidden = !shown.has(id);
+      // A card that is left out keeps no content (nothing stale, nothing private).
+      if (!shown.has(id)) byId(CARD_CONTENT_IDS[id])?.replaceChildren();
+    });
+    plan.start.forEach((id) => start.append(card(id)));
+    plan.end.forEach((id) => end.append(card(id)));
+    // Reading order across the two columns: row by row, start column first.
+    const rows = Math.max(plan.start.length, plan.end.length);
+    let order = 0;
+    for (let index = 0; index < rows; index += 1) {
+      [plan.start[index], plan.end[index]].forEach((id) => {
+        if (id) card(id).style.setProperty('--home-card-order', String(order++));
+      });
+    }
+    // The last card of each column takes the column's spare height.
+    [plan.start, plan.end].forEach((ids) => {
+      ids.forEach((id, index) => { card(id).dataset.columnLast = String(index === ids.length - 1); });
+    });
+    const cards = byId('homeCards');
+    if (cards) {
+      cards.dataset.visitState = plan.state;
+      cards.dataset.cardCount = String(plan.cards.length);
+      cards.dataset.singleColumn = String(plan.end.length === 0);
+    }
+  }
+
+  function playEntrance() {
+    const cards = byId('homeCards');
+    if (!cards || !entrancePending) return;
+    entrancePending = false;
+    // Keyboard-driven opening is instant (frequency decides motion).
+    if (lastInput === 'keyboard') return;
+    cards.classList.add('home-cards--enter');
+    if (entranceTimer !== null) clearTimer(entranceTimer);
+    entranceTimer = setTimer(() => {
+      entranceTimer = null;
+      cards.classList.remove('home-cards--enter');
+    }, HOME_ENTRANCE_MS);
+  }
+
   function render(next) {
     model = next;
     const guest = next.sessionMode === 'guest';
-    const restricted = [
-      byId('homeReviewContent')?.closest('.home-section'),
-      byId('homeRecentContent')?.closest('.home-section'),
-    ];
-    restricted.forEach((section) => { if (section) section.hidden = false; });
     const guestAccount = byId('homeGuestAccount');
     if (guestAccount) guestAccount.hidden = !guest;
     // The Home tour's first step explains the session panel that is shown.
@@ -410,18 +660,27 @@ export function mountHomeWorkspace(container, deps) {
       });
     }
     renderReviewMistakesLink(next);
-    renderContinue(next.sections.continue);
-    renderRecent(next.sections.recent);
-    renderReview(next.sections.review);
+    const plan = planHomeCards(next);
+    const continuing = plan.cards.includes('continue');
+    renderGreeting(next);
+    layoutCards(plan);
+    if (plan.cards.includes('welcome')) renderWelcome();
+    if (continuing) renderContinue(next.sections.continue);
+    renderSession(next, plan, { continuing: continuing || plan.state === 'first_visit' });
+    if (plan.cards.includes('night')) renderNight(next, plan);
+    renderNoticed(next);
+    if (plan.cards.includes('review')) renderReview(next);
+    if (plan.cards.includes('recent')) renderRecent(next.sections.recent);
     const workspace = byId('homeWorkspace');
     const loading = byId('homeLoadingState');
     const content = byId('homeWorkspaceContent');
     if (content) content.dataset.sessionMode = guest ? 'guest' : 'account';
-    if (content) content.dataset.hasContinuation = String(Boolean(next.sections.continue?.items?.length));
+    if (content) content.dataset.hasContinuation = String(continuing);
     if (workspace) workspace.setAttribute('aria-busy', 'false');
     if (loading) loading.hidden = true;
     if (content) content.hidden = false;
     applyDestination();
+    if (deps.activeDestination() !== 'saved') playEntrance();
     const tutorialWorkspace = deps.activeDestination() === 'saved' ? 'saved' : 'home';
     deps.tutorials()?.offerForWorkspace?.(tutorialWorkspace, workspace);
   }
@@ -436,14 +695,24 @@ export function mountHomeWorkspace(container, deps) {
   }
 
   // The Home part of logic.js's owner-change reset (clearSavedOwnerPresentation):
-  // in-flight loads become stale and private content leaves the DOM.
+  // in-flight loads become stale and everything private leaves the DOM, the
+  // workspace header included (HOME-HEADER-OWNER-LEAK) and the hidden identity
+  // fields (HOME-HIDDEN-IDENTITY-LEAK).
   function ownerChanged() {
     ++refreshSequence;
     model = null;
     byId('homeWorkspaceContent')?.setAttribute('hidden', '');
-    byId('homeReviewContent')?.replaceChildren();
-    byId('homeContinueContent')?.replaceChildren();
-    byId('homeRecentContent')?.replaceChildren();
+    [
+      'homeContinueContent', 'homeSessionContent', 'homeNightContent', 'homeNoticedContent',
+      'homeReviewContent', 'homeRecentContent', 'homeWelcomeActions', 'homeContextChip',
+    ].forEach((id) => byId(id)?.replaceChildren());
+    ['homeGreetingTitle', 'homeGreetingSub', 'homeNightTitle', 'homeIdentityDisplayName', 'homeIdentityUsername']
+      .forEach((id) => { const node = byId(id); if (node) node.textContent = ''; });
+    byId('homeContextChip')?.setAttribute('hidden', '');
+    const header = deps.header();
+    header?.setContext?.('home', []);
+    header?.setPlayContext?.(null);
+    entrancePending = true;
   }
 
   async function refresh({ preserveVisible = false } = {}) {
@@ -482,7 +751,7 @@ export function mountHomeWorkspace(container, deps) {
     const destinationControl = target.closest('[data-home-destination]');
     if (destinationControl) {
       const destination = destinationControl.dataset.homeDestination;
-      // The link sits in the Review section header, so it opens every
+      // The link sits in the Review card header, so it opens every
       // marked mistake in Saved rather than scrolling to itself.
       if (destination === 'review_mistakes') deps.showSavedMistakes();
       else deps.navigate(destination);
@@ -501,6 +770,11 @@ export function mountHomeWorkspace(container, deps) {
     if (savedItem) void deps.openSavedItem(savedItem.dataset.homeSavedId, savedItem);
   }
   container.addEventListener('click', onClick);
+  // The opening motion follows how Home was opened: a key press is instant.
+  const onKeyInput = () => { lastInput = 'keyboard'; };
+  const onPointerInput = () => { lastInput = 'pointer'; };
+  document.addEventListener('keydown', onKeyInput, true);
+  document.addEventListener('pointerdown', onPointerInput, true);
 
   return {
     schemaVersion: HOME_WORKSPACE_SCHEMA_VERSION,
@@ -521,7 +795,12 @@ export function mountHomeWorkspace(container, deps) {
     // while the load runs. Hidden: nothing to do; a load that resolves while
     // Home is hidden is dropped by refresh().
     setVisible(visible, { destination } = {}) {
-      if (!visible || disposed) return;
+      if (disposed) return;
+      if (!visible) {
+        // The next opening plays the entrance again.
+        entrancePending = true;
+        return;
+      }
       applyDestination(destination);
       void refresh({ preserveVisible: Boolean(model) });
     },
@@ -530,9 +809,13 @@ export function mountHomeWorkspace(container, deps) {
       disposed = true;
       ++refreshSequence;
       if (refreshTimer !== null) clearTimer(refreshTimer);
+      if (entranceTimer !== null) clearTimer(entranceTimer);
       refreshTimer = null;
+      entranceTimer = null;
       model = null;
       container.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKeyInput, true);
+      document.removeEventListener('pointerdown', onPointerInput, true);
     },
   };
 }

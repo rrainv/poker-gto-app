@@ -634,9 +634,11 @@ test('logic.js keeps only wiring and routing; Home Recent keeps its own six-item
     sessionMode: 'account',
     sections: { continue: { items: [] }, recent: { status: 'ready', items: [item, { ...item, id: 'recent-2' }] }, review: {} },
   });
+  // HOME-001: Recent is one list of fixed-height rows, each one native button.
   const recent = page.byId('homeRecentContent');
-  assert.equal(recent.children.length, 2);
-  assert.ok([...recent.children].every((row) => row.localName === 'article' && row.className === 'home-saved-item'));
+  assert.equal(recent.children.length, 1);
+  assert.equal(recent.firstElementChild.className, 'home-rows');
+  assert.ok([...recent.firstElementChild.children].every((row) => row.localName === 'button' && row.className === 'home-row'));
   assert.deepEqual([...recent.querySelectorAll('[data-home-saved-id]')].map((node) => node.dataset.homeSavedId), ['recent-1', 'recent-2']);
   assert.equal(page.byId('savedLibrarySection').innerHTML, libraryRows, 'the Saved library is untouched');
   const markup = indexDocument();

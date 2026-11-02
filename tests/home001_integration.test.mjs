@@ -23,7 +23,8 @@ const renderHome = (sections) => app.evaluate('homeWorkspaceController').render(
   sections: { continue: { status: 'ready', items: [] }, recent: { status: 'ready', items: [] }, review: {}, ...sections },
 });
 const bootedHome = {
-  continueText: text(app.byId('homeContinueContent')),
+  // HOME-001: a first visit shows the welcome card's action in place of Continue.
+  continueText: text(app.byId('homeWelcomeActions')),
   playbookResolution: app.window.app.playbookResolution ?? null,
   decisionContext: app.window.app.decisionContext ?? null,
 };
@@ -78,7 +79,7 @@ test('Home and saved viewers expose accessible actions, error states, RTL copy, 
     id: 'saved-1', kind: 'spot', title: 'River bluff catch', tags: [], updatedAt: '2026-09-01T00:00:00.000Z',
     annotations: { title: 'River bluff catch', tags: [] },
   }] } });
-  const open = app.$('#homeRecentContent .home-open-button');
+  const open = app.$('#homeRecentContent .home-row');
   assert.equal(open.dataset.homeSavedId, 'saved-1');
   assert.match(open.getAttribute('aria-label'), /^Open spot: .+/);
   renderHome({ recent: { status: 'error' } });
@@ -115,7 +116,7 @@ test('Home initialization stays cheap under orientation and Playbook initializes
   // Protects: booting into Home renders Home without resolving the Playbook;
   // returning to Home refreshes it; opening Analyze resolves the Playbook once
   // ('Playbook opened').
-  assert.match(bootedHome.continueText, /Start a Hand/);
+  assert.match(bootedHome.continueText, /Start the first drill/);
   assert.equal(bootedHome.playbookResolution, null, 'the Playbook was not resolved at boot');
   assert.equal(bootedHome.decisionContext, null);
 

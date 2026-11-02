@@ -125,7 +125,8 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   assert.equal(home.destination, 'home');
   assert.equal(saved.destination, 'saved');
   // SHELL-001: Home's Destinations ('quick') panel was removed; the sidebar holds those links.
-  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent']);
+  // HOME-001: the cards are one block ('cards'); which cards show is decided by home-cards.mjs.
+  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'greeting', 'cards']);
   // SAVED-LIBRARY-001: Saved owns an independent library section instead of reusing Home Recent.
   // Retargeted by SAVED-COMPOSITION-002: the duplicated "Saved Hands & Spots" overview
   // panel was removed; its sentence is the library's empty state.
@@ -155,12 +156,9 @@ test('Saved guest and empty presentation remains intentionally Saved instead of 
   assert.equal(savedGuest.guestCopy.title, 'Saved Hands & Spots');
   assert.match(savedGuest.guestCopy.primary, /stay on this device in Guest Mode/);
   assert.match(savedGuest.guestCopy.secondary, /does not enable sync or cloud backup/);
-  // An empty Recent section offers Analyze a Hand.
+  // HOME-001: an empty Recent has nothing to show, so its card is left out (no blank slot).
   renderHome({ recent: { status: 'ready', items: [] } });
-  const empty = app.$('#homeRecentContent .home-empty-state');
-  assert.equal(text(empty.querySelector('p')), 'No saved study yet.');
-  assert.equal(text(empty.querySelector('button')), 'Analyze a Hand');
-  assert.equal(empty.querySelector('button').dataset.homeDestination, 'analyze');
+  assert.equal(app.$('#homeRecentCard').hidden, true);
 });
 
 test('Hand and Analyze resolve to observably different presentation modes', async () => {

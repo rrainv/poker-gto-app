@@ -154,37 +154,27 @@ test('returning account Home: identity, sync, Recent, Review and Continue empty 
   assert.equal($('#homeAccountOverview').getAttribute('data-tutorial-anchor'), 'home-overview');
   assert.equal($('#homeGuestAccount').hasAttribute('data-tutorial-anchor'), false);
 
-  // Continue: first visit with nothing to resume offers Start a Hand (primary).
-  assert.equal(text('#homeContinueTitle'), 'Start study');
-  assert.equal(text('#homeContinueEyebrow'), 'Your next action');
-  const start = $('#homeContinueContent [data-home-destination="hand"]');
-  assert.equal(start.textContent, 'Start a Hand');
-  assert.match(start.className, /ui-button--primary/);
-  assert.equal(text('#homeContinueContent .home-empty-state p'), 'Play or reconstruct a legal hand.');
+  // HOME-001: saved items but nothing to resume is a returning visit: no Continue
+  // card, no blank slot, and the one solid action is today's session.
+  assert.equal($('#homeContinueCard').hidden, true);
+  assert.equal($('#homeWelcomeCard').hidden, true);
+  assert.equal(app.$$('#homeWorkspaceContent .ui-button--primary').length, 1);
+  assert.match($('#homeSessionContent .ui-button--primary').className, /ui-button--primary/);
 
-  // Recent: one row with kind, title, facts and an Open button.
-  const rows = app.$$('#homeRecentContent .home-saved-item');
+  // Recent: one row (one native button) with the title and its stored facts.
+  const rows = app.$$('#homeRecentContent .home-row');
   assert.equal(rows.length, 1);
-  assert.equal(text('#homeRecentContent .home-saved-item-kind'), 'Saved Hand');
-  const title = $('#homeRecentContent .home-saved-item-title-row strong');
+  const title = $('#homeRecentContent .home-row-title');
   assert.equal(title.textContent, 'Saved recent-1');
   assert.equal(title.dir, 'auto');
-  const meta = $('#homeRecentContent .home-saved-item-meta');
-  assert.equal(meta.dir, 'ltr');
-  assert.ok(meta.classList.contains('poker-data-token'));
-  const facts = [...meta.children].map((node) => node.textContent);
-  assert.deepEqual(facts.slice(0, 4), ['6-handed', 'BTN', 'Flop', '100 bb']);
-  assert.match(facts[4], /^Updated /);
+  const sub = $('#homeRecentContent .home-row-sub');
+  assert.match(sub.textContent, /^Saved Hand · 6-handed · BTN/);
   const open = $('#homeRecentContent [data-home-saved-id="recent-1"]');
-  assert.equal(open.textContent, 'Open replay');
+  assert.equal(open.localName, 'button');
   assert.equal(open.getAttribute('aria-label'), 'Open replay: Saved recent-1');
-  assert.match(open.className, /ui-button--secondary/);
 
-  // Review: two groups with their empty lines; no Review Mistakes link.
-  const groups = app.$$('#homeReviewContent .home-review-group');
-  assert.deepEqual(groups.map((group) => group.querySelector('h3').textContent), ['Review later', 'Marked as a mistake']);
-  assert.deepEqual(groups.map((group) => group.querySelector('.home-empty-state').textContent),
-    ['Nothing marked for review.', 'No mistakes marked.']);
+  // Review: nothing marked, so the card is left out; no Review Mistakes link.
+  assert.equal($('#homeReviewCard').hidden, true);
   assert.equal($('#homeReviewMistakesLink').hidden, true);
 });
 
@@ -200,12 +190,15 @@ test('guest Home: guest panel, overview hidden, anchors move, unavailable lists 
   assert.equal(text('#homeGuestAccountTitle'), win.t('Riverline is ready to use'));
   assert.equal($('#homeGuestAccountTitle').dataset.i18n, 'Riverline is ready to use');
   assert.equal($('#homeGuestAccountPrimary').dataset.i18n, 'Analyze hands, train decisions, and calculate Equity without an account.');
-  assert.equal($('#homeReviewContent').closest('.home-section').hidden, false);
-  assert.equal($('#homeRecentContent').closest('.home-section').hidden, false);
-  assert.equal(text('#homeRecentContent .home-empty-state p'), 'No saved study yet.');
-  assert.equal($('#homeRecentContent [data-home-destination="analyze"]').textContent, 'Analyze a Hand');
-  assert.match($('#homeRecentContent [data-home-destination="analyze"]').className, /ui-button--quiet/);
-  assert.equal(app.$$('#homeReviewContent .home-empty-state').length, 2);
+  // HOME-001: the guest fallback has nothing saved to show: first visit, so the
+  // welcome card leads and Review and Recent are left out.
+  assert.equal($('#homeWelcomeCard').hidden, false);
+  assert.equal($('#homeReviewCard').hidden, true);
+  assert.equal($('#homeRecentCard').hidden, true);
+  assert.equal(app.$$('#homeWorkspaceContent .ui-button--primary').length, 1);
+  // The hidden identity fields hold no previous owner's text (HOME-HIDDEN-IDENTITY-LEAK).
+  assert.equal(text('#homeIdentityDisplayName'), '');
+  assert.equal(text('#homeIdentityUsername'), '');
 });
 
 test('every sync branch: label, detail and the Review issue button', async () => {
@@ -241,7 +234,7 @@ test('Continue: live hand, calibration, both (first primary) and their actions',
   assert.equal(text('#homeContinueTitle'), 'Continue');
   assert.equal(text('#homeContinueEyebrow'), 'Pick up where you left off');
   assert.equal($('#homeWorkspaceContent').dataset.hasContinuation, 'true');
-  const cards = app.$$('#homeContinueContent .home-calibration-card');
+  const cards = app.$$('#homeContinueContent .home-continue-item');
   assert.equal(cards.length, 2);
   assert.equal(cards[0].querySelector('strong').textContent, 'Personal Strategy');
   assert.equal(cards[0].querySelectorAll('p')[0].textContent, 'Live 9-max · Serious · 9-handed');
@@ -251,7 +244,10 @@ test('Continue: live hand, calibration, both (first primary) and their actions',
   assert.equal(resume.textContent, 'Resume calibration');
   assert.equal(resume.dataset.homeDestination, 'personal-strategy');
   assert.match(resume.className, /ui-button--primary/);
-  assert.ok(cards[1].classList.contains('home-live-hand-card'));
+  // The one solid action is Resume; today's session is secondary while something is in progress.
+  assert.equal(app.$$('#homeWorkspaceContent .ui-button--primary').length, 1);
+  assert.match($('#homeSessionContent .ui-button').className, /ui-button--secondary/);
+  assert.ok(cards[1].classList.contains('home-continue-item--live'));
   assert.equal(cards[1].querySelector('strong').textContent, 'Live Hand');
   assert.equal(cards[1].querySelectorAll('p').length, 1);
   assert.equal(cards[1].querySelector('p').textContent, win.t('Your current in-memory hand is ready to continue.'));
@@ -287,23 +283,16 @@ test('Recent and Review states: error, spot rows, compact review rows, Review Mi
     destinations: ['hand', 'analyze', 'review_mistakes'],
   }));
   assert.equal(text('#homeRecentContent .home-error-state'), 'Saved items could not be loaded.');
-  const reviewRows = app.$$('#homeReviewContent .home-saved-item');
+  const reviewRows = app.$$('#homeReviewContent .home-row');
   assert.equal(reviewRows.length, 2);
-  const spotOpen = reviewRows[0].querySelector('[data-home-saved-id="spot-1"]');
-  assert.equal(spotOpen.textContent, 'Open spot');
-  assert.match(spotOpen.className, /ui-button--quiet/);
-  assert.equal(reviewRows[0].querySelector('.home-saved-item-kind').textContent, 'Saved Spot');
-  const spotFacts = [...reviewRows[0].querySelectorAll('.home-saved-item-meta span')].map((node) => node.textContent);
-  assert.deepEqual(spotFacts.slice(0, 6), ['6-handed', 'BTN', 'Turn', '100 bb', 'Pot 12 bb', 'Scenario']);
-  const badges = [...reviewRows[0].querySelectorAll('.home-saved-badge')].map((node) => node.textContent);
-  assert.deepEqual(badges, ['Note', '3bet · oop']);
-  assert.equal(reviewRows[0].querySelector('.home-saved-badge:last-child').dir, 'auto');
-  const mistakeBadges = [...reviewRows[1].querySelectorAll('.home-saved-badge')].map((node) => node.className);
-  assert.deepEqual(mistakeBadges, ['home-saved-badge home-saved-badge--review', 'home-saved-badge home-saved-badge--mistake']);
+  assert.equal(reviewRows[0].dataset.homeSavedId, 'spot-1');
+  assert.equal(reviewRows[0].getAttribute('aria-label'), 'Open spot: Saved spot-1');
+  assert.equal(reviewRows[0].querySelector('.home-row-sub').textContent, 'Review later · Saved Spot');
+  assert.equal(reviewRows[1].querySelector('.home-row-sub').textContent, 'Marked as a mistake · Saved Hand');
   assert.equal($('#homeReviewMistakesLink').hidden, false);
 
   await showModel(accountModel({ reviewLater: { status: 'error' }, mistakes: { status: 'error' } }));
-  assert.equal(app.$$('#homeReviewContent .home-error-state').length, 2);
+  assert.equal(app.$$('#homeReviewContent .home-error-state').length, 1);
   assert.equal($('#homeReviewMistakesLink').hidden, true);
 });
 
@@ -334,7 +323,7 @@ test('Review Mistakes opens Saved with the mistakes filter', async () => {
   }
 });
 
-test('Review issue opens the account panel; empty-state actions navigate', async () => {
+test('Review issue opens the account panel; the welcome action navigates', async () => {
   let opened = 0;
   override('RiverlineAuthentication', { openAccount: () => { opened += 1; } });
   const spy = app.spy(['navigateToProductDestination']);
@@ -342,9 +331,10 @@ test('Review issue opens the account panel; empty-state actions navigate', async
     await showModel(accountModel({ sync: { status: 'ready', state: 'conflict', conflictCount: 1 }, recent: { status: 'ready', items: [] } }));
     await app.click('#homeSyncReview');
     assert.equal(opened, 1);
-    await app.click('#homeRecentContent [data-home-destination="analyze"]');
-    assert.deepEqual(spy.calls.navigateToProductDestination, [['analyze']]);
-    assert.equal($('.riverline-shell').dataset.activeDestination, 'analyze');
+    // Nothing of the person's own yet: the welcome card's action opens the first drill.
+    await app.click('#homeWelcomeActions [data-home-destination="training"]');
+    assert.deepEqual(spy.calls.navigateToProductDestination, [['training']]);
+    assert.equal($('.riverline-shell').dataset.activeDestination, 'training');
   } finally {
     spy.restore();
     restore('RiverlineAuthentication');
@@ -458,8 +448,8 @@ test('fences: a stale failure is dropped, a current failure renders the error fa
   assert.equal(app.consoleErrors.at(-1)[0], '[Riverline Home]');
   assert.equal($('#homeWorkspaceContent').hidden, false);
   assert.equal(text('#homeRecentContent .home-error-state'), 'Saved items could not be loaded.');
-  assert.equal(app.$$('#homeReviewContent .home-error-state').length, 2);
-  assert.equal(text('#homeContinueTitle'), 'Start study');
+  assert.equal(app.$$('#homeReviewContent .home-error-state').length, 1);
+  assert.equal($('#homeContinueCard').hidden, true);
   assert.equal($('#homeWorkspaceContent').dataset.sessionMode, 'account', 'the fallback has no session mode, so account panels stay');
 });
 
@@ -553,12 +543,13 @@ test('language switch re-renders the last model without a second load (EN, RU, H
     const ruLabel = text('#homeSyncStatusLabel');
     assert.notEqual(ruLabel, 'Synced');
     assert.equal(ruLabel, win.t('Synced'));
-    assert.equal(app.$$('#homeReviewContent h3')[0].textContent, win.t('Review later'));
+    assert.equal(text('#homeSessionEyebrow'), win.t("Today's session"));
+    assert.notEqual(text('#homeSessionEyebrow'), "Today's session");
     await app.setValue('#langToggle', 'he');
     await app.settle(200);
     assert.equal(root.dir, 'rtl');
     assert.equal(text('#homeSyncStatusLabel'), win.t('Synced'));
-    assert.equal($('#homeRecentContent .home-saved-item-meta').dir, 'ltr');
+    assert.equal($('#homeRecentContent .home-row-sub .poker-data-token').dir, 'ltr');
     assert.equal(bridge.loads, 0);
   } finally {
     await app.setValue('#langToggle', 'en');
@@ -613,9 +604,7 @@ test('destinations: Saved hides Home sections and the Study Inbox; hubs get the 
   assert.equal($('#studyInboxPanel').hidden, true);
   assert.equal($('#savedLibrarySection').hidden, false);
   for (const id of ['#homeAccountOverview', '#homeGuestAccount']) assert.equal($(id).hidden, true, id);
-  for (const id of ['#homeContinueContent', '#homeReviewContent', '#homeRecentContent']) {
-    assert.equal($(id).closest('.home-section').hidden, true, id);
-  }
+  for (const id of ['#homeGreeting', '#homeCards']) assert.equal($(id).hidden, true, id);
   assert.equal($('#homeGuestAccountTitle').dataset.i18n, 'Saved Hands & Spots');
 
   await goHome();
