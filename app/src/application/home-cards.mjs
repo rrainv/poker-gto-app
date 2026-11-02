@@ -11,6 +11,10 @@
 //  - nothing due is said plainly, never invented work.
 
 export const HOME_CARD_LIMIT = 6;
+// The Start something card shows only while fewer than this many other cards do.
+export const HOME_START_CARD_BELOW = 5;
+// Real destinations only (each is a workspace that exists today).
+export const HOME_START_DESTINATIONS = Object.freeze(['training', 'analyze', 'equity', 'hand', 'home-game']);
 export const HOME_SESSION_STEP_LIMIT = 3;
 export const HOME_NOTICED_LIMIT = 2;
 export const HOME_PLAN_VS_PLAYED_MIN_HANDS = 8;
@@ -97,6 +101,18 @@ export function deriveSessionPlan(model) {
   });
 }
 
+// Cards whose content is rows or tiles, which can grow to use spare column height.
+// A card with only one or two rows would show a gap instead, so it does not count.
+export function canStretch(id, model) {
+  const sections = model?.sections ?? {};
+  if (id === 'recent') return listItems(sections.recent).length >= 3;
+  if (id === 'review') {
+    return new Set([...listItems(sections.review?.reviewLater), ...listItems(sections.review?.mistakes)].map((item) => item.id)).size >= 2;
+  }
+  if (id === 'session') return deriveSessionPlan(model).state === 'steps';
+  return id === 'start' || id === 'welcome' || id === 'continue';
+}
+
 // Layout estimate in CSS pixels at the 1920 reference (head, padding and the
 // fixed row heights of home-workspace.mjs). Only used to split the cards into
 // two columns of about equal height; the real heights come from the DOM.
@@ -122,6 +138,7 @@ function estimateCardHeight(id, model, state) {
       ].map((item) => item.id)).size);
       return 100 + ROW_PX * Math.max(1, rows);
     }
+    case 'start': return 90 + 3 * ROW_PX;
     case 'recent': return 90 + ROW_PX * Math.max(1, Math.min(5, listItems(sections.recent).length));
     default: return 200;
   }
@@ -135,7 +152,7 @@ export function planHomeCards(model) {
   const state = homeVisitState(model);
   const order = [];
   if (state === 'first_visit') {
-    order.push('welcome', 'session', 'night', 'noticed');
+    order.push('welcome', 'session', 'noticed');
   } else {
     if (listItems(sections.continue).length > 0) order.push('continue');
     order.push('session');
@@ -148,6 +165,8 @@ export function planHomeCards(model) {
     const recentShown = listItems(sections.recent).length > 0 || sectionFailed(sections.recent);
     if (recentShown) order.push('recent');
   }
+  // Adaptive slot merging: with room to spare, the Start something card fills it.
+  if (order.length < HOME_START_CARD_BELOW) order.push('start');
   const cards = order.slice(0, HOME_CARD_LIMIT);
   const height = cards.map((id) => estimateCardHeight(id, model, state));
   const total = height.reduce((sum, value) => sum + value, 0);
@@ -156,7 +175,12 @@ export function planHomeCards(model) {
     if (!(mask & 1)) continue; // the first card always opens the start column
     if (mask === (1 << cards.length) - 1) continue; // never leave the end column empty
     const startHeight = height.reduce((sum, value, index) => sum + ((mask >> index) & 1 ? value : 0), 0);
-    const diff = Math.abs(total - 2 * startHeight);
+    // A column's spare height goes to its stretchy cards (rows or tiles that can grow);
+    // a column with none would show a gap.
+    const startIds = cards.filter((_, index) => (mask >> index) & 1);
+    const endIds = cards.filter((_, index) => !((mask >> index) & 1));
+    const penalty = [startIds, endIds].filter((ids) => !ids.some((id) => canStretch(id, model))).length * 100000;
+    const diff = Math.abs(total - 2 * startHeight) + penalty;
     // Ties: prefer more cards early (closer to reading order).
     if (!best || diff < best.diff - 1 || (Math.abs(diff - best.diff) <= 1 && mask > best.mask)) best = { mask, diff };
   }
