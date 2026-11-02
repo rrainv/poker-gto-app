@@ -70,15 +70,17 @@ test('orientation has no false selected workspace and dismissal restores sensibl
   assert.doesNotMatch(bootstrap, /PokerState|requestPlaybookMode|TrainingSession|StrategyProvider/);
   assert.equal(app.call('welcomeOrientationIsVisible'), true);
   // EXTRACT-HOME-001: Home's loading state moved into the Home workspace
-  // module; it is observed on the DOM instead of spying beginHomeLoading.
-  const busy = app.byId('homeWorkspace').getAttribute('aria-busy');
-  const loadingHidden = app.byId('homeLoadingState').hidden;
+  // module; it is observed on the DOM instead of spying beginHomeLoading. The
+  // state is set to "not loading" first, so a refresh that began loading would
+  // visibly change it.
+  app.byId('homeWorkspace').setAttribute('aria-busy', 'false');
+  app.byId('homeLoadingState').hidden = true;
   const homeLoad = app.spy(['callHomeBridge']);
   try {
     await app.call('refreshHomeWorkspace');
     assert.equal(homeLoad.total(), 0, 'Home does not refresh behind the orientation');
-    assert.equal(app.byId('homeWorkspace').getAttribute('aria-busy'), busy, 'nor shows its loading state');
-    assert.equal(app.byId('homeLoadingState').hidden, loadingHidden);
+    assert.equal(app.byId('homeWorkspace').getAttribute('aria-busy'), 'false', 'nor shows its loading state');
+    assert.equal(app.byId('homeLoadingState').hidden, true);
   } finally {
     homeLoad.restore();
   }

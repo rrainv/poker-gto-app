@@ -8525,10 +8525,21 @@ function setTranslatedElement(element, key) {
 // injects it here, late-bound so page-function spies and overrides apply.
 let homeWorkspaceController = null;
 
+let homeWorkspaceMountReported = false;
+
 function mountHomeWorkspace() {
   const container = $('#homeMode');
   const workspace = window.RiverlineHomeWorkspace;
-  if (!container || !workspace || homeWorkspaceController) return homeWorkspaceController;
+  if (homeWorkspaceController) return homeWorkspaceController;
+  if (!container || !workspace) {
+    // A failed module load must never be silent (reported once, not per call).
+    if (!homeWorkspaceMountReported) {
+      homeWorkspaceMountReported = true;
+      console.error('[Riverline Home] Home workspace could not be mounted:',
+        !container ? '#homeMode is missing' : 'window.RiverlineHomeWorkspace is missing');
+    }
+    return null;
+  }
   homeWorkspaceController = workspace.mount(container, {
     translate: (key, values) => t(key, values),
     locale: () => window.appLang || 'en',
