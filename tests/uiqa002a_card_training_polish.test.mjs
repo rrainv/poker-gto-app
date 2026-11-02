@@ -102,7 +102,12 @@ test('Training after-answer keeps the analytical stack and both textual state ma
   assert.ok(trainingHtml.querySelector('#trainingFrequencyRows'));
   assert.equal(trainingHtml.querySelector('#trainingWheel, .training-wheel-secondary'), null);
   await app.training.start('focused');
-  await app.training.answer();
+  // TEST-DETERMINISM-002: the dealt spot is random and the stack lists only
+  // actions with a non-zero baseline frequency, so answering "the first
+  // button" (often a 0% Fold) leaves no Chosen row. Answer with the mix's
+  // leading action, which always has a row.
+  const leading = [...app.window.app.training.currentSolution].sort((a, b) => b.value - a.value)[0].action.type;
+  assert.equal(await app.training.answer(leading), leading);
   const rows = app.$$('#trainingFrequencyRows .training-frequency-row');
   assert.ok(rows.length >= 1);
   assert.ok(rows.every((row) => row.querySelector('.training-frequency-label, .training-frequency-name')));
