@@ -458,3 +458,65 @@ test('1k planner-driven distribution smoke realizes every eligible sizing family
     [...realizedAmounts].map(([family, amounts]) => [family, amounts.size]),
   ))}`);
 });
+
+test('TRAINING-PLANNER-OVERBET-001: every planner-eligible postflop family realizes at short stacks', () => {
+  for (const tableSize of [6, 9, 10]) {
+    const snapshot = rulesSnapshot(tableSize);
+    for (const targetDecisionType of [
+      TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FACING_BET,
+      TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FACING_RAISE,
+    ]) {
+      for (const stackBb of [10, 12, 15, 20]) {
+        const families = trainingSizingFamiliesForStructure({
+          street: 'flop',
+          targetDecisionType,
+          startingStackBb: stackBb,
+          tableSize,
+          chipUnitMilliBb: 100,
+        });
+        for (const family of families) {
+          const label = `${tableSize}max ${stackBb}bb ${targetDecisionType} ${family}`;
+          const intent = focusedIntent({
+            family,
+            targetDecisionType,
+            street: 'flop',
+            stackBb,
+            tableSize,
+            heroPosition: 'UTG',
+            snapshot,
+          });
+          const exercise = generate(plan(intent), snapshot);
+          assert.equal(sizingMetadata(exercise).realizedSizingFamily, family, label);
+        }
+      }
+    }
+  }
+});
+
+test('TRAINING-PLANNER-OVERBET-001: former failing Varied seeds no longer hit unsupported_target', async () => {
+  const snapshot = rulesSnapshot();
+  for (const [sessionSeed, servedBeforeFailure] of [[27, 39], [36, 38], [31, 30], [34, 66]]) {
+    const intent = createTrainingSessionIntent({
+      schemaVersion: TRAINING_SESSION_INTENT_SCHEMA_VERSION,
+      mode: TRAINING_PRACTICE_MODES.VARIED,
+      sessionSeed,
+      sessionLength: 150,
+      difficulty: 'hard',
+      focusPreferences: {
+        profile: 'balanced',
+        streetEmphasis: null,
+        stackPreference: 'balanced',
+        allowedTableSizeFamilies: ['heads_up', 'short_handed', 'full_ring'],
+      },
+      rulesSnapshot: snapshot,
+      rulesCapability: resolveTrainingRulesCapability(snapshot),
+      plannerPolicyVersion: TRAINING_PRACTICE_PLANNER_POLICY_VERSION,
+    });
+    const controller = createTrainingSessionController();
+    controller.startPracticeSession(intent);
+    for (let ordinal = 0; ordinal < servedBeforeFailure; ordinal += 1) {
+      const result = await controller.generatePlanned({ strategyProvider: strategyProvider() });
+      assert.equal(result.ok, true, `seed ${sessionSeed} ordinal ${ordinal}: ${JSON.stringify(result.error)}`);
+    }
+  }
+});

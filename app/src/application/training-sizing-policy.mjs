@@ -71,7 +71,12 @@ function structuralProxyTargets({
   tableSize,
   chipUnitMilliBb,
 }) {
-  const maximumNonAllInTo = startingStackBb * 1000 - chipUnitMilliBb;
+  // Postflop the proxy trajectory has every player limp, so each has already
+  // committed one big blind and the largest legal non-all-in wager sits that
+  // much lower than preflop.
+  const maximumNonAllInTo = street === STREETS.PREFLOP
+    ? startingStackBb * 1000 - chipUnitMilliBb
+    : (startingStackBb - 1) * 1000 - chipUnitMilliBb;
   if (street === STREETS.PREFLOP) {
     const currentWagerMilliBb = targetDecisionType === 'preflop_facing_open'
       ? 1000
