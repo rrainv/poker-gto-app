@@ -45,6 +45,7 @@ import {
   homeGreetingPart,
   homeSampleTier,
   planHomeCards,
+  canStretch,
   selectNoticedItems,
 } from './home-cards.mjs';
 
@@ -137,6 +138,7 @@ const CARD_IDS = Object.freeze({
   noticed: 'homeNoticedCard',
   review: 'homeReviewCard',
   recent: 'homeRecentCard',
+  start: 'homeStartCard',
 });
 
 const CARD_CONTENT_IDS = Object.freeze({
@@ -147,6 +149,7 @@ const CARD_CONTENT_IDS = Object.freeze({
   noticed: 'homeNoticedContent',
   review: 'homeReviewContent',
   recent: 'homeRecentContent',
+  start: 'homeStartContent',
 });
 
 export function mountHomeWorkspace(container, deps) {
@@ -436,7 +439,7 @@ export function mountHomeWorkspace(container, deps) {
     const content = byId('homeNightContent');
     content.replaceChildren();
     setTranslated(byId('homeNightEyebrow'), 'Game night');
-    if (plan.state === 'first_visit' || !next.sections.nightAfter?.night) {
+    if (!next.sections.nightAfter?.night) {
       setTranslated(byId('homeNightTitle'), 'Keep score with friends');
       content.append(el('p', 'home-card-text', t('Buy-ins, rebuys and a fair settle-up at the end of the night.')));
       const actions = el('div', 'home-card-actions');
@@ -547,6 +550,22 @@ export function mountHomeWorkspace(container, deps) {
     root.append(list);
   }
 
+  // Real destinations only; each row opens that workspace.
+  function renderStart() {
+    const root = byId('homeStartContent');
+    if (!root) return;
+    root.replaceChildren();
+    const list = el('div', 'home-rows home-rows--start');
+    list.append(
+      row({ title: t('Quick drill'), sub: t('A few spots in Training'), destination: 'training' }),
+      row({ title: t('Analyze a spot'), sub: t("Build a situation and see the baseline's mix"), destination: 'analyze' }),
+      row({ title: t('Equity'), sub: t('Calculate win chances'), destination: 'equity' }),
+      row({ title: t('Reconstruct a hand'), sub: t('Step through each street'), destination: 'hand' }),
+      row({ title: t('Game night'), sub: t('Run a real poker night'), destination: 'home-game' }),
+    );
+    root.append(list);
+  }
+
   function renderAccountOverview(next) {
     const overview = byId('homeAccountOverview');
     if (!overview) return;
@@ -608,13 +627,14 @@ export function mountHomeWorkspace(container, deps) {
       });
     }
     // The last card of each column takes the column's spare height.
-    [plan.start, plan.end].forEach((ids) => {
-      ids.forEach((id, index) => { card(id).dataset.columnLast = String(index === ids.length - 1); });
-    });
+    // Cards whose rows or tiles can grow share their column's spare height.
+    plan.cards.forEach((id) => { card(id).dataset.stretch = String(canStretch(id, model)); });
     const cards = byId('homeCards');
     if (cards) {
       cards.dataset.visitState = plan.state;
       cards.dataset.cardCount = String(plan.cards.length);
+      // Few cards: a roomier layout fills the screen (no empty block under them).
+      cards.dataset.density = plan.cards.length <= 4 ? 'roomy' : 'normal';
       cards.dataset.singleColumn = String(plan.end.length === 0);
     }
   }
@@ -671,6 +691,7 @@ export function mountHomeWorkspace(container, deps) {
     renderNoticed(next);
     if (plan.cards.includes('review')) renderReview(next);
     if (plan.cards.includes('recent')) renderRecent(next.sections.recent);
+    if (plan.cards.includes('start')) renderStart();
     const workspace = byId('homeWorkspace');
     const loading = byId('homeLoadingState');
     const content = byId('homeWorkspaceContent');

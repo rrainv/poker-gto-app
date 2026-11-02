@@ -586,7 +586,11 @@
     'Played hands · mixed baseline · small sample': 'Сыгранные раздачи · смешанная база · малая выборка',
     'Played hands · mixed baseline · medium sample': 'Сыгранные раздачи · смешанная база · средняя выборка',
     'Played hands · mixed baseline · large sample': 'Сыгранные раздачи · смешанная база · большая выборка',
-    'Look at the spots': 'Посмотреть споты',
+    'Look at the spots': 'Посмотреть споты',    'Start something': 'Начать что-нибудь',
+    'Tools and play': 'Инструменты и игра',
+    'Quick drill': 'Быстрая тренировка',
+    'Reconstruct a hand': 'Восстановить раздачу',
+    'Run a real poker night': 'Проведи настоящий покерный вечер',
   });
   Object.assign(he, {
     'Good morning': 'בוקר טוב',
@@ -638,7 +642,11 @@
     'Played hands · mixed baseline · small sample': 'ידיים ששוחקו · בסיס מעורב · מדגם קטן',
     'Played hands · mixed baseline · medium sample': 'ידיים ששוחקו · בסיס מעורב · מדגם בינוני',
     'Played hands · mixed baseline · large sample': 'ידיים ששוחקו · בסיס מעורב · מדגם גדול',
-    'Look at the spots': 'הצג את הספוטים',
+    'Look at the spots': 'הצג את הספוטים',    'Start something': 'להתחיל משהו',
+    'Tools and play': 'כלים ומשחק',
+    'Quick drill': 'תרגול מהיר',
+    'Reconstruct a hand': 'שחזור יד',
+    'Run a real poker night': 'נהל ערב פוקר אמיתי',
   });
 
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);

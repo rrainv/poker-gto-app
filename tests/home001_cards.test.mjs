@@ -70,10 +70,10 @@ test('first visit versus returning, and the cards each shows (never more than si
   assert.equal(homeVisitState(model({ recent: { status: 'error' } })), 'returning', 'a failed load is not a first visit');
   assert.equal(homeVisitState(model({ nightAfter: { status: 'ready', night } })), 'returning');
   const first = planHomeCards(model());
-  assert.deepEqual([...first.cards], ['welcome', 'session', 'night', 'noticed']);
+  assert.deepEqual([...first.cards], ['welcome', 'session', 'noticed', 'start']);
 
   const quiet = planHomeCards(model({ recent: ready([item('a')]) }));
-  assert.deepEqual([...quiet.cards], ['session', 'noticed', 'recent'], 'no Continue, Night or Review card without data');
+  assert.deepEqual([...quiet.cards], ['session', 'noticed', 'recent', 'start'], 'no Continue, Night or Review card without data; Start something fills the room');
 
   const full = planHomeCards(model({
     continue: ready([{ kind: 'live_hand' }]),
@@ -81,7 +81,9 @@ test('first visit versus returning, and the cards each shows (never more than si
     review: { status: 'ready', reviewLater: ready([item('v1')]), mistakes: ready([item('m1')]) },
     nightAfter: { status: 'ready', night },
   }));
-  assert.deepEqual([...full.cards].sort(), ['continue', 'night', 'noticed', 'recent', 'review', 'session']);
+  assert.deepEqual([...full.cards].sort(), ['continue', 'night', 'noticed', 'recent', 'review', 'session'], 'five or more other cards: no Start something');
+  const five = planHomeCards(model({ recent: ready([item('a')]), review: { status: 'ready', reviewLater: ready([item('v')]), mistakes: ready([]) }, nightAfter: { status: 'ready', night } }));
+  assert.deepEqual([...five.cards], ['session', 'night', 'noticed', 'review', 'recent'], 'five others: Start something is left out');
   assert.ok(full.cards.length <= HOME_CARD_LIMIT);
   assert.ok(full.start.length >= 1 && full.end.length >= 1, 'two columns, neither empty');
   assert.equal(full.start[0], 'continue', 'the lead card opens the start column');
@@ -211,7 +213,7 @@ test('card limits: at most 6 cards, 3 review rows, 5 recent rows, no blank slot,
     assert.equal(row.querySelector('button, a, input, select'), null);
   }
   await show(model({ recent: ready([item('a')]) }));
-  assert.deepEqual(shownCards().map((card) => card.id), ['homeSessionCard', 'homeNoticedCard', 'homeRecentCard']);
+  assert.deepEqual(shownCards().map((card) => card.id).sort(), ['homeNoticedCard', 'homeRecentCard', 'homeSessionCard', 'homeStartCard']);
   assert.equal($('#homeContinueContent').children.length, 0, 'a left-out card keeps no content');
   assert.equal($('#homeNightContent').children.length, 0);
   assert.equal($('#homeReviewContent').children.length, 0);
@@ -380,4 +382,63 @@ test('a failed load says so and offers a drill; it never says nothing is due', a
   assert.doesNotMatch(text('#homeSessionCard'), /Nothing is due/);
   assert.equal(primaries().length, 1);
   assert.ok(controller().getModel());
+});
+
+test('Start something: real destinations only, label-sized rows, nothing invented', async () => {
+  await show(model());
+  assert.equal($('#homeStartCard').hidden, false);
+  const rows = app.$$('#homeStartContent .home-row');
+  assert.deepEqual(rows.map((row) => row.dataset.homeDestination), ['training', 'analyze', 'equity', 'hand', 'home-game']);
+  assert.deepEqual(rows.map((row) => row.querySelector('.home-row-title').textContent),
+    ['Quick drill', 'Analyze a spot', 'Equity', 'Reconstruct a hand', 'Game night']);
+  assert.equal(primaries().length, 1, 'Start something adds no solid button');
+  // With five other cards it is left out, and keeps no content.
+  await show(model({
+    continue: ready([{ kind: 'live_hand' }]),
+    recent: ready([item('a')]),
+    review: { status: 'ready', reviewLater: ready([item('v')]), mistakes: ready([]) },
+    nightAfter: { status: 'ready', night },
+  }));
+  assert.equal($('#homeStartCard').hidden, true);
+  assert.equal($('#homeStartContent').children.length, 0);
+  assert.ok(shownCards().length <= 6);
+});
+
+test('account view through a FAKE auth provider (no real provider is used): signed in, conflict, then signed out', async () => {
+  const { installHomeWorkspaceBridge } = await import('../app/src/application/home-workspace-bootstrap.mjs');
+  let auth = { status: 'signed_in', profile: { displayName: 'Fake Owner', username: 'fake_owner' } };
+  let sync = { state: 'conflict', enabled: true, pendingCount: 0, conflictCount: 2, errorCount: 0 };
+  const authentication = { ready: async () => {}, getState: () => auth };
+  const empty = async () => [];
+  const target = {};
+  const bridge = installHomeWorkspaceBridge(target, {
+    authentication,
+    playbookBridge: win.RiverlinePlaybookState,
+    savedStudyQueries: { listRecent: async () => [], listForReview: empty, listMistakes: empty, getById: async () => null },
+    personalStrategyQueries: { loadSummary: async () => ({ profileCount: 0, selectedProfile: null, selectedMode: null, context: null, answeredCount: 0, totalCount: 0, session: null, resumable: false }) },
+    syncQueries: { getState: () => sync },
+    continuationQueries: { getSummary: () => ({ hasLiveHand: false }) },
+    gameNightQueries: { getLatest: async () => null },
+  });
+  assert.ok(bridge && target.RiverlineHome, 'a bridge built around the fake provider');
+  nextModel = await bridge.load();
+  assert.equal(nextModel.sessionMode, 'account');
+  await show(nextModel);
+  assert.equal($('#homeAccountOverview').hidden, false);
+  assert.equal($('#homeGuestAccount').hidden, true);
+  assert.equal(text('#homeIdentityDisplayName'), 'Fake Owner');
+  assert.equal(text('#homeIdentityUsername'), '@fake_owner');
+  assert.equal(text('#homeSyncStatusLabel'), 'Conflict needs attention');
+  assert.equal($('#homeSyncReview').hidden, false);
+  assert.match(text('#homeGreetingTitle'), /, Fake Owner$/);
+  assert.equal($('#homeAccountOverview').getAttribute('data-tutorial-anchor'), 'home-overview');
+  assert.equal(primaries().length, 1);
+  // Sign-out: the same bridge now answers as a guest, and nothing of the owner stays in the DOM.
+  auth = { status: 'signed_out', profile: null };
+  nextModel = await bridge.load();
+  assert.equal(nextModel.sessionMode, 'guest');
+  await show(nextModel);
+  assert.equal($('#homeAccountOverview').hidden, true);
+  assert.equal(text('#homeIdentityDisplayName'), '');
+  assert.doesNotMatch($('#homeWorkspaceContent').innerHTML, /Fake Owner|fake_owner/);
 });
