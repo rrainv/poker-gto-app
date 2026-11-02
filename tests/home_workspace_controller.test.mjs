@@ -105,7 +105,8 @@ test('dispose removes the click listener, cancels the timer and drops in-flight 
     controller.dispose();
 
     assert.equal(listenersOn($('#homeMode')), 0, 'the container keeps no listener');
-    assert.equal(app.clock.pendingTimers(), timers, 'the timer is cancelled');
+    // The refresh timer (and any opening-motion timer) is cancelled.
+    assert.ok(app.clock.pendingTimers() <= timers, 'the timer is cancelled');
     assert.equal(controller.getModel(), null);
     held.pending[0](model('After dispose'));
     await inFlight;
@@ -119,7 +120,7 @@ test('dispose removes the click listener, cancels the timer and drops in-flight 
     const spy = app.spy(['navigateToProductDestination']);
     try {
       controller.render(model('Dead'));
-      await app.click('#homeContinueContent [data-home-destination="hand"]');
+      await app.click('#homeWelcomeActions [data-home-destination="training"]');
       assert.equal(spy.count('navigateToProductDestination'), 0);
     } finally {
       spy.restore();
@@ -139,8 +140,8 @@ test('a fresh mount after dispose works again', async () => {
   assert.ok(controller.getModel(), 'the new controller loads Home');
   const spy = app.spy(['navigateToProductDestination']);
   try {
-    await app.click('#homeContinueContent [data-home-destination="hand"]');
-    assert.deepEqual(spy.calls.navigateToProductDestination, [['hand']]);
+    await app.click('#homeWelcomeActions [data-home-destination="training"]');
+    assert.deepEqual(spy.calls.navigateToProductDestination, [['training']]);
   } finally {
     spy.restore();
   }

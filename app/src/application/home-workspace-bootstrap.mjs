@@ -6,6 +6,7 @@ import { createPersonalStrategyHomeQuery } from './personal-strategy-home-query.
 import { createSavedStudyObjectOpenController } from './saved-study-object-open-controller.mjs';
 import './saved-study-object-bootstrap.mjs';
 import { RIVERLINE_OWNED_DOMAINS } from '../account-identity/index.mjs';
+import { formatMinorUnits } from '../home-game/index.mjs';
 
 export function installHomeWorkspaceBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
@@ -33,6 +34,33 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
       hasLiveHand: Boolean(playbookBridge?.hasLiveHand?.()),
     }),
   });
+  // HOME-001: the last game night, read lazily (the Game night bridge can
+  // install after this one) and without touching which session it has open.
+  const gameNightQueries = options.gameNightQueries ?? Object.freeze({
+    async getLatest() {
+      const bridge = browserWindow.RiverlineHomeGame;
+      if (!bridge?.load) return null;
+      const state = await bridge.load();
+      const sessions = state?.recentSessions ?? [];
+      const night = sessions.find((entry) => entry.status === 'active')
+        ?? sessions.find((entry) => entry.status === 'completed');
+      if (!night) return null;
+      const bundle = state.current?.session?.sessionId === night.sessionId ? state.current : null;
+      const settlement = bundle?.settlement ?? null;
+      return {
+        sessionId: night.sessionId,
+        title: night.title,
+        state: night.status === 'active' ? 'active' : 'completed',
+        endedAt: night.endedAt ?? null,
+        updatedAt: night.updatedAt ?? null,
+        playerCount: night.participants?.length ?? 0,
+        transferCount: settlement ? settlement.transfers.length : null,
+        settledText: settlement && night.currency
+          ? formatMinorUnits(settlement.totalTransferredMinor, night.currency)
+          : null,
+      };
+    },
+  });
   const personalStrategyQueries = options.personalStrategyQueries
     ?? createPersonalStrategyHomeQuery({
       storage: options.storage ?? browserWindow.localStorage,
@@ -51,6 +79,8 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
     profileQueries,
     syncQueries,
     continuationQueries,
+    gameNightQueries,
+    noticedQueries: options.noticedQueries ?? null,
   });
   const opener = createSavedStudyObjectOpenController({
     application: savedStudyQueries,
@@ -71,6 +101,7 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
       if (authenticationState?.status !== 'signed_in') {
         return createGuestHomeViewModel({
           continuation: await continuationQueries.getSummary(),
+          nightAfter: await gameNightQueries.getLatest().catch(() => null),
         });
       }
       return home.load();

@@ -402,7 +402,7 @@ test('auto-titles come only from stored preview facts; missing facts are omitted
     sessionMode: 'account',
     sections: { continue: { items: [] }, recent: { status: 'ready', items: [spot] }, review: {} },
   });
-  const rowTitle = page.$('#homeRecentContent .home-saved-item-title-row strong').textContent;
+  const rowTitle = page.$('#homeRecentContent .home-row-title').textContent;
   assert.equal(rowTitle, presentation.title(spot, page.window.t));
   assert.equal(rowTitle, savedItemTitle(spot, page.window.t));
 });

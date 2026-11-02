@@ -131,7 +131,31 @@ function render(column) {
     section('Poker data island (cards and amounts stay left-to-right)',
       h('div', { class: 'sheet-preview' }, preview, amounts)),
     drillSection(t),
+    homeSection(t),
   );
+}
+
+// HOME-001 Home pieces: the fixed-height row (one native button), the number
+// tile, the noticed item with its source line, the progress bar and the
+// read-only context chip. Values are illustrative; Home renders stored facts.
+function homeSection(t) {
+  const homeRow = (lead, title, sub) => h('button', { class: 'home-row', type: 'button' },
+    h('span', { class: 'home-row-lead', text: lead }),
+    h('span', { class: 'home-row-copy' }, h('strong', { class: 'home-row-title', text: title }), h('span', { class: 'home-row-sub', text: sub })));
+  const tile = (value, caption) => h('div', { class: 'home-tile' }, h('strong', { class: 'home-tile-value', text: value }), h('span', { class: 'home-tile-label', text: caption }));
+  const progress = h('div', { class: 'home-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '40', 'aria-valuenow': '12', 'aria-label': '12 / 40' }, h('i', { style: '--home-progress:.3' }));
+  const noticed = h('button', { class: 'home-noticed-item', type: 'button' },
+    h('strong', { class: 'home-noticed-title', text: 'BB vs small open' }),
+    h('span', { class: 'home-noticed-evidence', text: t('Played {played} of {total} hands · your plan {plan}%').replace('{played}', '14').replace('{total}', '18').replace('{plan}', '45') }),
+    h('span', { class: 'home-noticed-source', text: t('Played hands · your plan · medium sample') }));
+  return section('Home components (HOME-001)',
+    label('Context chip (read-only) · Row · Tiles'),
+    row(h('span', { class: 'home-context-chip', text: 'Home game · Serious' })),
+    h('div', { class: 'home-rows' }, homeRow('1', 'A♠K♦ BTN vs BB, 3-bet pot', `${t('Marked for review later')} · ${t('Saved Hand')}`), homeRow('2', t('Practice a quick drill'), t('A few spots in Training'))),
+    h('div', { class: 'home-tiles' }, tile('6', t('Players')), tile('4', t('Transfers to settle')), tile('₪420.00', t('Moved in the settle-up'))),
+    label('Progress · Noticed item (source line, links to its spots)'),
+    progress,
+    noticed);
 }
 
 // TRAINING-QUICK-001 shared drill components. The price facts follow the

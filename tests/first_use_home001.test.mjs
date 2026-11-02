@@ -156,15 +156,16 @@ test('Guest Home exposes truthful Start, core study, Personal, and supporting de
     assert.equal(home.querySelector(`[data-home-destination="${destination}"]`), null, destination);
   }
   assert.equal(home.querySelector('.home-quick-links, .home-quick-link, #homeQuickStartTitle'), null);
-  // With nothing to continue, Home offers one primary Start a Hand action.
+  // HOME-001: with nothing of the person's own yet, the welcome card offers the one
+  // primary action: the first drill (the Continue card is not shown).
   await app.navigate('home');
   await app.settle(300);
-  const empty = app.$('#homeContinueContent .home-empty-state');
-  assert.equal(text(empty.querySelector('p')), 'Play or reconstruct a legal hand.');
-  const start = empty.querySelector('button');
-  assert.equal(text(start), 'Start a Hand');
-  assert.equal(start.dataset.homeDestination, 'hand');
+  assert.equal(app.$('#homeContinueCard').hidden, true);
+  const start = app.$('#homeWelcomeActions button');
+  assert.equal(text(start), 'Start the first drill');
+  assert.equal(start.dataset.homeDestination, 'training');
   assert.ok(start.classList.contains('ui-button--primary'));
+  assert.equal(app.$$('#homeWorkspaceContent .ui-button--primary').length, 1);
   assert.equal(app.window.RiverlineWorkspaceHeader.getDescription('home'), 'Your learning workspace is saved on this device.');
   assert.match(text(markup.body), /Guest data does not sync\./);
 });
@@ -179,10 +180,11 @@ test('Continue is derived only from authoritative resumable state and never fabr
   const continueCopy = () => [text(app.byId('homeContinueEyebrow')), text(app.byId('homeContinueTitle'))];
   await app.navigate('home');
   await app.settle(300);
-  assert.deepEqual(continueCopy(), ['Your next action', 'Start study']);
+  assert.equal(app.byId('homeContinueCard').hidden, true, 'nothing to continue: the card is left out');
   await app.startHand(['As', 'Kd']);
   await app.navigate('home');
   await app.settle(300);
+  assert.equal(app.byId('homeContinueCard').hidden, false);
   assert.deepEqual(continueCopy(), ['Pick up where you left off', 'Continue']);
   assert.doesNotMatch(text(app.byId('homeContinueContent')), /streak|recommendation|last analyzed spot/i);
 });
@@ -248,7 +250,7 @@ test('1920 composition is top-packed and localized without equal-weight destinat
   if (previous === undefined) delete content.dataset.productDestination; else content.dataset.productDestination = previous;
   // Superseded: the 238px Continue floor (>=1500px) is reset by the later
   // Home main-flow rule; sections are content-height and top-packed.
-  assert.equal(css.cascaded(markup.querySelector('.home-section--continue'), 'min-height', { width: 1920 }), '0');
+  assert.ok([undefined, '0'].includes(css.cascaded(markup.querySelector('.home-section--continue'), 'min-height', { width: 1920 })));
   const link = markup.createElement('a');
   link.className = 'home-other-link';
   markup.getElementById('homeMode').appendChild(link);

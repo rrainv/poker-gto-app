@@ -146,6 +146,44 @@ function identitySection(profileResult, accountResult) {
   return deepFreeze({ status: 'unavailable', profile: null });
 }
 
+// HOME-001: the last game night, as the Home card needs it. Only fields the
+// Game night workspace already stores; there is no link between hands and a
+// night yet, so no hand results, luck or plan axes exist to show.
+function nightAfterSection(result) {
+  if (!result) return deepFreeze({ status: 'unavailable', night: null });
+  if (result.status === 'rejected') {
+    return deepFreeze({ status: 'error', night: null, error: serializedError(result.reason) });
+  }
+  const night = result.value;
+  if (!night) return deepFreeze({ status: 'ready', night: null });
+  return deepFreeze({
+    status: 'ready',
+    night: {
+      sessionId: String(night.sessionId),
+      title: String(night.title ?? ''),
+      state: night.state === 'active' ? 'active' : 'completed',
+      endedAt: night.endedAt ?? null,
+      updatedAt: night.updatedAt ?? null,
+      playerCount: Number.isSafeInteger(night.playerCount) ? night.playerCount : 0,
+      transferCount: Number.isSafeInteger(night.transferCount) ? night.transferCount : null,
+      settledText: typeof night.settledText === 'string' ? night.settledText : null,
+    },
+  });
+}
+
+// HOME-001: "What Riverline noticed" comes from played hands only. No source
+// is wired yet (the aggregate plan-vs-played query is HOME-NOTICED-SOURCE), so
+// without one the section is empty and the card shows its honest empty state.
+// The sample gates are applied at render time (home-cards.mjs), not here.
+function noticedSection(result) {
+  if (!result) return deepFreeze({ status: 'ready', items: [] });
+  if (result.status === 'rejected') {
+    return deepFreeze({ status: 'error', items: [], error: serializedError(result.reason) });
+  }
+  const items = Array.isArray(result.value) ? result.value : [];
+  return deepFreeze({ status: 'ready', items: structuredClone(items) });
+}
+
 function futureHistorySeams() {
   return deepFreeze({
     status: 'unsupported',
@@ -154,7 +192,7 @@ function futureHistorySeams() {
   });
 }
 
-export function createGuestHomeViewModel({ continuation = null } = {}) {
+export function createGuestHomeViewModel({ continuation = null, nightAfter = undefined, noticed = undefined } = {}) {
   const liveHand = liveHandContinueItem(continuation);
   return deepFreeze({
     schemaVersion: HOME_VIEW_MODEL_SCHEMA_VERSION,
@@ -171,6 +209,9 @@ export function createGuestHomeViewModel({ continuation = null } = {}) {
       },
       personalStrategy: { status: 'unavailable' },
       quickStart: { status: 'ready', destinations: ['hand', 'analyze', 'training', 'equity'] },
+      // Resolved values (undefined = no query wired; null = nothing to show).
+      nightAfter: nightAfterSection(nightAfter === undefined ? null : { status: 'fulfilled', value: nightAfter }),
+      noticed: noticedSection(noticed === undefined ? null : { status: 'fulfilled', value: noticed }),
       history: futureHistorySeams(),
     },
   });
@@ -183,6 +224,8 @@ export function createHomeViewModelController({
   profileQueries = null,
   syncQueries = null,
   continuationQueries = null,
+  gameNightQueries = null,
+  noticedQueries = null,
 } = {}) {
   if (!savedStudyQueries
     || typeof savedStudyQueries.listRecent !== 'function'
@@ -206,10 +249,18 @@ export function createHomeViewModelController({
     throw new TypeError('Home continuation query must provide getSummary');
   }
 
+  if (gameNightQueries !== null && typeof gameNightQueries.getLatest !== 'function') {
+    throw new TypeError('Home game night query must provide getLatest');
+  }
+  if (noticedQueries !== null && typeof noticedQueries.getItems !== 'function') {
+    throw new TypeError('Home noticed query must provide getItems');
+  }
+
   return Object.freeze({
     async load({ guest = false } = {}) {
       const [recentResult, reviewResult, mistakeResult, personalResult,
-        accountResult, profileResult, syncResult, continuationResult] = await Promise.allSettled([
+        accountResult, profileResult, syncResult, continuationResult,
+        nightResult, noticedResult] = await Promise.allSettled([
         savedStudyQueries.listRecent({ limit: HOME_RECENT_LIMIT }),
         savedStudyQueries.listForReview({ limit: HOME_REVIEW_LIMIT }),
         savedStudyQueries.listMistakes({ limit: HOME_MISTAKE_LIMIT }),
@@ -218,6 +269,8 @@ export function createHomeViewModelController({
         guest ? null : profileQueries?.getProfileSummary?.() ?? null,
         guest ? null : syncQueries?.getState?.() ?? null,
         continuationQueries?.getSummary?.() ?? null,
+        gameNightQueries?.getLatest?.() ?? null,
+        noticedQueries?.getItems?.() ?? null,
       ]);
       const recent = sectionFrom(recentResult, mapSavedItems);
       const reviewLater = sectionFrom(reviewResult, mapSavedItems);
@@ -247,6 +300,8 @@ export function createHomeViewModelController({
             status: 'ready',
             destinations: quickStartDestinations,
           },
+          nightAfter: nightAfterSection(gameNightQueries ? nightResult : null),
+          noticed: noticedSection(noticedQueries ? noticedResult : null),
           history: futureHistorySeams(),
         },
       });
