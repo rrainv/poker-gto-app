@@ -144,6 +144,26 @@ function estimateCardHeight(id, model, state) {
   }
 }
 
+// Four cards or fewer: a row-aligned grid. Cards are placed in reading order two
+// per row, and the rows have equal height, so no column can end short. Start
+// something takes the wide cell of the second row; an odd last card spans both.
+export const HOME_SPARSE_CARDS = 4;
+function sparsePlan(state, cards) {
+  const rest = cards.filter((id) => id !== 'start');
+  const arrangement = cards.includes('start')
+    ? [rest[0], rest[1], 'start', ...rest.slice(2)].filter(Boolean)
+    : rest;
+  const start = arrangement.filter((_, index) => index % 2 === 0);
+  const end = arrangement.filter((_, index) => index % 2 === 1);
+  return Object.freeze({
+    state,
+    layout: 'rows',
+    cards: Object.freeze(cards),
+    start: Object.freeze(start),
+    end: Object.freeze(end),
+  });
+}
+
 // Which cards show and where. The lead card opens the start column. The rest
 // are split so the two columns end about together; among equally balanced
 // splits the one closest to reading order (start column first) wins.
@@ -168,6 +188,7 @@ export function planHomeCards(model) {
   // Adaptive slot merging: with room to spare, the Start something card fills it.
   if (order.length < HOME_START_CARD_BELOW) order.push('start');
   const cards = order.slice(0, HOME_CARD_LIMIT);
+  if (cards.length <= HOME_SPARSE_CARDS) return sparsePlan(state, cards);
   const height = cards.map((id) => estimateCardHeight(id, model, state));
   const total = height.reduce((sum, value) => sum + value, 0);
   let best = null;
@@ -187,7 +208,7 @@ export function planHomeCards(model) {
   const startMask = best?.mask ?? 1;
   const start = cards.filter((_, index) => (startMask >> index) & 1);
   const end = cards.filter((_, index) => !((startMask >> index) & 1));
-  return Object.freeze({ state, cards: Object.freeze(cards), start: Object.freeze(start), end: Object.freeze(end) });
+  return Object.freeze({ state, layout: 'columns', cards: Object.freeze(cards), start: Object.freeze(start), end: Object.freeze(end) });
 }
 
 // 'morning' 05-11, 'afternoon' 12-17, 'evening' otherwise.

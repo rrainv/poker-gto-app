@@ -306,26 +306,6 @@ export function mountHomeWorkspace(container, deps) {
       }
       sub.textContent = text;
     }
-    // Read-only context: the selected Game and Approach Home already loaded.
-    // Changing the format belongs with Table rules (M2), not here.
-    const chip = byId('homeContextChip');
-    if (chip) {
-      const strategy = next.sections.personalStrategy;
-      const ready = strategy?.status === 'ready' && strategy.selectedProfile;
-      chip.hidden = !ready;
-      chip.replaceChildren();
-      if (ready) {
-        const game = el('bdi', null, strategy.selectedProfile.displayName);
-        game.dir = 'auto';
-        chip.append(game);
-        if (strategy.selectedMode?.displayName) {
-          chip.append(' · ');
-          const approach = el('bdi', null, strategy.selectedMode.displayName);
-          approach.dir = 'auto';
-          chip.append(approach);
-        }
-      }
-    }
   }
 
   function renderWelcome() {
@@ -634,8 +614,13 @@ export function mountHomeWorkspace(container, deps) {
       cards.dataset.visitState = plan.state;
       cards.dataset.cardCount = String(plan.cards.length);
       // Few cards: a roomier layout fills the screen (no empty block under them).
-      cards.dataset.density = plan.cards.length <= 4 ? 'roomy' : 'normal';
+      cards.dataset.density = plan.layout === 'rows' ? 'roomy' : 'normal';
       cards.dataset.singleColumn = String(plan.end.length === 0);
+      // An odd last card in the row grid spans both columns.
+      plan.cards.forEach((id) => { card(id).removeAttribute('data-span'); });
+      if (plan.layout === 'rows' && plan.start.length > plan.end.length) {
+        card(plan.start[plan.start.length - 1]).dataset.span = 'full';
+      }
     }
   }
 
@@ -692,6 +677,8 @@ export function mountHomeWorkspace(container, deps) {
     if (plan.cards.includes('review')) renderReview(next);
     if (plan.cards.includes('recent')) renderRecent(next.sections.recent);
     if (plan.cards.includes('start')) renderStart();
+    // Cards that hold rows or tiles let them grow with the row (a text card centers instead).
+    plan.cards.forEach((id) => { card(id).dataset.rows = String(Boolean(card(id).querySelector('.home-rows'))); });
     const workspace = byId('homeWorkspace');
     const loading = byId('homeLoadingState');
     const content = byId('homeWorkspaceContent');
@@ -725,11 +712,10 @@ export function mountHomeWorkspace(container, deps) {
     byId('homeWorkspaceContent')?.setAttribute('hidden', '');
     [
       'homeContinueContent', 'homeSessionContent', 'homeNightContent', 'homeNoticedContent',
-      'homeReviewContent', 'homeRecentContent', 'homeWelcomeActions', 'homeContextChip',
+      'homeReviewContent', 'homeRecentContent', 'homeWelcomeActions',
     ].forEach((id) => byId(id)?.replaceChildren());
     ['homeGreetingTitle', 'homeGreetingSub', 'homeNightTitle', 'homeIdentityDisplayName', 'homeIdentityUsername']
       .forEach((id) => { const node = byId(id); if (node) node.textContent = ''; });
-    byId('homeContextChip')?.setAttribute('hidden', '');
     const header = deps.header();
     header?.setContext?.('home', []);
     header?.setPlayContext?.(null);

@@ -20,7 +20,7 @@ My own startup fix was removed. The accepted fix is the startup gate (`startup-g
 | Mockup block | Verdict | What was built |
 |---|---|---|
 | Greeting + date | Built | Clock + display name (account only); no "hands waiting" half |
-| Context chip | Built, read-only | Selected Game · Approach from Personal Strategy; no toggle (Table rules, M2) |
+| Context chip | Dropped (round 3) | The workspace header chip already shows Game · Approach (HOME-CONTEXT-CHIP-DUP fixed) |
 | Continue hero (Orbit) | Built for real items only | Live hand, Personal Strategy calibration (real progress bar). Orbit and the mini felt: future/drop |
 | Today's session | Built from real data | Up to 3 rows: marked review-later items, marked items, then a quick drill. Honest "Nothing is due". No minutes |
 | The night after | Built from the Game night ledger | Last active/completed night: title, players, transfers, amount, recency. Hand results, luck axis, plan axis, "Unknown" cards: future (HOME-NIGHT-HANDS) |
@@ -59,24 +59,25 @@ My own startup fix was removed. The accepted fix is the startup gate (`startup-g
 
 `/review-animations` and `/break-ui` are not invocable as skills in this session (not listed); I applied their rules by hand (no `transition: all`, no animated layout, tabular numbers, truncated titles only, no numbers truncated). Please run them before merge.
 
-## 6. Round 2: Start something card, dead-space audit, Russian
+## 6. Round 3: row-aligned sparse states, tiles, chip removed, audit
 
-**Start something card** (real destinations only: Quick drill, Analyze a spot, Equity, Reconstruct a hand, Game night; rows sized as a list, no solid button). It appears only when fewer than 5 other cards show (cap of 6 kept). The first-visit "game night intro" card was dropped (Game night is now in Start something). Few-card states use a "roomy" density and cards with rows/tiles share spare column height (capped), so cards are not hollow.
+Base: `origin/codex/stabilization` `6c1f62a`. Four cards or fewer now use a **row-aligned grid**: two cards per row, equal-height rows, Start something in the wide cell of row two (an odd last card spans both). Start something is a 2-column grid of tiles (Quick drill, Analyze a spot, Equity, Reconstruct a hand, Game night). Rows and tiles grow with their card (capped) and a text card centers its text. The 5 to 6-card returning layout is unchanged (two columns). Home's own context chip is removed (tests and component sheet updated).
 
-Dead-space numbers (Firefox, Midnight EN unless noted). "Below" = empty strip under the cards inside the viewport; "column" = empty block under the shorter column; "in-card" = largest empty block inside a card.
+Dead-space audit (Firefox, Midnight). "Below" = strip under the last row (allowed). "Column" = empty block under a shorter column (none: rows are equal). "In-card" = largest empty block under a card's content.
 
 | State | Viewport | Page | Below | Column | In-card |
 |---|---|---|---|---|---|
-| First visit | 1920 | fits | 77 px | 0 | Welcome hero 167 px (centered content) |
-| First visit | 1366 | 810/768 | 6 px | 0 | none over 60 |
-| Quiet (3 + Start) | 1920 | fits | 77 px | **490 px left column (Session "Nothing is due" is short)** | none |
-| Quiet | 1366 | 786/768 | 30 px | **178 px** | none |
-| Returning (6 cards) | 1920 | fits | 80 px | 0 | none |
-| Returning | 1366 | scrolls (1199/768) | 0 | 0 | none |
+| First visit | 1920 EN | fits | 234 px | 0 | 75 px (Welcome hero) |
+| First visit | 1920 RU | fits (was 7 px over) | 198 px | 0 | 75 px |
+| First visit | 1920 HE | fits | 234 px | 0 | 75 px |
+| First visit | 1366 EN | 924/768 | 0 | 0 | 46 px |
+| Quiet | 1920 EN / RU / HE | fits | 234 px | 0 | 1 px |
+| Quiet | 1366 EN | 888/768 | 0 | 0 | 1 px |
+| Returning (6 cards) | 1920 EN / RU / HE | fits | 68 px | 0 | 1 px |
+| Returning | 1366 EN | 1147/768 | 0 | 0 | 23 px |
+| Returning | 1366 RU | 1236/768 | 0 | 0 | 32 px |
 
-**Not fully met:** the quiet state still has a 490 px (1920) / 178 px (1366) empty column block, and the first-visit Welcome hero has 167 px centred slack. The cause is thin real data (a short "Nothing is due" card); filling it would need invented content. Options for the owner: make the Session card in the nothing-due state carry the Start something tiles itself, or let quiet use a single wide column.
-
-**Russian:** 1920 returning now fits (1080/1080, 49 px below). First visit RU is 7 px over (1087/1080). 1366 RU returning scrolls (1288/768) with no horizontal overflow. Hebrew 1920: all three states as EN. Long-name stress (60-char profile, 90-char titles, 9-digit numbers) at 1920, 1366 and 1366 HE: no card overflow after a wrap fix.
+No block over ~160 px inside or between cards. The 234 px strip below the last row at 1920 (first visit, quiet) is the allowed case: no useful real content exists to put there. One solid primary in every state; no horizontal overflow in any shot. 17 screenshots plus mockup comparisons are in the QA folder (stale PNGs cleared first, in one command).
 
 ## 7. Differences from the mockup (with reasons)
 
@@ -89,7 +90,7 @@ No Orbit/felt, stickers, Chippy, Learn, progress, plan coverage, minutes (no dat
 - **Account view:** `home001_cards` has a behavioural test that builds the real Home bridge around a **FAKE auth provider** (signed in, sync conflict, then signed out) and renders it. **No real auth provider was used.**
 - Motion by hand against `.agents/skills/review-animations/SKILL.md`: entrance 420 ms (MOTION_SPEC 30), 70 ms stagger, transform/opacity only, ease-out, Reduced = fade, keyboard instant, hover under fine pointers, no `transition: all`. Components by hand against `break-ui`: long unbroken names, 9-digit numbers, empty and error states, RTL: fixed one overflow class (wrap), numbers never truncated.
 - Firefox QA: 16 screenshots plus mockup and side-by-side comparisons in `C:\Users\sjzns\Projects\Riverline_QA_2026-10\HOME-001\` (returning state is a fixture model through the real controller; first visit is the real guest app).
-- Full suite (`--test-concurrency=2`): see the result line appended at the end of this file.
+- Full suite: see the result line at the end of this file.
 
 ## 9. Limitations and debt (register rows added)
 
@@ -105,4 +106,4 @@ Committed on `claude/home-workspace-redesign-129bdd` and pushed to `origin/wip/H
 
 ## Result
 
-Full suite after the final CSS, `--test-concurrency=2`: 2928 tests, 2925 pass, 0 fail, 1 skipped. The known flake uiqa002a did not fail in this run (not edited).
+Full suite after the final CSS (round 3), `--test-concurrency=2`: 2929 tests, 2926 pass, 0 fail, 1 skipped.

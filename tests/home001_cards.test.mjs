@@ -282,15 +282,12 @@ test('keyboard equivalents: every action is a native button, the Study Inbox is 
   assert.equal(inbox.getAttribute('data-tutorial-anchor'), 'home-study-inbox');
 });
 
-test('the greeting names an account, not a guest; the context chip is read-only', async () => {
+test('the greeting names an account, not a guest; Home has no chip of its own (the header shows the context)', async () => {
   await show(model({ personalStrategy: { status: 'ready', selectedProfile: { id: 'p', displayName: 'Home game' }, selectedMode: { id: 'm', displayName: 'Serious' } } }));
   assert.match(text('#homeGreetingTitle'), /^Good (morning|afternoon|evening), Dana$/);
-  assert.equal($('#homeContextChip').hidden, false);
-  assert.equal(text('#homeContextChip'), 'Home game · Serious');
-  assert.equal($('#homeContextChip').localName, 'span', 'not a control: the format toggle comes with Table rules');
+  assert.equal($('#homeContextChip'), null, 'HOME-CONTEXT-CHIP-DUP: the workspace header chip is the one place');
   await show(model({}, 'guest'));
   assert.match(text('#homeGreetingTitle'), /^Good (morning|afternoon|evening)$/);
-  assert.equal($('#homeContextChip').hidden, true);
 });
 
 test('opening motion: cards stagger in reading order, a key press opens instantly, timers are bounded', async () => {
@@ -337,7 +334,6 @@ test('owner isolation A -> B -> sign-out: header, hidden identity, chip and ever
     assert.equal(text('#homeIdentityDisplayName'), '', 'hidden identity fields are cleared');
     assert.equal(text('#homeIdentityUsername'), '');
     assert.equal(text('#homeGreetingTitle'), '');
-    assert.equal(text('#homeContextChip'), '');
     for (const id of ['Continue', 'Session', 'Night', 'Noticed', 'Review', 'Recent']) {
       assert.equal($(`#home${id}Content`).children.length, 0, `${id} keeps no content of the previous owner`);
     }
@@ -441,4 +437,20 @@ test('account view through a FAKE auth provider (no real provider is used): sign
   assert.equal($('#homeAccountOverview').hidden, true);
   assert.equal(text('#homeIdentityDisplayName'), '');
   assert.doesNotMatch($('#homeWorkspaceContent').innerHTML, /Fake Owner|fake_owner/);
+});
+
+test('four cards or fewer use a row-aligned grid: two per row, Start something in the wide cell of row two', () => {
+  const first = planHomeCards(model());
+  assert.equal(first.layout, 'rows');
+  assert.deepEqual([...first.start], ['welcome', 'start']);
+  assert.deepEqual([...first.end], ['session', 'noticed']);
+  const quiet = planHomeCards(model({ recent: ready([item('a')]) }));
+  assert.equal(quiet.layout, 'rows');
+  assert.deepEqual([...quiet.start], ['session', 'start']);
+  assert.deepEqual([...quiet.end], ['noticed', 'recent']);
+  const full = planHomeCards(model({
+    continue: ready([{ kind: 'live_hand' }]), recent: ready([item('a')]),
+    review: { status: 'ready', reviewLater: ready([item('v')]), mistakes: ready([]) }, nightAfter: { status: 'ready', night },
+  }));
+  assert.equal(full.layout, 'columns', 'the five-or-six-card layout stays as it is');
 });

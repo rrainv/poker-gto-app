@@ -149,8 +149,7 @@ function homeSection(t) {
     h('span', { class: 'home-noticed-evidence', text: t('Played {played} of {total} hands · your plan {plan}%').replace('{played}', '14').replace('{total}', '18').replace('{plan}', '45') }),
     h('span', { class: 'home-noticed-source', text: t('Played hands · your plan · medium sample') }));
   return section('Home components (HOME-001)',
-    label('Context chip (read-only) · Row · Tiles'),
-    row(h('span', { class: 'home-context-chip', text: 'Home game · Serious' })),
+    label('Row · Tiles'),
     h('div', { class: 'home-rows' }, homeRow('1', 'A♠K♦ BTN vs BB, 3-bet pot', `${t('Marked for review later')} · ${t('Saved Hand')}`), homeRow('2', t('Practice a quick drill'), t('A few spots in Training'))),
     h('div', { class: 'home-tiles' }, tile('6', t('Players')), tile('4', t('Transfers to settle')), tile('₪420.00', t('Moved in the settle-up'))),
     label('Progress · Noticed item (source line, links to its spots)'),

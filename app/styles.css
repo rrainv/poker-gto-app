@@ -18419,8 +18419,6 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-mat
 .home-greeting-copy { flex: 1 1 280px; min-inline-size: 0; }
 .home-greeting-title { margin: 0; font-family: var(--font-display); font-size: 1.625rem; line-height: 1.2; font-weight: var(--weight-section-title); color: var(--text-primary); overflow-wrap: anywhere; }
 .home-greeting-sub { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--t-small); }
-.home-context-chip { display: inline-flex; align-items: center; gap: var(--space-3); min-block-size: 40px; padding-inline: var(--space-7); border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-secondary); font-size: var(--t-small); font-weight: var(--weight-control); }
-.home-context-chip[hidden] { display: none; }
 
 .home-cards { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-6); align-items: stretch; }
 .home-column { display: flex; flex-direction: column; gap: var(--space-5); min-inline-size: 0; }
@@ -18467,7 +18465,8 @@ html[data-layout-preset] #gtoMode[data-product-destination="analyze"] .range-mat
 .home-row-title { font-weight: var(--weight-heading); font-size: var(--t-body); }
 .home-row-sub { color: var(--text-muted); font-size: var(--t-small); }
 
-.home-rows--start { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.home-rows--start { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-rows--start .home-row { flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--space-2); block-size: auto; min-block-size: 76px; }
 .home-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-5); }
 .home-tile { display: grid; gap: var(--space-2); padding: var(--space-5) var(--space-6); border: 1px solid var(--border-default); border-radius: var(--radius-control); background: var(--surface-interactive); }
 .home-tile-value { font-family: var(--font-display); font-size: 1.25rem; font-weight: var(--weight-display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
@@ -18518,7 +18517,17 @@ button.home-noticed-item:active { transform: scale(.985); }
 #homeRecentContent .home-row { block-size: 46px; }
 
 /* Few cards (first visit, a quiet week): roomier rows and a taller hero so the cards use the screen. */
-.home-cards[data-density="roomy"] { min-block-size: calc(100dvh - 232px); }
+/* Row-aligned grid: two cards per row, rows of equal height, so no column can end short. */
+.home-cards[data-density="roomy"] { grid-auto-rows: 1fr; }
+.home-cards[data-density="roomy"] .home-column { display: contents; }
+.home-cards[data-density="roomy"] .home-card { order: var(--home-card-order, 0); }
+.home-cards[data-density="roomy"] .home-card[data-span="full"] { grid-column: 1 / -1; }
+/* In the row grid, rows and tiles grow with their card (capped); a text card centers its text. */
+.home-cards[data-density="roomy"] .home-card[data-rows="true"] .home-card-content { flex: 1 1 auto; align-content: stretch; }
+.home-cards[data-density="roomy"] .home-card[data-rows="true"] .home-card-content > .home-rows { block-size: 100%; grid-auto-rows: minmax(0, 1fr); align-content: center; }
+.home-cards[data-density="roomy"] .home-card[data-rows="true"] .home-rows .home-row { block-size: 100%; min-block-size: 50px; max-block-size: 136px; align-self: center; }
+.home-cards[data-density="roomy"] .home-card[data-rows="true"] .home-rows--start .home-row { block-size: 100%; min-block-size: 72px; max-block-size: 84px; }
+.home-cards[data-density="roomy"] .home-card:not([data-rows="true"]) .home-card-content { align-content: center; flex: 1 1 auto; }
 .home-cards[data-density="roomy"] .home-card { padding: var(--space-8); gap: var(--space-6); }
 .home-cards[data-density="roomy"] .home-row { block-size: 64px; }
 .home-cards[data-density="roomy"] .home-card--lead .home-card-art { inline-size: 180px; block-size: 127px; }
@@ -18538,8 +18547,7 @@ button.home-noticed-item:active { transform: scale(.985); }
 .home-card[data-stretch="true"] .home-card-content > .home-rows--start .home-row { max-block-size: 160px; }
 
 /* Long unbroken names (a 60-character profile) wrap inside their card instead of overflowing it. */
-.home-continue-title, .home-continue-context, .home-continue-progress, .home-noticed-title, .home-noticed-evidence, .home-noticed-source, .home-card-text, .home-card-note, .home-tile-label, .home-context-chip { overflow-wrap: anywhere; min-inline-size: 0; }
-.home-context-chip { max-inline-size: 100%; }
+.home-continue-title, .home-continue-context, .home-continue-progress, .home-noticed-title, .home-noticed-evidence, .home-noticed-source, .home-card-text, .home-card-note, .home-tile-label { overflow-wrap: anywhere; min-inline-size: 0; }
 .home-noticed-title bdi { overflow-wrap: anywhere; }
 
 /* Hebrew: a Latin title (dir=auto) still aligns to the reading start, like its sub line. */
