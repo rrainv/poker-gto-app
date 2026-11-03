@@ -22,6 +22,8 @@ Goal: docs and truth fixed, design and motion foundation, Training and Settings 
 | MOTION-FOUNDATION-001 | `7ab2bfe` | One motion system, Motion setting, keyboard-instant |
 | MERGE-003 | `b3ef6d4`, `245d7d1` | Argon batch 3 (B7 locale numbers, B8 keyboard access, B9 Full Hand quality, B10 Saved flake); Hero-fold title and Equity formatter fix |
 | TRAINING-QUICK-001 | `432c27b` | Quick refresher on the prototype, correction 1 delivered 2026-10-30; report [TRAINING-QUICK-001](archive/agent-reports/2026-10/TRAINING-QUICK-001.md). Owner acceptance pending |
+| HOME-001 | `7ae46dc` | Home card grid, owner-leak fixes, Start something; owner accepted 2026-11-04; report [HOME-001](archive/agent-reports/2026-11/HOME-001.md) |
+| EXTRACT-HOME-001 | `311bc5e` | Home moved out of `logic.js` into `home-workspace.mjs` |
 | COMPONENTS-001 | folded in | Not a separate ticket: `app/src/ui/drill-components.mjs` (from TRAINING-QUICK-001) is the seed of the shared component set; further components land with the tickets that need them |
 
 Earlier work (MERGE-001/002, batch 1 and 2, TRAINING-F12-001, SKILLS-001, DOCS-PHASE1/SMALL-001, ANALYZE-COMPOSITION-001): git log and the snapshot.
@@ -30,11 +32,10 @@ Earlier work (MERGE-001/002, batch 1 and 2, TRAINING-F12-001, SKILLS-001, DOCS-P
 
 | # | Ticket | Outcome | Class / tier |
 |---|---|---|---|
-| 1 | EXTRACT-HOME-001 | Home moved out of `logic.js` into a mounted module (step 0 of HOME-001; HOME-BRIDGE-RACE goes with it) | Correctness/Architecture · T1 |
-| 2 | HOME-001 | Home redesign per prototype GkEYuGz7y4rsvRJpH7oLJo and the HOME RULES in the decision log; inventory: [HOME-INVENTORY-001](archive/agent-reports/2026-11/HOME-INVENTORY-001.md) | Product Contract First · T2 |
+| 1 | SETTINGS-001 | Settings redesign per the SETTINGS RULES in the decision log | Product Contract First · T2 |
+| 2 | ANALYZE-INVENTORY-001 | Analyze inventory (read-only), as HOME-INVENTORY-001 was for Home | T0 |
 | 3 | TRAINING-QUICK-002 | Quick drill follow-ups from the owner review (register TRAINING-QUICK-* and QUICKDRILL-* rows) | Product Contract First · T2 |
-| 4 | SETTINGS-001 | Settings redesign per the SETTINGS RULES in the decision log | Product Contract First · T2 |
-| 5 | WELCOME-001 | Welcome / first-run flow | Product Contract First · T2 |
+| 4 | WELCOME-001 | Welcome / first-run flow | Product Contract First · T2 |
 
 Then the rest of M1 per the build plan (full queue in the snapshot, phases 2–6): TRAINING-LONG-001 (with Training Memory extraction), ANALYZE-POLISH-001, NOTICES-001, HG-LEDGER-EDITS-001, Argon batch 4 (AUDIO-RESEARCH-001, GOLDEN-SPOTS-001, A11Y-AUDIT-001), foundation passes (REVIEW/HAND/FULLHAND/EQUITY/PS/GAMENIGHT/LIBRARY/LEARN-FOUND), trust package (EXACT-LABELS-001, BASELINE-MEASURE-001), then I18N-COMPLETE-001, LAYOUT-AUDIT-001 and the T3 QA sweep. M2 (Personal Strategy flow, Hand, Review, Equity, Learn, Game night, Table rules) starts after the gate.
 
