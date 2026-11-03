@@ -19,6 +19,7 @@ const [bootstrap, translationSource] = await Promise.all([
   readFile(new URL('../app/src/locales/tutorial-translations.js', import.meta.url), 'utf8'),
 ]);
 const markup = indexDocument();
+const stylesSource = await readFile(new URL('../app/styles.css', import.meta.url), 'utf8');
 const css = appStyleSheet();
 const app = await bootApp();
 const probe = (html) => {
@@ -194,12 +195,8 @@ test('inactive tutorial integration stays presentation-only and dormant', () => 
     assert.equal(css.cascaded(probe(`<div class="${className}"></div>`), 'transition', { reducedMotion: true }), 'none', className);
   }
   assert.equal(css.cascaded(probe('<div class="tutorial-spotlight"></div>'), 'transition'), 'none');
-  // Over an open Settings dialog the tutorial layer rises above the backdrop.
-  const layer = probe('<div class="tutorial-layer"></div>');
-  const settings = markup.getElementById('settingsModal');
-  const closed = css.cascaded(layer, 'z-index');
-  settings.classList.add('show');
-  assert.equal(css.cascaded(layer, 'z-index'), 'calc(var(--z-modal-backdrop) + 1)');
-  settings.classList.remove('show');
-  assert.notEqual(closed, 'calc(var(--z-modal-backdrop) + 1)');
+  // SETTINGS-001: Settings is a workspace, not a dialog, so there is no backdrop
+  // for the tutorial layer to rise above.
+  assert.equal(markup.getElementById('settingsModal'), null);
+  assert.doesNotMatch(stylesSource, /settingsModal\.show/);
 });

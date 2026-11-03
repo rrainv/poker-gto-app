@@ -1956,6 +1956,17 @@ if (window.riverlineTrainingQuickTranslations) {
   });
 }
 
+// Existing translations win: the Settings catalog only fills keys that are new
+// (several shared words, such as Reset or Guide, already have an approved form).
+if (window.riverlineSettingsTranslations) {
+  Object.entries(window.riverlineSettingsTranslations).forEach(([language, entries]) => {
+    if (!appTranslations[language]) return;
+    Object.entries(entries).forEach(([key, value]) => {
+      if (!Object.prototype.hasOwnProperty.call(appTranslations[language], key)) appTranslations[language][key] = value;
+    });
+  });
+}
+
 if (window.riverlineWelcomeTranslations) {
   Object.entries(window.riverlineWelcomeTranslations).forEach(([language, entries]) => {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);

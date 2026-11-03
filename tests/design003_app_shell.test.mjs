@@ -91,8 +91,9 @@ test('settings, language, audio, and sidebar collapse controls remain available'
   const shell = shellMarkup();
   for (const id of ['openSettings', 'langToggle', 'audioToggleBtn', 'sidebarCollapseBtn']) assert.ok(shell.querySelector(`#${id}`), id);
   await app.click('#openSettings');
-  assert.ok(app.byId('settingsModal').classList.contains('show'), 'Settings opens');
-  app.byId('settingsModal').classList.remove('show');
+  assert.equal(app.byId('settingsMode').style.display, 'block', 'Settings opens as a workspace');
+  assert.equal(app.window.RiverlineSettings.isOpen(), true);
+  app.window.RiverlineSettings.close();
   assert.equal(markup.getElementById('langToggle').hasAttribute('onchange'), false);
   assert.match(i18n, /languageSelect\.addEventListener\('change'/);
   assert.match(sound, /btn\.setAttribute\('aria-pressed', String\(soundEnabled\)\)/);

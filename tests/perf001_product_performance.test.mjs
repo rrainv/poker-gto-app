@@ -256,7 +256,7 @@ test('theme changes and retained animations no longer trigger strategy or forced
     assert.equal(app.document.documentElement.dataset.theme, themeId, 'the theme changed');
     assert.equal(spy.count('updateContext'), 0, 'theme changes do not update strategy');
     await app.click('#themeSwatchGrid button[data-theme-id="midnight"]');
-    await app.click('#closeSettingsModal');
+    app.window.RiverlineSettings.close();
     // Hot paths perform no forced layout reads.
     reads.length = 0;
     app.call('renderAllCards');

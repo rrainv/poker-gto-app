@@ -94,7 +94,7 @@ test('DATA-SAFETY-001: requests persistent storage once at startup without naggi
 });
 
 test('DATA-SAFETY-001: Delete all data is strongly guarded with warning list, localized type-to-confirm (EN/RU/HE), cancel, and full local deletion', async () => {
-  if (!app.byId('settingsModal').classList.contains('show')) {
+  if (!app.window.RiverlineSettings.isOpen()) {
     await app.click('#openSettings');
   }
   if (app.byId('settingsAccountProfile').hidden) {

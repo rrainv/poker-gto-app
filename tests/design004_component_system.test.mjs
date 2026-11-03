@@ -174,7 +174,7 @@ test('badges and state patterns use a bounded semantic vocabulary', () => {
 
 test('modal, tooltip, and toast primitives share semantic surfaces', () => {
   assert.ok(markup.querySelector('.modal.overlay-surface'));
-  assert.ok(markup.querySelector('.modal.overlay-surface.settings-modal'));
+  assert.equal(markup.querySelector('.settings-modal'), null, 'Settings is a workspace now, not a dialog (SETTINGS-001)');
   assert.equal(cascaded(probe('<span data-tooltip="Tip">x</span>'), 'content', { pseudoElement: 'after' }), 'attr(data-tooltip)');
   const toastNode = markup.getElementById('toast');
   assert.equal(toastNode.getAttribute('role'), 'status');

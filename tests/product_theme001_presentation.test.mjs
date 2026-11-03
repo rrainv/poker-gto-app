@@ -253,7 +253,7 @@ test('theme, density, and layout stay independent for every supported combinatio
 test('major workspaces consume the shared semantic surface grammar', () => {
   for (const marker of [
     'id="homeMode"', 'id="homegameMode"', 'id="gtoMode"', 'id="trainingMode"',
-    'id="calibrationMode"', 'id="equityMode"', 'id="settingsModal"', 'savedHandViewerBanner',
+    'id="calibrationMode"', 'id="equityMode"', 'id="settingsMode"', 'savedHandViewerBanner',
   ]) {
     const id = marker.match(/^id="([^"]+)"$/)?.[1];
     assert.ok(id ? markup.getElementById(id) : markup.getElementById(marker) || markup.querySelector(`[id*="${marker}"], .${marker}`), marker);

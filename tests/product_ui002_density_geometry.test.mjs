@@ -163,32 +163,29 @@ test('table seats use one adaptive radial-felt player-unit anchor for cards and 
 });
 
 test('Settings and collapsed table use viewport-safe responsive layout contracts', async () => {
-  // Protects: z-index tokens; the Settings modal is bounded by the viewport
-  // with an internally scrolling two-column layout; collapsing the table
-  // updates wrapper, workspace and toggle state.
-  const modal = markup.querySelector('.modal.overlay-surface.settings-modal');
-  assert.ok(modal);
+  // Protects: z-index tokens; Settings is a workspace (SETTINGS-001) whose rail
+  // and preview stay in view while the stream scrolls, with one stacked column
+  // when its container is narrow; collapsing the table updates wrapper,
+  // workspace and toggle state.
+  const view = markup.getElementById('settingsMode');
+  assert.ok(view);
+  assert.equal(markup.querySelector('.settings-modal'), null);
   const root = app.document.documentElement;
   assert.equal(css.cascaded(root, '--z-mode-rail'), '30');
   assert.equal(css.cascaded(root, '--z-toast'), '60');
   assert.equal(css.cascaded(root, '--z-modal-backdrop'), '100');
   await app.click('#openSettings');
-  const backdrop = app.byId('settingsModal');
-  assert.equal(css.cascaded(backdrop, 'z-index'), 'var(--z-modal-backdrop)');
-  const dialog = backdrop.querySelector(':scope > .modal');
-  assert.equal(css.cascaded(dialog, 'z-index'), '1');
-  assert.equal(css.cascaded(dialog, 'width'), 'min(940px, calc(100vw - (var(--space-7) * 2)))');
-  assert.equal(css.cascaded(dialog, 'max-width'), 'calc(100vw - (var(--space-7) * 2))');
-  assert.equal(css.cascaded(dialog, 'height'), 'min(760px, calc(100dvh - (var(--space-6) * 2)))');
-  const body = dialog.querySelector('.modal-body');
-  for (const [property, value] of Object.entries({ 'min-width': '0', 'min-height': '0', overflow: 'hidden', 'overscroll-behavior': 'contain' })) {
-    assert.equal(css.cascaded(body, property), value, `.modal-body ${property}`);
+  assert.equal(app.byId('settingsMode').style.display, 'block');
+  const settingsWorkspace = view.querySelector('.settings-workspace');
+  assert.equal(css.cascaded(settingsWorkspace, 'align-items'), 'start');
+  assert.equal(css.cascaded(settingsWorkspace, 'justify-content'), 'center');
+  for (const zone of ['.settings-rail', '.settings-preview']) {
+    assert.equal(css.cascaded(view.querySelector(zone), 'position'), 'sticky', zone);
+    assert.equal(css.cascaded(view.querySelector(zone), 'inset-block-start'), 'calc(var(--header-bar-height) + var(--space-6))', zone);
   }
-  assert.equal(css.cascaded(dialog.querySelector('.settings-layout'), 'grid-template-columns'), 'minmax(190px, .38fr) minmax(0, 1fr)');
-  const content = dialog.querySelector('.settings-content');
-  assert.equal(css.cascaded(content, 'overflow'), 'auto');
-  assert.equal(css.cascaded(content, 'overscroll-behavior'), 'contain');
-  backdrop.classList.remove('show');
+  assert.equal(css.cascaded(view.querySelector('.settings-stream'), 'min-width'), '0');
+  assert.equal(css.cascaded(view, 'container'), 'settings-mode / inline-size');
+  app.window.RiverlineSettings.close();
 
   await app.navigate('hand');
   const wrapper = app.byId('table-wrapper');

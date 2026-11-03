@@ -161,7 +161,8 @@ test('the context line joins already-rendered facts for the active workspace onl
 
 test('the workspace description moved from the header into the Help panel', async () => {
   assert.match(tutorialBootstrap, /openChooser\(manualButton\.dataset\.tutorialWorkspace, manualButton, \{ help: helpContent\(\) \}\)/);
-  assert.match(tutorialBootstrap, /button\.hidden = workspace === 'settings';/);
+  // SETTINGS-001: Settings is a workspace now, so Help stays available there.
+  assert.match(tutorialBootstrap, /button\.hidden = false;/);
   const buttons = rail.querySelectorAll('button.mode-nav-item');
   for (const button of buttons) assert.ok(button.dataset.modeSubtitle, `${button.dataset.navigationId} keeps its description for Help`);
   // Navigation hands the button's description to the header for Help.

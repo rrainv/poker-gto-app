@@ -267,7 +267,7 @@ test('full-ten is presentation-only: the canonical Hand keeps its T cards', asyn
     assert.equal(app.call('cardMarkup', 'Th').includes('>10<'), true);
   } finally {
     await app.click(`button[data-card-rank-style="${previous}"]`);
-    await app.click('#closeSettingsModal');
+    app.window.RiverlineSettings.close();
   }
   assert.deepEqual(heroCards(), ['Th', '9h']);
 });

@@ -152,7 +152,7 @@ export const SETTINGS_TUTORIAL_DEFINITION = definition({
     { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Appearance', bodyKey: 'Choose how Riverline looks without changing cards, poker state, or study results.', placement: 'right' },
     { id: 'audio', anchor: 'settings-audio', titleKey: 'Keep sound under your control', bodyKey: 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion has its own setting: Instant, Faster, Standard or Reduced.', placement: 'right' },
     { id: 'language', anchor: 'settings-language-help', titleKey: 'Language & Help', bodyKey: 'Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.', placement: 'right' },
-    { id: 'account', anchor: 'settings-account', titleKey: 'Saved Study sync is always opt-in', bodyKey: 'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.', placement: 'left' },
+    { id: 'account', anchor: 'settings-account', titleKey: 'Saved Study sync is always opt-in', bodyKey: 'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.', placement: 'right' },
   ],
 });
 

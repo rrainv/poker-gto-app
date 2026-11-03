@@ -41,7 +41,7 @@ export function installTutorialBridge(browserWindow, options = {}) {
     'saved-library-ready': () => elementShown('#savedLibrarySection'),
   };
   const currentWorkspace = () => (
-    document.querySelector('#settingsModal.show') ? 'settings'
+    document.querySelector('.riverline-shell')?.dataset.settingsOpen === 'true' ? 'settings'
       : document.querySelector('.riverline-shell')?.dataset.activeMode === 'home'
         && document.querySelector('.riverline-shell')?.dataset.activeDestination === 'saved'
         ? 'saved'
@@ -178,7 +178,7 @@ export function installTutorialBridge(browserWindow, options = {}) {
     if (!button) return;
     const definitions = availableDefinitions(workspace).filter((definition) => definition.restartPolicy !== 'never');
     // Help stays available in every workspace (it holds the moved description).
-    button.hidden = workspace === 'settings';
+    button.hidden = false;
     button.dataset.tutorialWorkspace = workspace ?? '';
     button.dataset.tutorialId = definitions.length === 1 ? definitions[0].id : '';
     button.setAttribute('aria-label', browserWindow.t?.('Help') ?? 'Help');

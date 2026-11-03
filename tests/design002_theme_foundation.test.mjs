@@ -49,7 +49,7 @@ test('the document and presentation authority default to Riverline Midnight', as
     await app.click('#openSettings');
     // Choosing a theme re-renders the swatches: query each one afresh.
     for (let index = 0; index < 3; index += 1) await app.click(app.$$('#themeSwatchGrid button')[index]);
-    await app.click('#closeSettingsModal');
+    app.window.RiverlineSettings.close();
   } finally {
     storage.getItem = getItem;
     storage.setItem = setItem;

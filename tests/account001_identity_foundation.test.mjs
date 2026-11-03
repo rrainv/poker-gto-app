@@ -386,7 +386,9 @@ test('account initialization remains local while the ACCOUNT-002A surface distin
   assert.match(copy, /Cloud sync is not enabled/);
   assert.match(copy, /Signing in does not create a cloud backup/);
   assert.equal(markup.getElementById('accountSignIn').dataset.i18n, 'Sign in');
-  assert.equal(css.cascaded(markup.querySelector('.settings-layout'), 'grid-template-columns', { width: 1440 }), 'minmax(190px, .38fr) minmax(0, 1fr)');
+  // SETTINGS-001: three zones; at a wide container the rail, a capped stream and the preview.
+  assert.equal(css.cascaded(markup.querySelector('.settings-workspace'), 'grid-template-columns', { width: 1440 }),
+    'var(--settings-rail-width) minmax(0, var(--settings-stream-max)) minmax(0, var(--settings-preview-width))');
   const form = markup.querySelector('.account-display-name-form');
   assert.ok(form);
   assert.ok(css.matchingRules(form).length > 0, 'the display-name form is styled');

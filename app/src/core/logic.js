@@ -9156,6 +9156,7 @@ function bindEvents() {
   $$('.mode-nav-item[data-mode]').forEach((button) => button.addEventListener('click', () => {
     const mode = button.dataset.mode;
     const destination = button.dataset.navigationId || mode;
+    window.RiverlineSettings?.leave();
     // SHELL-002: the workspace switch enters from the direction of travel in
     // the sidebar (moment 14); keyboard input stays instant via the motion rule.
     const navigationItems = $$('.mode-nav-item[data-mode]');
@@ -9454,27 +9455,12 @@ function bindEvents() {
 
 
 
-  if ($('#openSettings')) $('#openSettings').addEventListener('click', () => {
+  // SETTINGS-001: Settings is a workspace (application/settings-shell.mjs); the
+  // sidebar gear opens it and selects it again to go back.
+  $('#openSettings')?.addEventListener('click', () => {
     clearToast();
-    if ($('#settingsModal')) {
-      $('#settingsModal').classList.add('show');
-      window.RiverlineTutorials?.workspaceChanged?.('settings');
-      window.RiverlineTutorials?.offerForWorkspace?.('settings', $('#settingsTutorialOfferHost'));
-    }
+    window.RiverlineSettings?.toggle();
   });
-
-  const closeSettings = () => {
-    if ($('#settingsModal')) $('#settingsModal').classList.remove('show');
-    const shell = $('.riverline-shell');
-    const workspace = shell?.dataset.activeMode === 'home' && shell?.dataset.activeDestination === 'saved'
-      ? 'saved'
-      : shell?.dataset.activeMode ?? null;
-    window.RiverlineTutorials?.workspaceChanged?.(workspace);
-  };
-
-  if ($('#closeSettingsModal')) $('#closeSettingsModal').addEventListener('click', closeSettings);
-
-  if ($('#settingsModal')) $('#settingsModal').addEventListener('click', (event) => { if (event.target === $('#settingsModal')) closeSettings(); });
 
   if (!document.documentElement.dataset.cardPresentationLogicBound) {
     document.documentElement.dataset.cardPresentationLogicBound = 'true';
@@ -9552,7 +9538,7 @@ function bindEvents() {
       return;
     }
 
-    if (trainingModeIsVisible()) return;
+    if (trainingModeIsVisible() || window.RiverlineSettings?.isOpen()) return;
 
     // C - Clear current selection
     if (e.key === 'c' || e.key === 'C') {
