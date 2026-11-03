@@ -17,3 +17,5 @@ Apply to every future mockup or prototype before publishing. Also a good startin
 13. **Two cards in an illustration = one face up in front, one face down behind** (card back with the brass edge), for contrast (P1-14). Check every new graphic.
 14. **Before designing any screen, re-read the earlier PC layouts for it** (kit screens, earlier canvases, the all-mockups hub) and list what they contained; carry over everything still wanted, and note anything deliberately dropped with the reason. Content first, then layout.
 15. **PC first.** Screen mockups are fixed 1920×1080 canvases with the real shell, scaled to fit on other screens; phone versions are separate and later (P1-28).
+16. **Motion checklist per screen:** list every MOTION_SPEC moment that applies and mark each built / missing, compared with the prototype in motion, not only stills.
+17. **Dead-space audit per screen:** at 1920 and 1366 no empty region larger than ~160×160 px while useful information exists elsewhere; content columns sized to their content; buttons sized to their labels (no full-width buttons on PC).

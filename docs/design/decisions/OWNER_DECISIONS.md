@@ -10,6 +10,10 @@ Recorded by DOCS-RESET-002 from the owner's repository review and the approved t
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-04 | **Sparse-state layout:** when a view has 4 cards or fewer, use a row-aligned grid with equal-height rows; "Start something" uses tiles. | Uneven cards in a sparse view leave ragged edges and dead space on PC; equal rows keep it calm and aligned. |
+| 2026-11-04 | **Startup gate is the accepted fix for module startup order.** Top-level await in the auth and saved-sync bootstraps made those modules async, so the gate sequences startup explicitly. | Import order alone no longer guaranteed readiness once the bootstraps became async; one explicit gate is simpler than patching each importer. |
+| 2026-11-04 | **Outside-the-mix answers show no marker in the bar but a labelled pill** (P1-31). | An unlabelled bar marker reads as a position in the mix; a labelled pill says plainly that the answer is outside it. |
+| 2026-11-04 | **Test flakes are fixed at the root,** never retried or loosened. | A retry or looser assertion hides the real race or nondeterminism and weakens the test for every later change. |
 | 2026-10-31 | **Integration branch:** `codex/stabilization` becomes `main`. The branch move is pending; the owner runs it. Until then agents base on `codex/stabilization`. | `main` is far behind the real line of work; two names for one line cause wrong bases and merges. |
 | 2026-10-31 | **New binaries stay outside git** (PDFs, images, recordings, large exports). The research PDFs already in the repo stay. | Binaries bloat history permanently and cannot be diffed. Fonts and assets the app needs at runtime are the exception and are recorded in [THIRD_PARTY](../../THIRD_PARTY.md). |
 | 2026-10-31 | **CI runs on pull requests, on the integration branch and on manual dispatch.** The CI ticket sets it up; until then the T2 wording "full suite once at the end" in AGENTS.md is the local rule. | Tests are the safety net for a large single-file app; they must run where the owner merges. |
