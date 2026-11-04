@@ -6315,8 +6315,10 @@ function playbookSurfaceIsVisible(surface) {
   const modeVisible = playbookModeIsVisible();
   decisionPanel()?.setVisible(modeVisible);
   if (!modeVisible) return false;
-  if (surface === 'matrix') return $('#chartView')?.style.display !== 'none';
-  if (surface === 'range') return $('#rangeView')?.style.display !== 'none';
+  // The matrix and comparison tabs are told when they are shown (setVisible in
+  // selectPlaybookAnalysisView); neither reads display for it.
+  if (surface === 'matrix') return Boolean(matrixView()?.isVisible());
+  if (surface === 'range') return Boolean(rangeComparisonView()?.isVisible());
   if (surface === 'tree') return Boolean($('#treeView') && $('#treeView').style.display !== 'none');
   if (surface === 'analysis') return Boolean(decisionPanel()?.isExplainVisible());
   if (surface === 'table') return !$('#table-wrapper')?.classList.contains('collapsed');
@@ -6602,409 +6604,83 @@ function projectHandClassesAfterCardRemoval(handClasses, blockers) {
 }
 
 
-function renderMatrixCellInspector(cell) {
-  if (!cell?.dataset.hand) return;
-  const actions = JSON.parse(cell.dataset.strategyActions || '[]');
-  if ($('#selectedHand')) $('#selectedHand').textContent = cell.dataset.hand;
-  if ($('#selectedHandKind')) $('#selectedHandKind').textContent = cell.dataset.handKindLabel || t('Hand class');
-  if ($('#selectedHandPrimary')) {
-    $('#selectedHandPrimary').textContent = cell.dataset.primaryLabel || t('Strategy unavailable');
-    $('#selectedHandPrimary').dataset.actionKind = cell.dataset.primaryAction || 'unavailable';
+// EXTRACT-ANALYZE-002: the Range Matrix tab (#chartView) lives in
+// application/analyze-matrix.mjs. PERF-001 is unchanged: the 169 per-cell
+// provider resolves happen only preflop, only when the matrix renders (visible
+// tab, or the first show after being marked dirty) and only on a memo miss; the
+// module reaches the provider solely through the resolveCell dep below.
+let analyzeMatrixController = null;
+let analyzeMatrixMountReported = false;
+
+function mountMatrixView() {
+  if (analyzeMatrixController) return analyzeMatrixController;
+  const container = $('#chartView');
+  const module = window.RiverlineAnalyzeMatrix;
+  if (!container || !module) {
+    if (!analyzeMatrixMountReported) {
+      analyzeMatrixMountReported = true;
+      console.error('[Riverline Analyze] Range Matrix could not be mounted:',
+        !container ? '#chartView is missing' : 'window.RiverlineAnalyzeMatrix is missing');
+    }
+    return null;
   }
-  if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = cell.dataset.availableCombos || '-';
-  if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = cell.dataset.removedCombos || '-';
-  if ($('#selectedRangeSource')) $('#selectedRangeSource').textContent = cell.dataset.sourceLabel || t('Unavailable');
-  if ($('#selectedMix')) {
-    const detail = cell.dataset.strategyCue || t('Strategy unavailable');
-    $('#selectedMix').innerHTML = actions.length
-      ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${action.kind}"></i><span>${action.name}</span><strong>${formatUiNumber(action.value, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${action.kind}" style="width:${action.value}%"></i>`).join('')}</div>`
-      : `<span class="matrix-inspector-unavailable">${detail}</span>`;
-  }
+  analyzeMatrixController = module.mount(container, {
+    translate: (key, values) => t(key, values),
+    formatNumber: (value, options) => formatUiNumber(value, options),
+    ranks: () => RANKS,
+    handCode: (row, column) => handCode(row, column),
+    decisionContext: () => (app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+      ? app.decisionContext
+      : null),
+    heroClass: (decisionContext) => handClass(decisionContext?.heroCards || app.gto.hero),
+    currentStreet: () => currentStreet(),
+    providerOptions: () => readHeuristicOptions(),
+    cardRemoval: (classes, blockers) => projectHandClassesAfterCardRemoval(classes, blockers),
+    resolveCell: (cellContext) => {
+      const result = strategyProvider.resolve(cellContext);
+      const unavailable = result.source === strategyProvider.sources.UNAVAILABLE;
+      return {
+        source: result.source,
+        unavailable,
+        actions: unavailable ? [] : strategyResultPresentationActions(result),
+        claimPolicy: () => strategyClaimPolicy(result),
+      };
+    },
+    visualActionKind: (action) => visualActionKind(action),
+    sourceLabel: (source) => strategySourceDisplayLabel(source),
+    policySummary: (policy) => strategyPolicySummary(policy),
+    selectedHand: {
+      get: () => app.selectedHand,
+      set: (handClass) => { app.selectedHand = handClass; },
+    },
+    modelCache: {
+      get: () => app.matrixModel,
+      set: (model) => { app.matrixModel = model; },
+    },
+  });
+  return analyzeMatrixController;
 }
 
-function restoreSelectedMatrixInspector(grid) {
-  renderMatrixCellInspector(grid?.querySelector(`[data-hand="${app.selectedHand}"]`)
-    || grid?.querySelector('[aria-pressed="true"]'));
+function matrixView() {
+  return analyzeMatrixController ?? mountMatrixView();
 }
 
-function bindMatrixGridInteractions(grid) {
-  if (!grid || grid.dataset.delegated) return;
-  grid.dataset.delegated = 'true';
-  grid.addEventListener('click', (event) => {
-    const cell = event.target.closest('.hand-cell');
-    if (!cell || !cell.dataset.hand) return;
-    app.selectedHand = cell.dataset.hand;
-    const selectedHand = $('#selectedHand');
-    if (selectedHand) selectedHand.textContent = app.selectedHand;
-    renderChart();
-  });
-  grid.addEventListener('pointerover', (event) => {
-    const cell = event.target.closest('.hand-cell');
-    if (!cell || (event.relatedTarget && cell.contains(event.relatedTarget))) return;
-    renderMatrixCellInspector(cell);
-  });
-  grid.addEventListener('pointerout', (event) => {
-    const cell = event.target.closest('.hand-cell');
-    if (!cell || (event.relatedTarget && cell.contains(event.relatedTarget))) return;
-    restoreSelectedMatrixInspector(grid);
-  });
-  grid.addEventListener('focusin', (event) => renderMatrixCellInspector(event.target.closest('.hand-cell')));
-  grid.addEventListener('focusout', () => restoreSelectedMatrixInspector(grid));
-  grid.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') restoreSelectedMatrixInspector(grid);
-  });
-  bindMatrixGridKeyboard(grid);
-}
-
-// A11Y-KEYS-001: 13×13 matrices are ARIA grids (row elements use
-// display:contents so the CSS grid stays flat) with one Tab stop.
-function buildMatrixGridCells(grid, className, configureCell) {
-  grid.replaceChildren();
-  RANKS.forEach((_, row) => {
-    const rowElement = document.createElement('div');
-    rowElement.className = 'matrix-grid-row';
-    rowElement.setAttribute('role', 'row');
-    rowElement.setAttribute('aria-rowindex', String(row + 1));
-    RANKS.forEach((__, col) => {
-      const btn = document.createElement('button');
-      btn.className = className;
-      btn.type = 'button';
-      btn.tabIndex = -1;
-      btn.setAttribute('role', 'gridcell');
-      btn.setAttribute('aria-colindex', String(col + 1));
-      configureCell?.(btn, row, col);
-      rowElement.appendChild(btn);
-    });
-    grid.appendChild(rowElement);
-  });
-}
-
-function matrixGridCells(grid) {
-  return [...grid.querySelectorAll('[role="gridcell"]')];
-}
-
-function syncMatrixTabStop(grid, preferred) {
-  const cells = matrixGridCells(grid);
-  const focused = cells.find((cell) => cell === document.activeElement);
-  const stop = preferred || focused
-    || cells.find((cell) => cell.getAttribute('aria-pressed') === 'true')
-    || cells.find((cell) => cell.tabIndex === 0)
-    || cells[0];
-  cells.forEach((cell) => {
-    const tabIndex = cell === stop ? 0 : -1;
-    if (cell.tabIndex !== tabIndex) cell.tabIndex = tabIndex;
-  });
-}
-
-function bindMatrixGridKeyboard(grid) {
-  if (grid.dataset.keyboardBound) return;
-  grid.dataset.keyboardBound = 'true';
-  grid.addEventListener('focusin', (event) => {
-    const cell = event.target.closest('[role="gridcell"]');
-    if (cell) syncMatrixTabStop(grid, cell);
-  });
-  grid.addEventListener('keydown', (event) => {
-    const cell = event.target.closest('[role="gridcell"]');
-    if (!cell) return;
-    const cells = matrixGridCells(grid);
-    const index = cells.indexOf(cell);
-    if (index < 0) return;
-    const size = RANKS.length;
-    const row = Math.floor(index / size);
-    const col = index % size;
-    // The matrix is never mirrored (P1-30), so arrows stay physical in RTL.
-    const target = {
-      ArrowRight: col < size - 1 ? index + 1 : index,
-      ArrowLeft: col > 0 ? index - 1 : index,
-      ArrowDown: row < size - 1 ? index + size : index,
-      ArrowUp: row > 0 ? index - size : index,
-      Home: event.ctrlKey ? 0 : row * size,
-      End: event.ctrlKey ? cells.length - 1 : row * size + size - 1,
-    }[event.key];
-    if (target === undefined) return;
-    event.preventDefault();
-    syncMatrixTabStop(grid, cells[target]);
-    cells[target].focus();
-  });
-}
-
-function matrixMixState(actions, dominantAction) {
-  const meaningfulActions = actions.filter((action) => Number(action.value) >= 0.5);
-  return meaningfulActions.length <= 1 || Number(dominantAction?.value) >= 99.5 ? 'pure' : 'mixed';
-}
-
+// Page names kept for callers that address them (invalidator, tab switch,
+// language refresh, tests).
 function renderChart() {
-
-  const grid = $('#strategyGrid');
-
-  if (!grid) return;
-
-  const decisionContext = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
-    ? app.decisionContext
-    : null;
-  const matrixContextUnavailable = !decisionContext;
-  const positions = decisionContext?.heroPosition || '-';
-  const matrixStack = decisionContext?.stackBb ?? 0;
-  const matrixModel = prepareMatrixStrategyModel(decisionContext);
-  const currentHeroClass = matrixContextUnavailable
-    ? '' : handClass(decisionContext?.heroCards || app.gto.hero);
-  const isPostFlop = matrixModel.isPostFlop;
-  const matrixSource = matrixModel.source;
-  const matrixClaimPolicy = matrixModel.claimPolicy;
-  const matrixLayout = document.querySelector('.range-matrix-layout');
-  const matrixEmptyState = $('#postflopMatrixEmpty');
-  const matrixToolbar = document.querySelector('.range-matrix-toolbar');
-  const matrixDescription = $('#matrixPanelDescription');
-
-  if (matrixLayout) matrixLayout.hidden = isPostFlop;
-  if (matrixEmptyState) matrixEmptyState.hidden = !isPostFlop;
-  if (matrixToolbar) matrixToolbar.hidden = isPostFlop;
-  if (matrixDescription) {
-    matrixDescription.textContent = t(isPostFlop
-      ? 'Range expansion is not available yet; use Decision for exact-hand postflop strategy.'
-      : 'All 169 hand classes · click any square for its current mix.');
-  }
-
-  if (isPostFlop) {
-    grid.replaceChildren();
-    if ($('#chartSelectionPreview')) $('#chartSelectionPreview').innerHTML = `<span>${t('Exact hand only')}</span>`;
-    if ($('#selectedHand')) $('#selectedHand').textContent = t('Exact hand only');
-    if ($('#selectedHandKind')) $('#selectedHandKind').textContent = t('Postflop decision');
-    if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = t('Range expansion unavailable');
-    if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = '-';
-    if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = '-';
-    if ($('#selectedRangeSource')) $('#selectedRangeSource').textContent = t('Unavailable');
-    if ($('#selectedMix')) $('#selectedMix').innerHTML = `<span class="matrix-inspector-unavailable">${t('Use Decision for the exact-hand strategy.')}</span>`;
-    if ($('#chartSummary')) $('#chartSummary').textContent = t('Use Decision for exact-hand postflop strategy.');
-    return;
-  }
-
-  if (grid.children.length === 0) buildMatrixGridCells(grid, 'hand-cell');
-
-  bindMatrixGridInteractions(grid);
-  const gridCells = matrixGridCells(grid);
-
-  
-
-  let previewHTML = '';
-
-  
-
-  RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
-
-    const hand = handCode(row, column);
-    const matrixCell = matrixModel.cells[row * 13 + column];
-    const actions = matrixCell?.actions || [];
-    const dominantAction = actions.reduce((highest, action) =>
-      Number(action.value) > Number(highest?.value ?? -1) ? action : highest, null);
-
-    const type = dominantAction?.kind || 'unavailable';
-    const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
-    const mixState = matrixMixState(actions, dominantAction);
-
-    const detail = matrixCell?.cardRemovalState === 'fully_removed'
-      ? t('Unavailable after known-card removal')
-      : actions.length
-      ? actions.map((action) => `${t(action.name)} ${action.value}%`).join(' · ')
-      : isPostFlop
-        ? t('Unavailable · provider-backed postflop Matrix deferred')
-        : t('Strategy unavailable');
-
-    const idx = row * 13 + column;
-    const button = gridCells[idx];
-
-    const isSelected = app.selectedHand === hand || (!app.selectedHand && currentHeroClass === hand);
-
-    button.className = `hand-cell hand-${handKind} action-${type} matrix-${mixState} ${isSelected ? 'selected ' : ''}${type}`;
-    button.dataset.handKind = handKind;
-    button.dataset.primaryAction = visualActionKind(dominantAction);
-    button.dataset.mixState = mixState;
-    button.dataset.state = actions.length ? 'available' : 'unavailable';
-    button.dataset.strategySource = matrixSource || 'unavailable';
-    button.dataset.strategyCoverage = matrixClaimPolicy?.coverage?.kind || 'unsupported';
-    button.dataset.strategyPrecision = matrixClaimPolicy?.capabilities?.actionDistribution || 'none';
-    button.dataset.cardRemovalState = matrixCell?.cardRemovalState || 'unavailable';
-    button.dataset.strategyCue = detail;
-    button.setAttribute('aria-pressed', String(isSelected));
-
-    const chartMode = $('#chartAction')?.value || 'strategy';
-
-    let cellSubtext = '';
-
-    let cellBg = '';
-    button.style.removeProperty('background');
-
-
-
-    if (chartMode === 'raise') {
-
-      const val = actions.find(a => a.kind === 'aggressive')?.value;
-
-      cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
-
-      if (actions.length) cellBg = `color-mix(in srgb, var(--action-aggressive) ${val || 0}%, transparent)`;
-
-    } else if (chartMode === 'call') {
-
-      const val = actions.find(a => a.kind === 'passive')?.value;
-
-      cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
-
-      if (actions.length) cellBg = `color-mix(in srgb, var(--action-passive) ${val || 0}%, transparent)`;
-
-    } else if (chartMode === 'fold') {
-
-      const val = actions.find(a => a.kind === 'fold')?.value;
-
-      cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
-
-      if (actions.length) cellBg = `color-mix(in srgb, var(--action-fold) ${val || 0}%, transparent)`;
-
-    }
-
-
-
-    if (cellSubtext) {
-
-      button.innerHTML = `<span class="matrix-hand-label">${hand}</span><div class="matrix-cell-subtext">${cellSubtext}</div>`;
-
-    } else {
-
-      button.innerHTML = `<span class="matrix-hand-label">${hand}</span>`;
-
-    }
-
-
-
-    button.dataset.hand = hand;
-
-    const kindLabel = t(handKind === 'pair' ? 'Pair' : handKind === 'suited' ? 'Suited' : 'Offsuit');
-    button.setAttribute('aria-label', `${hand}, ${kindLabel}: ${detail}`);
-    button.dataset.handKindLabel = kindLabel;
-    button.dataset.primaryLabel = dominantAction
-      ? t('Primary · {action} {value}%', { action: t(dominantAction.name), value: dominantAction.value })
-      : t('Strategy unavailable');
-    button.dataset.availableCombos = matrixCell
-      ? `${matrixCell.eligibleComboCount} / ${matrixCell.physicalComboCount}`
-      : '-';
-    button.dataset.removedCombos = matrixCell ? String(matrixCell.blockedComboCount) : '-';
-    button.dataset.sourceLabel = matrixSource ? strategySourceDisplayLabel(matrixSource) : t('Unavailable');
-    button.dataset.strategyActions = JSON.stringify(actions.map((action) => ({
-      kind: visualActionKind(action),
-      name: t(action.name),
-      value: action.value,
-    })));
-
-
-
-    if (cellBg) {
-
-      button.style.background = cellBg;
-
-    } else if (actions.length > 0) {
-      button.insertAdjacentHTML('beforeend', `<span class="matrix-mix-bar" aria-hidden="true">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</span>`);
-    }
-
-
-
-    if (isSelected) {
-
-        const primaryAction = dominantAction;
-        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${primaryAction ? `${t(primaryAction.name)} ${primaryAction.value}%` : t('Unavailable')}</span>`;
-        renderMatrixCellInspector(button);
-
-    }
-
-
-
-    /* grid.appendChild(button) removed for recycling */
-
-  }));
-  syncMatrixTabStop(grid);
-
-  const previewContainer = $('#chartSelectionPreview');
-
-  if (previewContainer) {
-
-      previewContainer.innerHTML = previewHTML || `<span>${t('Select a hand')}</span>`;
-
-  }
-
-
-
-  const chartSummary = $('#chartSummary');
-  if (chartSummary) {
-    chartSummary.textContent = matrixContextUnavailable
-      ? t('Strategy unavailable for the current decision context')
-      : isPostFlop
-        ? t('Use Decision for exact-hand postflop strategy.')
-        : `${positions} · ${matrixStack} bb · ${strategyPolicySummary(matrixClaimPolicy)}`;
-  }
-
+  matrixView()?.render();
 }
-
 
 function matrixStrategyKey(decisionContext) {
-  if (!decisionContext) return 'unavailable';
-  return JSON.stringify({
-    decisionContext: { ...decisionContext, heroCards: null },
-    providerOptions: readHeuristicOptions()
-  });
+  return matrixView()?.strategyKey(decisionContext) ?? 'unavailable';
 }
 
 function prepareMatrixStrategyModel(decisionContext) {
-  const key = matrixStrategyKey(decisionContext);
-  if (app.matrixModel?.key === key) return app.matrixModel;
+  return matrixView()?.prepareModel(decisionContext) ?? null;
+}
 
-  const matrixContextUnavailable = !decisionContext;
-  const isPostFlop = !matrixContextUnavailable
-    && (decisionContext.street || currentStreet()) !== 'preflop';
-  let matrixSource = null;
-  let matrixClaimPolicy = null;
-  const handClasses = RANKS.flatMap((_, row) => RANKS.map((__, column) => handCode(row, column)));
-  const cardRemoval = !isPostFlop && !matrixContextUnavailable
-    ? projectHandClassesAfterCardRemoval(
-      handClasses,
-      [...decisionContext.board, ...decisionContext.deadCards],
-    )
-    : null;
-  const cells = RANKS.flatMap((_, row) => RANKS.map((__, column) => {
-    const hand = handCode(row, column);
-    let actions = [];
-    if (!isPostFlop && !matrixContextUnavailable) {
-      const representativeCards = cardRemoval?.cells[hand]?.firstEligibleCombo ?? null;
-      if (representativeCards) {
-        const cellDecisionContext = {
-          ...decisionContext,
-          heroCards: representativeCards
-        };
-        const cellStrategyResult = strategyProvider.resolve(cellDecisionContext);
-        matrixSource = matrixSource || cellStrategyResult.source;
-        matrixClaimPolicy = matrixClaimPolicy || strategyClaimPolicy(cellStrategyResult);
-        if (cellStrategyResult.source !== strategyProvider.sources.UNAVAILABLE) {
-          actions = strategyResultPresentationActions(cellStrategyResult);
-        }
-      }
-    }
-    return {
-      hand,
-      actions,
-      physicalComboCount: cardRemoval?.cells[hand]?.physicalComboCount ?? 0,
-      eligibleComboCount: cardRemoval?.cells[hand]?.eligibleComboCount ?? 0,
-      blockedComboCount: cardRemoval?.cells[hand]?.blockedComboCount ?? 0,
-      cardRemovalState: !cardRemoval
-        ? 'unavailable'
-        : cardRemoval.cells[hand]?.fullyRemoved ? 'fully_removed' : 'eligible',
-    };
-  }));
-  app.matrixModel = {
-    key,
-    source: matrixSource,
-    claimPolicy: matrixClaimPolicy,
-    isPostFlop,
-    cells
-  };
-  return app.matrixModel;
+function matrixMixState(actions, dominantAction) {
+  return window.RiverlineAnalyzeMatrix.matrixMixState(actions, dominantAction);
 }
 
 
@@ -8952,6 +8628,9 @@ function bindEvents() {
 
     if ($('#treeView')) $('#treeView').style.display = view === 'tree' ? 'block' : 'none';
 
+    matrixView()?.setVisible(view === 'chart');
+    rangeComparisonView()?.setVisible(view === 'range');
+
     if (view === 'chart') {
       if (!playbookSurfaceInvalidator.renderIfNeeded('matrix')) renderChart();
     }
@@ -9322,22 +9001,13 @@ function refreshLocalizedPlaybookRuntime() {
   invalidatePlaybookDerivedSurfaces();
   if (playbookSurfaceIsVisible('matrix')) {
     renderChart();
-  } else if (!$('#strategyGrid')?.children.length) {
-    if ($('#matrixPanelDescription')) {
-      $('#matrixPanelDescription').textContent = t('All 169 hand classes · click any square for its current mix.');
-    }
-    if ($('#selectedHand')) $('#selectedHand').textContent = t('Select a hand');
-    if ($('#selectedHandKind')) $('#selectedHandKind').textContent = t('Hand class');
-    if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = t('No action selected');
+  } else {
+    matrixView()?.refreshLanguage();
   }
   if (playbookSurfaceIsVisible('range')) {
     renderRangeAdvantage();
-  } else if (!$('#heroRangeGrid')?.children.length) {
-    if ($('#rangeAdvantageStatus')) {
-      $('#rangeAdvantageStatus').textContent = t('Add at least a flop to compare the manually selected heuristic range samples.');
-    }
-    if ($('#heroRangeTitle')) $('#heroRangeTitle').textContent = t('Hero sample');
-    if ($('#villainRangeTitle')) $('#villainRangeTitle').textContent = t('Villain sample');
+  } else {
+    rangeComparisonView()?.refreshLanguage();
   }
   if (playbookSurfaceIsVisible('tree')) renderBettingTree();
   if (playbookSurfaceIsVisible('analysis')) {
@@ -9691,15 +9361,6 @@ const PREFLOP_RANGES = {
 
 
 
-function rangeRemovalPresentation(cardRemoval) {
-  const cells = Object.values(cardRemoval?.cells || {});
-  return {
-    affectedClasses: cells.filter((cell) => cell.blockedComboCount > 0).length,
-    unavailableClasses: cells.filter((cell) => cell.fullyRemoved).length,
-    removedCombos: cells.reduce((sum, cell) => sum + cell.blockedComboCount, 0),
-  };
-}
-
 function representativeRangeComparisonFacts(sampleRange, board, cardRemoval) {
   const bridge = globalThis.RiverlineAnalysisExplanation;
   if (bridge?.rangeComparisonFactsSchemaVersion !== 'range-comparison-facts/v1'
@@ -9712,284 +9373,49 @@ function representativeRangeComparisonFacts(sampleRange, board, cardRemoval) {
   });
 }
 
-function rangeComparisonStats(facts) {
-  const counts = facts?.categoryCounts || {};
-  return {
-    veryStrong: counts.very_strong_made || 0,
-    strongMade: counts.strong_made || 0,
-    marginal: counts.marginal_or_draw || 0,
-    air: counts.air || 0,
-    total: facts?.coverage?.eligibleRepresentativeCount || 0,
-  };
-}
+// EXTRACT-ANALYZE-002: the Range Category Comparison tab (#rangeView) lives in
+// application/analyze-range-comparison.mjs. Classification comes only from the
+// canonical comparison facts (representativeRangeComparisonFacts below).
+let analyzeRangeComparisonController = null;
+let analyzeRangeComparisonMountReported = false;
 
-function renderRangeCategoryBars(stats, side) {
-  const mappings = [
-    ['VeryStrong', 'veryStrong'], ['StrongMade', 'strongMade'],
-    ['Marginal', 'marginal'], ['Air', 'air'],
-  ];
-  mappings.forEach(([idPart, key]) => {
-    const share = stats.total ? stats[key] / stats.total * 100 : 0;
-    const bar = $(`#${side}${idPart}Bar`);
-    if (bar) bar.style.width = `${share.toFixed(1)}%`;
+function mountRangeComparisonView() {
+  if (analyzeRangeComparisonController) return analyzeRangeComparisonController;
+  const container = $('#rangeView');
+  const module = window.RiverlineAnalyzeRangeComparison;
+  if (!container || !module) {
+    if (!analyzeRangeComparisonMountReported) {
+      analyzeRangeComparisonMountReported = true;
+      console.error('[Riverline Analyze] Range Category Comparison could not be mounted:',
+        !container ? '#rangeView is missing' : 'window.RiverlineAnalyzeRangeComparison is missing');
+    }
+    return null;
+  }
+  analyzeRangeComparisonController = module.mount(container, {
+    translate: (key, values) => t(key, values),
+    formatFixed: (value, digits) => formatUiFixed(value, digits),
+    ranks: () => RANKS,
+    handCode: (row, column) => handCode(row, column),
+    isHandMode: () => app.playbookMode === PLAYBOOK_MODES.HAND,
+    modes: PLAYBOOK_MODES,
+    board: () => app.gto.board.filter(Boolean),
+    decisionContext: () => (app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+      ? app.decisionContext
+      : null),
+    preflopRanges: () => PREFLOP_RANGES,
+    cardRemoval: (classes, blockers) => projectHandClassesAfterCardRemoval(classes, blockers),
+    comparisonFacts: (range, board, cardRemoval) => representativeRangeComparisonFacts(range, board, cardRemoval),
   });
+  return analyzeRangeComparisonController;
 }
 
-function renderRangeGrid(gridId, hoverInfoId, comparisonFacts, statIds) {
-  const grid = $('#' + gridId);
-  if (!grid) return { veryStrong:0, strongMade:0, marginal:0, air:0, total:0 };
-  
-  const stats = rangeComparisonStats(comparisonFacts);
-  const CATEGORY = {
-    very_strong_made: { state: 'very-strong', label: t('Very strong made') },
-    strong_made: { state: 'strong-made', label: t('Strong made') },
-    marginal_or_draw: { state: 'marginal-draw', label: t('Marginal or draw') },
-    air: { state: 'air', label: t('Air') },
-  };
-
-  // Init grid once
-  if (grid.children.length === 0) {
-    buildMatrixGridCells(grid, 'hand-cell range-cell', (btn, row, col) => {
-      btn.dataset.hand = handCode(row, col);
-      btn.dataset.index = row * 13 + col;
-    });
-    bindMatrixGridKeyboard(grid);
-
-    // Event delegation
-    const inspect = (e) => {
-      const btn = e.target.closest('.range-cell');
-      if (btn) {
-        const info = $('#' + hoverInfoId);
-        if (info) info.textContent = `${btn.dataset.hand}: ${btn.title}`;
-      }
-    };
-    const clearInspection = (e) => {
-      const btn = e.target.closest('.range-cell');
-      if (btn) {
-        const info = $('#' + hoverInfoId);
-        if (info) info.textContent = t('Focus or hover a hand to see details');
-      }
-    };
-    grid.addEventListener('mouseover', inspect);
-    grid.addEventListener('focusin', inspect);
-    grid.addEventListener('mouseout', clearInspection);
-    grid.addEventListener('focusout', clearInspection);
-  }
-
-  const gridCells = matrixGridCells(grid);
-  RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
-    const hand = handCode(row, col);
-    const cell = comparisonFacts?.cells?.[hand];
-    const presentation = CATEGORY[cell?.category] || null;
-    const idx = row * 13 + col;
-    const btn = gridCells[idx];
-    const fullyRemoved = cell?.state === 'fully_removed';
-    const notInSample = cell?.state === 'not_in_sample';
-    const state = fullyRemoved ? 'fully-removed' : notInSample ? 'not-in-sample' : 'eligible';
-    const category = presentation?.state || 'none';
-    const stateLabel = fullyRemoved
-      ? t('Unavailable after known-card removal')
-      : notInSample ? t('Not in sample') : presentation?.label || t('Unavailable');
-    
-    btn.textContent = hand;
-    btn.title = stateLabel;
-    btn.setAttribute('aria-label', `${hand}: ${stateLabel}`);
-    btn.className = `hand-cell range-cell range-state-${category} is-${state}`;
-    btn.dataset.category = category;
-    btn.dataset.cardRemovalState = state;
-    btn.dataset.sampleState = state;
-    btn.disabled = false;
-  }));
-  syncMatrixTabStop(grid);
-
-
-
-  if (statIds) {
-
-    const pct = v => stats.total ? `${formatUiFixed(v / stats.total * 100, 0)}%` : '0%';
-
-    if ($('#'+statIds.veryStrong)) $('#'+statIds.veryStrong).textContent = `${stats.veryStrong} (${pct(stats.veryStrong)})`;
-
-    if ($('#'+statIds.strongMade)) $('#'+statIds.strongMade).textContent = `${stats.strongMade} (${pct(stats.strongMade)})`;
-
-    if ($('#'+statIds.marginal)) $('#'+statIds.marginal).textContent = `${stats.marginal} (${pct(stats.marginal)})`;
-
-    if ($('#'+statIds.air))      $('#'+statIds.air).textContent      = `${stats.air} (${pct(stats.air)})`;
-
-  }
-
-  return stats;
-
+function rangeComparisonView() {
+  return analyzeRangeComparisonController ?? mountRangeComparisonView();
 }
-
-
 
 function renderRangeAdvantage() {
-  const heroPos = $('#rangeAdvHeroPos')?.value || 'BTN';
-  const villainPos = $('#rangeAdvVilPos')?.value || 'BB';
-  const status = $('#rangeAdvantageStatus');
-  const analysis = $('#rangeAdvantageAnalysis');
-
-  if ($('#heroRangeTitle')) $('#heroRangeTitle').textContent = `${t('Hero sample')} (${heroPos})`;
-  if ($('#villainRangeTitle')) $('#villainRangeTitle').textContent = `${t('Villain sample')} (${villainPos})`;
-
-  if (app.playbookMode === PLAYBOOK_MODES.HAND) {
-    if (analysis) analysis.hidden = true;
-    if (status) {
-      status.dataset.state = 'unavailable';
-      status.textContent = t('Unavailable in Hand Mode. Canonical hand history does not establish weighted ranges, so Scenario cards and manual range assumptions are not used.');
-    }
-    return { status: 'unavailable', mode: PLAYBOOK_MODES.HAND, heroPos, villainPos };
-  }
-
-  const heroRange = PREFLOP_RANGES[heroPos] || PREFLOP_RANGES.BTN;
-  const villainRange = PREFLOP_RANGES[villainPos] || PREFLOP_RANGES.BB;
-  const board = app.gto.board.filter(Boolean);
-  if (board.length < 3) {
-    if (analysis) analysis.hidden = true;
-    if (status) {
-      status.dataset.state = 'waiting';
-      status.textContent = t('Add at least a flop to compare the manually selected heuristic range samples.');
-    }
-    return { status: 'waiting_for_board', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
-  }
-
-  const decisionContext = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
-    ? app.decisionContext
-    : null;
-  if (!decisionContext) {
-    if (analysis) analysis.hidden = true;
-    if (status) {
-      status.dataset.state = 'unavailable';
-      status.textContent = t('Range comparison is unavailable because the canonical decision context could not be resolved.');
-    }
-    return {
-      status: 'decision_context_unavailable',
-      mode: PLAYBOOK_MODES.SCENARIO,
-      heroPos,
-      villainPos
-    };
-  }
-  const commonBlockers = [...decisionContext.board, ...decisionContext.deadCards];
-  const heroCardRemoval = projectHandClassesAfterCardRemoval([...heroRange], commonBlockers);
-  const villainCardRemoval = projectHandClassesAfterCardRemoval(
-    [...villainRange],
-    [...commonBlockers, ...decisionContext.heroCards],
-  );
-  if (!heroCardRemoval || !villainCardRemoval) {
-    if (analysis) analysis.hidden = true;
-    if (status) {
-      status.dataset.state = 'unavailable';
-      status.textContent = t('Range comparison is unavailable because canonical card removal could not be loaded.');
-    }
-    return { status: 'card_removal_unavailable', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
-  }
-  const heroComparisonFacts = representativeRangeComparisonFacts(heroRange, board, heroCardRemoval);
-  const villainComparisonFacts = representativeRangeComparisonFacts(villainRange, board, villainCardRemoval);
-  if (!heroComparisonFacts || !villainComparisonFacts) {
-    if (analysis) analysis.hidden = true;
-    if (status) {
-      status.dataset.state = 'unavailable';
-      status.textContent = t('Range comparison is unavailable because canonical analysis facts could not be loaded.');
-    }
-    return { status: 'analysis_facts_unavailable', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
-  }
-
-  if (analysis) analysis.hidden = false;
-  if (status) {
-    status.dataset.state = 'available';
-    status.textContent = t('Hero and opponent sample matrices are ready.');
-  }
-
-  const statIds = {
-    hero: { veryStrong:'heroStatVeryStrong', strongMade:'heroStatStrongMade', marginal:'heroStatMarginal', air:'heroStatAir' },
-    villain: { veryStrong:'vilStatVeryStrong', strongMade:'vilStatStrongMade', marginal:'vilStatMarginal', air:'vilStatAir' }
-  };
-  const heroStats = rangeComparisonStats(heroComparisonFacts);
-  const villainStats = rangeComparisonStats(villainComparisonFacts);
-  renderRangeGrid('heroRangeGrid', 'heroHoverInfo', heroComparisonFacts, statIds.hero);
-  renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainComparisonFacts, statIds.villain);
-
-  const pct = (value, total) => total ? `${formatUiFixed(value / total * 100, 0)}%` : '0%';
-  Object.entries(statIds.hero).forEach(([key, id]) => {
-    if ($('#' + id)) $('#' + id).textContent = `${heroStats[key]} (${pct(heroStats[key], heroStats.total)})`;
-  });
-  Object.entries(statIds.villain).forEach(([key, id]) => {
-    if ($('#' + id)) $('#' + id).textContent = `${villainStats[key]} (${pct(villainStats[key], villainStats.total)})`;
-  });
-  renderRangeCategoryBars(heroStats, 'hero');
-  renderRangeCategoryBars(villainStats, 'villain');
-
-  const heroStrongShare = (heroComparisonFacts.categoryShares.very_strong_made || 0)
-    + (heroComparisonFacts.categoryShares.strong_made || 0);
-  const villainStrongShare = (villainComparisonFacts.categoryShares.very_strong_made || 0)
-    + (villainComparisonFacts.categoryShares.strong_made || 0);
-  if ($('#heroAdvBar')) $('#heroAdvBar').style.width = `${(heroStrongShare * 100).toFixed(1)}%`;
-  if ($('#villainAdvBar')) $('#villainAdvBar').style.width = `${(villainStrongShare * 100).toFixed(1)}%`;
-  if ($('#heroRangeScore')) $('#heroRangeScore').textContent = `${formatUiFixed(heroStrongShare * 100, 1)}% ${t('strong made categories')}`;
-  if ($('#villainRangeScore')) $('#villainRangeScore').textContent = `${formatUiFixed(villainStrongShare * 100, 1)}% ${t('strong made categories')}`;
-
-  const heroRemoval = rangeRemovalPresentation(heroCardRemoval);
-  const villainRemoval = rangeRemovalPresentation(villainCardRemoval);
-  if ($('#rangeComparisonLimitation')) $('#rangeComparisonLimitation').textContent = t('Source: heuristic fixed-range/category analysis. Uses one canonical surviving representative per eligible sampled class; its category does not describe every combo in that class. This is not solver range advantage, range-vs-range equity, or sizing/frequency evidence.');
-  if ($('#heroRangeBasis')) $('#heroRangeBasis').textContent = t('Hero · fixed heuristic class sample ({position})', { position: heroPos });
-  if ($('#villainRangeBasis')) $('#villainRangeBasis').textContent = t('Opponent · fixed heuristic class sample ({position})', { position: villainPos });
-  if ($('#rangeCoverageBasis')) $('#rangeCoverageBasis').textContent = t('{heroEligible} of {heroSample} Hero classes and {villainEligible} of {villainSample} opponent classes have one canonical surviving representative. Shares describe those representatives only, not every combo in each class; unlisted classes are not inferred.', {
-    heroEligible: heroComparisonFacts.coverage.eligibleRepresentativeCount,
-    heroSample: heroComparisonFacts.coverage.suppliedSampleClassCount,
-    villainEligible: villainComparisonFacts.coverage.eligibleRepresentativeCount,
-    villainSample: villainComparisonFacts.coverage.suppliedSampleClassCount,
-  });
-  if ($('#rangeRemovalSummary')) $('#rangeRemovalSummary').textContent = t('{heroAffected} Hero classes affected ({heroUnavailable} unavailable); {villainAffected} opponent classes affected ({villainUnavailable} unavailable). Board/dead cards condition both; Hero cards additionally condition the opponent.', {
-    heroAffected: heroRemoval.affectedClasses,
-    heroUnavailable: heroRemoval.unavailableClasses,
-    villainAffected: villainRemoval.affectedClasses,
-    villainUnavailable: villainRemoval.unavailableClasses,
-  });
-  if ($('#rangeRemovalTechnical')) $('#rangeRemovalTechnical').textContent = t('Physical combos removed within the selected class samples: Hero {heroCombos}; opponent {villainCombos}. Known weighted mass is unavailable because these samples have no combo weights.', {
-    heroCombos: heroRemoval.removedCombos,
-    villainCombos: villainRemoval.removedCombos,
-  });
-  const pairedComparison = document.querySelector('.paired-range-comparison');
-  if (pairedComparison) pairedComparison.setAttribute('aria-label', t('Hero {hero}% and opponent {villain}% strong-category shares. Independent percentages on the same zero to one hundred percent scale.', {
-    hero: formatUiFixed(heroStrongShare * 100, 1),
-    villain: formatUiFixed(villainStrongShare * 100, 1),
-  }));
-
-  let title = t('Similar sampled categories');
-  let description = t('The sampled made-hand and draw categories are similar.');
-  let color = 'var(--orange)';
-  if (heroStrongShare - villainStrongShare > 0.10) {
-    title = t('Hero sample contains more strong made categories');
-    description = t('This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.');
-    color = 'var(--primary)';
-  } else if (villainStrongShare - heroStrongShare > 0.10) {
-    title = t('Villain sample contains more strong made categories');
-    description = t("Villain's sampled range contains a higher share of strong and very strong made-hand categories.");
-    color = 'var(--red)';
-  }
-
-  if ($('#rangeConclusion')) {
-    $('#rangeConclusion').replaceChildren();
-    const heading = document.createElement('strong');
-    heading.textContent = title;
-    const copy = document.createElement('span');
-    copy.textContent = description;
-    $('#rangeConclusion').append(heading, document.createElement('br'), copy);
-    $('#rangeConclusion').style.borderLeftColor = color;
-  }
-
-  return {
-    status: 'available',
-    mode: PLAYBOOK_MODES.SCENARIO,
-    heroPos,
-    villainPos,
-    heroStrongShare,
-    villainStrongShare
-  };
-
+  return rangeComparisonView()?.render();
 }
-
 
 
 function renderBettingTree() {

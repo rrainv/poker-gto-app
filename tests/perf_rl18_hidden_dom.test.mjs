@@ -117,14 +117,16 @@ test('targeted picker cleanup leaves Matrix caching and postflop zero-cell behav
   await app.pickCards(heroEditor(), ['As', 'Kd']);
   await app.click('[data-gto-view="chart"]');
   await app.settle(200);
-  const spy = app.spy(['closePicker', 'renderDeck', 'bindMatrixGridInteractions']);
+  const spy = app.spy(['closePicker', 'renderDeck']);
   try {
     app.call('renderChart');
     const cells = app.$$('#strategyGrid .hand-cell');
     assert.equal(cells.length, 169);
     app.call('renderChart');
     assert.ok(app.$$('#strategyGrid .hand-cell').every((cell, index) => cell === cells[index]), 'cells are reused, not rebuilt');
-    assert.ok(spy.count('bindMatrixGridInteractions') >= 1);
+    // EXTRACT-ANALYZE-002: interactions are bound by the matrix module (once,
+    // flagged on the grid) instead of a page function that could be spied on.
+    assert.equal(app.byId('strategyGrid').dataset.delegated, 'true');
     assert.equal(spy.count('closePicker'), 0);
     assert.equal(spy.count('renderDeck'), 0);
     assert.equal(deck().children.length, 0);

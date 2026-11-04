@@ -163,13 +163,10 @@ test('comparison matrices lead the bars, render immediately, and have no interna
   const [matrices, bars, basis] = ['.range-comparison-matrices', '.paired-range-comparison', '.range-comparison-basis'].map((selector) => comparison.querySelector(selector));
   assert.ok(precedes(matrices, bars) && precedes(bars, basis));
   app.byId('rangeTechnicalDetails').open = false;
-  const spy = app.spy(['renderRangeGrid']);
-  try {
-    await renderComparison();
-    assert.deepEqual(spy.calls.renderRangeGrid.map(([id]) => id).slice(-2), ['heroRangeGrid', 'villainRangeGrid']);
-  } finally {
-    spy.restore();
-  }
+  // EXTRACT-ANALYZE-002: renderRangeGrid moved into the comparison module, so
+  // the test observes both grids rendered instead of spying on a page name.
+  await renderComparison();
+  assert.equal(app.$$('#villainRangeGrid .range-cell').length, 169);
   assert.equal(app.$$('#heroRangeGrid .range-cell').length, 169, 'renders without opening the technical details');
   assert.equal(comparison.querySelector('.range-comparison-scroll'), null);
   assert.doesNotMatch(text(comparison), /Scrollable aligned/);

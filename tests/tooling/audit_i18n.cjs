@@ -22,6 +22,9 @@ const productSources = [
   path.join(repoRoot, 'app', 'src', 'core', 'logic.js'),
   path.join(repoRoot, 'app', 'src', 'application', 'range-calibration-workspace.mjs'),
   path.join(repoRoot, 'app', 'src', 'application', 'account-identity-bootstrap.mjs'),
+  // EXTRACT-ANALYZE-002: the moved Matrix and Category Comparison renderers.
+  path.join(repoRoot, 'app', 'src', 'application', 'analyze-matrix.mjs'),
+  path.join(repoRoot, 'app', 'src', 'application', 'analyze-range-comparison.mjs'),
   path.join(repoRoot, 'app', 'src', 'ui', 'teacher.js'),
   path.join(repoRoot, 'app', 'src', 'ui', 'TableRenderer.js'),
   analysisTranslationsPath,

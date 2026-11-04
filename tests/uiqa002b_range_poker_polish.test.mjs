@@ -152,7 +152,8 @@ test('matrix action probabilities and mixed encoding remain unmodified', () => {
   }
   const mixed = cells.find((cell) => JSON.parse(cell.dataset.strategyActions || '[]').length > 1) || cells[0];
   const actions = JSON.parse(mixed.dataset.strategyActions);
-  app.call('renderMatrixCellInspector', mixed);
+  // EXTRACT-ANALYZE-002: the inspector is a method of the mounted matrix module.
+  app.call('matrixView').renderInspector(mixed);
   for (const action of actions) assert.match(text(app.byId('selectedMix')), new RegExp(`${action.value}%`));
 });
 

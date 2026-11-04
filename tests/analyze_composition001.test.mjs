@@ -383,18 +383,23 @@ test('Range matrix: legible shared action colors, distinct unavailable cells, ho
     Object.assign(cell.dataset, original);
   }
   // Pointer and keyboard focus both drive the cell inspector.
-  const spy = app.spy(['renderMatrixCellInspector']);
-  try {
+  // EXTRACT-ANALYZE-002: the inspector moved into the matrix module, so the
+  // test observes its output (#selectedHand) instead of spying on a page name.
+  {
     const target = app.$$('#strategyGrid .hand-cell')[5];
+    const selectedHand = () => $('#selectedHand').textContent;
+    const selectedCell = app.$$('#strategyGrid .hand-cell').find((candidate) => candidate.getAttribute('aria-pressed') === 'true');
+    assert.ok(selectedCell && selectedCell !== target);
     target.dispatchEvent(new app.window.MouseEvent('pointerover', { bubbles: true }));
+    assert.equal(selectedHand(), target.dataset.hand, 'pointer hover drives the inspector');
+    $('#selectedHand').textContent = '';
     target.dispatchEvent(new app.window.FocusEvent('focusin', { bubbles: true }));
-    assert.ok(spy.calls.renderMatrixCellInspector.filter(([node]) => node === target).length >= 2);
-    spy.reset();
+    assert.equal(selectedHand(), target.dataset.hand, 'keyboard focus drives the inspector');
     target.dispatchEvent(new app.window.FocusEvent('focusout', { bubbles: true }));
+    assert.equal(selectedHand(), selectedCell.dataset.hand, 'focusout restores the selected hand');
     await app.key(target, 'ArrowRight');
-    assert.ok(spy.count('renderMatrixCellInspector') >= 1, 'focusout/keyboard keep the inspector in sync');
-  } finally {
-    spy.restore();
+    target.dispatchEvent(new app.window.FocusEvent('focusout', { bubbles: true }));
+    assert.equal(selectedHand(), selectedCell.dataset.hand, 'keyboard navigation keeps the inspector in sync');
   }
   const removed = markup.querySelector('[data-matrix-state="removed"]');
   assert.ok(removed);
