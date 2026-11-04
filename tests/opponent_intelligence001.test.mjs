@@ -191,9 +191,11 @@ test('language is parameter-backed, descriptive, locale-complete and never creat
   }
 });
 
-test('500bb always-raise practice completes beyond the old baseline transition cap', () => {
+test('250bb always-raise practice completes beyond the old baseline transition cap', () => {
+  // Needs only > 256 automated transitions (about stack/1bb + 12 here). 250bb gives 262; the old 500bb stack gave 512
+  // transitions, and each transition revalidates the whole history (quadratic), which cost 208 s for the same invariant.
   const parameters = { smallPriceCallPercent: 100, largePriceCallPercent: 100, freeAggressionPercent: 100, facingRaisePercent: 100 };
-  const progression = createAutomatedHandProgression({ initialConfiguration: configuration(3, 500000),
+  const progression = createAutomatedHandProgression({ initialConfiguration: configuration(3, 250000),
     heroPlayerId: 'P0', handSeed: 43, opponentPractice: request(parameters, 3) });
   let result = progression.advanceUntilHeroOrTerminal(); let answers = 0;
   while (result.status === 'hero_decision' && answers++ < 600) {
