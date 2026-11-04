@@ -852,7 +852,12 @@ test('c4: Saved handoff: the Saved banner, restored controls and exact title; cl
 /* QA-AUDIT-HAND-ANALYZE-STACK-001                                      */
 /* ------------------------------------------------------------------ */
 
-test('QA-AUDIT-HAND-ANALYZE-STACK-001 current behaviour: the Hand handoff carries the STARTING stack into the Scenario controls', async () => {
+// ANALYZE-HANDOFF-STACK-001 (deliberate update): the Scenario model stays lossy on purpose. Its Stack
+// control is the configured STARTING stack, and a Scenario DecisionContext marks Hero and effective
+// stack unavailable (scenario_live_stack_unavailable), so the controls and a re-derived context still
+// hold the starting stack. What changed is that the Hand context panel now SAYS so (see the next
+// tests) instead of showing 99 next to a silent 100. Everything this test pins is unchanged.
+test('QA-AUDIT-HAND-ANALYZE-STACK-001: the Scenario controls keep the STARTING stack (the Scenario model cannot carry the stack at the decision)', async () => {
   await playHandToFlopFacingBet();
   const journal = app.call('callPlaybookStateBridge', 'getHeroDecisionJournal');
   const recorded = journal.decisions[1].decisionContext;
@@ -881,17 +886,117 @@ test('QA-AUDIT-HAND-ANALYZE-STACK-001 current behaviour: the Hand handoff carrie
   assert.equal(edited.effectiveStackBb, null, 'the 79 bb effective stack is gone after the edit');
 });
 
-test.todo('QA-AUDIT-HAND-ANALYZE-STACK-001 (OPEN P1, not fixed by EXTRACT-ANALYZE-000): a Hand decision opened in Analyze should carry the stack AT the decision, not the starting stack', async () => {
-  // Reproduction: Hand workspace, heads-up, 100 bb. Hero BTN As Kd limps (call), BB checks,
-  // flop Qh Jh 2c, BB bets 20 bb (Custom size 20, Apply). Open the flop Hero decision in Analyze
-  // (Review > Analyze, or openCanonicalHandDecisionInAnalysis(1)).
-  //   Recorded DecisionContext: stackBb 100 (starting), heroStackBb 99, effectiveStackBb 79.
-  //   Hand context panel: Stack 99.0 bb.        Scenario Stack control (#stack): 100.
-  //   After "Edit as Scenario" + any edit: heroStackBb and effectiveStackBb are null.
-  // Expected after the fix: the Scenario control and a re-derived context use the stack the
-  // decision was made with (99 bb Hero, 79 bb effective), or the panel says the stack is lossy.
+// ANALYZE-HANDOFF-STACK-001: the former test.todo, now passing. The Scenario model cannot carry the stack
+// at the decision, so the Hand context never shows two different stacks without saying why.
+test('QA-AUDIT-HAND-ANALYZE-STACK-001 fix: the Hand context says why Stack 99 differs from the starting stack in the Scenario controls', async () => {
   await playHandToFlopFacingBet();
   await app.call('openCanonicalHandDecisionInAnalysis', 1);
   await app.settle(300);
-  assert.notEqual(byId('stack').value, '100', 'the Scenario Stack control must not silently show the starting stack');
+  const note = byId('analyzeHandContextStackNote');
+  assert.equal(note.hidden, false, 'the stack note is shown because the decision stacks differ from the starting stack');
+  assert.equal(note.textContent, t(
+    'Stack at this decision: Hero {hero}, effective {effective}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep these, so SPR and pot odds can change.',
+    { hero: '99.0 bb', effective: '79.0 bb', starting: '100.0 bb' },
+  ));
+  assert.match(note.textContent, /99\.0 bb.*79\.0 bb.*100\.0 bb/);
+  assert.equal(handFacts().Stack, '99.0 bb', 'the fact row still shows the Hero stack at the decision');
+  assert.equal(byId('stack').value, '100', 'the control is the starting stack and is labelled so');
+  // The note is visible exactly while the Hand context is, including while editing is open.
+  await app.click('#analyzeHandContextEdit');
+  assert.equal(byId('analyzeHandContext').hidden, false);
+  assert.equal(note.hidden, false);
+});
+
+test('QA-AUDIT-HAND-ANALYZE-STACK-001 fix: Edit as Scenario path: the first edit leaves a labelled lossy Scenario, no silent stack', async () => {
+  await playHandToFlopFacingBet();
+  await app.call('openCanonicalHandDecisionInAnalysis', 1);
+  await app.settle(300);
+  const spy = app.spy(['updateContext']);
+  let resolves;
+  try {
+    resolves = await resolvesDuring(async () => {
+      await app.click('#analyzeHandContextEdit');
+      await app.setValue('#facingSize', '19');
+      await app.settle(300);
+    });
+    assert.equal(spy.calls.updateContext.length, 1, 'one update for the edit (PERF-001)');
+  } finally {
+    spy.restore();
+  }
+  assert.equal(resolves.length, 1, 'one strategy resolve for the edit (PERF-001)');
+  // The Hand context (and its note) is gone; the Scenario is the lossy, starting-stack view and says so.
+  assert.equal(byId('analyzeHandContext').hidden, true);
+  const edited = resolvedContext();
+  assert.equal(edited.derivation.source, 'scenario');
+  assert.equal(edited.startingStackBb, 100, 'the Scenario carries only the starting stack');
+  assert.equal(edited.heroStackBb, null);
+  assert.equal(edited.effectiveStackBb, null);
+  assert.equal(
+    edited.derivation.events.some((event) => event.code === 'scenario_live_stack_unavailable'),
+    true,
+    'the derivation records that the live stack is unavailable',
+  );
+  assert.equal(recState(), 'warning', 'a lossy Scenario');
+});
+
+test('QA-AUDIT-HAND-ANALYZE-STACK-001 fix: the stack note is hidden when the decision stacks equal the starting stack, and follows the language (RU, HE)', async () => {
+  await playHandToFlopFacingBet();
+  await app.call('openCanonicalHandDecisionInAnalysis', 1);
+  await app.settle(300);
+  const note = byId('analyzeHandContextStackNote');
+  const english = note.textContent;
+  try {
+    for (const language of ['ru', 'he']) {
+      app.window.setLanguage(language);
+      await app.settle(100);
+      assert.notEqual(note.textContent, english, `${language}: translated`);
+      assert.match(note.textContent, /99[.,]0.*79[.,]0.*100[.,]0/s, `${language}: carries the three numbers`);
+      assert.equal(/[A-Za-z]{4,}/.test(note.textContent.replace(/Hero|SPR/g, '')), false, `${language}: no English words left`);
+    }
+  } finally {
+    app.window.setLanguage('en');
+    await app.settle(100);
+  }
+  assert.equal(note.textContent, english);
+
+  // Equal stacks: nothing differs, so nothing is claimed.
+  const recorded = resolvedContext();
+  app.call('setAnalyzeHandContext', {
+    decisionContext: { ...recorded, startingStackBb: 100, heroStackBb: 100, effectiveStackBb: 100 },
+    titleKey: 'Hero Decision {number}',
+    titleValues: { number: 2 },
+    returnDestination: 'hand',
+    returnLabelKey: 'Back to Hand',
+  });
+  assert.equal(note.hidden, true);
+  assert.equal(note.textContent, '');
+  // Multiway or unknown effective stack: the Hero-only wording.
+  app.call('setAnalyzeHandContext', {
+    decisionContext: { ...recorded, startingStackBb: 100, heroStackBb: 99, effectiveStackBb: null },
+    titleKey: 'Hero Decision {number}',
+    titleValues: { number: 2 },
+    returnDestination: 'hand',
+    returnLabelKey: 'Back to Hand',
+  });
+  assert.equal(note.hidden, false);
+  assert.equal(note.textContent, t(
+    'Stack at this decision: Hero {hero}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep it, so SPR and pot odds can change.',
+    { hero: '99.0 bb', starting: '100.0 bb' },
+  ));
+  app.call('setAnalyzeHandContext', null);
+});
+
+test('ANALYZE-HANDOFF-STACK-001: the lossy-context warning is translated for RU and HE', async () => {
+  const key = 'The exact preflop role is unavailable in this lossy context, so a broad fallback is used.';
+  const english = t(key);
+  assert.equal(english, key);
+  try {
+    for (const language of ['ru', 'he']) {
+      app.window.setLanguage(language);
+      assert.notEqual(t(key), key, `${language}: translated`);
+    }
+  } finally {
+    app.window.setLanguage('en');
+    await app.settle(100);
+  }
 });

@@ -3014,6 +3014,34 @@ function renderAnalyzeHandContext() {
     row.append(term, detail);
     return row;
   }));
+  renderAnalyzeHandContextStackNote(decision, bb);
+}
+
+// ANALYZE-HANDOFF-STACK-001: the Scenario model is deliberately lossy. Its Stack
+// control is the configured STARTING stack, and a Scenario never carries the Hero
+// or effective stack at a decision (DecisionContext marks both unavailable). So
+// when the Hand decision was made with a different stack, the panel says so
+// instead of leaving the facts (Hero stack) and the controls (starting stack)
+// to disagree silently.
+function renderAnalyzeHandContextStackNote(decision, bb) {
+  const note = $('#analyzeHandContextStackNote');
+  if (!note) return;
+  // Unknown is never zero: null stays NaN, never 0.
+  const known = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : NaN);
+  const starting = known(decision.startingStackBb ?? decision.stackBb);
+  const hero = known(decision.heroStackBb);
+  const effective = known(decision.effectiveStackBb);
+  const differs = (value) => Number.isFinite(value) && Number.isFinite(starting) && Math.abs(value - starting) > 1e-9;
+  const show = Number.isFinite(hero) && (differs(hero) || differs(effective));
+  note.hidden = !show;
+  if (!show) {
+    note.textContent = '';
+    return;
+  }
+  const key = Number.isFinite(effective)
+    ? 'Stack at this decision: Hero {hero}, effective {effective}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep these, so SPR and pot odds can change.'
+    : 'Stack at this decision: Hero {hero}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep it, so SPR and pot odds can change.';
+  note.textContent = t(key, { hero: bb(hero), effective: bb(effective), starting: bb(starting) });
 }
 
 function renderCanonicalDecisionCards(group, cards, count) {

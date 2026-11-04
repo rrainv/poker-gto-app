@@ -2193,6 +2193,18 @@ Object.assign(he, {
     ['max', 'макс', 'שחקנים'],
     ['Not shown for this decision: {facts}', 'Не показано для этого решения: {facts}', 'לא מוצג בהחלטה הזו: {facts}']
   ]) { ru[key] = russian; he[key] = hebrew; }
+  // ANALYZE-HANDOFF-STACK-001 Hand->Analyze stack note and the lossy-context warning (owner review of RU/HE wording).
+  for (const [key, russian, hebrew] of [
+    ['Stack at this decision: Hero {hero}, effective {effective}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep these, so SPR and pot odds can change.',
+      'Стек в этом решении: Hero {hero}, эффективный {effective}. «Изменить как сценарий» начинает со стартового стека ({starting}) и не может их сохранить, поэтому SPR и шансы банка могут измениться.',
+      'הסטאק בהחלטה זו: Hero {hero}, אפקטיבי {effective}. עריכה כתרחיש מתחילה מהסטאק ההתחלתי ({starting}) ואינה יכולה לשמור אותם, ולכן SPR ויחס הקופה עלולים להשתנות.'],
+    ['Stack at this decision: Hero {hero}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep it, so SPR and pot odds can change.',
+      'Стек в этом решении: Hero {hero}. «Изменить как сценарий» начинает со стартового стека ({starting}) и не может его сохранить, поэтому SPR и шансы банка могут измениться.',
+      'הסטאק בהחלטה זו: Hero {hero}. עריכה כתרחיש מתחילה מהסטאק ההתחלתי ({starting}) ואינה יכולה לשמור אותו, ולכן SPR ויחס הקופה עלולים להשתנות.'],
+    ['The exact preflop role is unavailable in this lossy context, so a broad fallback is used.',
+      'Точная префлоп-роль недоступна в этом неполном контексте, поэтому используется широкая приближённая эвристика.',
+      'התפקיד המדויק בפרפלופ אינו זמין בהקשר החלקי הזה, ולכן משתמשים בהערכת גיבוי רחבה.']
+  ]) { ru[key] = russian; he[key] = hebrew; }
   // DATA-SAFETY-001 storage persistence and Delete all data guard.
   for (const [key, russian, hebrew] of [
     ['Browser storage', 'Хранилище браузера', 'אחסון הדפדפן'],
