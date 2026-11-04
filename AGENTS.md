@@ -5,15 +5,15 @@ Riverline is a local-first, browser-first No-Limit Hold'em learning workstation 
 ## Roles
 
 - **Manager:** the owner's Claude Project chat. Priorities, decisions, tickets, report review. No repository edits.
-- **Work:** one Claude Code session per ticket. Inspect, implement, verify, report, stop. Corrections continue in the same session; a new ticket gets a new session.
-- **Review:** an independent read-only session for money, maths, identity, persistence, migrations, source authority or claim changes, by a different agent than the author.
-- **Agents:** Claude Code (default implementer), Gemini Argon (batch implementer, reviewer). One writer per folder: each agent has its own worktree and branch; the owner merges after review. Reports go to `docs/archive/agent-reports/<yyyy-mm>/<TICKET-ID>.md`.
+- **Work:** one Claude Code session per ticket. Inspect, implement, verify, report, stop. Corrections stay in the session; a new ticket gets a new one.
+- **Review:** independent read-only session for money, maths, identity, persistence, migrations, source authority or claim changes, by a different agent.
+- **Agents:** Claude Code (default implementer), Gemini Argon (batch implementer, reviewer). One writer per folder: each agent has its own worktree and branch; the owner merges after review. Reports: `docs/archive/agent-reports/<yyyy-mm>/<TICKET-ID>.md`.
 
 ## What to read
 
-Minimum: this file plus the files the ticket names. Context: [docs/BRIEF.md](docs/BRIEF.md). Live queue: [docs/STATE.md](docs/STATE.md). Decisions with reasons: [docs/design/decisions/OWNER_DECISIONS.md](docs/design/decisions/OWNER_DECISIONS.md). Direction: [docs/NORTH_STAR.md](docs/NORTH_STAR.md). Visual contract: [docs/project/DESIGN_SYSTEM.md](docs/project/DESIGN_SYSTEM.md). Terms: [docs/TERMINOLOGY.md](docs/TERMINOLOGY.md). Issues: [docs/ISSUE_REGISTER.md](docs/ISSUE_REGISTER.md). Specs: [docs/project/README.md](docs/project/README.md), when a ticket names one. Licences: [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md) (record one before using an outside component). `docs/archive/` is history, never required. Skills are in `.agents/skills/`: `riverline-design` for any UI work, `/review-animations` before merging motion, `/break-ui` for data-heavy components.
+Minimum: this file plus the files the ticket names. Context: [docs/BRIEF.md](docs/BRIEF.md). Live queue: [docs/STATE.md](docs/STATE.md). Decisions with reasons: [docs/design/decisions/OWNER_DECISIONS.md](docs/design/decisions/OWNER_DECISIONS.md). Direction: [docs/NORTH_STAR.md](docs/NORTH_STAR.md). Visual contract: [docs/project/DESIGN_SYSTEM.md](docs/project/DESIGN_SYSTEM.md). Terms: [docs/TERMINOLOGY.md](docs/TERMINOLOGY.md). Issues: [docs/ISSUE_REGISTER.md](docs/ISSUE_REGISTER.md). Specs: [docs/project/README.md](docs/project/README.md), when a ticket names one. Licences: [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md) (record one before use). `docs/archive/` is history only. Skills in `.agents/skills/`: `riverline-design` for any UI work, `/review-animations` before merging motion, `/break-ui` for data-heavy components.
 
-Never read giants whole (`app/src/core/logic.js`, `app/styles.css`, `docs/ISSUE_REGISTER.md`, `docs/NORTH_STAR.md`): search by ID, function or heading.
+Never read giants whole (`app/src/core/logic.js`, `app/styles.css`, `docs/ISSUE_REGISTER.md`, `docs/NORTH_STAR.md`): search by ID, function or heading. Do not re-read unchanged files during same-session corrections.
 
 ## Architecture
 
@@ -32,7 +32,7 @@ Scenario input or canonical PokerState
 
 ### Module rule (decided 2026-10-31)
 
-- **New UI code goes into mounted modules in `app/src/application/` (or `app/src/ui/`), never into `app/src/core/logic.js`. `logic.js` only shrinks** (it is about 16,200 lines today).
+- **New UI code goes into mounted modules in `app/src/application/` (or `app/src/ui/`), never into `app/src/core/logic.js`. `logic.js` only shrinks** (about 14,900 lines at 2026-11-04).
 - Controller interface for a mounted workspace: `mount(container, deps)` returns `{ dispose, refreshLanguage, handleKey, setVisible }`. `deps` are injected (never the whole `window.app`). Write characterization tests with `bootApp()` before moving existing code.
 - Extraction order and the no-framework decision: [OWNER_DECISIONS](docs/design/decisions/OWNER_DECISIONS.md).
 
@@ -57,9 +57,9 @@ Search `app/src/` for the current file before editing.
 - One bounded outcome; no unrelated cleanup. Use register IDs; do not silently close or absorb others.
 - Every ticket states an execution class (Mechanical Fast · Product Contract First · Correctness/Architecture · Heavy Future Design), a verification tier and a suggested model/effort.
 - Redesigns need an approved mockup first; mockup numbers are illustrative, real numbers come from the engine.
-- If behaviour has several readings, ask one to four focused questions first.
-- A newly found issue joins the ticket only if the ticket caused it or it blocks acceptance; otherwise add a register row and continue.
-- **Stop and report** on an unapproved schema migration, architecture rewrite, poker-rule interpretation, paid/cloud resources, substantial scope growth, or conflicting canonical implementations. After about two corrections rejected for the same reason, stop patching and rethink with the owner.
+- If behaviour has several readings, ask 1–4 focused questions first.
+- A newly found issue joins the ticket only if it caused or blocks it; otherwise add a register row and continue.
+- **Stop and report** on an unapproved schema migration, architecture rewrite, poker-rule interpretation, paid/cloud resources, big scope growth, or conflicting canonical implementations. After ~two corrections rejected for the same reason, stop patching and rethink with the owner.
 
 ## Verification tiers
 
@@ -76,7 +76,7 @@ Commands: focused `node --test <files>`; syntax `node --check <changed .js/.mjs>
 
 - Never stage, commit, push, reset, clean, stash, rebase or switch branches unless the ticket authorizes it. Never broad-stage (`git add .`, `-A`). Commit with exact file lists.
 - Protected unless the ticket owns them: `.codex/config.toml`, `.claude/`, `.gitignore`, `repo_dump.*`, local auth config (`app/auth-config.js`), helper/backup artifacts.
-- Do not revert changes you did not make; report pre-existing dirty files separately.
+- Never print secrets, invent credentials or copy local auth config. Do not revert changes you did not make; report pre-existing dirty files separately.
 - **LF only** (`.gitattributes`, `core.autocrlf=false`). A small edit showing every line changed is line-ending churn: fix before reporting (`git ls-files --eol <file>`).
 - Windows: write files with the file tools, not shell heredocs or here-strings; forward slashes in Bash.
 - Start every ticket with `git fetch` and base on `origin/codex/stabilization`, never on the local branch; report the base hash.

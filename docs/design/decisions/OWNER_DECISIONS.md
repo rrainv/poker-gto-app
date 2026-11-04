@@ -10,6 +10,8 @@ Recorded by DOCS-RESET-002 from the owner's repository review and the approved t
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-04 | **Analyze spot chips wrap the Facing / Pot / Stack / Table sliders.** A chip opens a popover holding the same controls, sliders included; the readiness gate is unchanged. | The sentence-style spot stays compact while the sliders remain the one set of inputs; wrapping them adds no second input path and no new gating rule. |
+| 2026-11-04 | **The mockup's "Verified" pill on the Analyze answer is dropped.** | Baseline output is never "verified"; the pill would claim a strength the deterministic baseline does not have (honesty rule: never GTO, solved or "correct"). |
 | 2026-11-04 | **Sparse-state layout:** when a view has 4 cards or fewer, use a row-aligned grid with equal-height rows; "Start something" uses tiles. | Uneven cards in a sparse view leave ragged edges and dead space on PC; equal rows keep it calm and aligned. |
 | 2026-11-04 | **Startup gate is the accepted fix for module startup order.** Top-level await in the auth and saved-sync bootstraps made those modules async, so the gate sequences startup explicitly. | Import order alone no longer guaranteed readiness once the bootstraps became async; one explicit gate is simpler than patching each importer. |
 | 2026-11-04 | **Outside-the-mix answers show no marker in the bar but a labelled pill** (P1-31). | An unlabelled bar marker reads as a position in the mix; a labelled pill says plainly that the answer is outside it. |

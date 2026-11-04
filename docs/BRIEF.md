@@ -21,7 +21,7 @@ Installed in the repo by DOCS-PHASE1-001 (2026-10-26) from the Manager's RIVERLI
 8. **Private by default.** Shared hands are **anonymised automatically** (Hero / positions instead of screen names or friends' names); nothing leaves the device unless the user sends it.
 
 ## 3. Technology (today)
-Plain JavaScript (no React/Vue/Tailwind): one large classic script `app/src/core/logic.js` (16,213 lines on 2026-10-31; it must only shrink, new UI code goes into mounted modules, see [AGENTS.md](../AGENTS.md#module-rule-decided-2026-10-31)) plus ES modules; one stylesheet `app/styles.css`; shared poker domain in `shared/poker-domain/`; Node's built-in test runner with a custom DOM harness (~2,750 tests); Firefox on Windows for visual checks; Supabase client exists but accounts/sync are off the critical path.
+Plain JavaScript (no React/Vue/Tailwind): one large classic script `app/src/core/logic.js` (about 14,900 lines on 2026-11-04; it must only shrink, new UI code goes into mounted modules, see [AGENTS.md](../AGENTS.md#module-rule-decided-2026-10-31)) plus ES modules; one stylesheet `app/styles.css`; shared poker domain in `shared/poker-domain/`; Node's built-in test runner with a custom DOM harness (~2,750 tests); Firefox on Windows for visual checks; Supabase client exists but accounts/sync are off the critical path.
 
 ## 4. Design direction (decided)
 - **Look:** dark forest / jade / brass, "calm surface, deep data" (clean first look, raw data one hover/click away), soft panels, hero answer cards, number tiles; one primary action per view; never double-signal a state; no dead space.

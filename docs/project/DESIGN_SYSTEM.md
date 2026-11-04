@@ -311,9 +311,9 @@ Code since `0919e62`; first consumer Saved (both views). CSS places and sizes co
 - **Keyboard:** roving `tabindex` (one tab stop), Up/Down/Home/End select, Enter runs the row's primary action, Escape closes the inspector and keeps focus on the row.
 - Sticky children need every ancestor up to the scroller at `overflow: visible`.
 
-## Analyze (ANALYZE-COMPOSITION-001, uncommitted)
+## Analyze (ANALYZE-COMPOSITION-001)
 
-The current Analyze composition (backed up at `956ca6e`, acceptance pending as ANALYZE-ACCEPT); Phase 3 finishes Analyze in Style v4 (spot as sentence, hero answer card, tiles, "You here", labelled matrix).
+The current Analyze composition (accepted and committed as `4e3e11a`, D-21; backed up earlier at `956ca6e`); Phase 3 finishes Analyze in Style v4 (spot as sentence, hero answer card, tiles, "You here", labelled matrix).
 
 - **Containers:** exactly two surfaces: the Spot rail (start side, `clamp(300px, 21vw, 340px)`) and the Result panel; they stack below 1100 px.
 - **Spot rail:** Cards (Hero, board with street labels, dead cards) → Action (position + prior action; facing size and pot before action) → Table → disclosures "Strategy adjustment" (to be hidden, OWNER-12) and "Game & accounting". Same control ids, readiness gate and numeric-entry behaviour.
