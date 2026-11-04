@@ -125,9 +125,11 @@ export function createMemorySyncDatabase({ name = 'memory-riverline-sync' } = {}
     async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
       if (closed) throw new Error('Sync database is closed');
       if (signal?.aborted) throw new Error('Sync ownership scope is stale');
+      // Stored values are replaced, never mutated, and every read clones on the way out, so a shallow
+      // copy isolates the transaction. Readonly transactions need no copy at all.
       const working = new Map(storeNames.map((store) => [
         store,
-        new Map([...stores.get(store)].map(([key, value]) => [key, clone(value)])),
+        mode === 'readwrite' ? new Map(stores.get(store)) : stores.get(store),
       ]));
       const map = (store) => working.get(store) ?? stores.get(store);
       const transaction = Object.freeze({
