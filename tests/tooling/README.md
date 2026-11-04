@@ -1,5 +1,9 @@
 # Riverline verification tooling
 
+## Targeted test runner
+
+`node tools/run-tests.mjs` runs only the tests that matter. `tests/areas.json` maps every `tests/*.test.{js,mjs}` file to exactly one area (home, training, analyze, equity, hand-review, settings-shell, personal-strategy, saved, game-night, domain, i18n, design-system, tooling-docs, misc) with source globs, plus the groups `css` (tests reading `app/styles.css`) and `smoke` (boot-level tests, reason per file in the manifest). Modes: `--area a,b`, `--group css|smoke`, `--files p1,p2`, `--changed` (git diff against `origin/codex/stabilization`; `styles.css` adds css, `logic.js`/`index.html`/`shared/` add smoke, unknown paths add misc), `--all`, `--list` (select only), `--check` (manifest covers every file once). Concurrency defaults to 2; a lock file in the OS temp dir stops two runs overlapping; per-file durations go to `riverline-test-timings.json` in the OS temp dir (`--timings <file>`). Add a new test to its area in `areas.json` (`--check` fails otherwise).
+
 ## Focused Beta coherence check
 
 `node tests/tooling/verify_beta_coherence_firefox.mjs` uses the shared runtime on

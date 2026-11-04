@@ -26,6 +26,8 @@ Every Work session starts with this, whatever the ticket says:
 
 Never run two suites at once. Use `--test-concurrency=2`.
 
+Targeted runs: `node tools/run-tests.mjs --changed` (or `--area a,b`, `--group smoke|css`, `--files ...`) runs only the mapped tests, with a lock and concurrency 2; see [tests/tooling/README.md](../tests/tooling/README.md).
+
 ## 3. Rules
 
 - Report the exact test command and the counts instead of re-running to "double check".
