@@ -63,14 +63,9 @@ Search `app/src/` for the current file before editing.
 
 ## Verification tiers
 
-| Tier | For | Tests | Browser | Full suite |
-|---|---|---|---|---|
-| T0 | docs, mechanical, read-only | touched only | none | no |
-| T1 | fixes, small features | focused | 1920 EN Midnight; HE if layout/direction affected | only if shared modules changed |
-| T2 | redesigns, big features | focused | mockup comparison: 1920+1366 EN, 1920 HE, one Daylight shot | once, at the end |
-| T3 | milestones only | all | full matrix | yes, plus beta smoke |
+Tiers (T0 docs, T1 fixes, T2 redesigns, T3 milestones), the test policy, the ticket preamble, model routing and the accept prompt moved to [docs/WORKFLOW.md](docs/WORKFLOW.md). The full suite is a gate, not a habit; CI is the merge gate. Browser: T1 1920 EN Midnight (HE if layout/direction affected); T2 mockup comparison at 1920+1366 EN, 1920 HE, one Daylight shot.
 
-Commands: focused `node --test <files>`; syntax `node --check <changed .js/.mjs>`; hygiene `git diff --check`; full suite `node --test --test-concurrency=2 tests/*.test.js tests/*.test.mjs`; solver suite, only when domain/solver/strategy changed (PowerShell): `$env:PYTHONPATH='solver;.'; py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'`. Poker-maths changes need invariant/property tests. Without a real browser check, report visual status as `UNVERIFIED`, `PARTIAL` or `STRUCTURAL ONLY`. Human acceptance is the owner's. Visible features also own tutorial, EN/RU/HE + RTL, accessibility, reduced motion and responsive behaviour (minimum desktop 1366×768).
+Commands: focused `node --test <files>`; syntax `node --check <changed .js/.mjs>`; hygiene `git diff --check`; full suite (gate only) `node --test --test-concurrency=2 tests/*.test.js tests/*.test.mjs`; solver suite, only when domain/solver/strategy changed (PowerShell): `$env:PYTHONPATH='solver;.'; py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'`. Poker-maths changes need invariant/property tests. Without a real browser check, report visual status as `UNVERIFIED`, `PARTIAL` or `STRUCTURAL ONLY`. Human acceptance is the owner's. Visible features also own tutorial, EN/RU/HE + RTL, accessibility, reduced motion and responsive behaviour (minimum desktop 1366×768).
 
 ## Git and file safety
 

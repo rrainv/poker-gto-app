@@ -405,12 +405,16 @@ Scope rule: anything new goes to a later milestone unless it fixes a P0/P1 or is
 - Execution classes: Mechanical Fast, Product Contract First, Correctness/Architecture, Heavy Future Design.
 
 ### Verification tiers
+Authoritative copy: [WORKFLOW.md](WORKFLOW.md). The full suite is a gate, not a habit; CI is the merge gate.
+
 | Tier | For | Tests | Browser | Full suite | Beta smoke |
 |---|---|---|---|---|---|
-| T0 | docs, mechanical, read-only | touched only | none | no | no |
-| T1 | fixes, small features | focused | 1 config (1920 EN Midnight); HE if layout/direction affected | only if shared modules changed | no |
-| T2 | redesigns, big features | focused | mockup comparison: 1920+1366 EN, 1920 HE, one Daylight shot | once, at the end | no |
-| T3 | milestones only | all | full matrix | yes | yes |
+| T0 | docs, mechanical, read-only | the doc tests | none | no | no |
+| T1 | fixes, small features | `node --check` + the ticket's TEST SET | 1 config (1920 EN Midnight); HE if layout/direction affected | no | no |
+| T2 | redesigns, big features | TEST SET + CSS guard group if `styles.css` changed | mockup comparison: 1920+1366 EN, 1920 HE, one Daylight shot | only if shared harness, tokens or core paths changed | no |
+| T3 | milestones, `main` | all (one full suite, `--test-concurrency=2`) | full matrix + browser smoke | yes | yes |
+
+Rebase: TEST SET only. Merge into stabilization: CI. Flake fix: 20 runs alone + TEST SET. Never two suites at once.
 
 ### Reading rules
 Minimum read set: AGENTS.md, then only ticket-named files. No whole-file reads of giant files (logic.js, styles.css, QA register): search by ID/function/heading. No re-reading unchanged files during same-session corrections. Tickets carry their own essential context.
