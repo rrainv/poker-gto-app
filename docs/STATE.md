@@ -2,7 +2,7 @@
 
 The **one live status file**: where the project is and what is next. Direction: [NORTH_STAR.md](NORTH_STAR.md). Context: [BRIEF.md](BRIEF.md). Issues: [ISSUE_REGISTER.md](ISSUE_REGISTER.md). Decisions with reasons (including the open and resolved ones): [design/decisions/OWNER_DECISIONS.md](design/decisions/OWNER_DECISIONS.md). A guide, not an ultimatum: the owner decides order and scope.
 
-Last updated: 2026-11-01 (MERGE-NIGHT-001). **Truth source for status is `git log`**; commit titles are not owner acceptance (acceptance lives in the register). The previous 33 KB STATE (queue phases 0–6, accepted-work table, "what exists today", research table) is archived as [STATE_SNAPSHOT_2026-10-31](archive/2026-10/STATE_SNAPSHOT_2026-10-31.md); mockup links are in [design/CANVASES.md](design/CANVASES.md).
+Last updated: 2026-11-04 (SETTINGS-001). **Truth source for status is `git log`**; commit titles are not owner acceptance (acceptance lives in the register). The previous 33 KB STATE (queue phases 0–6, accepted-work table, "what exists today", research table) is archived as [STATE_SNAPSHOT_2026-10-31](archive/2026-10/STATE_SNAPSHOT_2026-10-31.md); mockup links are in [design/CANVASES.md](design/CANVASES.md).
 
 **Update rule.** The Manager (or a ticket that owns it) updates this file when a ticket lands or the queue changes. Replace rows; do not append history. Keep it under 8 KB.
 
@@ -14,6 +14,7 @@ Goal: docs and truth fixed, design and motion foundation, Training and Settings 
 
 | Ticket | Commit | Note |
 |---|---|---|
+| SETTINGS-001 | `4ee37f1` | Settings is a workspace: rail, search, modified markers with per-row reset, sticky preview, Language cards, Shortcuts list, Account counts. Owner accepted; full suite 2951 pass, 0 fail; report [SETTINGS-001](archive/agent-reports/2026-11/SETTINGS-001.md); new register rows SETTINGS-* |
 | MERGE-NIGHT-001 | merges `e06d707` … `56170fe` | Night batch merged into `codex/stabilization`: HOME-INVENTORY-001 (`e943a8b`, report only), ASSETS-SHIP-001 (`e75400d`), CSS-DEADTHEME-001 (`fc25e93`), LOCALE-NUMBERS-003 (`be5a782`), TERMS-HEURISTIC-001 (`7fd1b38`), night summary (`0437ac2`). Full suite 2879 tests, 0 fail. Owner acceptance pending |
 | EXTRACT-QUICKDRILL-001 | `8c31945` | Quick drill is a mounted module; rows QUICKDRILL-* in the register |
 | HOUSEKEEPING-001 | `e884ce6` | CI on PRs, archive of old tooling, repo hygiene |
@@ -32,12 +33,13 @@ Earlier work (MERGE-001/002, batch 1 and 2, TRAINING-F12-001, SKILLS-001, DOCS-P
 
 | # | Ticket | Outcome | Class / tier |
 |---|---|---|---|
-| 1 | SETTINGS-001 | Settings redesign per the SETTINGS RULES in the decision log | Product Contract First · T2 |
-| 2 | ANALYZE-INVENTORY-001 | Analyze inventory (read-only), as HOME-INVENTORY-001 was for Home | T0 |
-| 3 | TRAINING-QUICK-002 | Quick drill follow-ups from the owner review (register TRAINING-QUICK-* and QUICKDRILL-* rows) | Product Contract First · T2 |
-| 4 | WELCOME-001 | Welcome / first-run flow | Product Contract First · T2 |
+| 1 | EXTRACT-ANALYZE-000 to 004 | Analyze moved out of `logic.js` into mounted modules, in five steps, starting with the inventory | Correctness/Architecture · T1 each |
+| 2 | TRAINING-QUICK-002 | Quick drill follow-ups from the owner review (register TRAINING-QUICK-* and QUICKDRILL-* rows) | Product Contract First · T2 |
+| 3 | WELCOME-001 | Welcome / first-run flow | Product Contract First · T2 |
+| 4 | NOTICES-001 | About & legal and the mandatory notices | Product Contract First · T1 |
+| 5 | SETTINGS-TEXT-SIZE | Text size setting on a rem type scale (register SETTINGS-TEXT-SIZE) | Product Contract First · T1 |
 
-Then the rest of M1 per the build plan (full queue in the snapshot, phases 2–6): TRAINING-LONG-001 (with Training Memory extraction), ANALYZE-POLISH-001, NOTICES-001, HG-LEDGER-EDITS-001, Argon batch 4 (AUDIO-RESEARCH-001, GOLDEN-SPOTS-001, A11Y-AUDIT-001), foundation passes (REVIEW/HAND/FULLHAND/EQUITY/PS/GAMENIGHT/LIBRARY/LEARN-FOUND), trust package (EXACT-LABELS-001, BASELINE-MEASURE-001), then I18N-COMPLETE-001, LAYOUT-AUDIT-001 and the T3 QA sweep. M2 (Personal Strategy flow, Hand, Review, Equity, Learn, Game night, Table rules) starts after the gate.
+Then the rest of M1 per the build plan (full queue in the snapshot, phases 2–6): TRAINING-LONG-001 (with Training Memory extraction), ANALYZE-POLISH-001, HG-LEDGER-EDITS-001, Argon batch 4 (AUDIO-RESEARCH-001, GOLDEN-SPOTS-001, A11Y-AUDIT-001), foundation passes (REVIEW/HAND/FULLHAND/EQUITY/PS/GAMENIGHT/LIBRARY/LEARN-FOUND), trust package (EXACT-LABELS-001, BASELINE-MEASURE-001), then I18N-COMPLETE-001, LAYOUT-AUDIT-001 and the T3 QA sweep. M2 (Personal Strategy flow, Hand, Review, Equity, Learn, Game night, Table rules) starts after the gate.
 
 ## Gates (owner judgement, not hard blockers)
 

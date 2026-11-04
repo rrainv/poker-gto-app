@@ -29,4 +29,4 @@ Register rows added: SETTINGS-TEXT-SIZE, SETTINGS-MOCKUP-CONTROLS, SETTINGS-THEM
 "No staging or commit" and "push to origin/wip/SETTINGS-001" conflict (a push needs a commit); neither was done.
 
 ## 9. Git
-Nothing staged, committed or pushed. Working tree has the changes listed in section 3.
+Committed as `4ee37f1` (exact file list, nothing broad-staged; `.claude/` and `.codex/config.toml` untouched), pushed to `wip/SETTINGS-001`, then rebased onto `origin/codex/stabilization` `ea15545` (no movement) and fast-forwarded into `codex/stabilization` after owner acceptance.
