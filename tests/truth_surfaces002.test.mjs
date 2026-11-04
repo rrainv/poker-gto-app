@@ -11,6 +11,7 @@ import {
   presentStrategyMixActions,
 } from '../app/src/application/analyze-verdict.mjs';
 import { shouldShowSourceBadge } from '../app/src/application/workspace-header.mjs';
+import { renderVerdict } from '../app/src/application/analyze-decision-panel.mjs';
 import { strategyTruthPresentation } from '../app/src/application/strategy-truth.mjs';
 import { installLocaleNumbers, logicNumberHelpersSource } from './helpers/locale-number-sandbox.cjs';
 
@@ -233,8 +234,12 @@ test('Verdict dominance rule (NORTH_STAR §7.3): strictly two states (dominant o
   assert.equal(describeAnalyzeVerdict(underFivePercent).kind, 'dominant');
 
   // Render verdict with a filtered < 5% action at index 0 still matches the right 5%-rounded shares.
-  const verdictRender = sourceBetween(logic, 'function renderAnalyzeVerdict(strategyResult)', '// Technical source id/version');
+  // EXTRACT-ANALYZE-001: renderAnalyzeVerdict moved from logic.js into the
+  // decision panel module, so the test runs the module's renderVerdict (the
+  // presentation-action helper is still sliced from logic.js).
   const helper = sourceBetween(logic, 'function strategyResultPresentationActions(', 'function strategyResultToLegacyProfile(');
+  const helperVm = {};
+  vm.runInNewContext(`${helper}\nglobalThis.presentationActions = strategyResultPresentationActions;`, helperVm);
   const bestAction = { textContent: '', dataset: {} };
   const bestActionClose = {
     hidden: true,
@@ -242,26 +247,31 @@ test('Verdict dominance rule (NORTH_STAR §7.3): strictly two states (dominant o
     replaceChildren(...nodes) { this.children = nodes; },
     get textContent() { return this.children.map((n) => n.textContent || '').join(''); },
   };
-  const renderVm = {
-    $: (sel) => (sel === '#bestAction' ? bestAction : sel === '#bestActionClose' ? bestActionClose : null),
-    t: (key, vars = {}) => String(key).replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m),
-    window: { RiverlineAnalyzeVerdict: { describe: describeAnalyzeVerdict } },
-    document: {
-      createTextNode: (text) => ({ textContent: text }),
-      createElement: () => ({
-        className: '',
-        dataset: {},
-        textContent: '',
-        children: [],
-        setAttribute() {},
-        append(...items) {
-          this.children = items;
-          this.textContent = items.map((i) => i.textContent || '').join('');
-        },
-      }),
-    },
+  const fakeDocument = {
+    createTextNode: (text) => ({ textContent: text }),
+    createElement: () => ({
+      className: '',
+      dataset: {},
+      textContent: '',
+      children: [],
+      setAttribute() {},
+      append(...items) {
+        this.children = items;
+        this.textContent = items.map((i) => i.textContent || '').join('');
+      },
+    }),
   };
-  vm.runInNewContext(`${helper}\n${verdictRender}\nglobalThis.renderVerdict = renderAnalyzeVerdict;`, renderVm);
+  const renderVm = {
+    renderVerdict: (result) => renderVerdict(
+      { element: bestAction, closeNote: bestActionClose, document: fakeDocument },
+      result,
+      {
+        translate: (key, vars = {}) => String(key).replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m),
+        describeVerdict: describeAnalyzeVerdict,
+        presentationActions: helperVm.presentationActions,
+      },
+    ),
+  };
 
   const closeWithLeadingTrace = makeResult([
     ['Fold', 'fold', 0.03],

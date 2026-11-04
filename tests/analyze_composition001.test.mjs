@@ -287,8 +287,9 @@ test('the Spot table is a collapsed section of the Result panel; Hand keeps its 
 
 function factFunctions() {
   return {
-    facing: (...args) => app.call('analyzeFacingFact', ...args),
-    toCall: (...args) => app.call('analyzeToCallFact', ...args),
+    // EXTRACT-ANALYZE-001: the fact formatters moved into the decision panel module.
+    facing: (...args) => app.call('decisionPanel').facingFact(...args),
+    toCall: (...args) => app.call('decisionPanel').toCallFact(...args),
   };
 }
 
@@ -313,7 +314,7 @@ test('fact grid: one clean table with To call; labels muted, values 15/600 and n
   ids.slice(1).forEach((node, index) => assert.ok(precedes(ids[index], node), `${node.id} in the fact grid order`));
   await app.call('updateContext');
   await app.settle(200);
-  assert.equal(text($('#mToCall')), app.call('analyzeToCallFact', app.window.app.decisionContext));
+  assert.equal(text($('#mToCall')), app.call('decisionPanel').toCallFact(app.window.app.decisionContext));
   const label = $('.analyze-facts .metric span');
   const value = $('.analyze-facts .metric b');
   assert.equal(cascaded(label, 'color'), 'var(--text-muted)');

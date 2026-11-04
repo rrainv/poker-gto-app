@@ -51,7 +51,8 @@ function applyFacts(values, context) {
     cell.querySelector('b').id = id;
     return cell;
   }));
-  app.call('applyAnalyzeFactOmission', context);
+  // EXTRACT-ANALYZE-001: the omission rule moved into the decision panel module.
+  app.call('decisionPanel').applyFactOmission(context);
   const cells = [...strip.children];
   const note = app.byId('analyzeOmittedFacts');
   const result = { cells, strip, note: { hidden: note.hidden, textContent: note.textContent } };

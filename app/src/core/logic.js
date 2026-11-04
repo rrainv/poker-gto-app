@@ -2870,78 +2870,9 @@ function renderPlaybookModeStatus(resolution) {
   if (provenance) provenance.textContent = status.textContent;
 }
 
-// ANALYZE-COMPOSITION-001: verdict dominance. Presentation only; it reads the
-// existing StrategyResult action distribution (analyze-verdict/v1) and never
-// changes the recommendation, frequencies or claim policy.
+// ANALYZE-COMPOSITION-001: verdict dominance now renders in the decision panel module.
 function renderAnalyzeVerdict(strategyResult) {
-  const element = $('#bestAction');
-  const closeNote = $('#bestActionClose');
-  if (!element) return null;
-  const verdict = window.RiverlineAnalyzeVerdict?.describe(strategyResult) || null;
-  const shares = strategyResult?.actions ? strategyResultPresentationActions(strategyResult) : [];
-  const share = (entry) => {
-    const matched = shares.find((item) => item.name === entry.label && item.action?.type === entry.type) || shares[entry.index];
-    return `${matched?.value ?? Math.round(entry.probability * 20) * 5}%`;
-  };
-  if (!verdict || verdict.kind === 'unavailable') {
-    element.textContent = t(strategyResult?.recommendation?.label || 'Unavailable');
-    element.dataset.verdictKind = 'unavailable';
-    if (closeNote) closeNote.hidden = true;
-    return verdict;
-  }
-  element.dataset.verdictKind = verdict.kind;
-  if (verdict.kind === 'close') {
-    element.textContent = t('{first} or {second}', { first: t(verdict.primary.label), second: t(verdict.secondary.label) });
-    if (closeNote) {
-      // Amendment 2: secondary text; the action colors appear only as small dots.
-      const marks = { first: '⁠F⁠', firstShare: '⁠f⁠', second: '⁠S⁠', secondShare: '⁠s⁠' };
-      const template = t('Close mix · {first} {firstShare} · {second} {secondShare}', marks);
-      const entries = { F: verdict.primary, S: verdict.secondary };
-      const nodes = template.split(/(⁠[FfSs]⁠)/).filter(Boolean).map((part) => {
-        const key = part.length === 3 && part[0] === '⁠' ? part[1] : null;
-        if (!key) return document.createTextNode(part);
-        const entry = entries[key.toUpperCase()];
-        const span = document.createElement('span');
-        if (key === key.toUpperCase()) {
-          span.className = 'verdict-share';
-          const dot = document.createElement('i');
-          dot.className = 'verdict-dot';
-          dot.dataset.actionKind = entry.kind;
-          dot.setAttribute('aria-hidden', 'true');
-          span.append(dot, document.createTextNode(t(entry.label)));
-        } else {
-          span.className = 'verdict-share-value';
-          span.textContent = share(entry);
-        }
-        return span;
-      });
-      closeNote.replaceChildren(...nodes);
-      closeNote.hidden = false;
-    }
-  } else {
-    element.textContent = t(verdict.primary.label);
-    if (closeNote) closeNote.hidden = true;
-  }
-  return verdict;
-}
-
-// Technical source id/version lives in Provenance & limitations (monospace only there).
-function renderStrategyMeta(claimPolicy) {
-  const strategyMeta = $('#strategyMeta');
-  if (!strategyMeta) return;
-  const marker = '\u2063';
-  const [before = '', after = ''] = t('Source version {version}', { version: marker }).split(marker);
-  const version = document.createElement('code');
-  version.className = 'technical-id';
-  version.textContent = claimPolicy.sourceVersion;
-  strategyMeta.replaceChildren(
-    document.createTextNode(before),
-    version,
-    document.createTextNode(`${after} · ${claimPolicy.coverage.kind === 'exact'
-      ? t('Exact covered context')
-      : t('Broad approximate coverage')}`),
-  );
-  strategyMeta.hidden = false;
+  return decisionPanel()?.renderVerdict(strategyResult) ?? null;
 }
 
 // Collapsed rail disclosures summarize their current values (no computation).
@@ -3091,40 +3022,7 @@ function syncCanonicalDecisionDisplay(decisionContext) {
 function renderUnavailableStrategy(resolution) {
   const message = playbookResolutionMessage(resolution);
   const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
-  setRecommendationState(waiting ? 'waiting' : 'unavailable');
-  if ($('#analysisInputMessage')) $('#analysisInputMessage').textContent = message;
-  if ($('#bestAction')) {
-    $('#bestAction').textContent = t('Unavailable');
-    $('#bestAction').dataset.verdictKind = 'unavailable';
-  }
-  if ($('#bestActionClose')) $('#bestActionClose').hidden = true;
-  if ($('#bestSizing')) {
-    $('#bestSizing').textContent = '';
-    $('#bestSizing').hidden = true;
-  }
-  if ($('#bestReason')) $('#bestReason').textContent = message;
-  if ($('#sourceBadge')) {
-    $('#sourceBadge').textContent = t('Unavailable');
-    $('#sourceBadge').className = 'badge status-badge status-badge--unavailable';
-    $('#sourceBadge').hidden = true;
-  }
-  if ($('#strategyMeta')) $('#strategyMeta').hidden = true;
-  if ($('#strategyWarnings')) {
-    $('#strategyWarnings').textContent = message;
-    $('#strategyWarnings').hidden = false;
-  }
-  const unavailableActions = Array.from({ length: 3 }, () => ({
-    name: '-', value: 0, kind: 'unavailable'
-  }));
-  unavailableActions.forEach((action, index) => setFrequency(index + 1, action));
-  if (typeof renderFrequencyStack === 'function') {
-    renderFrequencyStack($('#actionFrequencyStack'), unavailableActions);
-  }
-  if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
-  if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '-';
-  ['mPosition', 'mPot', 'mFacing', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'].forEach((id) => {
-    if ($('#' + id)) $('#' + id).textContent = '-';
-  });
+  decisionPanel()?.renderUnavailable({ message, waiting });
   if (resolution?.mode === 'hand') {
     renderUnavailableActionPath(message, waiting ? 'waiting' : 'unavailable');
   } else if (typeof renderPath === 'function') {
@@ -6338,17 +6236,89 @@ const playbookSurfaceInvalidator = productPerformance.createSurfaceInvalidator({
   render: renderPlaybookDerivedSurface
 });
 
+// EXTRACT-ANALYZE-001: the Analyze decision panel (verdict and truth line, mix,
+// caution, facts, Explain, Teach, Provenance, the gate) lives in
+// application/analyze-decision-panel.mjs, mounted on #recommendation. This
+// file keeps the ONE strategyProvider.resolve per update (PERF-001) and hands
+// the panel an immutable view model; the panel never calls the provider. The
+// dependencies are late-bound so page-function spies and overrides apply.
+let analyzeDecisionPanelController = null;
+let analyzeDecisionPanelMountReported = false;
+
+function mountDecisionPanel() {
+  if (analyzeDecisionPanelController) return analyzeDecisionPanelController;
+  const container = $('#recommendation');
+  const panel = window.RiverlineAnalyzeDecisionPanel;
+  if (!container || !panel) {
+    // A failed module load must never be silent (reported once, not per call).
+    if (!analyzeDecisionPanelMountReported) {
+      analyzeDecisionPanelMountReported = true;
+      console.error('[Riverline Analyze] Decision panel could not be mounted:',
+        !container ? '#recommendation is missing' : 'window.RiverlineAnalyzeDecisionPanel is missing');
+    }
+    return null;
+  }
+  analyzeDecisionPanelController = panel.mount(container, {
+    translate: (key, values) => t(key, values),
+    formatFixed: (value, digits) => formatUiFixed(value, digits),
+    formatNumber: (value, options) => formatUiNumber(value, options),
+    formatHand: (cards) => formatHand(cards),
+    displayCard: (card) => displayCard(card),
+    describeVerdict: (result) => window.RiverlineAnalyzeVerdict?.describe(result),
+    presentationActions: (result) => strategyResultPresentationActions(result),
+    profileFor: (result) => strategyResultToLegacyProfile(result),
+    warningsFor: (result) => localizedStrategyWarnings(result),
+    limitationFor: (policy) => localizedStrategyLimitation(policy),
+    policySummary: (policy) => strategyPolicySummary(policy),
+    sourceLabel: (result) => strategySourceDisplayLabel(result),
+    truthFor: (input) => requireStrategyProviderBridge().truthFor(input),
+    truthPresentation: (truth) => truthPresentation(truth),
+    actionKind: (action) => visualActionKind(action),
+    actionColor: (action) => actionVisualColor(action),
+    describeFacing: (context) => window.RiverlineDecisionFacing?.describe(context),
+    get facingKinds() { return window.RiverlineDecisionFacing?.kinds || {}; },
+    stackToPotRatio: (context) => window.RiverlinePokerDomain?.deriveStackToPotRatio(context) ?? null,
+    formatSuggestedSizing: (amountBb) => globalThis.RiverlineAnalysisExplanation?.formatSuggestedSizingBb?.(amountBb),
+    get resultSchemaVersion() { return strategyProvider.resultSchemaVersion; },
+    renderDecisionAnalysis: (target, options) => renderDecisionAnalysis(target, options),
+    explainFacts: (resolution) => trustedAnalysisFacts(canonicalActionHistoryForAnalysis(resolution)),
+    renderExplainIfNeeded: () => playbookSurfaceInvalidator.renderIfNeeded('analysis'),
+    isHandMode: () => app.playbookMode === PLAYBOOK_MODES.HAND,
+    editInputs: () => editDecisionInputs(),
+    teachDecision: () => { void teachPersonalDecision(app.decisionContext, 'Analyze'); },
+  });
+  return analyzeDecisionPanelController;
+}
+
+function decisionPanel() {
+  return analyzeDecisionPanelController ?? mountDecisionPanel();
+}
+
+// The resolved decision as the panel sees it (state is only needed on update).
+function analyzeDecisionPanelView(state) {
+  return Object.freeze({
+    decisionContext: app.decisionContext,
+    strategyResult: app.strategyResult,
+    claimPolicy: strategyClaimPolicy(app.strategyResult),
+    state,
+  });
+}
+
 function playbookModeIsVisible() {
   const mode = $('#gtoMode');
   return Boolean(activeWorkspaceMode() === 'gto' && mode && mode.style.display !== 'none' && !mode.hidden);
 }
 
 function playbookSurfaceIsVisible(surface) {
-  if (!playbookModeIsVisible()) return false;
+  // The decision panel is told whether the workspace is visible (setVisible);
+  // it never reads the DOM for it.
+  const modeVisible = playbookModeIsVisible();
+  decisionPanel()?.setVisible(modeVisible);
+  if (!modeVisible) return false;
   if (surface === 'matrix') return $('#chartView')?.style.display !== 'none';
   if (surface === 'range') return $('#rangeView')?.style.display !== 'none';
   if (surface === 'tree') return Boolean($('#treeView') && $('#treeView').style.display !== 'none');
-  if (surface === 'analysis') return $('#teacherContent')?.style.display === 'block';
+  if (surface === 'analysis') return Boolean(decisionPanel()?.isExplainVisible());
   if (surface === 'table') return !$('#table-wrapper')?.classList.contains('collapsed');
   return false;
 }
@@ -6399,36 +6369,8 @@ function commitPlaybookUpdate(reason) {
 }
 
 function setFrequency(index, action) {
-
-  const nameEl = $('#f' + index + 'name');
-
-  const barEl = $('#f' + index);
-
-  const numEl = $('#f' + index + 'num');
-
-  if (nameEl) nameEl.textContent = t(action.name);
-
-  if (barEl) {
-
-    barEl.style.width = action.value + '%';
-
-    barEl.dataset.actionKind = visualActionKind(action);
-
-    barEl.setAttribute('aria-label', `${t(action.name)}: ${action.value}%`);
-
-    if (barEl.closest('.frequency')) barEl.closest('.frequency').dataset.actionKind = visualActionKind(action);
-
-  }
-
-  if (numEl) numEl.textContent = action.value ? action.value + '%' : '-';
-
-  // ANALYZE-COMPOSITION-001 amendment 2: the mix card lists only actions present in the mix.
-  const row = (barEl || nameEl)?.closest('.frequency');
-  if (row) row.hidden = !(Number(action.value) > 0);
-
+  decisionPanel()?.setFrequency(index, action);
 }
-
-
 
 function preflopBasePot() {
 
@@ -6438,29 +6380,9 @@ function preflopBasePot() {
 
 
 
-// Facing reads the canonical facing class: a voluntary wager shows its size;
-// unopened, limped, option and check-available spots say so instead of "0.0 bb".
-function analyzeFacingFact(context, facing) {
-  const summary = context && window.RiverlineDecisionFacing?.describe(context);
-  const kinds = window.RiverlineDecisionFacing?.kinds || {};
-  const wording = summary && {
-    [kinds.UNOPENED]: 'Unopened',
-    [kinds.LIMPED]: 'Limped',
-    [kinds.OPTION]: 'Option',
-    [kinds.CHECK_AVAILABLE]: 'Check available',
-  }[summary.kind];
-  return wording ? t(wording) : `${formatUiFixed(facing, 1)} bb`;
-}
-
-// To call is the exact canonical price; Scenario contexts never fabricate it.
-function analyzeToCallFact(context) {
-  if (!context) return '-';
-  if (!Number.isFinite(context.callAmountBb)) return t('facing.price.unavailable');
-  const call = `${formatUiFixed(context.callAmountBb, 1)} bb`;
-  const allIn = Number.isFinite(context.heroStackBb) && context.callAmountBb > 0 && context.callAmountBb >= context.heroStackBb;
-  return allIn ? `${call} · ${t('All-in')}` : call;
-}
-
+// The fact table (formatting, omission rule) lives in the decision panel
+// module; this keeps what belongs to the rail and the header: the preflop
+// facing normalization, the slider read-outs and the Analyze header context.
 function updateMetrics() {
   const decisionContext = arguments.length > 0 ? arguments[0] : null;
   const context = decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
@@ -6471,7 +6393,6 @@ function updateMetrics() {
   const street = context?.street || currentStreet();
   const pot = context ? context.potBb : numericValue('#potSize', preflopBasePot());
   let facing = context ? context.facingSizeBb : numericValue('#facingSize');
-  const callAmount = context ? context.callAmountBb : null;
   const stack = context ? context.stackBb : numericValue('#stack', 100);
   const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened');
   const isPreflopOpenDecision = isPreflopUnopened && heroPos !== 'BB';
@@ -6482,51 +6403,17 @@ function updateMetrics() {
     setSliderPairDisplay('facingSize', 'facingSizeNum', 0);
   }
 
-  const heroCards = (context?.heroCards || app.gto?.hero || []).filter(Boolean);
-  const boardCards = (context?.board || app.gto?.board || []).filter(Boolean);
-  const mEquity = $('#mEquity');
-  if (mEquity) mEquity.textContent = heroCards.length
-    ? (formatHand(heroCards) || heroCards.map(displayCard).join(' '))
-    : t('Unknown');
-
-  const mPotOdds = $('#mPotOdds');
-  if (mPotOdds) {
-    if (isPreflopOpenDecision) {
-      mPotOdds.textContent = t('— (Unopened)');
-    } else if (!Number.isFinite(callAmount)) {
-      mPotOdds.textContent = t('— (Price unavailable)');
-    } else if (lastAction === 'unopened' || callAmount === 0) {
-      mPotOdds.textContent = '-';
-    } else {
-      mPotOdds.textContent = Number.isFinite(context.requiredRawEquity)
-        ? `${formatUiFixed(context.requiredRawEquity * 100, 1)}%`
-        : '-';
-    }
-  }
-
-  const mSPR = $('#mSPR');
-  if (mSPR) {
-    const spr = window.RiverlinePokerDomain?.deriveStackToPotRatio(context) ?? null;
-    mSPR.textContent = Number.isFinite(spr)
-      ? formatUiFixed(spr, 1)
-      : '-';
-  }
-
-  const mRake = $('#mRake');
-  if (mRake) mRake.textContent = boardCards.length
-    ? boardCards.map(displayCard).join(' ')
-    : t('Preflop · no board');
-
-  const metricValues = {
-    mPosition: heroPos || '-',
-    mPot: `${formatUiFixed(pot, 1)} bb`,
-    mFacing: analyzeFacingFact(context, facing),
-    mToCall: analyzeToCallFact(context),
-    mStack: `${formatUiFixed(stack, 0)} bb`
-  };
-  Object.entries(metricValues).forEach(([id, value]) => {
-    if ($('#' + id)) $('#' + id).textContent = value;
-  });
+  const metricValues = decisionPanel()?.renderFacts(Object.freeze({
+    context,
+    heroPosition: heroPos,
+    lastAction,
+    pot,
+    facing,
+    stack,
+    heroCards: (context?.heroCards || app.gto?.hero || []).filter(Boolean),
+    boardCards: (context?.board || app.gto?.board || []).filter(Boolean),
+    isPreflopOpenDecision,
+  })) ?? {};
   // SHELL-001: Analyze header context reuses the decision facts shown above.
   window.RiverlineWorkspaceHeader?.setContext('analyze', [
     t(isHandMode() || (typeof analyzeHandContext !== 'undefined' && analyzeHandContext) ? 'Hand' : 'Scenario'),
@@ -6548,43 +6435,6 @@ function updateMetrics() {
 
   const potSizeOut = $('#potSizeOut');
   if (potSizeOut) potSizeOut.textContent = `${formatUiFixed(pot, 1)} bb`;
-  if (typeof applyAnalyzeFactOmission === 'function') applyAnalyzeFactOmission(context);
-}
-
-// ANALYZE-COMPOSITION-001 amendment 2: fact-cell omission rule. A fact that is
-// unavailable for this context (no exact price, no SPR, not applicable when
-// unopened) is not shown as a bare dash: its cell is omitted, the table reflows
-// evenly, and the omitted facts are listed in Provenance & limitations.
-function analyzeFactIsUnavailable(id, text, context) {
-  const value = String(text || '').trim();
-  if (!value || value === '-' || value.startsWith('—') || value.startsWith('- (')) return true;
-  if (id === 'mToCall') return !context || !Number.isFinite(context.callAmountBb);
-  return false;
-}
-
-function applyAnalyzeFactOmission(context) {
-  const strip = $('.analyze-facts');
-  if (!strip) return;
-  const omitted = [];
-  let shown = 0;
-  strip.querySelectorAll('.metric').forEach((cell) => {
-    const value = cell.querySelector('b');
-    const label = cell.querySelector('span')?.textContent?.trim() || '';
-    const unavailable = Boolean(context) && analyzeFactIsUnavailable(value?.id, value?.textContent, context);
-    cell.hidden = unavailable;
-    if (unavailable) {
-      // "— (Price unavailable)" → "Price unavailable"; a bare dash carries no reason.
-      const reason = String(value?.textContent || '').replace(/^[—-]\s*\(?/, '').replace(/\)$/, '').trim();
-      omitted.push(reason ? `${label} (${reason})` : label);
-    } else shown += 1;
-  });
-  strip.style.setProperty('--fact-cols', String(Math.max(1, shown)));
-  strip.style.setProperty('--fact-cols-narrow', String(Math.max(1, Math.ceil(shown / 2))));
-  const note = $('#analyzeOmittedFacts');
-  if (note) {
-    note.hidden = omitted.length === 0;
-    note.textContent = omitted.length ? t('Not shown for this decision: {facts}', { facts: omitted.join(' · ') }) : '';
-  }
 }
 
 
@@ -6597,11 +6447,6 @@ function escapeActionPathMarkup(value) {
   })[character]);
 }
 
-function syncExplainDepthControls() {
-  const expanded = $('#toggleTeacher')?.getAttribute('aria-expanded') === 'true';
-  $('#toggleTeacher')?.setAttribute('aria-pressed', String(expanded));
-  $('#analyzeExplainFacts')?.setAttribute('aria-pressed', String(!expanded));
-}
 
 function updateActionPathDisclosure() {
   const panel = $('#playbookDecisionPathPanel');
@@ -7182,18 +7027,12 @@ function actionVisualColor(action) {
   return ACTION_COLORS[visualActionKind(action)] || ACTION_COLORS.unavailable;
 }
 
+// The mix bar is shared with Training: the helper lives in the decision panel module.
 function renderFrequencyStack(container, actions) {
-  if (!container) return;
-  const populated = actions.filter((action) => Number(action.value) > 0);
-  container.innerHTML = populated.map((action) => {
-    const kind = visualActionKind(action);
-    return `<span class="frequency-stack-segment" data-action-kind="${kind}" style="width:${action.value}%" title="${t(action.name)}: ${action.value}%"></span>`;
-  }).join('');
-  const label = populated.length
-    ? populated.map((action) => `${t(action.name)} ${action.value}%`).join(', ')
-    : t('Strategy frequencies unavailable');
-  container.setAttribute('aria-label', label);
-  container.classList.toggle('is-empty', populated.length === 0);
+  return window.RiverlineAnalyzeDecisionPanel.renderFrequencyStack(container, actions, {
+    translate: (key, values) => t(key, values),
+    actionKind: visualActionKind,
+  });
 }
 
 function strategySourceDisplayKey(source) {
@@ -7265,36 +7104,7 @@ function currentTrainingTruthSummary() {
 }
 
 function renderAnalyzeTruth(strategyResult) {
-  const truth = requireStrategyProviderBridge().truthFor({ strategyResult, decisionContext: app.decisionContext });
-  const presentation = truthPresentation(truth);
-  const heading = $('#strategyTruthHeading');
-  if (heading) {
-    if (truth.state === 'accepted_reference_comparison') {
-      const sourceLabel = strategySourceDisplayLabel(strategyResult)
-        || truth.selectedReference?.manifest?.source?.displayName
-        || presentation.sourceLabel;
-      heading.textContent = sourceLabel;
-      delete heading.dataset.i18n;
-    } else {
-      heading.dataset.i18n = presentation.sourceLabel;
-      heading.textContent = t(presentation.sourceLabel);
-    }
-  }
-  // One provenance indicator per surface (OWNER-19): source + confidence tier above the verdict.
-  const tier = $('#strategyTier');
-  if (tier) tier.hidden = truth.state !== 'heuristic_comparison';
-  const note = $('#strategyTruthNote');
-  if (note) { note.dataset.i18n = presentation.description; note.textContent = t(presentation.description); }
-  const rec = $('#recommendation');
-  if (rec) {
-    rec.dataset.truthState = truth.state;
-    if (truth.state === 'accepted_reference_comparison') {
-      rec.dataset.strategyAuthority = 'comparative_reference';
-    } else {
-      delete rec.dataset.strategyAuthority;
-    }
-  }
-  return truth;
+  return decisionPanel()?.renderTruth(strategyResult, app.decisionContext) ?? null;
 }
 
 function localizedStrategyLimitation(policy) {
@@ -7328,43 +7138,33 @@ function trainingGradePresentation(grade, strategyResult, evaluation = null) {
 }
 
 function setRecommendationState(state) {
-  const recommendation = $('#recommendation');
-  if (!recommendation) return;
-  recommendation.dataset.recommendationState = state;
-  if ($('#analysisTeachDecision')) $('#analysisTeachDecision').hidden = !['ready', 'mixed', 'warning'].includes(state);
-  recommendation.setAttribute('aria-busy', String(state === 'loading'));
-  const inputState = $('#analysisInputState');
-  if (inputState) {
-    inputState.hidden = !['waiting', 'unavailable', 'loading'].includes(state);
-    $('#analysisInputMessage').textContent = state === 'loading' ? t('Loading…') : t('Check the cards and decision context to continue.');
-    $('#analysisEditInputs').hidden = state === 'loading';
-    const editLabel = app.playbookMode === PLAYBOOK_MODES.HAND ? 'Return to hand' : 'Edit decision inputs';
-    $('#analysisEditInputs').dataset.i18n = editLabel;
-    $('#analysisEditInputs').textContent = t(editLabel);
-    $('#analysisEditInputs').onclick = () => {
-      if (app.playbookMode === PLAYBOOK_MODES.HAND) {
-        navigateToWorkspace('gto', 'hand');
-        const target = [...document.querySelectorAll('#handInteractionRail button, #handCompletedActions button, #handSetupDisclosure input')]
-          .find(node => !node.disabled && node.getClientRects().length) || $('#handLiveStageHeader');
-        if (target) { target.tabIndex = target.tabIndex < 0 ? -1 : target.tabIndex; target.scrollIntoView({ block: 'center', behavior: 'instant' }); target.focus({ preventScroll: true }); }
-        return;
-      }
-      if (focusScenarioReadinessField(app.playbookResolution)) return;
-      const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
-      if (app.playbookMode !== PLAYBOOK_MODES.HAND && app.gto.hero.length !== 2 && heroEditor?.getClientRects().length) {
-        heroEditor.click();
-        return;
-      }
-      const region = document.querySelector('.playbook-context-rail');
-      if (!region) return;
-      if (region.tagName === 'DETAILS') region.open = true;
-      region.querySelectorAll('details').forEach(details => { details.open = true; });
-      const control = [...region.querySelectorAll('button, select, input')]
-        .find(node => !node.disabled && node.getClientRects().length);
-      control?.scrollIntoView({ block: 'center', behavior: 'instant' });
-      control?.focus({ preventScroll: true });
-    };
+  decisionPanel()?.setRecommendationState(state);
+}
+
+// "Edit decision inputs" / "Return to hand" on the gate: the panel reports the
+// click, the orchestrator decides where focus goes.
+function editDecisionInputs() {
+  if (app.playbookMode === PLAYBOOK_MODES.HAND) {
+    navigateToWorkspace('gto', 'hand');
+    const target = [...document.querySelectorAll('#handInteractionRail button, #handCompletedActions button, #handSetupDisclosure input')]
+      .find(node => !node.disabled && node.getClientRects().length) || $('#handLiveStageHeader');
+    if (target) { target.tabIndex = target.tabIndex < 0 ? -1 : target.tabIndex; target.scrollIntoView({ block: 'center', behavior: 'instant' }); target.focus({ preventScroll: true }); }
+    return;
   }
+  if (focusScenarioReadinessField(app.playbookResolution)) return;
+  const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
+  if (app.playbookMode !== PLAYBOOK_MODES.HAND && app.gto.hero.length !== 2 && heroEditor?.getClientRects().length) {
+    heroEditor.click();
+    return;
+  }
+  const region = document.querySelector('.playbook-context-rail');
+  if (!region) return;
+  if (region.tagName === 'DETAILS') region.open = true;
+  region.querySelectorAll('details').forEach(details => { details.open = true; });
+  const control = [...region.querySelectorAll('button, select, input')]
+    .find(node => !node.disabled && node.getClientRects().length);
+  control?.scrollIntoView({ block: 'center', behavior: 'instant' });
+  control?.focus({ preventScroll: true });
 }
 
 // Readiness reasons name canonical Scenario fields; each maps to the control
@@ -7567,19 +7367,9 @@ function renderDecisionAnalysis(container, {
 }
 
 function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolution, unavailableReason = null) {
-  const authority = resolution?.mode === 'hand' ? 'hand' : 'scenario';
-  const result = strategyResult?.schemaVersion === strategyProvider.resultSchemaVersion
-    ? strategyResult
-    : null;
-  const explanation = renderDecisionAnalysis($('#teacherContent'), {
-    decisionContext,
-    strategyResult: result,
-    trustedFacts: trustedAnalysisFacts(canonicalActionHistoryForAnalysis(resolution)),
-    authority,
-    depth: 'detailed',
-    unavailableReason,
-    surface: 'playbook'
-  });
+  const explanation = decisionPanel()?.renderExplain(Object.freeze({
+    decisionContext, strategyResult, resolution, unavailableReason,
+  })) ?? null;
   app.analysisExplanation = explanation;
   return explanation;
 }
@@ -7719,12 +7509,10 @@ async function updateContext(reason = 'Context updated') {
   const claimPolicy = strategyClaimPolicy(strategyResult);
   const profile = strategyResultToLegacyProfile(strategyResult);
   const meaningfulActions = strategyResult.actions.filter((entry) => entry.probability >= 0.05).length;
-  if (typeof setRecommendationState === 'function') {
-    setRecommendationState(claimPolicy.primaryLimitation?.priority >= 70
-      || strategyResult.warnings.length > 0
-      ? 'warning'
-      : meaningfulActions > 1 ? 'mixed' : 'ready');
-  }
+  const recommendationState = claimPolicy.primaryLimitation?.priority >= 70
+    || strategyResult.warnings.length > 0
+    ? 'warning'
+    : meaningfulActions > 1 ? 'mixed' : 'ready';
   app.strategyResult = strategyResult;
   app.playbookViewModel = playbookBridge && typeof playbookBridge.createViewModel === 'function'
     ? playbookBridge.createViewModel(strategyResult)
@@ -7747,34 +7535,7 @@ async function updateContext(reason = 'Context updated') {
 
 
 
-  if (typeof renderAnalyzeVerdict === 'function') renderAnalyzeVerdict(strategyResult);
-  renderAnalyzeTruth(strategyResult);
-
-  const recommendationSizing = strategyResult.recommendation?.action;
-  const bestSizing = $('#bestSizing');
-  if (bestSizing) {
-    if (Number.isFinite(recommendationSizing?.amountBb)) {
-      bestSizing.textContent = globalThis.RiverlineAnalysisExplanation
-        ?.formatSuggestedSizingBb?.(recommendationSizing.amountBb)
-        ?? `${recommendationSizing.amountBb} bb`;
-      bestSizing.hidden = false;
-    } else if (Number.isFinite(recommendationSizing?.potFraction)) {
-      bestSizing.textContent = t('{value}% pot', { value: formatUiFixed(recommendationSizing.potFraction * 100, 0) });
-      bestSizing.hidden = false;
-    } else {
-      bestSizing.textContent = '';
-      bestSizing.hidden = true;
-    }
-  }
-
-  const bestReason = $('#bestReason');
-
-  if (bestReason) bestReason.textContent = profile.reason;
-
-  const recommendation = $('#recommendation');
-  if (recommendation) recommendation.dataset.actionKind = visualActionKind(profile.actions[0]);
-
-  
+  decisionPanel()?.renderResult(Object.freeze({ decisionContext, strategyResult, claimPolicy, state: recommendationState }));
 
   // Dynamically disable irrelevant street tabs on the chart page
 
@@ -7793,88 +7554,6 @@ async function updateContext(reason = 'Context updated') {
 
   });
 
-  const sourceBadge = $('#sourceBadge');
-
-  if (sourceBadge) {
-    const sourceLabel = strategySourceDisplayLabel(strategyResult);
-    const isReference = claimPolicy.authority === 'comparative_reference';
-    const sourceTone = claimPolicy.source.family === 'heuristic'
-      ? 'heuristic'
-      : isReference
-        ? 'reference'
-        : 'info';
-    const provenance = strategyPolicySummary(claimPolicy);
-    sourceBadge.textContent = sourceLabel;
-    sourceBadge.title = provenance;
-    sourceBadge.setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
-    sourceBadge.className = `badge status-badge status-badge--${sourceTone}`;
-    // ANALYZE-COMPOSITION-001 / QA-SHELL-004: the header badge names the production
-    // source; the body repeats a source only when it differs (comparative reference).
-    sourceBadge.hidden = !isReference;
-    if (isReference) {
-      sourceBadge.dataset.strategyAuthority = 'comparative_reference';
-    } else {
-      delete sourceBadge.dataset.strategyAuthority;
-    }
-    const provenanceElement = $('#strategySourceProvenance');
-    if (provenanceElement) provenanceElement.textContent = provenance;
-  }
-
-  if (typeof renderStrategyMeta === 'function') renderStrategyMeta(claimPolicy);
-
-  const strategyWarnings = $('#strategyWarnings');
-  if (strategyWarnings) {
-    const warnings = [
-      localizedStrategyLimitation(claimPolicy),
-      ...localizedStrategyWarnings(strategyResult)
-    ].filter(Boolean);
-    strategyWarnings.textContent = [...new Set(warnings)].join(' · ');
-    strategyWarnings.hidden = warnings.length === 0;
-  }
-
-  const streetLabel = $('#streetLabel');
-
-  if (streetLabel) streetLabel.textContent = t(street.charAt(0).toUpperCase() + street.slice(1));
-
-  const displayActions = [...profile.actions];
-
-  while (displayActions.length < 3) displayActions.push({ name: '-', value: 0, kind: 'unavailable' });
-
-  displayActions.forEach((action, index) => setFrequency(index + 1, action));
-
-  if (typeof renderFrequencyStack === 'function') {
-    renderFrequencyStack($('#actionFrequencyStack'), displayActions);
-  }
-
-  const [a, b] = displayActions;
-
-  const actionWheel = $('#actionWheel');
-
-  if (actionWheel) {
-
-    actionWheel.style.background = `conic-gradient(${actionVisualColor(a)} 0% ${a.value}%, ${actionVisualColor(b)} ${a.value}% ${a.value + b.value}%, ${actionVisualColor(displayActions[2])} ${a.value + b.value}% 100%)`;
-
-  }
-
-  
-
-  // Format center text safely
-
-  const val = a.value;
-
-  let formattedVal = '-';
-
-  if (val) {
-
-      formattedVal = `${formatUiNumber(val, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`;
-
-  }
-
-  const wheelCenterText = $('#wheelCenterText');
-
-  if (wheelCenterText) wheelCenterText.textContent = formattedVal;
-
-  
 
   updateMetrics(decisionContext);
 
@@ -9130,11 +8809,8 @@ function bindEvents() {
 
   if ($('#closeModal')) $('#closeModal').addEventListener('click', closePicker);
 
-  // Facts | Explain depth: Facts collapses the explanation; Explain opens it.
-  if ($('#analyzeExplainFacts')) $('#analyzeExplainFacts').addEventListener('click', () => {
-    if ($('#toggleTeacher')?.getAttribute('aria-expanded') === 'true') $('#toggleTeacher').click();
-  });
-  if (typeof syncExplainDepthControls === 'function') syncExplainDepthControls();
+  // Decision panel (verdict, mix, facts, Explain, Teach): mounted module.
+  mountDecisionPanel();
 
   // Hand context: the existing route back, and the explicit switch to Scenario editing.
   if ($('#analyzeHandContextReturn')) $('#analyzeHandContextReturn').addEventListener('click', () => {
@@ -9154,25 +8830,6 @@ function bindEvents() {
   });
   if (typeof syncSpotDisclosureSummaries === 'function') syncSpotDisclosureSummaries();
 
-  if ($('#toggleTeacher')) $('#toggleTeacher').addEventListener('click', () => {
-
-    const t = $('#teacherContent');
-
-    if (t) {
-
-      const isHidden = t.style.display === 'none' || t.style.display === '';
-
-      t.style.display = isHidden ? 'block' : 'none';
-      $('#toggleTeacher').setAttribute('aria-expanded', String(isHidden));
-      syncExplainDepthControls();
-
-      t.classList.toggle('is-analysis-entering', isHidden);
-
-      if (isHidden) playbookSurfaceInvalidator.renderIfNeeded('analysis');
-
-    }
-
-  });
 
   if ($('#cardModal')) {
     $('#cardModal').addEventListener('click', (event) => { if (event.target === $('#cardModal')) closePicker(); });
@@ -9430,7 +9087,6 @@ function bindEvents() {
   $('#equityRandomizeButton')?.addEventListener('click', () => {
     void randomizeCurrentEquityInput('matchup');
   });
-  $('#analysisTeachDecision')?.addEventListener('click', () => { void teachPersonalDecision(app.decisionContext, 'Analyze'); });
   $('#trainingTeachDecision')?.addEventListener('click', () => {
     if (document.querySelector('.training-workspace')?.dataset.trainingState === 'feedback') {
       void teachPersonalDecision(app.training.currentExercise?.decisionContext, 'Training');
@@ -9504,16 +9160,6 @@ function bindEvents() {
       const expanded = wrapper.classList.contains('collapsed');
       playbookTableExpandedByDestination[$('#gtoMode')?.dataset.productDestination === 'hand' ? 'hand' : 'analyze'] = expanded;
       setCanonicalTableExpanded(expanded);
-    });
-  }
-
-  if ($('#toggleFrequencyAlternate')) {
-    $('#toggleFrequencyAlternate').addEventListener('click', (event) => {
-      const container = $('#actionWheelContainer');
-      if (!container) return;
-      const expanded = event.currentTarget.getAttribute('aria-expanded') === 'true';
-      event.currentTarget.setAttribute('aria-expanded', String(!expanded));
-      container.hidden = expanded;
     });
   }
 
@@ -9592,10 +9238,7 @@ function bindEvents() {
     }
 
     // T - Toggle teacher
-    if (e.key === 't' || e.key === 'T') {
-      const teacherBtn = document.getElementById('toggleTeacher');
-      if (teacherBtn) teacherBtn.click();
-    }
+    decisionPanel()?.handleKey(e);
 
     // 1-5 - Navigate tabs
     if (e.key >= '1' && e.key <= '5') {
@@ -9618,8 +9261,6 @@ function bindEvents() {
 }
 
 
-
-const localizedStrategyProfile = strategyResultToLegacyProfile;
 
 function refreshLocalizedPlaybookRuntime() {
   if (app.playbookResolution) renderPlaybookModeStatus(app.playbookResolution);
@@ -9670,67 +9311,7 @@ function refreshLocalizedPlaybookRuntime() {
     if ($('#handReviewSaveHand')) $('#handReviewSaveHand').textContent = t('Save hand');
   }
   if (app.decisionContext && app.strategyResult) {
-    const profile = localizedStrategyProfile(app.strategyResult);
-    const claimPolicy = strategyClaimPolicy(app.strategyResult);
-    renderAnalyzeVerdict(app.strategyResult);
-    renderAnalyzeTruth(app.strategyResult);
-    if ($('#bestReason')) $('#bestReason').textContent = profile.reason;
-    const recommendationSizing = app.strategyResult.recommendation?.action;
-    if ($('#bestSizing')) {
-      if (Number.isFinite(recommendationSizing?.amountBb)) {
-        $('#bestSizing').textContent = globalThis.RiverlineAnalysisExplanation
-          ?.formatSuggestedSizingBb?.(recommendationSizing.amountBb)
-          ?? `${formatUiFixed(recommendationSizing.amountBb, 1)} bb`;
-        $('#bestSizing').hidden = false;
-      } else if (Number.isFinite(recommendationSizing?.potFraction)) {
-        $('#bestSizing').textContent = t('{value}% pot', { value: formatUiFixed(recommendationSizing.potFraction * 100, 0) });
-        $('#bestSizing').hidden = false;
-      }
-    }
-    const sourceLabel = strategySourceDisplayLabel(app.strategyResult);
-    if ($('#sourceBadge')) {
-      $('#sourceBadge').textContent = sourceLabel;
-      $('#sourceBadge').title = strategyPolicySummary(claimPolicy);
-      $('#sourceBadge').setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
-      const isReference = claimPolicy?.authority === 'comparative_reference';
-      const sourceTone = claimPolicy?.source?.family === 'heuristic'
-        ? 'heuristic'
-        : isReference
-          ? 'reference'
-          : 'info';
-      $('#sourceBadge').className = `badge status-badge status-badge--${sourceTone}`;
-      $('#sourceBadge').hidden = !isReference;
-      if (isReference) {
-        $('#sourceBadge').dataset.strategyAuthority = 'comparative_reference';
-      } else {
-        delete $('#sourceBadge').dataset.strategyAuthority;
-      }
-    }
-    if ($('#strategySourceProvenance')) {
-      $('#strategySourceProvenance').textContent = strategyPolicySummary(claimPolicy);
-    }
-    if ($('#streetLabel') && app.decisionContext.street) {
-      $('#streetLabel').textContent = t(app.decisionContext.street.charAt(0).toUpperCase() + app.decisionContext.street.slice(1));
-    }
-    renderStrategyMeta(claimPolicy);
-    if ($('#strategyWarnings')) {
-      const warnings = [
-        localizedStrategyLimitation(claimPolicy),
-        ...localizedStrategyWarnings(app.strategyResult)
-      ].filter(Boolean);
-      $('#strategyWarnings').textContent = [...new Set(warnings)].join(' · ');
-      $('#strategyWarnings').hidden = warnings.length === 0;
-    }
-    const displayActions = [...profile.actions];
-    while (displayActions.length < 3) displayActions.push({ name: '-', value: 0, kind: 'unavailable' });
-    displayActions.forEach((action, index) => setFrequency(index + 1, action));
-    renderFrequencyStack($('#actionFrequencyStack'), displayActions);
-    const val = displayActions[0]?.value;
-    if ($('#wheelCenterText')) {
-      $('#wheelCenterText').textContent = val
-        ? `${formatUiNumber(val, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%`
-        : '-';
-    }
+    decisionPanel()?.refreshLanguage(analyzeDecisionPanelView());
     updateMetrics(app.decisionContext);
     renderPath(app.decisionContext.street);
   } else if (app.playbookResolution && typeof renderUnavailableStrategy === 'function') {
@@ -14514,7 +14095,7 @@ async function openFullHandDecisionInAnalysis() {
     decisionContext: handoff.decisionContext,
   });
   const teacher = $('#teacherContent');
-  if (teacher && teacher.style.display !== 'block') $('#toggleTeacher')?.click();
+  if (teacher && !decisionPanel()?.isExplainOpen()) decisionPanel()?.toggleExplain();
   teacher?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   return handoff;
 }
