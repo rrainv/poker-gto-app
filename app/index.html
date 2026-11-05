@@ -520,6 +520,11 @@
               <p class="welcome-eyebrow" data-i18n="Welcome to Riverline">Welcome to Riverline</p>
               <h1 id="welcomeTitle"><span data-i18n="Learn how you play.">Learn how you play.</span><span data-i18n="Understand why.">Understand why.</span><span data-i18n="Practice what matters.">Practice what matters.</span></h1>
               <p id="welcomeDescription" data-i18n="A place to explore your poker decisions, one hand at a time.">A place to explore your poker decisions, one hand at a time.</p>
+              <label id="welcomeAgeRow" class="welcome-age" for="welcomeAgeConfirm" hidden>
+                <input id="welcomeAgeConfirm" type="checkbox" required aria-describedby="welcomeAgeHint">
+                <span id="welcomeAgeText" data-i18n="I'm 18 or older, and I understand Riverline is a study tool: it has no real-money play and isn't gambling advice.">I'm 18 or older, and I understand Riverline is a study tool: it has no real-money play and isn't gambling advice.</span>
+              </label>
+              <p id="welcomeAgeHint" class="welcome-age-hint" role="status" data-i18n="Confirm this to continue." hidden>Confirm this to continue.</p>
               <button class="ui-button ui-button--primary welcome-enter" type="button" data-welcome-destination="home" data-i18n="Enter Riverline">Enter Riverline</button>
             </div>
             <figure class="welcome-table-illustration">
@@ -770,6 +775,7 @@
           <span id="homeGamePersistence" class="status-badge" role="status" aria-live="polite" data-i18n="Opening Home Game">Opening Home Game</span>
           <p id="homeGamePersistenceNotice"></p>
         </div>
+        <p id="homeGameNotice" class="home-game-notice panel-note" data-i18n="A social game among friends. Check your local rules.">A social game among friends. Check your local rules.</p>
         <p id="homeGameError" class="home-game-error" role="alert" aria-live="assertive" hidden></p>
         <p id="homeGameActionStatus" class="home-game-action-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
 
@@ -2906,6 +2912,10 @@
               <strong data-i18n="Account & Data">Account &amp; Data</strong>
               <small data-i18n="Sign-in, local data, delete">Sign-in, local data, delete</small>
             </button>
+            <button id="settingsTabAbout" class="settings-category-tab" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelAbout" tabindex="-1" data-settings-category="about">
+              <strong data-i18n="About & legal">About &amp; legal</strong>
+              <small data-i18n="Study tool, fair play, notices">Study tool, fair play, notices</small>
+            </button>
           </div>
           <button id="settingsModifiedFilter" class="settings-modified-filter" type="button" aria-pressed="false" disabled>
             <span class="settings-modified-mark" aria-hidden="true"></span>
@@ -3339,6 +3349,46 @@
             </div>
             <p id="settingsDeleteAllDataStatus" class="panel-note" role="status" aria-live="polite" hidden></p>
           </section>
+          </div>
+
+          <!-- About & legal (NOTICES-001) -->
+          <div id="settingsPanelAbout" class="settings-panel settings-about-group" role="tabpanel" aria-labelledby="settingsTabAbout" data-settings-panel="about" hidden>
+            <div class="settings-panel-head">
+              <h2 class="settings-section-title" data-i18n="About & legal">About &amp; legal</h2>
+              <p class="panel-note" data-i18n="What Riverline is, what it is not, and what it is built with.">What Riverline is, what it is not, and what it is built with.</p>
+            </div>
+            <section class="settings-group settings-unit" data-setting-id="about-study-tool" aria-labelledby="settingsAboutStudyTitle" data-settings-group data-settings-keywords="education gambling guarantee">
+              <h3 id="settingsAboutStudyTitle" class="settings-group-title" data-i18n="A study tool">A study tool</h3>
+              <p class="settings-about-text" data-i18n="Riverline is a study tool for No-Limit Hold'em, for education only. It has no real-money play, no gambling and no guarantee of results.">Riverline is a study tool for No-Limit Hold'em, for education only. It has no real-money play, no gambling and no guarantee of results.</p>
+            </section>
+            <section class="settings-group settings-unit" data-setting-id="about-fair-play" aria-labelledby="settingsAboutFairTitle" data-settings-group data-settings-keywords="real-time assistance ban poker sites">
+              <h3 id="settingsAboutFairTitle" class="settings-group-title" data-i18n="Fair play">Fair play</h3>
+              <p class="settings-about-text" data-i18n="Use it away from the table. Poker sites ban real-time assistance, and Riverline is not built to be used during real-money play.">Use it away from the table. Poker sites ban real-time assistance, and Riverline is not built to be used during real-money play.</p>
+            </section>
+            <section class="settings-group settings-unit" data-setting-id="about-age-help" aria-labelledby="settingsAboutAgeTitle" data-settings-group data-settings-keywords="18 age gambling problem help">
+              <h3 id="settingsAboutAgeTitle" class="settings-group-title" data-i18n="Age and support">Age and support</h3>
+              <p class="settings-about-text" data-i18n="You must be 18 or older. If gambling is a problem for you, free and confidential help is available.">You must be 18 or older. If gambling is a problem for you, free and confidential help is available.</p>
+              <ul id="settingsHelpLinks" class="settings-about-links" aria-label="Help organisations" data-i18n-aria-label="Help organisations" hidden></ul>
+            </section>
+            <section class="settings-group settings-unit" data-setting-id="about-confidence-tiers" aria-labelledby="settingsAboutTiersTitle" data-settings-group data-settings-keywords="exact verified estimated unavailable confidence">
+              <h3 id="settingsAboutTiersTitle" class="settings-group-title" data-i18n="How sure a number is">How sure a number is</h3>
+              <dl class="settings-about-tiers">
+                <div><dt data-i18n="Exact">Exact</dt><dd data-i18n="Correct by construction, given the inputs.">Correct by construction, given the inputs.</dd></div>
+                <div><dt data-i18n="Verified">Verified</dt><dd data-i18n="A heuristic checked against references within a documented tolerance.">A heuristic checked against references within a documented tolerance.</dd></div>
+                <div><dt data-i18n="Estimated">Estimated</dt><dd data-i18n="A heuristic that has not been verified.">A heuristic that has not been verified.</dd></div>
+                <div><dt data-i18n="Unavailable">Unavailable</dt><dd data-i18n="No supported answer, so Riverline says so instead of guessing.">No supported answer, so Riverline says so instead of guessing.</dd></div>
+              </dl>
+            </section>
+            <section class="settings-group settings-unit" data-setting-id="about-third-party" aria-labelledby="settingsAboutNoticesTitle" data-settings-group data-settings-keywords="licence license font audio open source supabase electron rubik">
+              <h3 id="settingsAboutNoticesTitle" class="settings-group-title" data-i18n="Third-party notices">Third-party notices</h3>
+              <dl class="settings-about-notices">
+                <div><dt>Rubik</dt><dd data-i18n="Headings font, © 2015 The Rubik Project Authors, SIL Open Font License 1.1. The licence text ships with the font files.">Headings font, © 2015 The Rubik Project Authors, SIL Open Font License 1.1. The licence text ships with the font files.</dd></div>
+                <div><dt data-i18n="Card and chip sounds">Card and chip sounds</dt><dd data-i18n="15 recordings from Freesound, released under CC0 1.0 (no attribution required). Sources are listed in the audio provenance file.">15 recordings from Freesound, released under CC0 1.0 (no attribution required). Sources are listed in the audio provenance file.</dd></div>
+                <div><dt>Supabase JS</dt><dd data-i18n="Client library for optional sign-in, MIT licence.">Client library for optional sign-in, MIT licence.</dd></div>
+                <div><dt>Electron</dt><dd data-i18n="Desktop app runtime, MIT licence, with its own Chromium and Node.js notices.">Desktop app runtime, MIT licence, with its own Chromium and Node.js notices.</dd></div>
+                <div><dt data-i18n="Character portraits">Character portraits</dt><dd data-i18n="Temporary artwork made with an AI image tool, to be replaced by final art.">Temporary artwork made with an AI image tool, to be replaced by final art.</dd></div>
+              </dl>
+            </section>
           </div>
         </div>
 

@@ -92,6 +92,8 @@ test('orientation has no false selected workspace and dismissal restores sensibl
   const state = { decisionContext: app.window.app.decisionContext, strategyResult: app.window.app.strategyResult };
   const spy = app.spy(['requestPlaybookMode', 'calculateEquity', 'refreshHomeWorkspace']);
   try {
+    // NOTICES-001: the first-run 18+ line must be confirmed before Escape leaves.
+    app.byId('welcomeAgeConfirm').checked = true;
     app.dispatch(app.byId('welcomeOrientation'), new app.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await app.settle(500);
     assert.equal(spy.count('requestPlaybookMode') + spy.count('calculateEquity'), 0);

@@ -202,6 +202,8 @@
     "product_ui002_density_geometry.test.mjs",
     "product_ui004_cards_themes.test.mjs",
     "product_ui005_workspace_fit.test.mjs",
+    "notices001_about_legal.test.mjs",
+    "notices001_first_run.test.mjs",
     "settings001_model.test.mjs",
     "settings001_workspace.test.mjs",
     "settings_ia001.test.mjs",

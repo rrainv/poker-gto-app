@@ -233,6 +233,8 @@ test('prepaint layers Welcome over recurring Home without selecting a false work
   assert.equal(home.getModel(), null);
   const spy = app.spy(['callHomeBridge', 'updateContext']);
   try {
+    // NOTICES-001: first run needs the 18+ line confirmed before leaving.
+    app.byId('welcomeAgeConfirm').checked = true;
     await app.click('[data-welcome-destination="home"]');
     await app.settle(500);
     assert.equal(app.call('welcomeOrientationIsVisible'), false);

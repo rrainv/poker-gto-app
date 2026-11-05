@@ -58,15 +58,15 @@ test('modified counts are per category and the filter keeps only changed rows', 
   const view = resolveSettingsView({ rows, modifiedOnly: true });
   assert.equal(view.modifiedTotal, 2);
   assert.deepEqual({ ...view.modifiedByCategory }, {
-    appearance: 1, audio: 1, language: 0, help: 0, shortcuts: 0, account: 0,
+    appearance: 1, audio: 1, language: 0, help: 0, shortcuts: 0, account: 0, about: 0,
   });
   assert.deepEqual([...view.visibleRowIds].sort(), ['audio-volume', 'card-face-style']);
   const combined = resolveSettingsView({ rows, modifiedOnly: true, query: 'card' });
   assert.deepEqual([...combined.visibleRowIds], ['card-face-style']);
 });
 
-test('categories are the six the ticket names and unknown ones fall back', () => {
-  assert.deepEqual([...SETTINGS_CATEGORY_IDS], ['appearance', 'audio', 'language', 'help', 'shortcuts', 'account']);
+test('categories are the seven the tickets name and unknown ones fall back', () => {
+  assert.deepEqual([...SETTINGS_CATEGORY_IDS], ['appearance', 'audio', 'language', 'help', 'shortcuts', 'account', 'about']);
   assert.equal(normalizeSettingsCategory('nope'), DEFAULT_SETTINGS_CATEGORY);
   assert.equal(normalizeSettingsCategory('account'), 'account');
 });

@@ -19112,3 +19112,20 @@ html:where([data-motion-mode="reduced"]) { scroll-behavior: auto !important; }
   #trainingActionHistory { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; gap: var(--space-2) var(--space-3); }
   #trainingActionHistory > .is-empty { grid-column: 1 / -1; }
 }
+
+/* NOTICES-001: the one-time 18+ line on the Welcome overlay, and About & legal. */
+.welcome-age { display: flex; align-items: flex-start; gap: var(--space-3); max-inline-size: 560px; margin-block: var(--space-4) var(--space-2); color: var(--text-secondary); font-size: var(--t-small); font-weight: 400; line-height: 1.5; cursor: pointer; }
+.welcome-age[hidden], .welcome-age-hint[hidden] { display: none; }
+.welcome-age input { flex: none; inline-size: 18px; block-size: 18px; margin-block-start: 2px; accent-color: var(--accent-primary); }
+.welcome-age:focus-within { border-radius: var(--radius-sm); outline: 2px solid var(--border-focus); outline-offset: 3px; }
+.welcome-age-hint { margin: 0 0 var(--space-2); color: var(--text-secondary); font-size: var(--t-small); }
+.welcome-age input[aria-invalid="true"] { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.settings-about-text { margin: 0; max-inline-size: 62ch; color: var(--text-secondary); line-height: 1.55; }
+.settings-about-links { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; padding: 0; list-style: none; }
+.settings-about-links a { color: var(--accent-primary); }
+.settings-about-links a:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; border-radius: var(--radius-sm); }
+.settings-about-tiers, .settings-about-notices { display: grid; gap: var(--space-4); margin: 0; }
+.settings-about-tiers > div { display: grid; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); gap: var(--space-5); align-items: baseline; }
+.settings-about-tiers dt, .settings-about-notices dt { color: var(--text-primary); font-weight: var(--weight-heading); }
+.settings-about-notices > div { display: grid; gap: var(--space-1); }
+.settings-about-tiers dd, .settings-about-notices dd { margin: 0; color: var(--text-secondary); line-height: 1.5; }

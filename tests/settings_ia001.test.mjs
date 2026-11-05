@@ -28,6 +28,7 @@ const EXPECTED_SETTINGS = Object.freeze({
   help: ['guide', 'settings-tour', 'training-answer-mode'],
   shortcuts: [],
   account: ['account-profile', 'delete-data', 'local-data-counts', 'storage-status'],
+  about: ['about-age-help', 'about-confidence-tiers', 'about-fair-play', 'about-study-tool', 'about-third-party'],
 });
 
 test('Settings is a workspace: a mode view, not a dialog, with three zones', () => {
@@ -72,10 +73,10 @@ test('every preference row that can differ from a default has its own Reset, hid
   }
 });
 
-test('six category tabs, one panel each, vertical roving keyboard navigation', () => {
+test('seven category tabs, one panel each, vertical roving keyboard navigation', () => {
   const tabs = settings.querySelectorAll('.settings-category-tab');
-  assert.deepEqual(tabs.map((tab) => tab.dataset.settingsCategory), ['appearance', 'audio', 'language', 'help', 'shortcuts', 'account']);
-  assert.equal(settings.querySelectorAll('[role="tabpanel"]').length, 6);
+  assert.deepEqual(tabs.map((tab) => tab.dataset.settingsCategory), ['appearance', 'audio', 'language', 'help', 'shortcuts', 'account', 'about']);
+  assert.equal(settings.querySelectorAll('[role="tabpanel"]').length, 7);
   assert.equal(settings.querySelector('[role="tablist"]').getAttribute('aria-orientation'), 'vertical');
   tabs.forEach((tab) => {
     const panel = settings.getElementById?.(tab.getAttribute('aria-controls')) ?? markup.getElementById(tab.getAttribute('aria-controls'));

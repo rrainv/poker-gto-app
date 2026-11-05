@@ -93,6 +93,9 @@
     ['A place to explore your poker decisions, one hand at a time.', 'Место, где можно разобраться в своих решениях — раздача за раздачей.', 'מקום לחקור את החלטות הפוקר שלכם, יד אחר יד.'],
     ['Enter Riverline', 'Войти в Riverline', 'כניסה ל־Riverline'],
     ['An illustration of your study table', 'Иллюстрация учебного стола', 'איור של שולחן הלימוד שלכם'],
+    // NOTICES-001 (draft RU/HE, owner to review).
+    ["I'm 18 or older, and I understand Riverline is a study tool: it has no real-money play and isn't gambling advice.", 'Мне 18 лет или больше, и я понимаю, что Riverline нужен для учёбы: в нём нет игры на реальные деньги, и это не совет по азартным играм.', 'אני בן 18 או יותר, ואני מבין ש-Riverline הוא כלי לימוד: אין בו משחק בכסף אמיתי והוא אינו ייעוץ הימורים.'],
+    ['Confirm this to continue.', 'Подтверди это, чтобы продолжить.', 'אשר זאת כדי להמשיך.'],
   ]) { en[key] = key; ru[key] = russian; he[key] = hebrew; }
   global.riverlineWelcomeTranslations = { en, ru, he };
 }(window));

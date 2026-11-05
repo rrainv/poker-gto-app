@@ -12,6 +12,7 @@ import {
   createSourceTierLabel,
 } from '../ui/drill-components.mjs';
 import { countLocalData } from './settings-data-counts.mjs';
+import { getHelpLinks } from './legal-notices.mjs';
 import {
   DEFAULT_SETTINGS_CATEGORY,
   SETTINGS_CATEGORY_IDS,
@@ -405,6 +406,24 @@ export function mountSettingsWorkspace(container, deps = {}) {
   // ── Help & guide ────────────────────────────────────────────────────────
   listen(q('#settingsOpenGuide'), 'click', () => deps.openGuide?.());
 
+  // ── About & legal: help links only when the owner has supplied them ────
+  const helpLinks = q('#settingsHelpLinks');
+  function renderHelpLinks() {
+    if (!helpLinks) return;
+    const links = (deps.helpLinks ?? getHelpLinks)(locale());
+    helpLinks.replaceChildren(...links.map((entry) => {
+      const item = doc.createElement('li');
+      const anchor = doc.createElement('a');
+      anchor.href = entry.href;
+      anchor.textContent = entry.name;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      item.append(anchor);
+      return item;
+    }));
+    helpLinks.hidden = links.length === 0;
+  }
+
   // ── Account & Data counts ──────────────────────────────────────────────
   const countsList = q('#settingsDataCounts');
   const countsNote = q('#settingsDataCountsNote');
@@ -548,6 +567,7 @@ export function mountSettingsWorkspace(container, deps = {}) {
     renderLanguageSamples();
     syncLanguageCards();
     renderPreview();
+    renderHelpLinks();
     renderDataCounts();
     render();
     if (!visible) return;
@@ -594,6 +614,7 @@ export function mountSettingsWorkspace(container, deps = {}) {
   refreshAdapters();
   renderLanguageSamples();
   syncLanguageCards();
+  renderHelpLinks();
   render();
 
   const controller = {

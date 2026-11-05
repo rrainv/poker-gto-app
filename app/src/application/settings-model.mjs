@@ -12,6 +12,7 @@ export const SETTINGS_CATEGORY_IDS = Object.freeze([
   'help',
   'shortcuts',
   'account',
+  'about',
 ]);
 export const DEFAULT_SETTINGS_CATEGORY = 'appearance';
 

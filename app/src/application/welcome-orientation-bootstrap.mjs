@@ -1,3 +1,4 @@
+import { createAgeConfirmation } from './legal-notices.mjs';
 import {
   createWelcomeOrientationPreference,
   createWelcomeOrientationSession,
@@ -14,6 +15,12 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
   const preference = options.preference ?? createWelcomeOrientationPreference({
     storage: options.storage ?? browserWindow.localStorage,
   });
+  const age = options.ageConfirmation ?? createAgeConfirmation({
+    storage: options.storage ?? browserWindow.localStorage,
+  });
+  const ageRow = surface.querySelector('#welcomeAgeRow');
+  const ageCheckbox = surface.querySelector('#welcomeAgeConfirm');
+  const ageHint = surface.querySelector('#welcomeAgeHint');
   const remember = surface.querySelector('#welcomeRememberChoice');
   const closeButton = surface.querySelector('#welcomeCloseButton');
   const manualNote = surface.querySelector('#welcomeManualNote');
@@ -81,6 +88,28 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     suspendedNavigation = null;
   }
 
+  // First run only: the one required line. It never shows on a manual open, and
+  // once stored it is never shown again.
+  const ageRequired = () => session.getState().visible
+    && session.getState().entryKind === 'startup'
+    && Boolean(ageCheckbox) && !age.isConfirmed();
+
+  // True when the person may leave the startup overlay (and stores the answer).
+  function passAgeGate() {
+    if (!ageRequired()) return true;
+    if (ageCheckbox.checked) { age.confirm(); return true; }
+    ageCheckbox.setAttribute('aria-invalid', 'true');
+    if (ageHint) ageHint.hidden = false;
+    ageCheckbox.focus({ preventScroll: true });
+    return false;
+  }
+
+  ageCheckbox?.addEventListener('change', () => {
+    if (!ageCheckbox.checked) return;
+    ageCheckbox.removeAttribute('aria-invalid');
+    if (ageHint) ageHint.hidden = true;
+  });
+
   const session = createWelcomeOrientationSession({
     preference,
     navigate(destination) {
@@ -105,6 +134,12 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
       remember.checked = false;
       remember.closest('.welcome-preference')?.toggleAttribute('hidden', manual);
     }
+    if (ageRow) {
+      const needed = !manual && !age.isConfirmed();
+      ageRow.hidden = !needed;
+      if (ageCheckbox) { ageCheckbox.checked = false; ageCheckbox.removeAttribute('aria-invalid'); }
+      if (ageHint) ageHint.hidden = true;
+    }
     if (manualNote) manualNote.hidden = !manual;
     if (closeButton) closeButton.hidden = !manual;
     browserWindow.requestAnimationFrame(() => {
@@ -115,6 +150,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
 
   surface.querySelectorAll('[data-welcome-destination]').forEach((control) => {
     control.addEventListener('click', () => {
+      if (!passAgeGate()) return;
       session.choose(control.dataset.welcomeDestination, {
         remember: remember?.checked !== false,
       });
@@ -131,6 +167,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     if (session.getState().entryKind !== 'startup' || !session.getState().visible) return;
     const navigationControl = event.target.closest?.('.mode-nav-item[data-navigation-id]');
     if (!navigationControl) return;
+    if (!passAgeGate()) { event.preventDefault(); event.stopPropagation(); return; }
     session.leaveForExternalNavigation(navigationControl.dataset.navigationId, {
       remember: remember?.checked !== false,
     });
@@ -155,6 +192,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
       session.closeManual();
       hideSurface({ restoreFocus: true, restoreNavigation: true });
     } else {
+      if (!passAgeGate()) return;
       session.dismiss({ remember: remember?.checked !== false });
       findNavigationControl('home')?.focus?.({ preventScroll: true });
     }
