@@ -14,14 +14,15 @@ Base: origin/codex/stabilization 940555d. Tier T1.
 - opponent_intelligence001: stack 500bb -> 250bb, title renamed. The assertions are unchanged (terminal, count > 256).
   Transition count is about stack/1bb + 12 (measured 112/162/212/262 at 100/150/200/250bb), so 250bb gives 262, still
   above the 256 cap. Trade-off: the 500bb stack itself is no longer exercised; the guard is the transition budget.
-- beta_blocker_sync: NOT changed. Cutting the 999-1001 counts would drop the three-page boundary, and sharing setup does
-  not help because the cost is inside the memory DB double. Proposal below.
+- beta_blocker_sync: test unchanged (cutting 999-1001 would drop the three-page boundary). Fixed the cause instead, with
+  owner approval: createMemorySyncDatabase no longer deep-clones every store per transaction (readonly: no copy;
+  readwrite: shallow copy). Commit d935e9d.
 
 ## Before/after (node tools/run-tests.mjs --files, alone)
 | File | Before | After (5 runs) |
 |---|---|---|
 | opponent_intelligence001 | 213 s | 43.1, 49.4, 47.6, 47.3, 45.5 s (all pass) |
-| beta_blocker_sync | 99 s | unchanged |
+| beta_blocker_sync | 99 s | all 6 sync files (87 tests) together 4.1-4.8 s |
 
 ## Mutations (opponent test, source restored after each)
 | Mutation | Result |
@@ -31,7 +32,7 @@ Base: origin/codex/stabilization 940555d. Tier T1.
 | automated transitions not counted | fails: count > 256 assertion |
 
 ## Proposals (not done, outside a test-only ticket)
-1. createMemorySyncDatabase.runTransaction: do not deep-clone all stores for readonly transactions (reads already clone
+1. (DONE, d935e9d; mutation: removing the readwrite copy fails 1 test) createMemorySyncDatabase.runTransaction: do not deep-clone all stores for readonly transactions (reads already clone
    on return), or clone on write. Expected: beta_blocker_sync download cases from about 27 s to a few s; helps the other
    five sync test files that use the same double. Needs the owner's OK (app/src change).
 2. The poker-domain applyAction path revalidates the full history per transition (quadratic). A real cost for long hands
