@@ -1,5 +1,17 @@
 {
  "_doc": "Area manifest for tools/run-tests.mjs. Every tests/*.test.{js,mjs} file is in exactly one area. Verify with: node tools/run-tests.mjs --check",
+ "alsoRun": {
+  "app/src/locales/**": [
+   "terms_heuristic001.test.mjs",
+   "i18n001_runtime_integrity.test.mjs",
+   "i18n_residue001.test.mjs",
+   "l10n001_native_terminology.test.mjs"
+  ],
+  "app/index.html": [
+   "terms_heuristic001.test.mjs",
+   "i18n001_runtime_integrity.test.mjs"
+  ]
+ },
  "areas": {
   "home": {
    "tests": [
@@ -107,7 +119,9 @@
     "truth_fixes001_surfaces.test.mjs",
     "truth_fixes001_training_grading.test.mjs",
     "truth_surfaces002.test.mjs",
-    "extract_analyze_000_characterization.test.mjs"
+    "extract_analyze_000_characterization.test.mjs",
+    "extract_analyze_001_decision_panel.test.mjs",
+    "extract_analyze_002_matrix_comparison.test.mjs"
    ],
    "sources": [
     "app/src/application/analyze-*",
@@ -397,6 +411,7 @@
   "tooling-docs": {
    "tests": [
     "browser_beta_runtime.test.mjs",
+    "ci_fix001_runner_locale_selection.test.mjs",
     "cleanup001e1_browser_strategy_retirement.test.mjs",
     "cleanup001e2_electron_native_inference_retirement.test.mjs",
     "cleanup_prep001.test.mjs",

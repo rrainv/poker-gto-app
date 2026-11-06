@@ -149,6 +149,7 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
     function clearGroup() {}
     function bindSliderPair() {}
     function initTrainingMode() {}
+    function mountDecisionPanel() {}
     function renderPath() {}
     function initThemeSwatches() {}
     function renderBettingTree() {}

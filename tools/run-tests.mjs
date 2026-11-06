@@ -4,6 +4,7 @@
 //   node tools/run-tests.mjs --files tests/a.test.mjs,tests/b.test.mjs
 //   node tools/run-tests.mjs --group smoke        (named group from tests/areas.json: css, smoke)
 //   node tools/run-tests.mjs --changed            (git diff against the base, mapped through tests/areas.json)
+//   node tools/run-tests.mjs --paths app/src/locales/x.js --list   (same mapping as --changed, for explicit paths)
 //   node tools/run-tests.mjs --all
 //   node tools/run-tests.mjs --check              (manifest covers every test file exactly once; no run)
 // Options: --concurrency N (default 2)  --base <ref> (default origin/codex/stabilization)
@@ -54,6 +55,9 @@ function checkManifest() {
   for (const [g, v] of Object.entries(manifest.groups)) {
     for (const f of v.tests) if (!allTests.includes(withDir(f))) problems.push(`group ${g}: ${f} does not exist`);
   }
+  for (const [g, list] of Object.entries(manifest.alsoRun ?? {})) {
+    for (const f of list) if (!allTests.includes(withDir(f))) problems.push(`alsoRun ${g}: ${f} does not exist`);
+  }
   const css = allTests.filter((p) => fs.readFileSync(path.join(root, p), 'utf8').includes('styles.css'));
   const listed = new Set(manifest.groups.css.tests.map(withDir));
   for (const p of css) if (!listed.has(p)) problems.push(`group css is missing ${p} (reads styles.css)`);
@@ -74,7 +78,9 @@ function changedSelection() {
 }
 
 function selectionFromPaths(paths) {
-  const areas = new Set(); const reasons = [];
+  const areas = new Set(); const reasons = []; const extra = new Set();
+  // alsoRun: path globs that must always add named tests (e.g. locale text -> terminology tests).
+  const alsoRunMatchers = Object.entries(manifest.alsoRun ?? {}).map(([g, t]) => [globToRegExp(g), t]);
   const matchers = Object.entries(manifest.areas).map(([n, v]) => [n, v.sources.map(globToRegExp)]);
   for (const p of paths) {
     const hit = [];
@@ -85,8 +91,12 @@ function selectionFromPaths(paths) {
     if (hit.length === 0) hit.push('misc');
     hit.forEach((h) => areas.add(h));
     reasons.push(`${p} -> ${hit.join(', ')}`);
+    for (const [re, tests] of alsoRunMatchers) {
+      if (re.test(p)) { tests.forEach((t) => extra.add(withDir(t))); reasons.push(`${p} -> alsoRun ${tests.length} test(s)`); }
+    }
   }
   const files = new Set(paths.filter((p) => /^tests\/[^/]+\.test\.m?js$/.test(p) && allTests.includes(p)));
+  for (const f of extra) files.add(f);
   for (const a of areas) for (const f of areaTests(a) ?? []) files.add(withDir(f));
   return { files: [...files].sort(), reasons, areas: [...areas] };
 }
@@ -115,6 +125,8 @@ else if (opt('--area')) {
 } else if (opt('--files')) {
   files = opt('--files').split(',').map((f) => withDir(norm(f.trim())));
   for (const f of files) if (!fs.existsSync(path.join(root, f))) fail(`No such test file: ${f}`);
+} else if (opt('--paths')) {
+  const s = selectionFromPaths(opt('--paths').split(',').map((f) => norm(f.trim())).filter(Boolean)); files = s.files; notes = s.reasons;
 } else if (flag('--changed')) {
   const s = changedSelection(); files = s.files; notes = s.reasons;
 } else fail('Usage: node tools/run-tests.mjs --area a,b | --group css|smoke | --files p1,p2 | --changed | --all | --check');
