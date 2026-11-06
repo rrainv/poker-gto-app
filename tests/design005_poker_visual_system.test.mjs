@@ -72,7 +72,9 @@ test('card states use explicit classes and dead or invalid states do not rely on
 test('unknown cards use the Riverline jade and graphite card-back treatment', () => {
   const back = probe('<span class="riverline-card-back" data-card-preview-back-style="riverline"></span>');
   assert.match(css.cascaded(back, 'background') || css.cascaded(back, 'background-color') || '', /var\(--card-back\)/);
-  assert.equal(css.cascaded(back, 'content', { pseudoElement: 'after' }), '"R"');
+  // TRAINING-FULLHAND-001: the Riverline back paints one SVG file (the R is part of the art), with no glyph overlay.
+  assert.match(css.cascaded(back, 'background-image') || '', /riverline-card-back.svg/);
+  assert.equal(css.cascaded(back, 'content', { pseudoElement: 'after' }), 'none');
   assert.match(table, /renderCardBack\(index\)/);
   assert.match(table, /tableCardBackSvgMarkup/);
   assert.match(cardPresentation, /data-card-state="unknown"/);

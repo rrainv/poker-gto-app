@@ -79,18 +79,20 @@ test('production Training route uses the canonical bridge and shared StrategyPro
   assert.doesNotMatch(logic, /window\.(?:newRandomTrainingHand|handleTrainingGuess|replayTrainingExercise|resetTrainingStats)\s*=/);
 });
 
-test('Full Hand sizing actions open the sizing choice instead of answering directly', async () => {
-  // Protects: in Full Hand, bet/raise go to the sizing chooser; other actions answer.
+test('Full Hand sizing actions open the size ladder instead of answering directly', async () => {
+  // Protects: in Full Hand, bet/raise select and open the size ladder (select + confirm);
+  // nothing is answered until a size is chosen and Confirm is pressed.
   await app.training.selectMode('full_hand');
   await app.training.openSetup();
   await app.click('#trainingNewHand');
   await app.settle(2000);
-  const spy = app.spy(['handleTrainingGuess', 'chooseFullHandTrainingSizedAction']);
+  const spy = app.spy(['handleTrainingGuess', 'handleFullHandTrainingGuess']);
   try {
     const sized = actionButtons().find((button) => ['bet', 'raise'].includes(button.dataset.action) && !button.disabled);
     assert.ok(sized, 'a sized action is offered');
     await app.click(sized);
-    assert.deepEqual(spy.sequence, ['chooseFullHandTrainingSizedAction']);
+    assert.ok(app.$('#trainingFullHandActionDock .rl-ladder'), 'the size ladder opens');
+    assert.deepEqual(spy.sequence, [], 'selecting a sized action answers nothing');
   } finally {
     spy.restore();
   }

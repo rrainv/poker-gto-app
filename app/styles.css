@@ -1579,25 +1579,6 @@ div.home-empty-state .ui-button { justify-self: start; }
 .training-action-button:disabled { cursor: not-allowed; opacity: .52; }
 .training-action-copy { min-width: 0; display: grid; gap: var(--space-1); }
 .training-action-copy small { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: var(--weight-control); }
-.training-full-hand-sizing { display: grid; gap: var(--space-3); padding: var(--space-4); background: color-mix(in srgb, var(--action-aggressive) 6%, var(--surface-section)); border: 1px solid color-mix(in srgb, var(--action-aggressive) 38%, var(--border-subtle)); border-inline-start: 3px solid var(--action-aggressive); border-radius: var(--radius-control); }
-.training-full-hand-sizing-head { display: flex; align-items: end; justify-content: space-between; gap: var(--space-3); }
-.training-full-hand-sizing-head > div { display: grid; gap: var(--space-1); }
-.training-full-hand-sizing-head > div > strong { color: var(--text-primary); }
-.training-full-hand-sizing-head > small { color: var(--text-muted); }
-.training-full-hand-sizing-action { display: grid; gap: var(--space-3); }
-.training-full-hand-sizing-entry { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; gap: var(--space-3); align-items: center; }
-.training-full-hand-sizing-entry > label { color: var(--text-primary); font-weight: var(--weight-title); }
-.training-full-hand-amount-control { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; background: var(--surface-panel); border: 1px solid var(--border-default); border-radius: var(--radius-control); }
-.training-full-hand-amount-control:focus-within { border-color: var(--border-focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--border-focus) 20%, transparent); }
-.training-full-hand-amount-control input { width: 100%; min-width: 0; min-height: 42px; padding: var(--space-2) var(--space-3); color: var(--text-primary); background: transparent; border: 0; outline: 0; font: var(--weight-title) var(--text-body-size)/1 var(--font-data); font-variant-numeric: tabular-nums; }
-.training-full-hand-amount-control span { padding-inline-end: var(--space-3); color: var(--text-secondary); font: var(--weight-title) var(--text-label-size)/1 var(--font-data); }
-.training-full-hand-sizing-submit { min-height: 42px; white-space: nowrap; }
-.training-full-hand-sizing-bounds { margin: 0; color: var(--text-muted); font-size: var(--text-micro-size); }
-.training-full-hand-sizing-validation { min-height: 1.3em; margin: 0; color: var(--status-warning); font-size: var(--text-micro-size); }
-.training-full-hand-sizing-validation[data-valid="true"] { color: var(--status-success); }
-.training-full-hand-presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.training-full-hand-preset { min-height: 34px; padding: var(--space-2) var(--space-3); color: var(--text-secondary); background: var(--surface-interactive); border: 1px solid var(--border-default); border-radius: var(--radius-pill); font-size: var(--text-micro-size); }
-.training-full-hand-preset:hover { color: var(--text-primary); background: var(--surface-interactive-hover); border-color: var(--border-strong); }
 .training-action-button kbd,
 .training-shortcut-help kbd,
 .training-seed-actions kbd { min-width: 22px; height: 22px; display: inline-grid; place-items: center; color: var(--text-secondary); background: var(--surface-inset); border: 1px solid var(--border-default); border-radius: var(--radius-cell); font: 700 var(--text-micro-size)/1 var(--font-data); }
@@ -1717,11 +1698,6 @@ div.home-empty-state .ui-button { justify-self: start; }
 .training-full-hand-compact-controls small { color: var(--text-muted); font-size: var(--text-micro-size); }
 .training-full-hand-compact-controls strong { color: var(--text-primary); }
 
-.training-full-hand-action-dock > .training-full-hand-compact-controls {
-  margin-inline: var(--space-3);
-  margin-block-end: var(--space-3);
-}
-
 @media (min-width: 1101px) {
   .training-workspace[data-training-full-hand-phase="live"],
   .training-workspace[data-training-full-hand-phase="complete"],
@@ -1744,6 +1720,7 @@ div.home-empty-state .ui-button { justify-self: start; }
 .training-workspace[data-training-full-hand-phase="live"] #trainingStudyHints,
 .training-workspace[data-training-full-hand-phase="live"] #trainingAssistance,
 .training-workspace[data-training-full-hand-phase="live"] .training-completion-actions,
+.training-workspace[data-training-full-hand-phase="complete"] :is(#trainingCardSummary, #trainingPotInfo, #trainingAssistance, #trainingStudyHints, #trainingDecisionActionMount, #trainingFullHandStacks),
 .training-workspace[data-training-full-hand-phase="complete"] #trainingSolution,
 .training-workspace[data-training-full-hand-phase="complete"] .training-session-panel,
 .training-workspace[data-training-full-hand-phase="complete"] .training-assistance-panel,
@@ -1810,8 +1787,6 @@ div.home-empty-state .ui-button { justify-self: start; }
   .training-context-strip > div:nth-child(odd) { border-inline-start: 0; }
   .training-context-strip > div:nth-child(n + 3) { border-top: 1px solid var(--border-subtle); }
   .training-action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .training-full-hand-sizing-entry { grid-template-columns: minmax(0, 1fr) auto; }
-  .training-full-hand-sizing-entry > label { grid-column: 1 / -1; }
   .training-verdict-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .training-verdict-facts > div:nth-child(odd) { border-inline-start: 0; }
   .training-verdict-facts > div:nth-child(n + 3) { border-top: 1px solid var(--border-subtle); }
@@ -1848,10 +1823,6 @@ div.home-empty-state .ui-button { justify-self: start; }
   .training-context-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .training-context-strip > div:nth-child(odd) { border-inline-start: 0; }
   .training-action-grid { grid-template-columns: 1fr; }
-  .training-full-hand-sizing-head { align-items: start; flex-direction: column; }
-  .training-full-hand-sizing-entry { grid-template-columns: 1fr; }
-  .training-full-hand-sizing-entry > label { grid-column: auto; }
-  .training-full-hand-sizing-submit { width: 100%; }
   .training-verdict-facts { grid-template-columns: 1fr; }
   .training-verdict-facts > div + div { border-inline-start: 0; border-top: 1px solid var(--border-subtle); }
   .training-frequency-row { grid-template-columns: minmax(0, 1fr) auto; }
@@ -6723,18 +6694,18 @@ html[data-four-color="false"] {
   html[data-card-back-style="riverline"] .riverline-card-back:not([data-card-preview-back-style]),
   .riverline-card-back[data-card-preview-back-style="riverline"]
 ) {
-  background-image:
-    radial-gradient(120% 55% at 50% 8%, transparent 56%, rgba(255,255,255,.15) 57% 60%, transparent 61%),
-    radial-gradient(120% 55% at 50% 92%, transparent 56%, rgba(255,255,255,.12) 57% 60%, transparent 61%) !important;
+  /* TRAINING-FULLHAND-001: the one Riverline card back (original art, three sizes in one file). */
+  background-image: url("assets/riverline-card-back.svg") !important;
+  background-size: 100% 100% !important;
+  background-repeat: no-repeat !important;
+  border: 0 !important;
 }
 :is(
   html[data-card-back-style="riverline"] .card-slot.facedown,
   html[data-card-back-style="riverline"] .riverline-card-back:not([data-card-preview-back-style]),
   .riverline-card-back[data-card-preview-back-style="riverline"]
 )::after {
-  content: "R";
-  inset: 25% 20%;
-  border-radius: 50%;
+  content: none;
 }
 :is(
   html[data-card-back-style="solid"] .card-slot.facedown,
@@ -7031,8 +7002,12 @@ html[data-four-color="false"] {
 .table-card-back-river,
 .table-card-back-geometric { display: none; fill: none; stroke: rgba(255,255,255,.28); stroke-width: 1; }
 .table-card-back-mark { display: none; fill: rgba(255,255,255,.68); font: 800 15px/1 Georgia, serif; }
+.table-card-back-art { display: none; }
+html[data-card-back-style="riverline"] .table-card-back-art { display: block; }
+html[data-card-back-style="riverline"] .table-card-back-face,
+html[data-card-back-style="riverline"] .table-card-back-inner,
 html[data-card-back-style="riverline"] .table-card-back-river,
-html[data-card-back-style="riverline"] .table-card-back-mark { display: block; }
+html[data-card-back-style="riverline"] .table-card-back-mark { display: none; }
 html[data-card-back-style="solid"] .table-card-back-inner { stroke-width: 2; }
 html[data-card-back-style="geometric"] .table-card-back-geometric { display: block; }
 /* Standard visualization legends and honest empty states. */
@@ -12087,7 +12062,7 @@ body.has-modal-open { overflow: hidden; }
 .full-hand-timeline-action.is-hero { color: var(--text-primary); border-color: var(--accent-primary); }
 .full-hand-timeline-marker { flex: 0 0 auto; align-self: center; color: var(--text-primary); border-color: var(--status-warning); }
 .training-full-hand-table-wrapper #visual-table-container { max-inline-size: none; }
-.training-workspace[data-training-full-hand-phase="complete"] :is(#trainingGuessButtons, #trainingFullHandSizing, #trainingDecisionPrompt) { display: none; }
+.training-workspace[data-training-full-hand-phase="complete"] :is(#trainingGuessButtons, #trainingDecisionPrompt) { display: none; }
 
 [dir="rtl"] :is(.riverline-poker-table, .replay-timeline--compact, .replay-timeline--review, .full-hand-compact-timeline) {
   direction: ltr;
@@ -14405,7 +14380,6 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 .training-workspace[data-training-session-complete="true"] :is(
   #trainingDecisionPrompt,
   #trainingGuessButtons,
-  #trainingFullHandSizing,
   .training-shortcut-help,
   #trainingStudyHints,
   #trainingAssistance,
@@ -14589,47 +14563,6 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
   }
 }
 
-.training-full-hand-action-dock > .panel-body {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.training-full-hand-action-dock .training-decision-prompt {
-  padding: var(--space-2) var(--space-3);
-}
-
-.training-full-hand-action-dock .training-action-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.training-full-hand-action-dock .training-action-button {
-  min-block-size: 48px;
-  padding: var(--space-2) var(--space-3);
-}
-
-.training-full-hand-action-dock .training-full-hand-sizing {
-  gap: var(--space-2);
-  padding: var(--space-3);
-}
-
-.training-full-hand-action-dock .training-full-hand-sizing-entry {
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-2);
-}
-
-.training-full-hand-action-dock .training-full-hand-sizing-entry > label {
-  grid-column: 1 / -1;
-}
-
-.training-full-hand-action-dock .training-full-hand-presets {
-  gap: var(--space-1);
-}
-
-.training-full-hand-action-dock .training-full-hand-preset {
-  min-block-size: 30px;
-  padding: var(--space-1) var(--space-2);
-}
-
 .training-full-hand-decision-feedback {
   display: grid;
   gap: var(--space-2);
@@ -14673,7 +14606,9 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 }
 
 @media (min-width: 1101px) {
-  .training-workspace[data-training-full-hand-phase="live"],
+  .training-workspace[data-training-full-hand-phase="live"] {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 300px) !important;
+  }
   .training-workspace[data-training-full-hand-phase="review"] {
     grid-template-columns: minmax(0, 1fr) minmax(380px, 410px) !important;
   }
@@ -14688,7 +14623,6 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
     scrollbar-gutter: stable;
   }
 
-  .training-workspace[data-training-full-hand-phase="live"] .training-full-hand-action-dock { order: 1; }
   .training-workspace[data-training-full-hand-phase="live"] .training-session-panel { order: 2; }
   .training-workspace[data-training-full-hand-phase="live"] .training-reference-summary { order: 3; }
   .training-workspace[data-training-full-hand-phase="live"] .training-history-panel { order: 4; }
@@ -14725,18 +14659,20 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
   }
 
   .training-workspace[data-training-full-hand-phase="live"] .training-full-hand-table-wrapper #visual-table-container {
-    --play-stage-reserve: 310px;
-    inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
-    width: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+    /* TRAINING-FULLHAND-001: the table uses a tight frame (940 x 500), so its width follows height at 1.88. */
+    --play-stage-reserve: 395px;
+    inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.88));
+    width: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.88));
     max-inline-size: none;
     max-width: none;
     margin-block-end: 0;
   }
 
   .training-workspace[data-training-full-hand-phase="review"] .training-full-hand-table-wrapper #visual-table-container {
-    --play-stage-reserve: 310px;
-    inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
-    width: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+    /* TRAINING-FULLHAND-001: the table uses a tight frame (940 x 500), so its width follows height at 1.88. */
+    --play-stage-reserve: 395px;
+    inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.88));
+    width: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.88));
     max-inline-size: none;
     max-width: none;
     margin-block-end: 0;
@@ -14753,14 +14689,6 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .training-full-hand-action-dock .training-action-grid,
-  .training-full-hand-action-dock .training-full-hand-sizing-entry {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .training-full-hand-action-dock .training-full-hand-sizing-entry > label {
-    grid-column: auto;
-  }
 }
 .training-uncertainty {
   display: flex;
@@ -14991,7 +14919,7 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 .table-environment { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 6px 12px; text-align: start; border-block-start: 1px solid var(--border-subtle); }
 .table-cast[open] { grid-column: 1 / -1; }
 .table-cast:not([open]) > summary { padding-block: 4px; }
-.training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="review"]) .training-full-hand-table-wrapper #visual-table-container { --play-stage-reserve: 350px; }
+.training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="review"]) .training-full-hand-table-wrapper #visual-table-container { --play-stage-reserve: 400px; }
 .table-environment[hidden], .table-environment [hidden] { display: none; }
 .table-environment-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
 .table-context-chip { display: inline-flex; flex-wrap: wrap; gap: 6px; font-size: .75rem; line-height: 1.5; }
@@ -19001,3 +18929,128 @@ html[data-layout-preset] #gtoMode #chartView[data-waiting="true"] .range-matrix-
 @media (max-width: 1500px) {
   html[data-layout-preset] #gtoMode[data-product-destination="analyze"] #chartView .range-matrix-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
 }
+
+/* ── TRAINING-FULLHAND-001: Full Hand table, dock ("felt apron"), empty state ──────────
+   The workspace HEADER alone names the hand's state, so the in-panel heading, instruction
+   and state badges step aside (they stay in the DOM for the accessible name). The dock sits
+   directly under the felt: action tickets, then a sizes row and a label-sized Confirm. */
+.training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="complete"], [data-training-full-hand-phase="review"], [data-training-full-hand-phase="setup"]) .training-decision-head {
+  position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="complete"], [data-training-full-hand-phase="review"]) .training-tag-row { display: none; }
+/* One disclosure for the technical items (seed, replay, diagnostics): visible during a hand. */
+.training-workspace[data-training-full-hand-phase="live"] #trainingAdvanced,
+.training-workspace[data-training-full-hand-phase="complete"] #trainingAdvanced { display: block !important; order: 8; }
+
+@media (min-width: 1101px) {
+  .training-workspace[data-training-full-hand-phase="complete"] { grid-template-columns: minmax(0, 1fr) minmax(260px, 300px) !important; grid-template-areas: "decision insight"; }
+}
+.training-full-hand-table-wrapper { position: relative; direction: ltr; }
+.training-full-hand-table-wrapper .riverline-poker-table { aspect-ratio: 940 / 500; }
+.training-workspace[data-training-full-hand-phase="complete"] .training-full-hand-table-wrapper #visual-table-container {
+  inline-size: min(100%, 1320px, max(520px, calc((100dvh - 520px) * 1.88)));
+  width: min(100%, 1320px, max(520px, calc((100dvh - 520px) * 1.88)));
+  max-inline-size: none; margin-block-end: 0;
+}
+/* The price sits beside the pot. The table is an LTR drawing in every language, so its mount is pinned LTR and the chip uses logical offsets. */
+.rl-fh-price {
+  position: absolute; inset-block-start: 42%; inset-inline-end: calc(50% + 11.5% + var(--space-4)); transform: translateY(-50%); inline-size: max-content; max-inline-size: 28%;
+  padding: var(--space-2) var(--space-5); border: 1px solid var(--border-default); border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface-canvas) 72%, transparent); color: var(--text-primary);
+  font-size: var(--t-small); font-weight: var(--weight-control); font-variant-numeric: tabular-nums; pointer-events: none; z-index: 2; unicode-bidi: plaintext; white-space: nowrap;
+}
+.rl-fh-price[hidden] { display: none; }
+
+.rl-fh-dock {
+  position: relative; display: grid; gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) var(--space-4); margin-block-start: calc(var(--space-3) * -1);
+  border: 1px solid var(--border-default); border-block-start: 2px solid var(--accent-secondary); border-radius: var(--radius-panel);
+  background: linear-gradient(180deg, var(--surface-elevated), var(--surface-panel) 80%);
+}
+.rl-fh-dock[hidden] { display: none; }
+.rl-fh-dock__zone { display: grid; min-block-size: 68px; }
+.rl-fh-dock__zone > * { grid-area: 1 / 1; min-inline-size: 0; }
+.rl-fh-dock__tickets { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--space-4); }
+.rl-fh-dock__tickets .rl-action-card {
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name amount" "detail amount"; align-items: center; column-gap: var(--space-4);
+  min-block-size: 68px; padding: var(--space-4) var(--space-5);
+}
+.rl-fh-dock__tickets .rl-action-card__name { grid-area: name; }
+.rl-fh-dock__tickets .rl-action-card__amount { grid-area: amount; text-align: end; padding-block-start: var(--space-3); }
+.rl-fh-dock__tickets .rl-action-card__detail { grid-area: detail; min-block-size: 1em; }
+.rl-fh-dock__tickets .rl-action-card__check { inset-block-start: 6px; inset-inline-end: 6px; }
+.rl-fh-dock__tickets[data-has-selection="true"] .rl-action-card[aria-pressed="false"] { opacity: .55; }
+
+/* Narration (bot actions, "Decision recorded") fills the reserved zone while opponents act. */
+.rl-fh-dock__status { align-self: center; justify-self: center; margin: 0; max-inline-size: 100%; text-align: center; }
+.rl-fh-dock[data-fh-input="hero"] .rl-fh-dock__status {
+  position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+.rl-fh-dock[data-fh-state="waiting"] .rl-fh-dock__tickets,
+.rl-fh-dock[data-fh-state="idle"] .rl-fh-dock__tickets { visibility: hidden; }
+.rl-fh-dock[data-fh-state="confirming"] :is(.rl-fh-dock__tickets, .rl-fh-dock__command) { pointer-events: none; }
+.rl-fh-dock[data-fh-state="confirming"] .rl-fh-dock__status { visibility: hidden; }
+.rl-fh-dock[data-fh-state="waiting"] .rl-fh-dock__command,
+.rl-fh-dock[data-fh-state="waiting"] .rl-fh-dock__prompt,
+.rl-fh-dock[data-fh-state="idle"] .rl-fh-dock__command,
+.rl-fh-dock[data-fh-state="idle"] .rl-fh-dock__prompt { display: none; }
+
+.rl-fh-dock__command { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: var(--space-4) var(--space-6); min-block-size: 56px; padding: var(--space-3) var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-control, 12px); background: var(--surface-inset); }
+.rl-fh-dock__sizes { flex: 0 1 auto; min-inline-size: 0; }
+.rl-fh-dock__confirm { flex: 0 0 auto; }
+.rl-fh-dock__confirm:empty { display: none; }
+.rl-fh-dock .rl-confirm { min-inline-size: 0; min-block-size: 48px; padding-inline: var(--space-8); white-space: nowrap; }
+.rl-fh-dock__keys { margin: 0; color: var(--text-muted); font-size: var(--t-small); line-height: 1.5; }
+.rl-fh-dock__prompt:empty { display: none; }
+
+.rl-ladder { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); animation: rl-sizes-in var(--motion-panel) var(--ease-out) both; }
+.rl-ladder__label { color: var(--text-secondary); font-size: var(--t-small); margin-inline-end: var(--space-2); }
+.rl-ladder__size {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--space-4); row-gap: 2px;
+  min-inline-size: 5.75rem; padding: var(--space-3) var(--space-4); border: 1px solid color-mix(in srgb, var(--action-aggressive) 40%, var(--border-default)); border-radius: 10px;
+  background: color-mix(in srgb, var(--action-aggressive) 8%, transparent); color: var(--text-primary); font: inherit; text-align: start; cursor: pointer;
+  transition: transform var(--motion-micro) var(--ease-out), background-color var(--motion-micro) var(--ease-out), border-color var(--motion-micro) var(--ease-out);
+}
+.rl-ladder__size[aria-pressed="true"] { background: color-mix(in srgb, var(--action-aggressive) 30%, transparent); border-color: var(--action-aggressive); }
+.rl-ladder__size:active { transform: scale(.97); }
+.rl-ladder__size:focus-visible, .rl-ladder__input:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.rl-ladder__amount { grid-column: 1; grid-row: 1; font-size: var(--t-heading); font-weight: var(--weight-title); font-variant-numeric: tabular-nums; }
+.rl-ladder__size > .rl-key { grid-column: 2; grid-row: 1; align-self: center; }
+.rl-ladder__facts { grid-column: 1 / -1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 0 var(--space-3); color: var(--text-muted); font-size: var(--t-small); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rl-ladder__custom { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-secondary); font-size: var(--t-small); }
+.rl-ladder__input { inline-size: 4.5rem; min-block-size: 36px; padding: 0 var(--space-3); border: 1px solid var(--border-default); border-radius: 8px; background: var(--surface-panel); color: var(--text-primary); font: inherit; font-variant-numeric: tabular-nums; }
+.rl-ladder__input[aria-invalid="true"] { border-color: var(--status-warning); }
+
+/* The hand utilities (decision number, Skip, New Hand, Abort) sit in a slim bar at the top of the rail. */
+.rl-fh-handbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: 0 var(--space-2); background: transparent; border: 0; }
+.rl-fh-handbar[hidden], .rl-fh-handbar > [hidden] { display: none; }
+.rl-fh-handbar .badge { margin-inline-end: auto; }
+.rl-fh-dock .training-full-hand-decision-feedback { padding-block-start: var(--space-3); }
+
+/* Empty state (OWNER_DECISIONS: soft depth, two cards with one back, one line, one action). */
+.rl-fh-empty { display: none; }
+.training-workspace[data-training-full-hand-phase="setup"] .rl-fh-empty { display: grid; justify-items: center; gap: var(--space-4); padding: var(--space-6) var(--space-5) var(--space-5); text-align: center; }
+.training-workspace[data-training-full-hand-phase="setup"] #trainingIdle > :is(strong, span) { display: none; }
+.rl-fh-empty__art { position: relative; display: block; inline-size: 148px; block-size: 128px; }
+.rl-fh-empty__back, .rl-fh-empty__face { position: absolute; inset-block-start: 4px; inline-size: 82px; block-size: 116px; }
+.rl-fh-empty__back { inset-inline-start: 0; transform: rotate(-9deg); border-radius: 9px; filter: drop-shadow(0 10px 14px rgb(0 0 0 / .32)); }
+.rl-fh-empty__face { inset-inline-start: 58px; transform: rotate(7deg); filter: drop-shadow(0 12px 16px rgb(0 0 0 / .4)); }
+.rl-fh-empty__face-body { fill: var(--card-face); stroke: var(--card-border); stroke-width: 1; }
+.rl-fh-empty__rank { fill: var(--text-on-card, #1a1d1b); font: 800 24px/1 var(--font-display, system-ui); }
+.rl-fh-empty__suit { fill: var(--text-on-card, #1a1d1b); font: 400 44px/1 system-ui; }
+.rl-fh-empty__line { max-inline-size: 36ch; margin: 0; color: var(--text-secondary); line-height: 1.5; }
+[dir="rtl"] .rl-fh-empty__back { transform: rotate(9deg); }
+[dir="rtl"] .rl-fh-empty__face { transform: rotate(-7deg); }
+
+@media (max-width: 700px) {
+  .rl-fh-dock__tickets { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rl-fh-dock__command { flex-direction: column; align-items: stretch; }
+}
+@media (max-height: 800px) and (min-width: 1101px) {
+  .rl-fh-dock { padding-block: var(--space-5) var(--space-3); gap: var(--space-3); }
+  .rl-fh-dock__zone { min-block-size: 60px; }
+  .rl-fh-dock__tickets .rl-action-card { min-block-size: 60px; padding-block: var(--space-3); }
+  .rl-fh-dock__command { min-block-size: 50px; padding-block: var(--space-2); }
+  .training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="review"]) .training-full-hand-table-wrapper #visual-table-container { --play-stage-reserve: 350px; }
+}
+:where(:root[data-motion-mode="reduced"]) .rl-ladder { animation: none; }

@@ -727,6 +727,11 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         return harness.$$('#trainingMode :is(.training-action-button, .rl-action-card)[data-action]')
           .filter((button) => harness.isShown(button) && !button.disabled);
       },
+      /** TRAINING-FULLHAND-001: confirm the selected Full Hand action in the dock (no-op elsewhere). */
+      async confirmFullHand() {
+        const confirm = harness.byId('trainingFullHandConfirm');
+        if (confirm && harness.isShown(confirm) && !confirm.disabled) await harness.click(confirm);
+      },
       /** Answer with the given action type (or the first available one). */
       async answer(type) {
         const buttons = harness.training.answerButtons();
@@ -739,6 +744,8 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
         if (!fullHand && button.classList.contains('rl-action-card') && confirm && harness.isShown(confirm) && !confirm.disabled) {
           await harness.click(confirm);
         }
+        // TRAINING-FULLHAND-001: Full Hand answers through the dock: select, then Confirm.
+        await harness.training.confirmFullHand();
         await harness.settle(500);
         // Strategy resolution can finish outside the fake clock under load.
         if (!fullHand) await harness.waitFor(() => globalThis.app.training.currentEvaluation, 'the Training answer to be evaluated');
@@ -758,7 +765,10 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
           const buttons = harness.training.answerButtons();
           const pick = buttons.find((button) => button.dataset.action === 'check')
             || buttons.find((button) => button.dataset.action === 'call') || buttons[0];
-          if (pick) await harness.click(pick);
+          if (pick) {
+            await harness.click(pick);
+            await harness.training.confirmFullHand();
+          }
         }
         if (workspace.dataset.trainingFullHandPhase !== 'complete') throw new Error(`Full Hand did not complete (${workspace.dataset.trainingFullHandPhase})`);
       },

@@ -249,7 +249,6 @@ const app = {
 
     fullHandReviewIndex: 0,
 
-    fullHandSizedAction: null,
 
     memorySessionPromise: null,
 
@@ -9136,6 +9135,7 @@ function refreshLocalizedTrainingRuntime() {
     renderTrainingDecisionAnalysis(exercise);
   }
   quickDrillController?.refreshLanguage(exercise);
+  fullHandDockController?.refreshLanguage();
 }
 
 // Mirrors authentication-owner-change.mjs: a repeated authchange for the same
@@ -9812,17 +9812,65 @@ function mountQuickDrill() {
   });
 }
 
+// TRAINING-FULLHAND-001: the Full Hand dock (felt apron) is mounted once, like the
+// quick drill, with every dependency injected (late-bound).
+let fullHandDockController = null;
+
+function mountFullHandDock() {
+  const container = $('#trainingFullHandActionDock');
+  const modules = window.RiverlineQuickDrill;
+  if (!container || !modules?.fullHandDock || fullHandDockController) return;
+  const actionName = (type) => canonicalActionPresentation(type, {}).label;
+  fullHandDockController = modules.fullHandDock.mount(container, {
+    translate: (key, values) => t(key, values),
+    components: () => window.RiverlineQuickDrill.components,
+    answerStore: () => quickDrillController?.answerStore(),
+    actionName,
+    formatAmount: (milliBb) => fullHandBbLabel(milliBb),
+    formatShare: (share) => t('{percent} pot', { percent: formatUiPercent(share * 100, 0) }),
+    formatSpr: (value) => t('SPR {value}', { value: formatUiFixed(value, 1) }),
+    getDecision: () => {
+      const snapshot = app.training.fullHandSnapshot;
+      return snapshot?.status === 'awaiting_hero' && snapshot.currentDecision
+        ? { decisionId: snapshot.currentDecision.decisionId, legalActions: snapshot.currentDecision.legalActions }
+        : null;
+    },
+    getSizingModel: () => callTrainingServiceBridge('getFullHandSizingModel'),
+    sizeFacts: (amountToMilliBb) => callTrainingServiceBridge('getFullHandSizeFacts', amountToMilliBb),
+    validateSize: (type, text) => {
+      const validation = callTrainingServiceBridge('validateFullHandSizingInput', type, text);
+      const model = callTrainingServiceBridge('getFullHandSizingModel');
+      return {
+        valid: validation?.valid === true,
+        amountToMilliBb: validation?.amountToMilliBb ?? null,
+        message: fullHandSizingValidationCopy(validation, actionName(type), model?.actions?.[type]),
+      };
+    },
+    bindNumberInput: (input) => window.RiverlineLocaleNumberInput?.bind(input),
+    isReady: () => trainingSessionMode() === 'full_hand' && !trainingSameSpotIsActive()
+      && app.training.lifecycle === 'ready',
+    onSubmit: (type, amountToMilliBb) => handleFullHandTrainingGuess(type, amountToMilliBb),
+    toast: (message) => toast(message),
+    // MOTION_SPEC moment 2: hold the confirmed check for its morph, except for keys and Reduced/Instant motion.
+    confirmHoldMs: () => (motionTravelAllowed() && document.documentElement.dataset.motionInput !== 'key' ? 520 : 0),
+  });
+}
+
 function handleTrainingKeyboardShortcut(event) {
   if (!trainingModeIsVisible() || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
   const target = event.target;
   if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName)) return;
   if ($('#cardModal')?.classList.contains('show')) return;
-  if (quickDrillController?.handleKey(event)) {
+  if (quickDrillController?.handleKey(event) || fullHandDockController?.handleKey(event)) {
     event.preventDefault();
     event.stopImmediatePropagation();
     return;
   }
   if (quickDrillApplies() && (/^[1-6]$/.test(event.key) || event.key.toLowerCase() === 'r')) return;
+  // Full Hand's keys belong to the dock (F, C, B/R, A, digits, Enter); the legacy
+  // "R replays the seed" and "digit clicks the Nth button" paths never apply to it.
+  if (trainingSessionMode() === 'full_hand' && !trainingSameSpotIsActive()
+    && (/^[1-9]$/.test(event.key) || event.key.toLowerCase() === 'r')) return;
 
   if (/^[1-6]$/.test(event.key) && app.training.lifecycle === 'ready') {
     const buttons = [...document.querySelectorAll('#trainingGuessButtons button:not([hidden])')];
@@ -9860,15 +9908,8 @@ function composeTrainingWorkspace() {
   rail.classList.add('training-study-rail');
   rail.setAttribute('aria-label', t('Session and study tools'));
   if (feedbackReferenceMount && solution) feedbackReferenceMount.append(solution);
-  const fullHandDock = $('#trainingFullHandActionDock');
-  const fullHandLifecycle = $('#trainingFullHandCompactControls');
-  if (fullHandDock && fullHandLifecycle && fullHandLifecycle.parentElement !== fullHandDock) {
-    fullHandDock.insertBefore(fullHandLifecycle, fullHandDock.querySelector('.panel-body'));
-  }
-
   const orderedRailSurfaces = [
     $('#trainingSetupPanel'),
-    $('#trainingFullHandActionDock'),
     document.querySelector('.training-session-panel'),
     $('#trainingReferenceSummary'),
     $('#trainingHistoryPanel'),
@@ -9883,14 +9924,14 @@ function composeTrainingWorkspace() {
 }
 
 function projectTrainingDecisionControls(fullHandActive = false) {
+  // TRAINING-FULLHAND-001: Full Hand answers in its own dock under the felt;
+  // the shared controls go back to their drill home and stay out of its way.
   const controls = $('#trainingDecisionControls');
-  const destination = fullHandActive
-    ? $('#trainingFullHandActionDockMount')
-    : quickDrillApplies() ? $('#quickDrillActionLayer') : $('#trainingDecisionActionMount');
+  const destination = quickDrillApplies() ? $('#quickDrillActionLayer') : $('#trainingDecisionActionMount');
   const dock = $('#trainingFullHandActionDock');
   if (controls && destination && controls.parentElement !== destination) destination.append(controls);
   if (dock) dock.hidden = !fullHandActive;
-  controls?.classList.toggle('is-full-hand-action-grammar', fullHandActive);
+  if (controls) controls.hidden = fullHandActive;
 }
 
 function projectTrainingContinuationControls(answered = false) {
@@ -9990,6 +10031,7 @@ function initTrainingMode() {
   });
   bind('#trainingCopySeed', 'click', copyCurrentTrainingSeed);
   bind('#trainingFullHandNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
+  bind('#trainingFullHandEmptyStart', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingFullHandEndHand', 'click', abortFullHandTraining);
   bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
@@ -10090,6 +10132,7 @@ function initTrainingMode() {
   }
   composeTrainingWorkspace();
   mountQuickDrill();
+  mountFullHandDock();
   updateTrainingPositions();
   updateTrainingFilterAvailability();
   setTrainingSessionMode('varied', { reset: false });
@@ -10632,6 +10675,7 @@ function restoreSharedPokerTable() {
   const playbookMount = $('#table-wrapper');
   if (!table || !playbookMount || table.parentElement === playbookMount) return false;
   playbookMount.appendChild(table);
+  window.tableRenderer?.applyTableCrop?.();
   return true;
 }
 
@@ -10693,7 +10737,10 @@ function dispatchFullHandTrainingTable(snapshot, {
   const table = $('#visual-table-container');
   const mount = $('#trainingFullHandTableMount');
   if (!table || !mount || !snapshot?.state) return false;
-  if (table.parentElement !== mount) mount.appendChild(table);
+  if (table.parentElement !== mount) {
+    mount.appendChild(table);
+    window.tableRenderer?.applyTableCrop?.();
+  }
   mount.hidden = false;
   const reviewActive = review || app.handReview.source === 'training_full_hand';
   mount.dataset.replayMode = reviewActive ? 'review' : 'live';
@@ -10724,7 +10771,26 @@ function dispatchFullHandTrainingTable(snapshot, {
   mount.dataset.tableVisualState = tablePresentation.visualState || 'live_decision';
   renderFullHandCompactTimeline(tablePresentation);
   window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tablePresentation }));
+  renderFullHandPrice(snapshot);
   return true;
+}
+
+// TRAINING-FULLHAND-001: the price Hero faces, in the centre of the felt beside the
+// pot. It is the canonical call amount (a fact, not odds), shown only on Hero's turn.
+function renderFullHandPrice(snapshot = app.training.fullHandSnapshot) {
+  const chip = $('#trainingFullHandPrice');
+  if (!chip) return;
+  const spec = snapshot?.status === 'awaiting_hero' ? snapshot.currentDecision?.legalActions : null;
+  if (!spec) {
+    chip.hidden = true;
+    chip.textContent = '';
+    return;
+  }
+  const commit = spec.call?.available ? spec.call.commitMilliBb : 0;
+  chip.textContent = commit > 0
+    ? quickDrillIsolateAmounts(t('To call {amount}', { amount: fullHandBbLabel(commit) }))
+    : t('Nothing to call');
+  chip.hidden = false;
 }
 
 function invalidateFullHandPresentation() {
@@ -10739,22 +10805,13 @@ function setFullHandTrainingPhase(phase = 'setup') {
   syncTrainingWorkspaceTitle(workspace);
   const active = ['live', 'complete', 'review'].includes(nextPhase);
   projectTrainingDecisionControls(nextPhase === 'live');
-  const compact = $('#trainingFullHandCompactControls');
-  if (compact) compact.hidden = !active;
+  const handbar = $('#trainingFullHandCompactControls');
+  if (handbar) handbar.hidden = !active;
   const abort = $('#trainingFullHandEndHand');
   if (abort) abort.hidden = nextPhase !== 'live';
-  if ($('#trainingFullHandCompactSeed')) {
-    $('#trainingFullHandCompactSeed').textContent = Number.isInteger(app.training.fullHandSnapshot?.handSeed)
-      ? String(app.training.fullHandSnapshot.handSeed)
-      : '-';
-  }
-  if ($('#trainingFullHandCompactStatus')) {
-    const heroFolded = app.training.fullHandSnapshot?.state?.players?.find(player => player.playerId === app.training.fullHandSnapshot?.heroPlayerId)?.folded;
-    const statusKey = nextPhase === 'live' ? (heroFolded ? 'Watching the rest of this hand' : 'Playing to Hero')
-      : nextPhase === 'review' ? 'Post-Hand Review'
-        : nextPhase === 'complete' ? 'Hand Complete' : 'Ready';
-    $('#trainingFullHandCompactStatus').textContent = t(statusKey);
-  }
+  // TRAINING-FULLHAND-001: the seed lives in the one "Seed, replay & diagnostics"
+  // disclosure; the header alone names the hand's state.
+  publishTrainingHeaderContext();
   const history = $('#trainingHistoryPanel');
   if (history && nextPhase === 'live' && phase !== workspace.dataset.previousFullHandPhase) {
     history.open = false;
@@ -11820,8 +11877,26 @@ function publishTrainingHeaderContext() {
   const modeLabelKey = { varied: 'Varied Session', focused: 'Focused Drill', full_hand: 'Full Hand' }[trainingSessionMode()];
   window.RiverlineWorkspaceHeader?.setContext('training', [
     t(modeLabelKey),
+    trainingSessionMode() === 'full_hand' ? fullHandHeaderStateText() : '',
     progress && !progress.hidden ? progress.textContent : '',
   ]);
+}
+
+// TRAINING-FULLHAND-001: the header alone shows the Full Hand's state.
+function fullHandHeaderStateText() {
+  const resolver = window.RiverlineQuickDrill?.fullHandHeaderState?.resolveFullHandHeaderState;
+  const workspace = $('#trainingWorkspace');
+  if (!resolver || !workspace) return '';
+  const snapshot = app.training.fullHandSnapshot;
+  const hero = snapshot?.state?.players?.find((player) => player.playerId === snapshot.heroPlayerId);
+  const state = resolver({
+    phase: workspace.dataset.trainingFullHandPhase || 'off',
+    snapshotStatus: snapshot?.status ?? null,
+    lifecycle: app.training.lifecycle,
+    heroFolded: hero?.folded === true,
+    handComplete: snapshot?.status === 'terminal',
+  });
+  return t(state.textKey);
 }
 
 function updateTrainingSessionProgress() {
@@ -12068,6 +12143,7 @@ function setTrainingWorkspaceState(state) {
   if (!workspace) return;
   workspace.dataset.trainingState = state;
   syncTrainingWorkspaceTitle(workspace);
+  if (trainingSessionMode() === 'full_hand') publishTrainingHeaderContext();
   projectTrainingContinuationControls(
     (trainingSessionMode() !== 'full_hand' || trainingSameSpotIsActive()) && state === 'feedback',
   );
@@ -12077,8 +12153,11 @@ function setTrainingWorkspaceState(state) {
   if ($('#trainingGenerating')) $('#trainingGenerating').hidden = state !== 'generating';
   if ($('#trainingError')) $('#trainingError').hidden = state !== 'error';
   if ($('#trainingExerciseSurface')) {
+    // TRAINING-FULLHAND-001: a finished or paused Full Hand keeps its felt on screen
+    // (the last board, folded seats, the result) with the summary beneath it.
     const activeFullHandReview = state === 'terminal'
-      && app.handReview.source === 'training_full_hand';
+      && (app.handReview.source === 'training_full_hand'
+        || (trainingSessionMode() === 'full_hand' && Boolean(app.training.fullHandSnapshot?.state)));
     $('#trainingExerciseSurface').hidden = !(
       ['automating', 'ready', 'grading', 'feedback', 'complete'].includes(state)
       || activeFullHandReview
@@ -12098,7 +12177,8 @@ function setTrainingWorkspaceState(state) {
   // session; after an answer, Next exercise leads. While a question is open
   // the legal answers are the decision, so Skip stays secondary.
   setTrainingButtonEmphasis(nextButton, state === 'feedback');
-  setTrainingButtonEmphasis($('#trainingNewHand'), state === 'idle' || state === 'error');
+  // Full Hand's idle screen has its own accent action ("Deal a hand"): one accent per view.
+  setTrainingButtonEmphasis($('#trainingNewHand'), (state === 'idle' && trainingSessionMode() !== 'full_hand') || state === 'error');
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = state !== 'terminal';
   if (state === 'idle' || state === 'error') setTrainingSetupExpanded(true);
   const beforeSession = state === 'idle';
@@ -12192,24 +12272,15 @@ function renderTrainingPresentation(exercise) {
   if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = false;
 }
 
-function fullHandTrainingActionDetail(type, legalActions) {
-  if (!legalActions) return '';
-  if (type === 'call') return fullHandBbLabel(legalActions.call.commitMilliBb);
-  if (type === 'all_in') return fullHandBbLabel(legalActions.allIn.amountToMilliBb);
-  return '';
-}
-
 function fullHandBbLabel(amountMilliBb) {
   if (!Number.isSafeInteger(amountMilliBb)) return t('Unavailable');
   const value = formatUiNumber(amountMilliBb / 1000, { minimumFractionDigits: 0, maximumFractionDigits: 3 });
   return `${value} bb`;
 }
 
-function clearFullHandTrainingSizingControls({ clearSelection = true } = {}) {
-  const surface = $('#trainingFullHandSizing');
-  if (surface) surface.hidden = true;
-  $('#trainingFullHandSizingActions')?.replaceChildren();
-  if (clearSelection) app.training.fullHandSizedAction = null;
+// TRAINING-FULLHAND-001: the dock owns the tickets, the size ladder and Confirm.
+function clearFullHandTrainingSizingControls() {
+  fullHandDockController?.clear();
 }
 
 function fullHandSizingValidationCopy(validation, actionLabel, sizingModel) {
@@ -12236,151 +12307,6 @@ function fullHandSizingValidationCopy(validation, actionLabel, sizingModel) {
     });
   }
   return (messages[validation?.errorCode] || messages.invalid_format)();
-}
-
-function renderFullHandTrainingSizingControls(actionType = app.training.fullHandSizedAction) {
-  if (trainingSessionMode() !== 'full_hand') {
-    clearFullHandTrainingSizingControls();
-    return null;
-  }
-  const model = callTrainingServiceBridge('getFullHandSizingModel');
-  const sizing = ['bet', 'raise'].includes(actionType)
-    ? model?.actions?.[actionType]
-    : null;
-  const surface = $('#trainingFullHandSizing');
-  const mount = $('#trainingFullHandSizingActions');
-  if (!surface || !mount || !sizing) {
-    clearFullHandTrainingSizingControls();
-    return null;
-  }
-
-  mount.replaceChildren();
-  app.training.fullHandSizedAction = sizing.actionType;
-  actionType = sizing.actionType;
-  const option = app.training.currentExercise?.legalActions?.[actionType] || {};
-  const semanticLabel = trainingActionLabel(actionType, app.training.currentExercise?.decisionContext);
-  const actionLabel = canonicalActionPresentation(actionType, option)?.label
-    || t(semanticLabel) || semanticLabel;
-  const controlId = `trainingFullHand${actionType === 'bet' ? 'Bet' : 'Raise'}AmountTo`;
-  const boundsId = `${controlId}Bounds`;
-  const validationId = `${controlId}Validation`;
-  const action = document.createElement('div');
-  action.className = 'training-full-hand-sizing-action';
-
-  const entry = document.createElement('div');
-  entry.className = 'training-full-hand-sizing-entry';
-  const label = document.createElement('label');
-  label.htmlFor = controlId;
-  label.textContent = t('{action} to', { action: actionLabel });
-  const amountControl = document.createElement('div');
-  amountControl.className = 'training-full-hand-amount-control';
-  const input = document.createElement('input');
-  input.id = controlId;
-  input.name = `${actionType}AmountToBb`;
-  input.type = 'number';
-  input.inputMode = 'decimal';
-  input.autocomplete = 'off';
-  input.min = sizing.minValueBb;
-  input.max = sizing.maxValueBb;
-  input.step = sizing.stepValueBb;
-  input.value = sizing.initialValueBb;
-  // LOCALE-NUMBERS-003: a text field in the app language; input.value stays dot-decimal.
-  window.RiverlineLocaleNumberInput?.bind(input);
-  input.setAttribute('aria-label', t('{action} to, in big blinds', { action: actionLabel }));
-  input.setAttribute('aria-describedby', `${boundsId} ${validationId}`);
-  const unit = document.createElement('span');
-  unit.textContent = 'bb';
-  amountControl.append(input, unit);
-  const submit = document.createElement('button');
-  submit.type = 'button';
-  submit.className = `ui-button ui-button--primary training-full-hand-sizing-submit training-action-button--${actionType}`;
-  submit.textContent = t('Apply');
-  entry.append(label, amountControl, submit);
-
-  const bounds = document.createElement('p');
-  bounds.id = boundsId;
-  bounds.className = 'training-full-hand-sizing-bounds';
-  bounds.textContent = t('Min {min} · Max {max} · Step {step}', {
-    min: fullHandBbLabel(sizing.minToMilliBb),
-    max: fullHandBbLabel(sizing.maxToMilliBb),
-    step: fullHandBbLabel(model.chipUnitMilliBb),
-  });
-  const validationStatus = document.createElement('p');
-  validationStatus.id = validationId;
-  validationStatus.className = 'training-full-hand-sizing-validation';
-  validationStatus.setAttribute('role', 'status');
-  validationStatus.setAttribute('aria-live', 'polite');
-
-  let currentValidation = null;
-  const refreshValidation = () => {
-    currentValidation = callTrainingServiceBridge(
-      'validateFullHandSizingInput',
-      actionType,
-      input.value,
-    );
-    const valid = currentValidation?.valid === true;
-    input.setAttribute('aria-invalid', String(!valid));
-    submit.disabled = !valid || app.training.lifecycle !== 'ready';
-    validationStatus.dataset.valid = String(valid);
-    validationStatus.textContent = fullHandSizingValidationCopy(
-      currentValidation,
-      actionLabel,
-      sizing,
-    );
-    return currentValidation;
-  };
-  input.addEventListener('input', refreshValidation);
-  input.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' || event.repeat) return;
-    if (!refreshValidation()?.valid) return;
-    event.preventDefault();
-    submit.click();
-  });
-  submit.addEventListener('click', () => {
-    const validation = refreshValidation();
-    if (validation?.valid) {
-      handleFullHandTrainingGuess(actionType, validation.amountToMilliBb);
-    }
-  });
-
-  const presets = document.createElement('div');
-  presets.className = 'training-full-hand-presets';
-  presets.setAttribute('aria-label', t('Quick sizing shortcuts'));
-  sizing.presets.filter((preset) => preset.kind !== 'all_in').forEach((preset) => {
-    const presetButton = document.createElement('button');
-    presetButton.type = 'button';
-    presetButton.className = 'training-full-hand-preset';
-    presetButton.dataset.presetId = preset.presetId;
-    presetButton.dataset.action = preset.actionType;
-    presetButton.dataset.amountToMilliBb = String(preset.amountToMilliBb);
-    const presetLabel = t(preset.label);
-    presetButton.textContent = /\bbb\s*$/i.test(presetLabel)
-      ? presetLabel
-      : `${presetLabel} · ${fullHandBbLabel(preset.amountToMilliBb)}`;
-    presetButton.addEventListener('click', () => {
-      input.value = preset.valueBb;
-      refreshValidation();
-      input.focus({ preventScroll: true });
-    });
-    presets.appendChild(presetButton);
-  });
-
-  action.append(entry, bounds, validationStatus, presets);
-  mount.appendChild(action);
-  surface.hidden = false;
-  refreshValidation();
-  return model;
-}
-
-function chooseFullHandTrainingSizedAction(actionType) {
-  if (!['bet', 'raise'].includes(actionType) || app.training.lifecycle !== 'ready') return null;
-  app.training.fullHandSizedAction = actionType;
-  $('#trainingGuessButtons')?.querySelectorAll('[data-action]').forEach((button) => {
-    button.setAttribute('aria-pressed', String(button.dataset.action === actionType));
-  });
-  const model = renderFullHandTrainingSizingControls(actionType);
-  $('#trainingFullHandSizingActions input')?.focus({ preventScroll: true });
-  return model;
 }
 
 function clearFullHandDecisionFeedback() {
@@ -12418,37 +12344,31 @@ function renderFullHandDecisionRecorded(result) {
 }
 
 function updateTrainingButtons(exercise) {
+  // TRAINING-FULLHAND-001: Full Hand answers through the felt-apron dock.
+  if (trainingSessionMode() === 'full_hand' && !trainingSameSpotIsActive()) {
+    fullHandDockController?.render();
+    return;
+  }
   const container = $('#trainingGuessButtons');
   if (!container) return;
   container.innerHTML = '';
-  const fullHand = trainingSessionMode() === 'full_hand' && !trainingSameSpotIsActive();
-  if (fullHand) clearFullHandTrainingSizingControls();
-  if (!fullHand && quickDrillApplies()) {
+  if (quickDrillApplies()) {
     quickDrillController.renderActionCards(container, exercise);
     container.dataset.actionCount = String(container.childElementCount);
     container.hidden = false;
     renderTrainingShortcutHint(container.childElementCount);
-    clearFullHandTrainingSizingControls();
     return;
   }
   const presentationByType = new Map((app.training.currentPresentation?.legalActions || []).map((entry) => [entry.type, entry]));
   canonicalTrainingLegalActionTypes(exercise).forEach((type) => {
     const index = container.childElementCount;
-    const option = type === 'all_in' ? exercise.legalActions?.allIn : exercise.legalActions?.[type];
     const semanticLabel = trainingActionLabel(type, exercise.decisionContext);
-    const actionPresentation = fullHand
-      ? canonicalActionPresentation(type, option || {})
-      : null;
-    const label = actionPresentation?.label || t(semanticLabel) || semanticLabel;
+    const label = t(semanticLabel) || semanticLabel;
     const sizing = presentationByType.get(type);
     const boundsLabel = sizing?.boundsLabel?.endsWith(' to')
       ? t('to {range}', { range: sizing.boundsLabel.slice(0, -3) })
       : sizing?.boundsLabel;
-    const sizingLabel = fullHand
-      ? ['bet', 'raise'].includes(type)
-        ? t('Choose size')
-        : actionPresentation?.amount || fullHandTrainingActionDetail(type, exercise.legalActions)
-      : boundsLabel || sizing?.amountLabel || '';
+    const sizingLabel = boundsLabel || sizing?.amountLabel || '';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `ui-button training-action-button training-action-button--${type}`;
@@ -12466,16 +12386,12 @@ function updateTrainingButtons(exercise) {
     const shortcut = document.createElement('kbd');
     shortcut.textContent = String(index + 1);
     button.append(copy, shortcut);
-    button.addEventListener('click', () => {
-      if (fullHand && ['bet', 'raise'].includes(type)) chooseFullHandTrainingSizedAction(type);
-      else handleTrainingGuess(type);
-    });
+    button.addEventListener('click', () => handleTrainingGuess(type));
     container.appendChild(button);
   });
   container.dataset.actionCount = String(container.childElementCount);
   container.hidden = false;
   renderTrainingShortcutHint(container.childElementCount);
-  clearFullHandTrainingSizingControls({ clearSelection: !fullHand });
 }
 
 // The hint lists exactly the number keys bound to the visible action buttons.
@@ -12891,24 +12807,14 @@ function fullHandPresentationStatus(cue, snapshot) {
 function setFullHandTrainingInputLocked(locked) {
   const workspace = $('#trainingWorkspace');
   if (workspace) workspace.dataset.fullHandInputState = locked ? 'automating' : 'hero';
-  const actions = $('#trainingGuessButtons');
-  if (actions) {
-    actions.classList.toggle('is-hero-turn', !locked);
-    actions.setAttribute('aria-disabled', String(locked));
-    if (locked) actions.hidden = true;
+  // TRAINING-FULLHAND-001: while opponents act the dock keeps its row (reserved
+  // height, nothing jumps) with the tickets inert; the dock's own state drives it.
+  const dock = $('#trainingFullHandActionDock');
+  if (dock) {
+    dock.dataset.fhInput = locked ? 'locked' : 'hero';
+    $('#trainingFullHandTickets')?.setAttribute('aria-disabled', String(locked));
   }
-  actions?.querySelectorAll('button').forEach((button) => {
-    button.disabled = locked;
-  });
-  const sizing = $('#trainingFullHandSizing');
-  if (sizing) {
-    sizing.setAttribute('aria-disabled', String(locked));
-    if (locked) sizing.hidden = true;
-  }
-  sizing?.querySelectorAll('button, input').forEach((control) => {
-    control.disabled = locked;
-  });
-  $('#trainingDecisionPrompt')?.classList.toggle('is-hero-turn', !locked);
+  fullHandDockController?.lock(locked);
 }
 
 function renderFullHandPresentationStatus(cue, snapshot) {
@@ -12921,24 +12827,7 @@ function renderFullHandPresentationStatus(cue, snapshot) {
   }
   if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = message;
   if ($('#trainingInstruction')) $('#trainingInstruction').textContent = message;
-  if ($('#trainingFullHandCompactStatus')) {
-    $('#trainingFullHandCompactStatus').textContent = cue?.kind === 'hero_turn'
-      ? t('Your turn')
-      : cue?.kind === 'hand_complete' ? t('Hand Complete') : message;
-  }
-
-  const prompt = $('#trainingDecisionPrompt');
-  const promptEyebrow = prompt?.querySelector('span');
-  const promptTitle = prompt?.querySelector('strong');
-  const promptDetail = prompt?.querySelector('small');
-  const heroTurn = cue?.kind === 'hero_turn';
-  if (promptEyebrow) promptEyebrow.textContent = heroTurn ? t('Your turn') : t('Hand in progress');
-  if (promptTitle) promptTitle.textContent = heroTurn ? t('Hero to act') : message;
-  if (promptDetail) {
-    promptDetail.textContent = heroTurn
-      ? t('Choose one legal action.')
-      : t(snapshot.state?.players?.find(player => player.playerId === snapshot.heroPlayerId)?.folded ? 'Watching the rest of this hand' : 'Actions unlock when it is Hero\'s turn.');
-  }
+  publishTrainingHeaderContext();
 }
 
 function renderFullHandAutomationSnapshot(snapshot, {
@@ -13308,7 +13197,6 @@ function renderFullHandTerminal(snapshot) {
   }
   if (heroComplete) {
     $('#trainingStateBadge').textContent = t('Your hand summary');
-    $('#trainingFullHandCompactStatus').textContent = t('Hero folded');
     $('#trainingFullHandActionStatus').hidden = true;
     $('#trainingFullHandNewHand')?.focus({ preventScroll: true });
   }
@@ -13419,7 +13307,8 @@ async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
   const concreteAmountToMilliBb = ['bet', 'raise'].includes(userAction)
     ? amountToMilliBb
     : null;
-  clearFullHandTrainingSizingControls();
+  // The dock locks (and, after the confirm morph, clears) when grading begins; clearing it
+  // here would cut the morph short.
   app.training.lifecycle = 'grading';
   const request = callTrainingServiceBridge('answerFullHand', decision.decisionId, {
     type: userAction,

@@ -1,6 +1,7 @@
 import {
   ACTION_TYPES,
   STREETS,
+  deriveActionSizeFacts,
   deriveActorCallEconomics,
   getLegalActionSpec,
   validatePokerState,
@@ -173,6 +174,13 @@ export function milliBbToFullHandInputValue(amountMilliBb) {
   return fraction ? `${whole}.${fraction}` : String(whole);
 }
 
+// TRAINING-FULLHAND-001: each preset carries its pot share and heads-up SPR
+// after a call, both from the domain selector (null when not defined).
+function withSizeFacts(state, preset) {
+  const facts = deriveActionSizeFacts(state, state.actingPlayerId, preset.amountToMilliBb);
+  return { ...preset, potShare: facts.potShare, sprAfterCalled: facts.sprAfterCalled };
+}
+
 function actionSizingModel(state, legalActions, actionType) {
   const bounds = legalActions[actionType];
   if (!bounds.available) return null;
@@ -186,7 +194,8 @@ function actionSizingModel(state, legalActions, actionType) {
     maxValueBb: milliBbToFullHandInputValue(bounds.maxToMilliBb),
     initialValueBb: milliBbToFullHandInputValue(bounds.minToMilliBb),
     stepValueBb: milliBbToFullHandInputValue(state.game.chipUnitMilliBb),
-    presets: presetCandidates(state, legalActions, actionType, bounds),
+    presets: presetCandidates(state, legalActions, actionType, bounds)
+      .map((preset) => withSizeFacts(state, preset)),
   });
 }
 

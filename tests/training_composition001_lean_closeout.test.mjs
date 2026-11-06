@@ -29,6 +29,7 @@ async function answer() {
     return;
   }
   await app.click(answerButtons()[0]);
+  await app.training.confirmFullHand();
   await app.settle(500);
 }
 const memoryWrites = (spy, method) => spy.calls.callTrainingMemoryBridge.filter(([name]) => name === method).map(([, input]) => input);
@@ -130,6 +131,7 @@ async function playFullHand() {
     const pick = buttons.find((button) => button.dataset.action === 'check')
       || buttons.find((button) => button.dataset.action === 'call') || buttons[0];
     await app.click(pick);
+    await app.training.confirmFullHand();
   }
   assert.equal(workspace.dataset.trainingFullHandPhase, 'complete');
 }
@@ -165,9 +167,11 @@ test('Full Hand Review retains the live shared-table desktop scale and study rai
   // Protects: live and review phases keep the wide two-column layout with a
   // sticky study rail in review; the review table keeps the live scale.
   const workspace = app.$('.training-workspace');
-  for (const phase of ['live', 'review']) {
+  // TRAINING-FULLHAND-001: live gives the felt more width (a slim study rail beside the dock);
+  // review keeps the wide rail for its History.
+  for (const [phase, rail] of [['live', 'minmax(260px, 300px)'], ['review', 'minmax(380px, 410px)']]) {
     workspace.dataset.trainingFullHandPhase = phase;
-    assert.equal(css.cascaded(workspace, 'grid-template-columns'), 'minmax(0, 1fr) minmax(380px, 410px)', phase);
+    assert.equal(css.cascaded(workspace, 'grid-template-columns'), `minmax(0, 1fr) ${rail}`, phase);
   }
   workspace.dataset.trainingFullHandPhase = 'review';
   const rail = workspace.querySelector(':scope > .training-study-rail');
@@ -192,7 +196,6 @@ test('Full Hand Review retains the live shared-table desktop scale and study rai
   workspace.dataset.trainingFullHandPhase = 'review';
   wrapper.dataset.tableProjection = 'review';
   assert.deepEqual(scale(), live, 'review keeps the live table scale');
-  assert.match(live[1], /1320px/);
   assert.match(live[1], /100dvh/);
   assert.match(live[0], /^\d+px$/);
 });

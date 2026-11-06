@@ -39,8 +39,9 @@ test('the R decoration is contained by its card and no longer targets SVG table 
   const root = app.document.documentElement;
   const backStyle = root.getAttribute('data-card-back-style');
   assert.equal(backStyle, 'riverline', 'the default back style is Riverline');
-  assert.equal(css.cascaded(back, 'position', { pseudoElement: 'after' }), 'absolute');
-  assert.equal(css.cascaded(back, 'inset', { pseudoElement: 'after' }), '25% 20%');
+  // TRAINING-FULLHAND-001: the Riverline back is one SVG file (the R is part of the art), so it has no ::after glyph.
+  assert.equal(css.cascaded(back, 'content', { pseudoElement: 'after' }), 'none');
+  assert.match(css.cascaded(back, 'background-image') || '', /riverline-card-back.svg/);
   // Without a back-style override the generic contained mark applies.
   root.removeAttribute('data-card-back-style');
   try {
@@ -51,8 +52,8 @@ test('the R decoration is contained by its card and no longer targets SVG table 
   }
   const preview = app.$('[data-card-preview-back-style="riverline"].riverline-card-back');
   assert.ok(preview, 'the Riverline back-style preview exists');
-  assert.equal(css.cascaded(preview, 'inset', { pseudoElement: 'after' }), '25% 20%');
-  assert.equal(css.cascaded(preview, 'border-radius', { pseudoElement: 'after' }), '50%');
+  assert.equal(css.cascaded(preview, 'content', { pseudoElement: 'after' }), 'none');
+  assert.match(css.cascaded(preview, 'background-image') || '', /riverline-card-back.svg/);
 
   const svgBack = app.document.createElementNS('http://www.w3.org/2000/svg', 'g');
   svgBack.setAttribute('class', 'table-card-back poker-card-svg poker-card-back');

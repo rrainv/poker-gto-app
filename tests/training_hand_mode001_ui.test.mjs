@@ -32,7 +32,7 @@ async function observeLiveHand() {
   const spy = app.spy([
     'callTrainingServiceBridge', 'setFullHandTrainingInputLocked', 'updateTrainingButtons',
     'renderFullHandTrainingHistory', 'showTrainingFeedback', 'showTrainingSolution',
-    'renderTrainingEvaluationSummary', 'renderFullHandDecisionRecorded', 'chooseFullHandTrainingSizedAction',
+    'renderTrainingEvaluationSummary', 'renderFullHandDecisionRecorded',
   ]);
   const observed = { statuses: new Set(), heroTurn: null, sizing: null, feedbackDisplay: null, setupHidden: null, sessionOrder: null, abortHidden: [], recorded: null };
   try {
@@ -62,26 +62,37 @@ async function observeLiveHand() {
       const buttons = app.training.answerButtons();
       const sized = buttons.find((button) => ['bet', 'raise'].includes(button.dataset.action));
       if (sized && !observed.sizing) {
-        const panel = app.byId('trainingFullHandSizing');
-        const hiddenBefore = panel.hidden;
+        // TRAINING-FULLHAND-001: the dock's size ladder (select, pick a size, Confirm).
+        const sizes = app.$('#trainingFullHandActionDock [data-fh-sizes]');
+        const ladderBefore = Boolean(sizes.querySelector('.rl-ladder'));
+        const confirmBefore = text(app.byId('trainingFullHandConfirm'));
         await app.click(sized);
         await app.settle(50);
-        const input = panel.querySelector('input[inputmode="decimal"]');
+        const ladder = sizes.querySelector('.rl-ladder');
+        const sizeButtons = ladder ? [...ladder.querySelectorAll('.rl-ladder__size')] : [];
         observed.sizing = {
           action: sized.dataset.action,
-          hiddenBefore,
-          shown: !panel.hidden,
-          input: input && { min: input.min, max: input.max, step: input.step },
-          presets: app.$$('#trainingFullHandSizingActions button').map((button) => text(button)),
+          ladderBefore,
+          shown: Boolean(ladder),
+          confirmBefore,
+          confirmAfterSelect: text(app.byId('trainingFullHandConfirm')),
+          sizes: sizeButtons.map((button) => text(button)),
+          custom: Boolean(ladder?.querySelector('.rl-ladder__input')),
         };
-        app.dispatch(input, new app.window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        await app.click(sizeButtons[0]);
+        await app.settle(50);
+        observed.sizing.confirmAfterSize = text(app.byId('trainingFullHandConfirm'));
+        await app.click('#trainingFullHandConfirm');
         await app.settle(200);
         observed.recorded = text(app.byId('trainingFullHandDecisionFeedbackTitle'));
         continue;
       }
       const pick = buttons.find((button) => button.dataset.action === 'check')
         || buttons.find((button) => button.dataset.action === 'call') || buttons[0];
-      if (pick) await app.click(pick);
+      if (pick) {
+        await app.click(pick);
+        await app.training.confirmFullHand();
+      }
     }
   } finally {
     observed.calls = Object.fromEntries(Object.entries(spy.calls).map(([name, calls]) => [name, calls]));
@@ -121,7 +132,7 @@ test('Full Hand reuses legal action controls and the canonical table presence re
     'trainingDecisionNumber', 'trainingFullHandTableMount', 'trainingFullHandCompletion',
     'trainingFullHandResult', 'trainingFullHandDecisionCount', 'trainingFullHandGradeSummary',
     'trainingReviewHand', 'trainingHandReviewMount', 'trainingFullHandActionStatus',
-    'trainingFullHandSizing', 'trainingFullHandSizingActions',
+    'trainingFullHandActionDock', 'trainingFullHandTickets', 'trainingFullHandPrice',
   ]) assert.ok(byId(added), added);
   assert.match(bootstrap, /createTablePresenceViewModel\(\{/);
   const observed = await observeLiveHand();
@@ -129,32 +140,32 @@ test('Full Hand reuses legal action controls and the canonical table presence re
   // The canonical table presence is built by the service and mounted in place.
   assert.ok(methods.includes('createFullHandTablePresence'));
   assert.ok(app.byId('trainingFullHandTableMount').querySelector('#visual-table-container'));
-  // Sized actions are validated by the service before answering.
-  assert.ok(methods.includes('validateFullHandSizingInput'));
-  assert.ok(methods.indexOf('validateFullHandSizingInput') < methods.lastIndexOf('answerFullHand'));
+  // Sizes come from the service's canonical sizing model before answering.
+  assert.ok(methods.includes('getFullHandSizingModel'));
+  assert.ok(methods.indexOf('getFullHandSizingModel') < methods.lastIndexOf('answerFullHand'));
   assert.ok(observed.calls.updateTrainingButtons.length >= 1);
   assert.ok(observed.calls.renderFullHandTrainingHistory.length >= 1);
 });
 
-test('Full Hand reveals keyboard-usable canonical amount-to controls only after Bet or Raise', async () => {
-  const sizing = byId('trainingFullHandSizing');
-  assert.equal(sizing.getAttribute('aria-labelledby'), 'trainingFullHandSizingTitle');
-  assert.match(text(training), /Enter the total, not the raise amount/);
+test('Full Hand reveals the canonical size ladder only after Bet or Raise', async () => {
+  const dock = byId('trainingFullHandActionDock');
+  assert.ok(dock.querySelector('[data-fh-sizes]'), 'the dock has a sizes row');
+  assert.ok(dock.querySelector('[data-fh-confirm]'), 'and a Confirm slot on the same command row');
   assert.match(sizing_, /getLegalActionSpec\(state\)/);
   assert.match(sizing_, /kind: 'all_in',[\s\S]*actionType: ACTION_TYPES\.ALL_IN/);
   assert.match(sizing_, /seenActions\.has\(identity\)/);
   assert.match(sizing_, /roundToChipUnit/);
   const observed = await observeLiveHand();
   assert.ok(observed.sizing, 'a Bet or Raise decision was reached');
-  assert.equal(observed.sizing.hiddenBefore, true, 'hidden until Bet or Raise');
+  assert.equal(observed.sizing.ladderBefore, false, 'no ladder until Bet or Raise');
   assert.equal(observed.sizing.shown, true);
-  assert.equal(observed.calls.chooseFullHandTrainingSizedAction.length, 1);
-  assert.deepEqual(observed.calls.chooseFullHandTrainingSizedAction[0], [observed.sizing.action]);
-  const { min, max, step } = observed.sizing.input;
-  assert.ok(Number(min) > 0 && Number(max) > Number(min) && Number(step) > 0, JSON.stringify(observed.sizing.input));
-  assert.ok(observed.sizing.presets.length >= 2);
-  assert.ok(observed.sizing.presets.every((label) => !/all.?in/i.test(label)), 'All-in stays a separate legal action');
-  // Enter on the amount submits the sized answer.
+  assert.equal(observed.sizing.confirmBefore, 'Choose an actionEnter');
+  assert.match(observed.sizing.confirmAfterSelect, /^Choose a size/, 'a size is chosen before Confirm unlocks');
+  assert.match(observed.sizing.confirmAfterSize, /^Confirm (Bet|Raise) .+ bb/);
+  assert.ok(observed.sizing.sizes.length >= 2, 'the ladder offers several canonical sizes');
+  assert.ok(observed.sizing.sizes.every((label) => /\d/.test(label) && !/all.?in/i.test(label)), 'All-in stays a separate legal action');
+  assert.ok(observed.sizing.sizes.every((label) => /%\s*pot/i.test(label)), 'every size shows its share of the pot');
+  assert.equal(observed.sizing.custom, true, 'an exact amount can still be typed');
   assert.ok(observed.calls.callTrainingServiceBridge.some(([method]) => method === 'answerFullHand'));
 });
 

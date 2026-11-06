@@ -95,6 +95,22 @@
     ["You: {action} · not in the baseline's mix", 'Вы: {action} · нет в миксе базовой стратегии', 'אתם: {action} · לא בתמהיל של אסטרטגיית הבסיס'],
     ["You: {action} · not in the source's mix", 'Вы: {action} · нет в миксе источника', 'אתם: {action} · לא בתמהיל של המקור'],
     ['Keys: F fold · C check or call · B or R bet or raise · A all-in · Enter confirm, then next · U unsure · E explain · L review later', 'Клавиши: F пас · C чек или колл · B или R бет или рейз · A олл-ин · Enter подтвердить, затем дальше · U не уверен · E объяснить · L повторить позже', 'מקשים: F פולד · C צ\'ק או קול · B או R בט או רייז · A אול-אין · Enter אישור ואז הבא · U לא בטוח · E הסבר · L לחזרה מאוחר יותר'],
+    // TRAINING-FULLHAND-001: Full Hand dock, size ladder, header state, empty state.
+    ['Your decision', 'Ваше решение', 'ההחלטה שלכם'],
+    ['This hand', 'Эта раздача', 'היד הזו'],
+    ['{percent} pot', '{percent} банка', '{percent} מהקופה'],
+    ['SPR {value}', 'SPR {value}', 'SPR {value}'],
+    ['Choose a size', 'Выберите размер', 'בחרו גודל'],
+    ['Other size', 'Другой размер', 'גודל אחר'],
+    ['Keys: F fold · C check or call · R raise · A all-in · 1-9 size · Enter confirm', 'Клавиши: F пас · C чек или колл · R рейз · A олл-ин · 1-9 размер · Enter подтвердить', 'מקשים: F פולד · C צ\'ק או קול · R רייז · A אול-אין · 1-9 גודל · Enter אישור'],
+    ['To call {amount}', 'Для колла {amount}', 'לקול {amount}'],
+    ['Dealing', 'Раздача', 'מחלקים'],
+    ['Recording your decision', 'Записываем ваше решение', 'מתעדים את ההחלטה שלכם'],
+    ['Opponents are acting', 'Соперники действуют', 'היריבים פועלים'],
+    ['You folded. Opponents are paused', 'Вы сбросили карты. Соперники на паузе', 'קיפלתם. היריבים בהשהיה'],
+    ['Post-hand review', 'Разбор раздачи', 'סקירת היד'],
+    ['Deal a hand', 'Раздать руку', 'לחלק יד'],
+    ['Play one hand from the deal to the end against the table below.', 'Сыграйте одну раздачу от начала до конца против стола ниже.', 'שחקו יד אחת מהחלוקה ועד הסוף מול השולחן שלמטה.'],
   ]) {
     en[key] = key;
     ru[key] = russian;

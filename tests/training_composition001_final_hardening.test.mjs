@@ -60,7 +60,7 @@ test('Abort is live-only, confirmed, resets transient Full Hand state, and never
   assert.equal(button.dataset.i18n, 'Abort hand');
   assert.equal(workspace().dataset.trainingFullHandPhase, 'live');
   assert.equal(app.byId('trainingFullHandEndHand').hidden, false, 'shown while live');
-  assert.ok(app.byId('trainingFullHandActionDock').contains(app.byId('trainingFullHandCompactControls')));
+  assert.ok(app.$('.training-insight-column').contains(app.byId('trainingFullHandCompactControls')), 'the hand bar is the rail\'s first item');
 
   let asked = 0;
   app.window.confirm = () => { asked += 1; return false; };

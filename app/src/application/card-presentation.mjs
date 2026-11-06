@@ -1,3 +1,5 @@
+import { cardBackSvgImageMarkup } from '../ui/card-back-art.mjs';
+
 export const CARD_PRESENTATION_SCHEMA_VERSION = 'card-presentation/v1';
 export const CARD_PRESENTATION_STORAGE_KEY = 'riverline_card_presentation';
 
@@ -269,6 +271,7 @@ export function tableCardBackSvgMarkup({ index = 0 } = {}) {
   return `
     <g class="table-card-back poker-card-svg poker-card-back" data-card-state="unknown" data-card-size="table" transform="translate(${finalX}, 0)" dir="ltr">
       <rect class="table-card-back-face" x="0" y="0" width="${geometry.width}" height="${geometry.height}" rx="${geometry.radius}" ry="${geometry.radius}" />
+      ${cardBackSvgImageMarkup(geometry)}
       <rect class="table-card-back-inner" x="4" y="4" width="32" height="49" rx="3" ry="3" />
       <path class="table-card-back-river" d="M7 17 C15 11 25 11 33 17 M7 40 C15 46 25 46 33 40" />
       <path class="table-card-back-geometric" d="M20 7 L33 20 L20 33 L7 20 Z M20 24 L31 35 L20 46 L9 35 Z" />

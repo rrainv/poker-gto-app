@@ -202,7 +202,13 @@ test('one accent-filled action per view in the key states', async () => {
   // Training: Start leads before a session, Next exercise after an answer.
   await app.navigate('training');
   app.call('clearTrainingSessionState');
+  await app.training.selectMode('varied');
   assert.ok(app.byId('trainingNewHand').classList.contains('ui-button--primary'));
+  // TRAINING-FULLHAND-001: Full Hand's idle screen has its own accent action; the rail's Start steps back.
+  await app.training.selectMode('full_hand');
+  assert.ok(app.byId('trainingFullHandEmptyStart').classList.contains('ui-button--primary'));
+  assert.ok(!app.byId('trainingNewHand').classList.contains('ui-button--primary'));
+  await app.training.selectMode('varied');
   await app.training.start('focused');
   await app.training.answer();
   assert.ok(app.byId('trainingNextHandBtn').classList.contains('ui-button--primary'));

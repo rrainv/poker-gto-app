@@ -404,6 +404,7 @@ test('browser bridge exposes only canonical decision-practice and full-Hand life
     'generatePlanned',
     'getFullHandReview',
     'getFullHandReviewReplayProjection',
+    'getFullHandSizeFacts',
     'getFullHandSizingModel',
     'getFullHandSnapshot',
     'getPracticePlannerState',

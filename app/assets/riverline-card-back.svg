@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 82 116" width="82" height="116">
+  <!-- Riverline card back (TRAINING-FULLHAND-001). One original file, three sizes:
+       inline (about 20 px wide: frame and R only), standard (about 58 px: adds the lattice
+       and corner marks), table (about 82 px: adds the inner ring). The tiers switch on the
+       image's own rendered width through the media queries below. -->
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ead8a4"/>
+      <stop offset=".5" stop-color="#cdb67e"/>
+      <stop offset="1" stop-color="#8f7c4f"/>
+    </linearGradient>
+    <radialGradient id="core" cx=".5" cy=".5" r=".7">
+      <stop offset="0" stop-color="#1f3a2d"/>
+      <stop offset="1" stop-color="#0f1a15"/>
+    </radialGradient>
+    <pattern id="lattice" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="12" height="12" fill="#15251d"/>
+      <rect width="6" height="6" fill="#234d3b" opacity=".7"/>
+      <rect x="6" y="6" width="6" height="6" fill="#234d3b" opacity=".7"/>
+      <path d="M0 0H12" stroke="#cdb67e" stroke-width=".6" opacity=".32"/>
+    </pattern>
+  </defs>
+  <style>
+    .std, .large { display: inline; }
+    .large { display: none; }
+    @media (min-width: 70px) { .large { display: inline; } }
+    @media (max-width: 30px) {
+      .std { display: none; }
+      .frame-line { stroke-width: 3.2; }
+      .letter { stroke-width: 6.4; }
+      .tail { stroke-width: 4.4; }
+    }
+  </style>
+  <!-- stock: ivory rim, forest body -->
+  <rect x="1" y="1" width="80" height="114" rx="9" fill="#f6f1e2" stroke="#00000033" stroke-width="1"/>
+  <rect x="4" y="4" width="74" height="108" rx="6" fill="#14231c"/>
+  <g class="std"><rect x="4" y="4" width="74" height="108" rx="6" fill="url(#lattice)"/></g>
+  <!-- octagon frame -->
+  <polygon class="frame-line" points="18,10 64,10 72,18 72,98 64,106 18,106 10,98 10,18" fill="none" stroke="#cdb67e" stroke-width="1.5"/>
+  <g class="large">
+    <polygon points="21,14 61,14 68,21 68,95 61,102 21,102 14,95 14,21" fill="none" stroke="#42ad7b" stroke-width=".8" opacity=".7"/>
+    <path d="M41 17l2.6 3.2L41 23.4l-2.6-3.2zM41 92.6l2.6 3.2L41 99l-2.6-3.2z" fill="#cdb67e"/>
+  </g>
+  <g class="std">
+    <circle cx="16" cy="16" r="2.2" fill="#cdb67e" opacity=".85"/><circle cx="66" cy="16" r="2.2" fill="#cdb67e" opacity=".85"/>
+    <circle cx="16" cy="100" r="2.2" fill="#cdb67e" opacity=".85"/><circle cx="66" cy="100" r="2.2" fill="#cdb67e" opacity=".85"/>
+  </g>
+  <!-- medallion -->
+  <polygon class="frame-line" points="28,32 54,32 64,44 64,72 54,84 28,84 18,72 18,44" fill="url(#core)" stroke="url(#brass)" stroke-width="2"/>
+  <g class="large"><polygon points="30,36 52,36 60,46 60,70 52,80 30,80 22,70 22,46" fill="none" stroke="#42ad7b" stroke-width="1" opacity=".75"/></g>
+  <!-- calligraphic R: weighted stem, lighter bowl, leg that runs into the river bend -->
+  <path class="letter" d="M31 42V73M28 42H42C49.5 42 52.5 46 52.5 50.5C52.5 55.2 48.8 58.2 42 58.5H31M40 58.5C44 60 45.5 66 49 71C51.8 74.5 55.5 73.5 58 70" fill="none" stroke="url(#brass)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="tail" d="M26 76C33 70 40 80 46 74S54 68 58 72" fill="none" stroke="#42ad7b" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

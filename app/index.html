@@ -2279,7 +2279,6 @@
                 </details>
               </div>
               <div class="training-state-cluster">
-                <span id="trainingDecisionNumber" class="badge status-badge status-badge--info" hidden></span>
                 <span id="trainingStateBadge" class="badge status-badge status-badge--info" data-i18n="Idle">Idle</span>
                 <span id="trainingStrategySource" class="badge status-badge status-badge--info" data-i18n="Source unavailable" hidden>Source unavailable</span>
               </div>
@@ -2289,6 +2288,15 @@
 
             <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags" data-i18n-aria-label="Exercise tags"></div>
             <div id="trainingIdle" class="training-state-message">
+              <!-- TRAINING-FULLHAND-001: designed empty state (soft depth; two cards, one back; one line; one action). -->
+              <div id="trainingFullHandEmpty" class="rl-fh-empty">
+                <span class="rl-fh-empty__art" aria-hidden="true">
+                  <img class="rl-fh-empty__back riverline-card-back-art" src="assets/riverline-card-back.svg" alt="" width="82" height="116" draggable="false">
+                  <svg class="rl-fh-empty__face" viewBox="0 0 82 116" width="82" height="116" focusable="false"><rect x="1" y="1" width="80" height="114" rx="9" class="rl-fh-empty__face-body"/><text x="14" y="30" class="rl-fh-empty__rank">A</text><text x="41" y="82" class="rl-fh-empty__suit" text-anchor="middle">♠</text></svg>
+                </span>
+                <p class="rl-fh-empty__line" data-i18n="Play one hand from the deal to the end against the table below.">Play one hand from the deal to the end against the table below.</p>
+                <button id="trainingFullHandEmptyStart" class="ui-button ui-button--primary" type="button" data-i18n="Deal a hand">Deal a hand</button>
+              </div>
               <div id="trainingLineupPreview" class="training-lineup-preview" hidden></div>
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
               <span data-i18n="Choose a mode in Session setup, then start Training.">Choose a mode in Session setup, then start Training.</span>
@@ -2337,8 +2345,25 @@
                 </div>
               </div>
               <div id="trainingFullHandTimeline" class="full-hand-compact-timeline" hidden aria-label="Full Hand timeline" data-i18n-aria-label="Full Hand timeline"></div>
-              <div id="trainingFullHandTableMount" class="table-wrapper training-full-hand-table-wrapper" data-replay-mode="live" hidden aria-label="Live Full Hand table" data-i18n-aria-label="Live Full Hand table"></div>
-              <p id="trainingFullHandActionStatus" class="training-full-hand-action-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+              <div id="trainingFullHandTableMount" class="table-wrapper training-full-hand-table-wrapper" data-replay-mode="live" data-table-crop="tight" hidden aria-label="Live Full Hand table" data-i18n-aria-label="Live Full Hand table"><div id="trainingFullHandPrice" class="rl-fh-price" aria-hidden="true" hidden></div></div>
+              <!-- TRAINING-FULLHAND-001: the decision dock ("felt apron") sits directly under the felt. -->
+              <section id="trainingFullHandActionDock" class="rl-fh-dock" aria-label="Your decision" data-i18n-aria-label="Your decision" data-fh-state="idle" data-motion="drill" hidden>
+                <div class="rl-fh-dock__zone">
+                  <div id="trainingFullHandTickets" class="rl-fh-dock__tickets" role="group" aria-label="Available actions" data-i18n-aria-label="Available actions" data-fh-tickets data-tutorial-anchor="training-answer-actions"></div>
+                  <p id="trainingFullHandActionStatus" class="training-full-hand-action-status rl-fh-dock__status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+                </div>
+                <div class="rl-fh-dock__command">
+                  <div class="rl-fh-dock__sizes" data-fh-sizes></div>
+                  <div class="rl-fh-dock__confirm" data-fh-confirm></div>
+                </div>
+                <div class="rl-fh-dock__prompt" data-fh-prompt></div>
+                <section id="trainingFullHandDecisionFeedback" class="training-full-hand-decision-feedback" aria-labelledby="trainingFullHandDecisionFeedbackTitle" hidden>
+                  <div class="training-full-hand-decision-feedback-head"><span data-i18n="Last decision">Last decision</span><strong id="trainingFullHandDecisionFeedbackTitle"></strong></div>
+                  <p id="trainingFullHandDecisionFeedbackText" role="status" aria-live="polite" aria-atomic="true"></p>
+                  <div id="trainingFullHandDecisionFacts" class="training-relevant-facts" hidden></div>
+                  <details class="training-full-hand-decision-explain"><summary data-i18n="Explain last decision">Explain last decision</summary><div id="trainingFullHandDecisionAnalysis" class="training-shared-analysis"></div></details>
+                </section>
+              </section>
               <div id="trainingCardSummary" class="training-table-summary" aria-label="Read-only exercise cards" data-i18n-aria-label="Read-only exercise cards">
                 <div class="training-board-zone"><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingBoardCards" class="training-card-row" aria-label="Board cards" data-i18n-aria-label="Board cards"></div></div>
                 <div class="training-table-divider" aria-hidden="true"></div>
@@ -2373,14 +2398,6 @@
                   <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="What are you trying to accomplish?">What are you trying to accomplish?</small></div>
                   <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
                   <label id="trainingUncertaintyControl" class="training-uncertainty" hidden><input id="trainingUncertain" type="checkbox"><span data-i18n="I'm unsure about my answer (optional)">I'm unsure about my answer (optional)</span></label>
-                  <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
-                    <div class="training-full-hand-sizing-head">
-                      <div><span class="training-zone-label" data-i18n="Concrete sizing">Concrete sizing</span><strong id="trainingFullHandSizingTitle" data-i18n="Choose an amount to">Choose an amount to</strong></div>
-                      <small data-i18n="Enter the total, not the raise amount">Enter the total, not the raise amount</small>
-                    </div>
-                    <div id="trainingFullHandSizingActions"></div>
-                    <p class="training-reference-note" data-i18n="Exact sizing is recorded. Assessment requires an accepted criterion that covers this action and size.">Exact sizing is recorded. Assessment requires an accepted criterion that covers this action and size.</p>
-                  </section>
                   <p id="trainingShortcutHelp" class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span id="trainingShortcutRange" class="poker-data-token" dir="ltr"><kbd>1</kbd>-<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
                 </div>
               </div>
@@ -2450,19 +2467,13 @@
         </main>
 
         <aside class="training-insight-column">
+          <div id="trainingFullHandCompactControls" class="rl-fh-handbar training-full-hand-compact-controls" role="group" aria-label="This hand" data-i18n-aria-label="This hand" hidden>
+            <span id="trainingDecisionNumber" class="badge status-badge status-badge--info" hidden></span>
+            <button id="trainingFullHandSkipRest" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Skip to end">Skip to end</button>
+            <button id="trainingFullHandLiveNewHand" class="ui-button ui-button--quiet" type="button" data-i18n="New Hand">New Hand</button>
+            <button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button>
+          </div>
           <div id="quickDrillPanels" class="quick-drill-panels" data-motion="panel" hidden></div>
-          <section id="trainingFullHandActionDock" class="panel training-full-hand-action-dock" aria-labelledby="trainingFullHandActionDockTitle" hidden>
-            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p><h2 id="trainingFullHandActionDockTitle" data-i18n="Current legal actions">Current legal actions</h2></div></div>
-            <div class="panel-body">
-              <div id="trainingFullHandActionDockMount"></div>
-              <section id="trainingFullHandDecisionFeedback" class="training-full-hand-decision-feedback" aria-labelledby="trainingFullHandDecisionFeedbackTitle" hidden>
-                <div class="training-full-hand-decision-feedback-head"><span data-i18n="Last decision">Last decision</span><strong id="trainingFullHandDecisionFeedbackTitle"></strong></div>
-                <p id="trainingFullHandDecisionFeedbackText" role="status" aria-live="polite" aria-atomic="true"></p>
-                <div id="trainingFullHandDecisionFacts" class="training-relevant-facts" hidden></div>
-                <details class="training-full-hand-decision-explain"><summary data-i18n="Explain last decision">Explain last decision</summary><div id="trainingFullHandDecisionAnalysis" class="training-shared-analysis"></div></details>
-              </section>
-            </div>
-          </section>
           <section id="trainingReferenceSummary" class="panel training-reference-summary" aria-labelledby="trainingReferenceSummaryTitle" hidden>
             <div class="panel-body">
               <span id="trainingReferenceSummaryTitle" class="training-rail-label" data-i18n="Strategy source">Strategy source</span>
@@ -2520,10 +2531,6 @@
                 <button class="ui-button" type="button" data-training-session-mode="full_hand" aria-pressed="false" data-i18n="Full Hand">Full Hand</button>
               </div>
               <section id="trainingOpponentSetup" class="opponent-practice-setup" hidden></section>
-              <div id="trainingFullHandCompactControls" class="training-full-hand-compact-controls" hidden>
-                <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">-</span></small></div>
-                <div><button id="trainingFullHandSkipRest" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Skip to end">Skip to end</button><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button></div>
-              </div>
               <div id="trainingVariedControls" class="training-mode-controls">
                 <label class="ui-field"><span data-i18n="Session length">Session length</span><select id="trainingSessionLength" class="control-select"><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option><option value="open" data-i18n="No limit">No limit</option></select></label>
                 <label class="ui-field"><span data-i18n="Emphasis">Emphasis</span><select id="trainingVariedEmphasis" class="control-select"><option value="balanced" selected data-i18n="Balanced">Balanced</option><option value="more_preflop" data-i18n="More preflop">More preflop</option><option value="more_postflop" data-i18n="More postflop">More postflop</option></select></label>

@@ -66,6 +66,58 @@ export function deriveActorCallEconomics(state, actorPlayerId) {
   });
 }
 
+/**
+ * TRAINING-FULLHAND-001: facts about one concrete bet/raise size for the acting
+ * player, so a size ladder can show them without any UI arithmetic.
+ *
+ * - `potShare`: the size's increment over the current wager as a share of the
+ *   actor-contestable pot after calling (the same basis the postflop size
+ *   presets use), or null when that pot is unavailable.
+ * - `sprAfterCalled`: heads-up only. Effective stack left behind divided by the
+ *   pot if the single remaining opponent calls the size. Null when multiway
+ *   (SPR is not defined there) or when the pot is zero. Unknown stays null,
+ *   never zero.
+ * Amounts are canonical milliBb and the selector never mutates PokerState.
+ */
+export function deriveActionSizeFacts(state, actorPlayerId, amountToMilliBb) {
+  if (!Number.isSafeInteger(amountToMilliBb) || amountToMilliBb < 0) {
+    throw new RangeError('amountToMilliBb must be a nonnegative safe integer');
+  }
+  const economics = deriveActorCallEconomics(state, actorPlayerId);
+  const actor = state.players.find((player) => player.playerId === actorPlayerId);
+  const increment = amountToMilliBb - state.currentBetMilliBb;
+  const basis = economics.actorContestablePotAfterCallMilliBb;
+  const potShare = basis > 0 && increment >= 0 ? increment / basis : null;
+
+  const opponents = state.players.filter((player) => (
+    player.playerId !== actorPlayerId && isPlayerLive(player)
+  ));
+  let sprAfterCalled = null;
+  if (opponents.length === 1) {
+    const [opponent] = opponents;
+    const actorAdds = Math.min(
+      Math.max(0, amountToMilliBb - actor.streetContributionMilliBb),
+      actor.currentStackMilliBb,
+    );
+    const opponentAdds = Math.min(
+      Math.max(0, amountToMilliBb - opponent.streetContributionMilliBb),
+      opponent.currentStackMilliBb,
+    );
+    const potIfCalled = state.potMilliBb + actorAdds + opponentAdds;
+    const effectiveBehind = Math.min(
+      actor.currentStackMilliBb - actorAdds,
+      opponent.currentStackMilliBb - opponentAdds,
+    );
+    sprAfterCalled = potIfCalled > 0 ? effectiveBehind / potIfCalled : null;
+  }
+  return deepFreeze({
+    actorPlayerId,
+    amountToMilliBb,
+    potShare,
+    sprAfterCalled,
+  });
+}
+
 function finiteNonNegativeNumber(value) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 }

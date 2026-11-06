@@ -117,12 +117,13 @@ test('generic blocker evidence remains available only inside Training supporting
   assert.match(renderer, /facts = analysisSection\.facts\.filter/);
 });
 
-test('Full Hand keeps one shared table and moves the one canonical action surface beside it', async () => {
-  // Protects: one table mount and one action surface; a live Full Hand
-  // mounts the shared table there and moves the action controls into the dock
-  // beside it (back to the decision mount afterwards); live layout sizing.
+test('Full Hand keeps one shared table and docks the one canonical action surface under it', async () => {
+  // Protects: one table mount and one action surface; a live Full Hand mounts the
+  // shared table there and answers in the dock directly under the felt (TRAINING-FULLHAND-001);
+  // the shared drill controls rest at home and stay out of the way; live layout sizing.
   assert.equal(training.querySelectorAll('#trainingFullHandTableMount').length, 1);
   assert.equal(training.querySelectorAll('#trainingDecisionControls').length, 1);
+  assert.equal(training.querySelectorAll('#trainingFullHandActionDock').length, 1);
   assert.match(tablePresentation, /TABLE_PRESENTATION_SCHEMA_VERSION/);
   // TRAINING-QUICK-001: outside Full Hand the controls rest in the quick drill's action layer.
   const restingMount = workspace().dataset.trainingQuick === 'true' ? 'quickDrillActionLayer' : 'trainingDecisionActionMount';
@@ -130,35 +131,47 @@ test('Full Hand keeps one shared table and moves the one canonical action surfac
   await app.training.start('full_hand');
   for (let round = 0; round < 30 && workspace().dataset.trainingState !== 'ready'; round += 1) await app.settle(1000);
   assert.ok(app.byId('trainingFullHandTableMount').querySelector('.riverline-poker-table, #visual-table-container'), 'the shared table is mounted beside Training');
-  assert.ok(app.byId('trainingFullHandActionDockMount').contains(app.byId('trainingDecisionControls')));
+  assert.equal(app.byId('trainingFullHandTableMount').nextElementSibling?.id, 'trainingFullHandActionDock', 'the dock sits directly under the felt');
+  assert.equal(app.byId('trainingFullHandActionDock').hidden, false);
+  assert.equal(app.byId('trainingDecisionControls').hidden, true, 'the shared drill controls stay out of Full Hand');
   const node = workspace();
   assert.equal(node.dataset.trainingFullHandPhase, 'live');
-  assert.equal(css.cascaded(node, 'grid-template-columns'), 'minmax(0, 1fr) minmax(380px, 410px)');
+  assert.equal(css.cascaded(node, 'grid-template-columns'), 'minmax(0, 1fr) minmax(260px, 300px)');
   const table = app.$('#trainingFullHandTableMount #visual-table-container');
   assert.ok(table, 'the Full Hand table is mounted');
-  assert.match(css.cascaded(table, 'inline-size'), /1320px/);
   assert.match(css.cascaded(table, 'inline-size'), /100dvh/);
-  assert.equal(css.cascaded(app.$('.training-full-hand-action-dock'), 'order'), '1');
 });
 
-test('Full Hand action family selection gates canonical amount-to sizing', async () => {
-  // Protects: bet/raise open canonical amount-to sizing bounded by the
-  // service's sizing model; Apply commits; all-in is not a sizing preset;
-  // clearing hides the surface.
-  const sizingSurface = app.byId('trainingFullHandSizing');
-  assert.equal(sizingSurface.hidden, true);
+test('Full Hand action family selection gates the canonical size ladder', async () => {
+  // Protects: bet/raise open the size ladder from the service's sizing model;
+  // Confirm waits for a size; all-in is not a ladder size; clearing empties the dock.
+  const sizes = app.$('#trainingFullHandActionDock [data-fh-sizes]');
+  assert.equal(sizes.querySelector('.rl-ladder'), null);
   const sized = app.training.answerButtons().find((button) => ['bet', 'raise'].includes(button.dataset.action));
   assert.ok(sized);
   await app.click(sized);
-  assert.equal(sizingSurface.hidden, false);
+  const ladder = sizes.querySelector('.rl-ladder');
+  assert.ok(ladder, 'the ladder opens');
   const model = app.call('callTrainingServiceBridge', 'getFullHandSizingModel').actions[sized.dataset.action];
-  const input = sizingSurface.querySelector('input[inputmode="decimal"]');
-  assert.equal(String(input.min), String(model.minValueBb));
-  assert.equal(String(input.max), String(model.maxValueBb));
-  assert.ok(sizingSurface.querySelectorAll('button').some((button) => text(button) === 'Apply'));
-  assert.ok(!sizingSurface.querySelector('[data-preset-kind="all_in"]'));
-  app.call('clearFullHandTrainingSizingControls');
-  assert.equal(sizingSurface.hidden, true);
+  const expected = model.presets.filter((preset) => preset.kind !== 'all_in').length;
+  assert.equal(ladder.querySelectorAll('.rl-ladder__size').length, expected);
+  assert.equal(app.byId('trainingFullHandConfirm').disabled, true, 'Confirm waits for a size');
+  assert.ok(!ladder.querySelector('[data-preset-kind="all_in"]'));
+  // An exact amount can be typed and is validated by the service.
+  const input = ladder.querySelector('.rl-ladder__input');
+  assert.ok(input);
+  input.value = String(model.maxValueBb * 100);
+  app.dispatch(input, new app.window.Event('input', { bubbles: true }));
+  assert.equal(input.getAttribute('aria-invalid'), 'true');
+  assert.equal(app.byId('trainingFullHandConfirm').disabled, true);
+  input.value = String(model.minValueBb);
+  app.dispatch(input, new app.window.Event('input', { bubbles: true }));
+  assert.equal(input.getAttribute('aria-invalid'), 'false');
+  assert.equal(app.byId('trainingFullHandConfirm').disabled, false);
+  // Escape drops the selection: the ladder closes and the tickets stay.
+  assert.equal(app.evaluate('fullHandDockController.handleKey({ key: "Escape", target: {} })'), true);
+  assert.equal(sizes.querySelector('.rl-ladder'), null);
+  assert.ok(app.training.answerButtons().length >= 2, 'the tickets remain');
 });
 
 test('Full Hand answer keeps table continuity while deferring normative feedback to Review', async () => {

@@ -1011,6 +1011,8 @@ export function mount(container, deps) {
     handleKey: handleQuickDrillKey,
     setVisible,
     applies: quickDrillApplies,
+    // The one answer-mode store (select + confirm / one click), shared with Full Hand's dock.
+    answerStore: quickDrillAnswerStore,
     render: renderQuickDrill,
     renderAnswer: renderQuickDrillAnswer,
     renderActionCards: renderQuickDrillActionCards,

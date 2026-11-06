@@ -158,6 +158,39 @@ export function createSizesRow(doc, { label, sizes = [], selectedIndex = -1 } = 
     }, pokerIsland(doc, size), h(doc, 'kbd', { class: 'rl-key', text: String(index + 1) }))));
 }
 
+/**
+ * TRAINING-FULLHAND-001 raise size ladder: each size shows its amount, its share
+ * of the pot and the SPR after it. Values arrive already formatted from the
+ * domain selectors; an unknown fact (null) is left out, never shown as zero.
+ * `sizes[i]` = { amountText, shareText?, sprText?, ariaLabel? }. Digits 1-9.
+ */
+export function createSizeLadder(doc, { label, sizes = [], selectedIndex = -1 } = {}) {
+  return h(doc, 'div', { class: 'rl-ladder', role: 'group', 'aria-label': label },
+    h(doc, 'span', { class: 'rl-ladder__label', text: label }),
+    sizes.map((size, index) => h(doc, 'button', {
+      type: 'button',
+      class: 'rl-ladder__size',
+      'data-size-index': String(index),
+      'aria-pressed': String(index === selectedIndex),
+      'aria-keyshortcuts': index < 9 ? String(index + 1) : null,
+      'aria-label': size.ariaLabel || null,
+    },
+    h(doc, 'span', { class: 'rl-ladder__amount' }, pokerIsland(doc, size.amountText)),
+    size.shareText || size.sprText
+      ? h(doc, 'span', { class: 'rl-ladder__facts' },
+        size.shareText ? pokerIsland(doc, size.shareText) : null,
+        size.sprText ? pokerIsland(doc, size.sprText) : null)
+      : null,
+    index < 9 ? h(doc, 'kbd', { class: 'rl-key', text: String(index + 1) }) : null)));
+}
+
+/** Select one size in a ladder (or none with -1). */
+export function selectLadderSize(ladder, index) {
+  ladder.querySelectorAll('.rl-ladder__size').forEach((button) => {
+    button.setAttribute('aria-pressed', String(Number(button.dataset.sizeIndex) === index));
+  });
+}
+
 export function createConfirmButton(doc, { label, disabled = true } = {}) {
   return h(doc, 'button', {
     type: 'button',

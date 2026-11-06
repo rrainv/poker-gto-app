@@ -1,3 +1,4 @@
+import { deriveActionSizeFacts } from '../../../shared/poker-domain/index.js';
 import { createTrainingSessionController } from './training-session-controller.mjs';
 import {
   createFullHandTrainingStartConfigurationFromTrainingConfig,
@@ -146,6 +147,13 @@ export function installTrainingModeBridge(browserWindow, {
       const snapshot = fullHandController.getSnapshot();
       return snapshot?.status === 'awaiting_hero' && snapshot.currentDecision
         ? createFullHandTrainingSizingModel(snapshot.state)
+        : null;
+    },
+    // TRAINING-FULLHAND-001: pot share and heads-up SPR after a concrete size (domain selector).
+    getFullHandSizeFacts(amountToMilliBb) {
+      const snapshot = fullHandController.getSnapshot();
+      return snapshot?.status === 'awaiting_hero' && snapshot.currentDecision
+        ? deriveActionSizeFacts(snapshot.state, snapshot.state.actingPlayerId, amountToMilliBb)
         : null;
     },
     validateFullHandSizingInput(actionType, inputValue) {

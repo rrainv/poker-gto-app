@@ -135,7 +135,19 @@ class TableRenderer {
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
     `;
+    this.applyTableCrop();
     this.drawSeats(this.currentActivePlayers);
+  }
+
+  // TRAINING-FULLHAND-001: a Full Hand mount asks for a tight frame (data-table-crop="tight")
+  // so the felt carries no dead margin above the far seats or below Hero. The drawing is
+  // unchanged; only the visible window moves. Other surfaces keep the full frame.
+  applyTableCrop() {
+    const svg = this.container.querySelector('#poker-table-svg');
+    if (!svg) return;
+    const tight = Boolean(this.container.closest('[data-table-crop="tight"]'));
+    const viewBox = tight ? '30 75 940 500' : '0 0 1000 650';
+    if (svg.getAttribute('viewBox') !== viewBox) svg.setAttribute('viewBox', viewBox);
   }
 
   drawSeats(activePlayers = 10, presentation = null) {
@@ -1103,6 +1115,7 @@ class TableRenderer {
     // Presentation-only state: no betting order or poker semantics are inferred here.
     if (!state) return;
     this.lastState = state;
+    this.applyTableCrop();
     if (!this.environment && window.RiverlineTableEnvironment) {
       const root = document.createElement('div'); this.container.appendChild(root);
       this.environment = window.RiverlineTableEnvironment.mount({ root,

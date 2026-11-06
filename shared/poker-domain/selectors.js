@@ -173,6 +173,7 @@ export function isChipConserved(state) {
 }
 
 export {
+  deriveActionSizeFacts,
   deriveActorPotBeforeActionBb,
   actorPotBeforeActionBb,
   deriveStackToPotRatio,
