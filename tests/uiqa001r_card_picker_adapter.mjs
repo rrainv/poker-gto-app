@@ -150,6 +150,8 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
     function bindSliderPair() {}
     function initTrainingMode() {}
     function mountDecisionPanel() {}
+    // EXTRACT-ANALYZE-003: the init slice now mounts the Spot rail module; this sandbox has none.
+    function mountSpotSetup() {}
     function renderPath() {}
     function initThemeSwatches() {}
     function renderBettingTree() {}

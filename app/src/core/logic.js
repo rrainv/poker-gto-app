@@ -2725,84 +2725,7 @@ function setAnalyzeHandContext(context) {
   renderAnalyzeHandContext();
 }
 function renderAnalyzeHandContext() {
-  const section = $('#analyzeHandContext');
-  const mode = $('#gtoMode');
-  if (!section) return;
-  const context = analyzeHandContext;
-  section.hidden = !context;
-  if (mode) {
-    if (context) mode.dataset.analyzeContext = 'hand';
-    else {
-      delete mode.dataset.analyzeContext;
-      delete mode.dataset.analyzeHandEditing;
-    }
-  }
-  const edit = $('#analyzeHandContextEdit');
-  if (edit) edit.setAttribute('aria-expanded', String(Boolean(context && mode?.dataset.analyzeHandEditing === 'true')));
-  if (!context) return;
-  const decision = context.decisionContext;
-  const name = $('#analyzeHandContextName');
-  if (name) name.textContent = context.titleKey ? t(context.titleKey, context.titleValues || {}) : '';
-  const back = $('#analyzeHandContextReturn');
-  if (back) {
-    back.dataset.i18n = context.returnLabelKey;
-    back.textContent = t(context.returnLabelKey);
-  }
-  const facts = $('#analyzeHandContextFacts');
-  if (!facts || !decision) return;
-  const bb = (value) => (Number.isFinite(value) ? `${formatUiFixed(value, 1)} bb` : t('Unavailable'));
-  const cards = (list) => (list || []).filter(Boolean).map(displayCard).join(' ');
-  const rows = [
-    ['Position', decision.heroPosition || '-'],
-    ['Street', reviewStreetLabel(decision.street)],
-    ['Hero hand', cards(decision.heroCards) || t('Unknown'), true],
-    ['Board', cards(decision.board) || t('Preflop · no board'), Boolean(cards(decision.board))],
-    ['Pot', bb(decision.currentPotBb ?? decision.potBb), true],
-    ['To call', Number.isFinite(decision.callAmountBb) ? bb(decision.callAmountBb) : t('facing.price.unavailable'), Number.isFinite(decision.callAmountBb)],
-    ['Stack', bb(decision.heroStackBb ?? decision.stackBb), true],
-  ];
-  facts.replaceChildren(...rows.map(([label, value, island]) => {
-    const row = document.createElement('div');
-    const term = document.createElement('dt');
-    term.dataset.i18n = label;
-    term.textContent = t(label);
-    const detail = document.createElement('dd');
-    if (island) {
-      detail.dir = 'ltr';
-      detail.classList.add('poker-island');
-    }
-    detail.textContent = value;
-    row.append(term, detail);
-    return row;
-  }));
-  renderAnalyzeHandContextStackNote(decision, bb);
-}
-
-// ANALYZE-HANDOFF-STACK-001: the Scenario model is deliberately lossy. Its Stack
-// control is the configured STARTING stack, and a Scenario never carries the Hero
-// or effective stack at a decision (DecisionContext marks both unavailable). So
-// when the Hand decision was made with a different stack, the panel says so
-// instead of leaving the facts (Hero stack) and the controls (starting stack)
-// to disagree silently.
-function renderAnalyzeHandContextStackNote(decision, bb) {
-  const note = $('#analyzeHandContextStackNote');
-  if (!note) return;
-  // Unknown is never zero: null stays NaN, never 0.
-  const known = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : NaN);
-  const starting = known(decision.startingStackBb ?? decision.stackBb);
-  const hero = known(decision.heroStackBb);
-  const effective = known(decision.effectiveStackBb);
-  const differs = (value) => Number.isFinite(value) && Number.isFinite(starting) && Math.abs(value - starting) > 1e-9;
-  const show = Number.isFinite(hero) && (differs(hero) || differs(effective));
-  note.hidden = !show;
-  if (!show) {
-    note.textContent = '';
-    return;
-  }
-  const key = Number.isFinite(effective)
-    ? 'Stack at this decision: Hero {hero}, effective {effective}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep these, so SPR and pot odds can change.'
-    : 'Stack at this decision: Hero {hero}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep it, so SPR and pot odds can change.';
-  note.textContent = t(key, { hero: bb(hero), effective: bb(effective), starting: bb(starting) });
+  return spotSetup()?.renderHandContext();
 }
 
 function renderCanonicalDecisionCards(group, cards, count) {
@@ -5853,11 +5776,6 @@ function bindCanonicalHandWorkspace() {
     renderCanonicalHandWorkspace();
     updateContext('Returned to live hand');
   });
-  $('#savedSpotCloseButton')?.addEventListener('click', () => {
-    activeSavedSpotContext = null;
-    renderSavedSpotViewer(null);
-    updateContext('Saved context closed');
-  });
   const replayTimeline = $('#handActionHistory');
   const pauseForTimelineInteraction = () => {
     if (callPlaybookStateBridge('createReplayPlaybackViewModel')?.playing) {
@@ -6169,6 +6087,17 @@ function mountSpotSetup() {
     bindSliderPair: (rangeId, numberId, handlers) => bindSliderPair(rangeId, numberId, handlers),
     updatePositions: () => updatePositions(),
     reconcileActionDependencies: () => reconcileScenarioActionDependencies(),
+    handContext: () => analyzeHandContext,
+    savedSpotContext: () => activeSavedSpotContext,
+    closeSavedSpot: () => {
+      activeSavedSpotContext = null;
+      renderSavedSpotViewer(null);
+      updateContext('Saved context closed');
+    },
+    navigate: (destination) => navigateToProductDestination(destination),
+    streetLabel: (street) => reviewStreetLabel(street),
+    displayCard: (card) => displayCard(card),
+    formatFixed: (value, digits) => formatUiFixed(value, digits),
     expandContext: () => {
       if ($('#gtoMode')?.classList.contains('is-context-collapsed')) $('#togglePlaybookContext')?.click();
     },
@@ -8123,15 +8052,7 @@ function restoreSavedSpotPresentation(result) {
 }
 
 function renderSavedSpotViewer(result = activeSavedSpotContext) {
-  const banner = $('#savedSpotViewerBanner');
-  if (!banner) return;
-  banner.hidden = !result;
-  if (!result) return;
-  const title = result.object.annotations.title || t('Saved study spot');
-  $('#savedSpotViewerTitle').textContent = title;
-  $('#savedSpotViewerTruth').textContent = t(result.derivation === 'scenario'
-    ? 'Scenario-derived · history unavailable'
-    : 'Hand-derived · canonical decision context; history unavailable');
+  return spotSetup()?.renderSavedBanner(result);
 }
 
 // handReview: 'auto' (Home: open the Hand review when the completed Hand has
@@ -8358,18 +8279,6 @@ function bindEvents() {
   // Spot rail (randomize, setup controls, control authority): mounted module.
   mountSpotSetup();
 
-  // Hand context: the existing route back, and the explicit switch to Scenario editing.
-  if ($('#analyzeHandContextReturn')) $('#analyzeHandContextReturn').addEventListener('click', () => {
-    if (analyzeHandContext?.returnDestination) navigateToProductDestination(analyzeHandContext.returnDestination);
-  });
-  if ($('#analyzeHandContextEdit')) $('#analyzeHandContextEdit').addEventListener('click', (event) => {
-    const mode = $('#gtoMode');
-    if (!mode) return;
-    const editing = mode.dataset.analyzeHandEditing !== 'true';
-    if (editing) mode.dataset.analyzeHandEditing = 'true';
-    else delete mode.dataset.analyzeHandEditing;
-    event.currentTarget.setAttribute('aria-expanded', String(editing));
-  });
   if ($('#cardModal')) {
     $('#cardModal').addEventListener('click', (event) => { if (event.target === $('#cardModal')) closePicker(); });
     $('#cardModal').addEventListener('keydown', handleCardPickerKeydown);
@@ -8698,12 +8607,6 @@ function refreshLocalizedPlaybookRuntime() {
   else if ($('#playbookModeStatus')) {
     $('#playbookModeStatus').textContent = t('Scenario controls are authoritative. This spot does not claim a legal hand history.');
   }
-  renderAnalyzeHandContext();
-  renderSavedSpotViewer();
-  if (!activeSavedSpotContext) {
-    if ($('#savedSpotViewerTitle')) $('#savedSpotViewerTitle').textContent = t('Saved study spot');
-    if ($('#savedSpotViewerTruth')) $('#savedSpotViewerTruth').textContent = t('History unavailable');
-  }
   const tightnessSlider = $('#tightnessSlider');
   if (tightnessSlider && $('#tightnessLabel')) {
     const val = Number(tightnessSlider.value);
@@ -8715,7 +8618,8 @@ function refreshLocalizedPlaybookRuntime() {
     $('#oppTightnessLabel').textContent = t(val <= 25 ? 'Baseline' : val <= 75 ? 'Loose Online' : 'Splashy Home Game');
   }
   if ($('#liveContextText')) $('#liveContextText').textContent = t('Live');
-  syncSpotDisclosureSummaries();
+  // Hand context, Saved banner and the rail disclosure summaries follow the language.
+  spotSetup()?.refreshLanguage();
   renderSavedStudySourceState(savedStudySourceState, savedStudyCurrentObject);
   if (isHandMode()) {
     syncHandSeatSelectors();

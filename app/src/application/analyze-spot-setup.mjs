@@ -76,7 +76,11 @@ deps (all late-bound functions supplied by the page):
   bindSliderPair(rangeId, numberId, { onInput, onChange })       -> slider-pair kit
   updatePositions(), reconcileActionDependencies()
   expandContext()                -> opens a collapsed Spot rail
-  renderHand()                   -> renders the canonical Hand workspace
+  handContext()                  -> the Hand handoff slot (or null)
+  savedSpotContext()             -> the open Saved spot (or null)
+  closeSavedSpot()               -> the page's "close saved context" action
+  navigate(destination)          -> product navigation (Back to Hand / Training)
+  streetLabel(street), displayCard(card), formatFixed(value, digits)
 */
 export function mountAnalyzeSpotSetup(container, deps) {
   const t = (key, values) => deps.translate(key, values);
@@ -380,9 +384,133 @@ export function mountAnalyzeSpotSetup(container, deps) {
     return true;
   }
 
+  /* ------------------------------------------------ Hand-context banner */
+
+  // A decision handed off from a completed Hand (or Full Hand review) shows its
+  // exact facts read-only, with the existing route back. Editing any Scenario
+  // control turns it into a lossy Scenario. The handoff slot itself stays on the
+  // page (three handoffs and updateContext write it); this renders it.
+  const workspace = () => container.closest('#gtoMode');
+
+  function renderHandContext() {
+    const section = byId('analyzeHandContext');
+    const mode = workspace();
+    if (!section) return;
+    const context = deps.handContext();
+    section.hidden = !context;
+    if (mode) {
+      if (context) mode.dataset.analyzeContext = 'hand';
+      else {
+        delete mode.dataset.analyzeContext;
+        delete mode.dataset.analyzeHandEditing;
+      }
+    }
+    const edit = byId('analyzeHandContextEdit');
+    if (edit) edit.setAttribute('aria-expanded', String(Boolean(context && mode?.dataset.analyzeHandEditing === 'true')));
+    if (!context) return;
+    const decision = context.decisionContext;
+    const name = byId('analyzeHandContextName');
+    if (name) name.textContent = context.titleKey ? t(context.titleKey, context.titleValues || {}) : '';
+    const back = byId('analyzeHandContextReturn');
+    if (back) {
+      back.dataset.i18n = context.returnLabelKey;
+      back.textContent = t(context.returnLabelKey);
+    }
+    const facts = byId('analyzeHandContextFacts');
+    if (!facts || !decision) return;
+    const bb = (value) => (Number.isFinite(value) ? `${deps.formatFixed(value, 1)} bb` : t('Unavailable'));
+    const cards = (list) => (list || []).filter(Boolean).map(deps.displayCard).join(' ');
+    const rows = [
+      ['Position', decision.heroPosition || '-'],
+      ['Street', deps.streetLabel(decision.street)],
+      ['Hero hand', cards(decision.heroCards) || t('Unknown'), true],
+      ['Board', cards(decision.board) || t('Preflop · no board'), Boolean(cards(decision.board))],
+      ['Pot', bb(decision.currentPotBb ?? decision.potBb), true],
+      ['To call', Number.isFinite(decision.callAmountBb) ? bb(decision.callAmountBb) : t('facing.price.unavailable'), Number.isFinite(decision.callAmountBb)],
+      ['Stack', bb(decision.heroStackBb ?? decision.stackBb), true],
+    ];
+    facts.replaceChildren(...rows.map(([label, value, island]) => {
+      const row = doc.createElement('div');
+      const term = doc.createElement('dt');
+      term.dataset.i18n = label;
+      term.textContent = t(label);
+      const detail = doc.createElement('dd');
+      if (island) {
+        detail.dir = 'ltr';
+        detail.classList.add('poker-island');
+      }
+      detail.textContent = value;
+      row.append(term, detail);
+      return row;
+    }));
+    renderHandContextStackNote(decision, bb);
+  }
+
+  // ANALYZE-HANDOFF-STACK-001: the Scenario model is deliberately lossy. Its Stack
+  // control is the configured STARTING stack, and a Scenario never carries the Hero
+  // or effective stack at a decision (DecisionContext marks both unavailable). So
+  // when the Hand decision was made with a different stack, the panel says so
+  // instead of leaving the facts (Hero stack) and the controls (starting stack)
+  // to disagree silently.
+  function renderHandContextStackNote(decision, bb) {
+    const note = byId('analyzeHandContextStackNote');
+    if (!note) return;
+    // Unknown is never zero: null stays NaN, never 0.
+    const known = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : NaN);
+    const starting = known(decision.startingStackBb ?? decision.stackBb);
+    const hero = known(decision.heroStackBb);
+    const effective = known(decision.effectiveStackBb);
+    const differs = (value) => Number.isFinite(value) && Number.isFinite(starting) && Math.abs(value - starting) > 1e-9;
+    const show = Number.isFinite(hero) && (differs(hero) || differs(effective));
+    note.hidden = !show;
+    if (!show) {
+      note.textContent = '';
+      return;
+    }
+    const key = Number.isFinite(effective)
+      ? 'Stack at this decision: Hero {hero}, effective {effective}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep these, so SPR and pot odds can change.'
+      : 'Stack at this decision: Hero {hero}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep it, so SPR and pot odds can change.';
+    note.textContent = t(key, { hero: bb(hero), effective: bb(effective), starting: bb(starting) });
+  }
+
+  function bindHandContext() {
+    listen(byId('analyzeHandContextReturn'), 'click', () => {
+      const destination = deps.handContext()?.returnDestination;
+      if (destination) deps.navigate(destination);
+    });
+    listen(byId('analyzeHandContextEdit'), 'click', (event) => {
+      const mode = workspace();
+      if (!mode) return;
+      const editing = mode.dataset.analyzeHandEditing !== 'true';
+      if (editing) mode.dataset.analyzeHandEditing = 'true';
+      else delete mode.dataset.analyzeHandEditing;
+      event.currentTarget.setAttribute('aria-expanded', String(editing));
+    });
+  }
+
+  /* ------------------------------------------------------- Saved banner */
+
+  function renderSavedBanner(result = deps.savedSpotContext()) {
+    const banner = byId('savedSpotViewerBanner');
+    if (!banner) return;
+    banner.hidden = !result;
+    if (!result) return;
+    const title = result.object.annotations.title || t('Saved study spot');
+    byId('savedSpotViewerTitle').textContent = title;
+    byId('savedSpotViewerTruth').textContent = t(result.derivation === 'scenario'
+      ? 'Scenario-derived · history unavailable'
+      : 'Hand-derived · canonical decision context; history unavailable');
+  }
+
+  function bindSavedBanner() {
+    listen(byId('savedSpotCloseButton'), 'click', () => deps.closeSavedSpot());
+  }
+
   bindRandomization();
   bindSetupControls();
   bindDisclosureSummaries();
+  bindHandContext();
+  bindSavedBanner();
   syncDisclosureSummaries();
 
   return {
@@ -393,8 +521,16 @@ export function mountAnalyzeSpotSetup(container, deps) {
     focusReadinessField,
     readinessFocusTarget: (resolution) => scenarioReadinessFocusTarget(resolution, deps.modes.SCENARIO),
     syncDisclosureSummaries,
+    renderHandContext,
+    renderSavedBanner,
     refreshLanguage() {
       if (disposed) return;
+      renderHandContext();
+      renderSavedBanner();
+      if (!deps.savedSpotContext()) {
+        if (byId('savedSpotViewerTitle')) byId('savedSpotViewerTitle').textContent = t('Saved study spot');
+        if (byId('savedSpotViewerTruth')) byId('savedSpotViewerTruth').textContent = t('History unavailable');
+      }
       syncDisclosureSummaries();
     },
     // The orchestrator pushes visibility; the module never reads display.
