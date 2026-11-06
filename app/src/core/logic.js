@@ -2552,100 +2552,10 @@ function scenarioRandomizationSeed() {
   return randomizationSeed();
 }
 
-function setScenarioRandomizationStatus(message) {
-  const status = $('#scenarioRandomizeStatus');
-  if (status) status.textContent = message ? t(message) : '';
-}
-
-function scenarioRandomizationTargetLabel(target) {
-  return t({
-    spot: 'Complete spot',
-    hero: 'Hero hand',
-    board: 'Board',
-    position: 'Position',
-    stack: 'Stack',
-    betting_context: 'Betting context'
-  }[target] || target);
-}
-
-function renderScenarioRandomizationRecipe(recipe = app.gto.lastRandomizationRecipe) {
-  const details = $('#scenarioRandomizationDetails');
-  if (!details) return;
-  details.hidden = !recipe;
-  if (!recipe) return;
-  if ($('#scenarioRecipeTarget')) {
-    $('#scenarioRecipeTarget').textContent = scenarioRandomizationTargetLabel(recipe.target);
-  }
-  if ($('#scenarioRecipeSeed')) $('#scenarioRecipeSeed').textContent = String(recipe.seed);
-  if ($('#scenarioRecipeVersion')) $('#scenarioRecipeVersion').textContent = recipe.generatorVersion;
-}
-
+// EXTRACT-ANALYZE-003: the randomize menu (status, recipe, keeps, messages) lives in
+// application/analyze-spot-setup.mjs. The page names below stay for callers and tests.
 function renderScenarioRandomizationControls() {
-  const keeps = app.gto.randomizationKeeps;
-  document.querySelectorAll('[data-scenario-keep]').forEach((button) => {
-    button.setAttribute('aria-pressed', String(keeps[button.dataset.scenarioKeep] === true));
-  });
-  document.querySelectorAll('[data-scenario-randomize-target]').forEach((button) => {
-    const target = button.dataset.scenarioRandomizeTarget;
-    button.disabled = keeps[target] === true
-      || (target === 'board' && currentStreet() === 'preflop');
-    if (button.disabled) {
-      button.title = t(keeps[target]
-        ? 'Turn off Keep for this item before changing it.'
-        : 'There is no board to change preflop.');
-    } else {
-      button.removeAttribute('title');
-    }
-  });
-  renderScenarioRandomizationRecipe();
-}
-
-function scenarioRandomizationFailureMessage(result, target) {
-  if (result.code === 'target_locked') {
-    return 'Turn off Keep for this item before changing it.';
-  }
-  if (result.code === 'board_not_applicable') return 'There is no board to change preflop.';
-  if (result.code === 'kept_hero_incomplete') return 'Choose two Hero cards or turn off Keep Hero.';
-  if (result.code === 'kept_cards_invalid') return 'The kept cards conflict with each other.';
-  if (result.code === 'kept_position_unavailable') return 'The kept position does not fit the current rules.';
-  if (result.code === 'kept_stack_invalid') return 'Choose a valid stack or turn off Keep Stack.';
-  if (result.code === 'kept_context_incompatible') return 'The kept board and betting context do not fit together.';
-  if (result.code === 'spot_constraints_unavailable') return 'These Keep settings leave no supported random spot.';
-  if (result.code === 'insufficient_available_cards') {
-    return target === 'hero'
-      ? 'No legal Hero hand is available with the current cards and exclusions.'
-      : 'The kept and dead cards leave no legal board.';
-  }
-  if (result.code === 'betting_context_unavailable') {
-    return "Riverline couldn't create a supported betting context without changing the rest of this spot.";
-  }
-  if (result.code === 'no_alternative_position') return 'No different position is available at this table size.';
-  if (result.code === 'scenario_not_ready') return result.readiness?.message || 'Complete this Scenario before randomizing it.';
-  return 'Riverline could not create another legal version of this Scenario.';
-}
-
-function scenarioRandomizationSuccessMessage(result) {
-  if (result.recipe.target === 'spot') {
-    const kept = Object.entries(result.recipe.keeps)
-      .filter(([, value]) => value)
-      .map(([group]) => t({
-        hero: 'Hero', board: 'board / street', position: 'position',
-        stack: 'stack', betting_context: 'betting context'
-      }[group]));
-    const streetLabel = t(result.scenario.street.charAt(0).toUpperCase() + result.scenario.street.slice(1));
-    return kept.length
-      ? t('New {street} spot. Kept {groups}.', { street: streetLabel, groups: kept.join(', ') })
-      : t('New {table}-max {street} spot.', { table: result.scenario.tableSize, street: streetLabel });
-  }
-  const changed = result.changedGroups[0];
-  if (changed === 'hero') return 'Changed only Hero.';
-  if (changed === 'board') return 'Changed only the board.';
-  if (changed === 'position') return 'Changed only the position.';
-  if (changed === 'stack') return 'Changed only the stack.';
-  if (changed === 'betting_context') {
-    return 'Changed only the betting context.';
-  }
-  return 'New random spot.';
+  return spotSetup()?.renderRandomizationControls();
 }
 
 function applyRandomizedScenarioToControls(scenario) {
@@ -2666,63 +2576,7 @@ function applyRandomizedScenarioToControls(scenario) {
 }
 
 async function randomizeCurrentAnalyzeScenario(target = 'spot') {
-  if (isHandMode() || app.gto.randomizationPending) return false;
-  const bridge = globalThis.RiverlinePlaybookState;
-  if (!bridge?.randomizeScenario || !bridge?.randomizationRequestVersion) {
-    setScenarioRandomizationStatus('Randomization is unavailable right now.');
-    return false;
-  }
-  app.gto.randomizationPending = true;
-  const primary = $('#scenarioRandomizeButton');
-  if (primary) {
-    primary.disabled = true;
-    primary.setAttribute('aria-busy', 'true');
-  }
-  try {
-    const result = bridge.randomizeScenario({
-      schemaVersion: bridge.randomizationRequestVersion,
-      scenario: readPlaybookScenarioInput(),
-      target,
-      keeps: { ...app.gto.randomizationKeeps },
-      seed: scenarioRandomizationSeed()
-    });
-    if (result.status !== 'available') {
-      setScenarioRandomizationStatus(scenarioRandomizationFailureMessage(result, target));
-      return false;
-    }
-    applyRandomizedScenarioToControls(result.scenario);
-    app.gto.lastRandomizationRecipe = result.recipe;
-    renderScenarioRandomizationRecipe(result.recipe);
-    setScenarioRandomizationStatus(scenarioRandomizationSuccessMessage(result));
-    await updateContext('Scenario randomized');
-    return true;
-  } catch (error) {
-    console.error('[Riverline Analyze randomization]', error);
-    setScenarioRandomizationStatus('Riverline could not create another legal version of this Scenario.');
-    return false;
-  } finally {
-    app.gto.randomizationPending = false;
-    if (primary) {
-      primary.disabled = false;
-      primary.removeAttribute('aria-busy');
-    }
-    const menu = $('#scenarioRandomizationMenu');
-    if (menu) menu.open = false;
-    renderScenarioRandomizationControls();
-  }
-}
-
-async function copyScenarioRandomizationRecipe() {
-  const recipe = app.gto.lastRandomizationRecipe;
-  if (!recipe) return false;
-  try {
-    await navigator.clipboard.writeText(JSON.stringify(recipe, null, 2));
-    setScenarioRandomizationStatus('Randomization recipe copied.');
-    return true;
-  } catch (error) {
-    setScenarioRandomizationStatus('The randomization recipe could not be copied.');
-    return false;
-  }
+  return (await spotSetup()?.randomize(target)) ?? false;
 }
 
 // Compatibility name retained for the existing characterization harnesses.
@@ -2792,24 +2646,8 @@ function setPlaybookControlAuthority(mode) {
     button.setAttribute('aria-pressed', String(active));
   });
 
-  PLAYBOOK_SCENARIO_CONTROL_IDS.forEach((id) => {
-    const control = document.getElementById(id);
-    if (!control) return;
-    control.disabled = handMode;
-    control.toggleAttribute('data-scenario-only', handMode);
-    if (handMode) {
-      control.setAttribute('aria-describedby', 'playbookModeStatus');
-      control.title = t('Scenario-only control; ignored while the canonical hand is authoritative.');
-    } else {
-      control.removeAttribute('aria-describedby');
-      control.removeAttribute('title');
-    }
-  });
-
-  $$('[data-card-clear-surface="scenario"]').forEach((button) => {
-    button.disabled = handMode;
-    button.toggleAttribute('data-scenario-only', handMode);
-  });
+  // The Scenario controls themselves (read-only while Hand is authoritative).
+  spotSetup()?.setControlAuthority(mode);
 
   $$('[data-playbook-scenario]').forEach((element) => {
     element.hidden = handMode;
@@ -2875,16 +2713,8 @@ function renderAnalyzeVerdict(strategyResult) {
   return decisionPanel()?.renderVerdict(strategyResult) ?? null;
 }
 
-// Collapsed rail disclosures summarize their current values (no computation).
 function syncSpotDisclosureSummaries() {
-  const adjustment = $('#playbookStrategyAdjustmentSummary');
-  if (adjustment) {
-    adjustment.textContent = [$('#tightnessLabel')?.textContent, $('#oppTightnessLabel')?.textContent]
-      .map((value) => String(value || '').trim()).filter(Boolean).join(' · ');
-  }
-  const accounting = $('#playbookGameAccountingSummary');
-  const rake = $('#rakeMode');
-  if (accounting && rake) accounting.textContent = rake.selectedOptions?.[0]?.textContent?.trim() || '';
+  return spotSetup()?.syncDisclosureSummaries();
 }
 
 // ANALYZE-COMPOSITION-001: Hand context. A decision handed off from a completed
@@ -6294,6 +6124,62 @@ function decisionPanel() {
   return analyzeDecisionPanelController ?? mountDecisionPanel();
 }
 
+// EXTRACT-ANALYZE-003: the Spot rail (randomize menu, setup controls, control
+// authority, readiness focus) lives in application/analyze-spot-setup.mjs,
+// mounted on #playbookSpotPanel. The update scheduler (PERF-001), the
+// slider-pair kit and the single strategy resolution stay here; the dependencies
+// are late-bound so page-function spies and overrides apply.
+let analyzeSpotSetupController = null;
+let analyzeSpotSetupMountReported = false;
+
+function mountSpotSetup() {
+  if (analyzeSpotSetupController) return analyzeSpotSetupController;
+  const container = $('#playbookSpotPanel');
+  const module = window.RiverlineAnalyzeSpotSetup;
+  if (!container || !module) {
+    if (!analyzeSpotSetupMountReported) {
+      analyzeSpotSetupMountReported = true;
+      console.error('[Riverline Analyze] Spot setup could not be mounted:',
+        !container ? '#playbookSpotPanel is missing' : 'window.RiverlineAnalyzeSpotSetup is missing');
+    }
+    return null;
+  }
+  analyzeSpotSetupController = module.mount(container, {
+    translate: (key, values) => t(key, values),
+    isHandMode: () => isHandMode(),
+    currentStreet: () => currentStreet(),
+    modes: PLAYBOOK_MODES,
+    controlIds: PLAYBOOK_SCENARIO_CONTROL_IDS,
+    randomizationBridge: () => globalThis.RiverlinePlaybookState,
+    randomization: {
+      keeps: () => app.gto.randomizationKeeps,
+      pending: () => app.gto.randomizationPending,
+      setPending: (value) => { app.gto.randomizationPending = value; },
+      recipe: () => app.gto.lastRandomizationRecipe,
+      setRecipe: (recipe) => { app.gto.lastRandomizationRecipe = recipe; },
+    },
+    readScenarioInput: () => readPlaybookScenarioInput(),
+    newSeed: () => scenarioRandomizationSeed(),
+    applyScenario: (scenario) => applyRandomizedScenarioToControls(scenario),
+    requestRandomize: (target) => randomizeCurrentAnalyzeScenario(target),
+    writeClipboard: (text) => navigator.clipboard.writeText(text),
+    updateContext: (reason) => updateContext(reason),
+    schedulePlaybookUpdate: (reason) => schedulePlaybookUpdate(reason),
+    commitPlaybookUpdate: (reason) => commitPlaybookUpdate(reason),
+    bindSliderPair: (rangeId, numberId, handlers) => bindSliderPair(rangeId, numberId, handlers),
+    updatePositions: () => updatePositions(),
+    reconcileActionDependencies: () => reconcileScenarioActionDependencies(),
+    expandContext: () => {
+      if ($('#gtoMode')?.classList.contains('is-context-collapsed')) $('#togglePlaybookContext')?.click();
+    },
+  });
+  return analyzeSpotSetupController;
+}
+
+function spotSetup() {
+  return analyzeSpotSetupController ?? mountSpotSetup();
+}
+
 // The resolved decision as the panel sees it (state is only needed on update).
 function analyzeDecisionPanelView(state) {
   return Object.freeze({
@@ -6881,52 +6767,12 @@ function editDecisionInputs() {
   control?.focus({ preventScroll: true });
 }
 
-// Readiness reasons name canonical Scenario fields; each maps to the control
-// whose label the readiness message uses.
-const SCENARIO_READINESS_FIELD_CONTROLS = Object.freeze({
-  facingSizeBb: '#facingSizeNum',
-  potBb: '#potSizeNum',
-  stackBb: '#stackNum',
-  tableSize: '#playersNum',
-  anteBb: '#anteNum',
-  lastAction: '#lastAction',
-  heroPosition: '#heroPos',
-  heroCards: '[data-card-set-edit="hero"]',
-  board: '[data-card-set-edit="board"]',
-  street: '[data-card-set-edit="board"]',
-  deadCards: '[data-card-set-edit="dead"]'
-});
-
 function scenarioReadinessFocusTarget(resolution) {
-  if (resolution?.mode !== PLAYBOOK_MODES.SCENARIO || resolution?.reason !== 'scenario_not_ready') return null;
-  const field = resolution.readiness?.reasons?.[0]?.fields?.[0];
-  return SCENARIO_READINESS_FIELD_CONTROLS[field] || null;
+  return spotSetup()?.readinessFocusTarget(resolution) ?? null;
 }
 
 function focusScenarioReadinessField(resolution) {
-  const selector = scenarioReadinessFocusTarget(resolution);
-  const control = selector ? document.querySelector(selector) : null;
-  if (!control) return false;
-  if (control.matches('[data-card-set-edit]')) {
-    if (!control.getClientRects().length) return false;
-    control.click();
-    return true;
-  }
-  for (let node = control.parentElement; node; node = node.parentElement) {
-    if (node.tagName === 'DETAILS') node.open = true;
-  }
-  const context = document.querySelector('#gtoMode');
-  if (context?.classList.contains('is-context-collapsed')) $('#togglePlaybookContext')?.click();
-  if ($('#advancedRules')?.contains(control) && $('#advancedRules').classList.contains('hidden')) {
-    $('#toggleAdvanced')?.click();
-  }
-  if (control.disabled || !control.getClientRects().length) return false;
-  control.scrollIntoView({ block: 'center', behavior: 'instant' });
-  control.focus({ preventScroll: true });
-  if (control.tagName === 'INPUT') {
-    try { control.select(); } catch { /* Selection is optional for numeric inputs. */ }
-  }
-  return true;
+  return spotSetup()?.focusReadinessField(resolution) ?? false;
 }
 
 function analysisUnavailableReasonForResolution(resolution) {
@@ -8509,6 +8355,8 @@ function bindEvents() {
 
   // Decision panel (verdict, mix, facts, Explain, Teach): mounted module.
   mountDecisionPanel();
+  // Spot rail (randomize, setup controls, control authority): mounted module.
+  mountSpotSetup();
 
   // Hand context: the existing route back, and the explicit switch to Scenario editing.
   if ($('#analyzeHandContextReturn')) $('#analyzeHandContextReturn').addEventListener('click', () => {
@@ -8522,13 +8370,6 @@ function bindEvents() {
     else delete mode.dataset.analyzeHandEditing;
     event.currentTarget.setAttribute('aria-expanded', String(editing));
   });
-  ['tightnessSlider', 'oppTightnessSlider', 'rakeMode'].forEach((id) => {
-    $('#' + id)?.addEventListener('input', () => queueMicrotask(syncSpotDisclosureSummaries));
-    $('#' + id)?.addEventListener('change', () => queueMicrotask(syncSpotDisclosureSummaries));
-  });
-  if (typeof syncSpotDisclosureSummaries === 'function') syncSpotDisclosureSummaries();
-
-
   if ($('#cardModal')) {
     $('#cardModal').addEventListener('click', (event) => { if (event.target === $('#cardModal')) closePicker(); });
     $('#cardModal').addEventListener('keydown', handleCardPickerKeydown);
@@ -8664,101 +8505,8 @@ function bindEvents() {
 
   $$('.sub-tab').forEach((button) => button.addEventListener('click', () => selectPlaybookAnalysisView(button)));
 
-  $('#scenarioRandomizeButton')?.addEventListener('click', () => {
-    void randomizeCurrentAnalyzeScenario('spot');
-  });
-  document.querySelectorAll('[data-scenario-keep]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const group = button.dataset.scenarioKeep;
-      app.gto.randomizationKeeps[group] = !app.gto.randomizationKeeps[group];
-      renderScenarioRandomizationControls();
-    });
-  });
-  document.querySelectorAll('[data-scenario-randomize-target]').forEach((button) => {
-    button.addEventListener('click', () => {
-      void randomizeCurrentAnalyzeScenario(button.dataset.scenarioRandomizeTarget);
-    });
-  });
-  $('#scenarioCopyRecipe')?.addEventListener('click', () => {
-    void copyScenarioRandomizationRecipe();
-  });
-  const scenarioRandomizationMenu = $('#scenarioRandomizationMenu');
-  scenarioRandomizationMenu?.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || !scenarioRandomizationMenu.open) return;
-    event.preventDefault();
-    scenarioRandomizationMenu.open = false;
-    scenarioRandomizationMenu.querySelector('summary')?.focus({ preventScroll: true });
-  });
-  document.addEventListener('click', (event) => {
-    if (scenarioRandomizationMenu?.open
-      && !scenarioRandomizationMenu.contains(event.target)
-      && event.target !== $('#scenarioRandomizeButton')) {
-      scenarioRandomizationMenu.open = false;
-    }
-  });
-
   ['rangeAdvHeroPos', 'rangeAdvVilPos'].forEach((id) => {
     if ($('#' + id)) $('#' + id).addEventListener('change', renderRangeAdvantage);
-  });
-
-
-
-  bindSliderPair('players', 'playersNum', {
-    onInput: () => {
-      updatePositions();
-      schedulePlaybookUpdate('Table size changed');
-    },
-    onChange: () => {
-      updatePositions();
-      commitPlaybookUpdate('Table size changed');
-    }
-  });
-
-  bindSliderPair('stack', 'stackNum', {
-    onInput: () => schedulePlaybookUpdate('Stack changed'),
-    onChange: () => commitPlaybookUpdate('Stack changed')
-  });
-
-  bindSliderPair('ante', 'anteNum', {
-    onInput: () => schedulePlaybookUpdate('Ante changed'),
-    onChange: () => commitPlaybookUpdate('Ante changed')
-  });
-
-  bindSliderPair('facingSize', 'facingSizeNum', {
-    onInput: () => schedulePlaybookUpdate('Facing size changed'),
-    onChange: () => commitPlaybookUpdate('Facing size changed')
-  });
-
-  bindSliderPair('potSize', 'potSizeNum', {
-    onInput: () => schedulePlaybookUpdate('Pot size changed'),
-    onChange: () => commitPlaybookUpdate('Pot size changed')
-  });
-
-  ['rakeMode', 'stackMode', 'heroPos', 'straddle'].forEach((id) => {
-
-    if ($('#' + id)) $('#' + id).addEventListener('change', () => {
-      updateContext('Configuration changed');
-    });
-
-  });
-
-  ['lastAction'].forEach((id) => {
-
-    if ($('#' + id)) $('#' + id).addEventListener('change', () => {
-      reconcileScenarioActionDependencies();
-      updateContext('Configuration changed');
-    });
-
-  });
-
-  if ($('#toggleAdvanced')) $('#toggleAdvanced').addEventListener('click', () => {
-
-    const enabled = $('#toggleAdvanced').classList.toggle('on');
-
-    $('#toggleAdvanced').setAttribute('aria-pressed', enabled);
-
-    if ($('#advancedRules')) $('#advancedRules').classList.toggle('hidden', !enabled);
-
   });
 
 
