@@ -20,6 +20,17 @@ const {
 } = await import('../app/src/application/locale-number-format.mjs');
 const { describeDecisionFacing, formatDecisionFacing } = await import('../app/src/application/decision-facing-summary.mjs');
 const { trainingMemoryContextSummary } = await import('../app/src/application/training-memory-row-format.mjs');
+const { createAnalysisExplanation } = await import('../app/src/application/analysis-explanation.mjs');
+const { createBluffAnalysisFacts } = await import('../app/src/application/bluff-analysis.mjs');
+const { createRangeAnalysisFacts } = await import('../app/src/application/range-analysis.mjs');
+const {
+  formatExactPokerAmountBb,
+  formatSuggestedSizingBb,
+} = await import('../app/src/application/poker-sizing-presentation.mjs');
+const {
+  createHoldemRangeProvenanceSource,
+  createHoldemWeightedRangeFromHandClassWeights,
+} = await import('../shared/poker-domain/index.js');
 
 // Intl uses a no-break space (U+00A0) for Russian grouping.
 const NBSP = ' ';
@@ -199,4 +210,146 @@ test('a code-written state survives a language switch instead of reverting to th
   await setLanguage('en');
   assert.equal($('#tightnessLabel').textContent, 'Loose Online');
   await app.setValue(slider, '0');
+});
+
+test('LOCALE-NUMBERS-002: poker sizing presenter formats bb amounts in EN, RU (comma) and HE', () => {
+  assert.equal(formatSuggestedSizingBb(2.26, { language: 'en' }), '2.5 bb');
+  assert.equal(formatSuggestedSizingBb(2.26, { language: 'ru' }), '2,5 bb');
+  assert.equal(formatSuggestedSizingBb(2.26, { language: 'he' }), '2.5 bb');
+  assert.equal(formatSuggestedSizingBb(2.26, { spaced: false, language: 'ru' }), '2,5bb');
+  assert.equal(formatExactPokerAmountBb(2.0379, { language: 'en' }), '2.0379bb');
+  assert.equal(formatExactPokerAmountBb(2.0379, { language: 'ru' }), '2,0379bb');
+  assert.equal(formatExactPokerAmountBb(2.0379, { language: 'he' }), '2.0379bb');
+});
+
+test('LOCALE-NUMBERS-002: AnalysisExplanation formats percentages, bb amounts and ratios in EN, RU (comma) and HE', async () => {
+  const decisionContext = {
+    schemaVersion: 'decision-context/v1',
+    tableSize: 2,
+    opponentCount: 1,
+    heroPosition: 'BTN',
+    street: 'river',
+    heroCards: ['Ah', '4h'],
+    board: ['2h', '3h', '9s', 'Kd', '7c'],
+    deadCards: [],
+    stackBb: 33.5,
+    effectiveStackBb: 33.5,
+    stackMode: 'hero',
+    potBb: 6.5,
+    currentPotBb: 6.5,
+    lastAction: 'bet',
+    facingSizeBb: 2.5,
+    callAmountBb: 2.5,
+    heroStreetContributionBb: 0,
+    actorContestablePotAfterCallBb: 9,
+    actorIneligiblePotAfterCallBb: 0,
+    requiredRawEquity: 2.5 / 9,
+    rakeMode: 'off',
+    forcedContributionPerPlayerBb: 0,
+    totalForcedContributionBb: 0,
+  };
+  const strategyResult = {
+    schemaVersion: 'strategy-result/v1',
+    source: 'heuristic_postflop',
+    actions: [
+      { action: { type: 'raise', amountBb: 7.5, potFraction: null }, label: 'Raise', probability: 0.65, evBb: null },
+      { action: { type: 'call', amountBb: 2.5, potFraction: null }, label: 'Call', probability: 0.35, evBb: null },
+    ],
+    recommendation: { action: { type: 'raise', amountBb: 7.5, potFraction: null }, label: 'Raise' },
+    explanation: null,
+    confidence: null,
+    coverage: null,
+    modelVersion: null,
+    warnings: [],
+    details: {
+      heuristicSample: {
+        provenance: 'heuristic_conditional_sample',
+        eq: 0.425,
+        completedSamples: 400,
+        opponentCount: 1,
+        rangeFraction: 0.375,
+      },
+    },
+  };
+  const rangeSource = createHoldemRangeProvenanceSource({ id: 'manual', kind: 'manual' });
+  const range = createHoldemWeightedRangeFromHandClassWeights({
+    rangeId: 'villain-range',
+    provenanceSources: [rangeSource],
+    handClassWeights: {
+      AA: { weight: 1, provenanceId: rangeSource.id },
+      AKs: { weight: 0.5, provenanceId: rangeSource.id },
+      '76s': { weight: 0.25, provenanceId: rangeSource.id },
+    },
+  });
+  const rangeAnalysisFacts = createRangeAnalysisFacts({
+    decisionContext,
+    ranges: { villain: { role: 'opponent', label: 'Villain', range } },
+  });
+  const bluffAnalysisFacts = createBluffAnalysisFacts({
+    decisionContext,
+    strategyResult,
+    rangeAnalysisFacts,
+    action: { action: { type: 'bet', amountBb: 7.5, potFraction: null }, label: 'Bet', probability: 0.65 },
+  });
+  const trustedFacts = {
+    equity: { heroEquity: 0.625, method: 'exact' },
+    actionHistory: [
+      { sequence: 0, street: 'river', actorLabel: 'BB', actionLabel: 'Bet to', actionType: 'bet', amountBb: 2.5 },
+    ],
+  };
+
+  const fact = (explanation, sectionKey, factKey) => explanation.sections
+    .find((section) => section.key === sectionKey)
+    ?.facts.find((entry) => entry.key === factKey);
+
+  const byLang = Object.fromEntries(['en', 'ru', 'he'].map((language) => [
+    language,
+    createAnalysisExplanation({
+      decisionContext,
+      strategyResult,
+      rangeAnalysisFacts,
+      bluffAnalysisFacts,
+      trustedFacts,
+      authority: 'hand',
+      language,
+    }),
+  ]));
+
+  // EN and HE use "."; RU uses ",".
+  for (const [language, mark] of [['en', '.'], ['ru', ','], ['he', '.']]) {
+    const exp = byLang[language];
+    assert.equal(fact(exp, 'pot_odds', 'pot_before_action').values.pot, `6${mark}5bb`, `${language} pot`);
+    assert.equal(fact(exp, 'pot_odds', 'call_amount').values.callAmount, `2${mark}5bb`, `${language} callAmount`);
+    assert.equal(fact(exp, 'pot_odds', 'required_raw_equity').values.requiredEquity, `27${mark}8%`, `${language} requiredEquity`);
+    assert.equal(fact(exp, 'spr', 'stack_bb').values.stack, `33${mark}5bb`, `${language} stack`);
+    assert.equal(fact(exp, 'spr', 'spr').values.spr, `5${mark}2`, `${language} spr`);
+    assert.equal(fact(exp, 'action_context', 'facing_size').values.facingSize, `2${mark}5bb`, `${language} facingSize`);
+    assert.match(fact(exp, 'action_context', 'history_0').values.historyText, new RegExp(`2\\${mark}5bb`), `${language} history`);
+    assert.equal(fact(exp, 'bluff_pressure', 'bluff_risk').values.risk, `7${mark}5bb`, `${language} bluff risk`);
+    assert.equal(fact(exp, 'bluff_pressure', 'bluff_immediate_reward').values.reward, `6${mark}5bb`, `${language} bluff reward`);
+    assert.equal(fact(exp, 'bluff_pressure', 'bluff_break_even_folds').values.frequency, `53${mark}6%`, `${language} break-even folds`);
+    assert.equal(fact(exp, 'bluff_pressure', 'river_bluff_value_reference').values.valueUnits, `1${mark}867`, `${language} valueUnits`);
+    assert.equal(fact(exp, 'bluff_pressure', 'river_bluff_value_reference').values.share, `34${mark}9%`, `${language} bluff share`);
+    assert.equal(fact(exp, 'blockers', 'range_blocker_effect_villain').values.mass, `3${mark}5`, `${language} blocker mass`);
+    assert.equal(fact(exp, 'range', 'supplied_range_summary_villain').values.mass, `4${mark}75`, `${language} range mass`);
+    assert.equal(fact(exp, 'heuristic_sample', 'heuristic_sampled_equity').values.equity, `42${mark}5%`, `${language} sampled equity`);
+    assert.equal(fact(exp, 'heuristic_sample', 'heuristic_range_fraction').values.rangeFraction, `37${mark}5%`, `${language} range fraction`);
+    assert.equal(fact(exp, 'equity', 'hero_equity').values.equity, `62${mark}5%`, `${language} hero equity`);
+  }
+
+  // Mounted Explain in the booted app re-formats numbers on language switch without recomputing facts.
+  await setLanguage('en');
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const teacher = $('#teacherContent');
+  if (teacher.style.display !== 'block') await app.click('#toggleTeacher');
+  await app.settle(300);
+  const potFactText = () => teacher.querySelector('[data-fact-key="pot_before_action"] .analysis-fact-primary')?.textContent;
+  assert.equal(potFactText(), '1.5bb');
+  await setLanguage('ru');
+  assert.equal(potFactText(), '1,5bb');
+  await setLanguage('he');
+  assert.equal(potFactText(), '1.5bb');
+  await setLanguage('en');
+  assert.equal(potFactText(), '1.5bb');
 });
