@@ -171,27 +171,35 @@ test('no status line above the workspace; the authority meaning stays live and i
   provenance.textContent = '';
   app.call('renderPlaybookModeStatus', app.window.app.playbookResolution);
   assert.ok(text(provenance));
-  const disclosure = markup.getElementById('analysisProvenanceDisclosure');
-  assert.equal(disclosure.localName, 'details');
-  assert.ok(disclosure.classList.contains('ui-disclosure') && disclosure.classList.contains('analyze-provenance'));
+  // ANALYZE-001a: the Provenance disclosure is the "All details" region of the hero card.
+  const disclosure = markup.getElementById('analyzeAllDetails');
+  assert.equal(disclosure.getAttribute('role'), 'region');
+  assert.ok(disclosure.classList.contains('rl-panel-card__body'));
   assert.ok(disclosure.querySelector('#playbookModeProvenance') && disclosure.querySelector('#strategyMeta'));
   assert.ok(precedes(disclosure.querySelector('#playbookModeProvenance'), disclosure.querySelector('#strategyMeta')));
+  const toggleButton = markup.getElementById('analyzeAllDetailsToggle');
+  assert.equal(toggleButton.getAttribute('aria-controls'), 'analyzeAllDetails');
+  assert.equal(toggleButton.getAttribute('aria-expanded'), 'false');
   // The technical source id is the only monospace text.
   const technical = $('#strategyMeta .technical-id');
   assert.ok(technical, 'Provenance shows the technical source id');
   assert.equal(technical.localName, 'code');
   assert.equal(cascaded(technical, 'font-family'), 'var(--font-mono)');
-  // The static disclosure keeps its node and open state across language switches.
-  const live = $('#analysisProvenanceDisclosure');
-  live.open = true;
+  // The static region keeps its node and open state across language switches.
+  const live = $('#analyzeAllDetails');
+  await app.click('#analyzeAllDetailsToggle');
+  assert.equal(live.hidden, false);
+  assert.equal($('#analyzeAllDetailsToggle').getAttribute('aria-expanded'), 'true');
   const child = live.firstElementChild;
   for (const language of ['ru', 'en']) {
     app.window.setLanguage(language);
     await app.settle(50);
   }
-  assert.equal(live.open, true);
+  assert.equal(live.hidden, false);
   assert.ok(live.firstElementChild === child);
-  live.open = false;
+  await app.click('#analyzeAllDetailsToggle');
+  assert.equal(live.hidden, true);
+  assert.equal($('#analyzeAllDetailsToggle').getAttribute('aria-expanded'), 'false');
 });
 
 // ---------------------------------------------------------------------------
@@ -205,9 +213,14 @@ test('Analyze has exactly two containers: one Spot rail panel and one Result pan
     assert.equal(cascaded(selector, 'border-radius'), 'var(--radius-panel)', selector);
   }
   assert.equal(cascaded('.playbook-support-rail', 'display'), 'none');
-  for (const selector of ['#recommendation', '.range-matrix-panel', '.range-comparison-panel', '#playbookDecisionPathPanel']) {
+  for (const selector of ['#recommendation', '.range-comparison-panel', '#playbookDecisionPathPanel']) {
     assert.equal(cascaded(selector, 'background'), 'none', `${selector} is a section, not a box`);
     assert.equal(cascaded(selector, 'border'), '0', `${selector} is a section, not a box`);
+  }
+  // ANALYZE-001a: the hero answer card and the inline matrix are the second (and last) containment level: soft cards inside the Result panel.
+  for (const selector of ['#analyzeHero', '#chartView']) {
+    assert.equal(cascaded(selector, 'border-radius'), '16px', `${selector} is a soft v4 card`);
+    assert.equal(cascaded(selector, 'padding'), '22px', `${selector} padding`);
   }
   const spot = markup.getElementById('playbookSpotPanel');
   assert.equal([spot, ...spot.querySelectorAll('*')].filter((node) => node.classList?.contains('panel')).length, 1, 'the Spot rail is one panel');
@@ -231,23 +244,25 @@ test('the Spot rail keeps every control, the readiness/numeric-entry ids and ord
   assert.equal(markup.getElementById('sharedControls').classList.contains('playbook-betting-context'), false, 'the center Betting context strip is gone');
 });
 
-test('Result header: view tabs on the start side, Save spot (secondary) and View all hands (quiet) on the end', () => {
+test('Result header: two view tabs on the start side; Save spot and All details sit on the hero card', () => {
   const nav = markup.getElementById('playbookAnalysisNavigation');
   assert.equal(nav.localName, 'nav');
   const tabs = nav.querySelector('#playbookAnalysisTabs');
   assert.ok(tabs.classList.contains('sub-tabs') && tabs.classList.contains('ui-tabs'));
   assert.equal(tabs.getAttribute('role'), 'tablist');
-  const actions = nav.querySelector('.playbook-result-actions');
-  assert.ok(precedes(tabs, actions));
+  // ANALYZE-001a: the Range Matrix tab, View all hands and the header actions are gone.
+  assert.deepEqual([...tabs.querySelectorAll('[data-gto-view]')].map((tab) => tab.dataset.gtoView), ['context', 'range']);
+  assert.equal(nav.querySelector('.playbook-result-actions'), null);
+  assert.equal(markup.getElementById('openCharts'), null);
+  const hero = markup.getElementById('analyzeHero');
+  const actions = hero.querySelector('.analyze-hero-actions');
   const save = actions.querySelector('#savedStudySaveButton');
   assert.ok(save.classList.contains('ui-button') && save.classList.contains('ui-button--secondary'));
-  assert.ok(actions.querySelector('#openCharts'));
-  assert.ok(precedes(save, actions.querySelector('#openCharts')));
-  assert.equal(nav.querySelector('.ui-button.playbook-view-all-hands').dataset.variant, 'quiet');
+  assert.ok(precedes(save, actions.querySelector('#analyzeAllDetailsToggle')));
+  // One accent-filled primary action: Save spot, until it is saved.
+  assert.equal(cascaded(save, 'background-color') ?? cascaded(save, 'background'), 'var(--accent-primary)');
   const active = $('#playbookAnalysisTabs .ui-tab.active, #playbookAnalysisTabs .ui-tab[aria-selected="true"]');
   assert.equal(cascaded(active, 'border-block-end-color'), 'var(--accent-primary)');
-  assert.equal(cascaded('.playbook-result-actions', 'order'), '2');
-  assert.equal(cascaded('.playbook-result-actions', 'margin-inline-start'), 'auto');
 });
 
 test('the street stepper replaces the Action path rail at every width', () => {
@@ -307,23 +322,27 @@ test('fact grid: facing and to-call wording follows DECISION_CONTEXT_SPEC §10 w
   assert.equal(toCall(ctx({ aggressionCount: 1 }, { callAmountBb: 20, heroStackBb: 20 })), '20.0 bb · All-in');
 });
 
-test('fact grid: one clean table with To call; labels muted, values 15/600 and never truncated', async () => {
-  const recommendation = markup.getElementById('recommendation');
-  const ids = ['mPosition', 'mPot', 'mFacing', 'mToCall', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'].map((id) => markup.getElementById(id));
-  ids.forEach((node) => assert.ok(recommendation.contains(node), node.id));
-  ids.slice(1).forEach((node, index) => assert.ok(precedes(ids[index], node), `${node.id} in the fact grid order`));
+test('fact tiles: real facts only (equity needed, pot, to call, SPR) from the shared tile; the spot facts live under All details', async () => {
+  const tileIds = ['mPotOdds', 'mPot', 'mToCall', 'mSPR'];
+  const contextIds = ['mPosition', 'mFacing', 'mStack', 'mHeroHand', 'mBoard'];
   await app.call('updateContext');
   await app.settle(200);
+  assert.deepEqual(app.$$('#analyzeTiles .rl-fact-tile').map((tile) => tile.dataset.fact), tileIds);
+  for (const id of tileIds) assert.ok($(`#${id}`).closest('#analyzeTiles .rl-fact-tile'), `${id} is a tile value`);
+  const details = markup.getElementById('analyzeAllDetails');
+  for (const id of contextIds) assert.ok(details.querySelector(`#${id}`), `${id} is a spot fact under All details`);
+  // ANALYZE-FACT-IDS: the Hero hand and Board facts no longer wear the equity and rake ids.
+  assert.equal(markup.getElementById('mEquity'), null);
+  assert.equal(markup.getElementById('mRake'), null);
   assert.equal(text($('#mToCall')), app.call('decisionPanel').toCallFact(app.window.app.decisionContext));
-  const label = $('.analyze-facts .metric span');
-  const value = $('.analyze-facts .metric b');
-  assert.equal(cascaded(label, 'color'), 'var(--text-muted)');
-  assert.match(cascaded(label, 'font'), /^var\(--weight-label\) var\(--t-label\)/);
-  for (const [property, expected] of [
-    ['overflow', 'visible'], ['color', 'var(--text-primary)'],
-    ['text-overflow', 'clip'], ['white-space', 'normal'], ['overflow-wrap', 'anywhere'], ['unicode-bidi', 'plaintext'],
-  ]) assert.equal(cascaded(value, property), expected, property);
-  assert.match(cascaded(value, 'font'), /^var\(--weight-value\) var\(--t-value\)\/var\(--t-value-line\)/);
+  // The exact required equity says what it is based on.
+  assert.equal(text($('#mPotOdds').closest('.rl-fact-tile').querySelector('.rl-fact-tile__scope')), app.call('t', 'Exact · price only'));
+  const label = $('#analyzeTiles .rl-fact-tile__label');
+  const value = $('#analyzeTiles .rl-fact-tile__value');
+  assert.equal(cascaded(label, 'color'), 'var(--text-secondary)');
+  assert.equal(cascaded(value, 'font-variant-numeric'), 'tabular-nums');
+  assert.equal(cascaded(value, 'font-weight'), 'var(--weight-value)');
+  assert.equal(cascaded(value, 'overflow-wrap'), 'anywhere');
   assert.equal(css.cascaded(root(), '--t-value'), '0.9375rem');
   assert.equal(css.cascaded(root(), '--weight-value'), '650');
 });
@@ -443,7 +462,10 @@ test('Hand context: exact decision facts read-only with the existing route back;
     const context = spy.calls.setAnalyzeHandContext.map(([value]) => value).find(Boolean);
     assert.equal(context.returnDestination, 'hand');
     assert.equal(context.returnLabelKey, 'Back to Hand');
-    assert.ok(resolves.length <= 1, 'one resolution for the opened decision');
+    // The decision resolves once; a preflop decision also fills the visible inline matrix (169 cells, ANALYZE-001a).
+    const decision = resolves.filter((context) => context === app.window.app.decisionContext);
+    assert.ok(decision.length <= 1, 'one resolution for the opened decision');
+    assert.ok([0, 169].includes(resolves.length - decision.length), 'only the visible matrix adds resolves');
     // The Hand context labels the header context "Hand"; Back returns to Hand.
     spy.reset();
     const renders = await probe.count(() => { app.call('renderAnalyzeHandContext'); });

@@ -30,20 +30,15 @@ const freshChart = () => {
   return app.$$('#strategyGrid .hand-cell');
 };
 
-test('Matrix exposes only heuristic strategy-frequency views', () => {
-  const select = markup.getElementById('chartAction');
-  assert.deepEqual(select.querySelectorAll('option').map((option) => option.value), ['strategy', 'raise', 'call', 'fold']);
-  assert.doesNotMatch(text(markup.body) + locales, /EV Heatmap \(bb\)|Equity % Heatmap/);
+test('Matrix exposes only the heuristic baseline strategy-frequency view', () => {
+  // ANALYZE-001a: Baseline only; the old View select (strategy colours / raise / call / fold %) is gone.
+  assert.equal(markup.getElementById('chartAction'), null);
+  assert.doesNotMatch(text(markup.body) + locales, /EV Heatmap (bb)|Equity % Heatmap/);
   for (const name of ['estEV', 'estEq']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
-  // Every view renders frequencies (or Unavailable), never EV or equity estimates.
-  for (const view of ['strategy', 'raise', 'call', 'fold']) {
-    app.byId('chartAction').value = view;
-    const cells = freshChart();
-    assert.equal(cells.length, 169, view);
-    for (const cell of cells) assert.doesNotMatch(text(cell), /bb|EV|equity/i, `${view}: ${text(cell)}`);
-  }
-  app.byId('chartAction').value = 'strategy';
-  freshChart();
+  // The grid renders frequencies (or Unavailable), never EV or equity estimates.
+  const cells = freshChart();
+  assert.equal(cells.length, 169);
+  for (const cell of cells) assert.doesNotMatch(text(cell), /bb|EV|equity/i, text(cell));
 });
 
 test('canonical StrategyResult presentation allocates exactly 100 visible percent', () => {
@@ -91,7 +86,7 @@ test('Matrix uses current context, labels unavailable cells, and discloses fallb
   const postflop = freshChart();
   assert.equal(postflop.length, 0);
   assert.equal(app.$('.range-matrix-layout').hidden, true);
-  assert.equal(app.byId('postflopMatrixEmpty').hidden, false);
+  assert.equal(app.byId('chartView').hidden, true, 'the inline matrix section is hidden postflop');
   assert.equal(text(app.byId('selectedHandPrimary')), 'Range expansion unavailable');
   assert.equal(text(app.byId('selectedRangeSource')), 'Unavailable');
 });

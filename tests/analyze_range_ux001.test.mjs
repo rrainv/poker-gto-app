@@ -18,7 +18,7 @@ const app = await bootApp();
 await app.navigate('analyze');
 await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['Qs', 'Qd']);
 await app.pickCards('#gtoMode [data-card-set-edit="dead"]', ['Ah', 'Ac']);
-await app.click('[data-gto-view="chart"]');
+// ANALYZE-001a: the Matrix is inline on the Decision view (preflop); no tab to open.
 await app.settle(200);
 const cells = () => app.$$('#strategyGrid .hand-cell');
 
@@ -137,10 +137,12 @@ test('dead-card unavailable combos stay canonical and agree with the local inspe
 
 test('Facts are visible before bounded Explain and only secondary comparison detail stays disclosed', async () => {
   const decision = markup.getElementById('recommendation').parentElement;
-  // ANALYZE-COMPOSITION-001: the fact grid heading stays as an accessible (sr-only) heading.
-  const heading = markup.querySelector('.playbook-facts-heading');
-  assert.ok(heading && (heading.dataset.i18n === 'Facts' || heading.querySelector('[data-i18n="Facts"]')));
-  for (const id of ['mEquity', 'mRake']) assert.ok(markup.getElementById(id), id);
+  // ANALYZE-001a: the tiles are a labelled group (the old sr-only fact heading is gone) and the
+  // Hero hand and Board facts carry their own ids (ANALYZE-FACT-IDS).
+  const tiles = markup.getElementById('analyzeTiles');
+  assert.equal(tiles.getAttribute('role'), 'group');
+  assert.equal(tiles.dataset.i18nAriaLabel, 'Decision metrics');
+  for (const id of ['mHeroHand', 'mBoard']) assert.ok(markup.getElementById(id), id);
   const toggle = markup.getElementById('toggleTeacher');
   assert.equal(toggle.getAttribute('aria-expanded'), 'false');
   assert.equal(toggle.getAttribute('aria-controls'), 'teacherContent');

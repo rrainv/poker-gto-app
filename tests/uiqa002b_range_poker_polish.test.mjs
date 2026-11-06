@@ -207,7 +207,7 @@ test('polished exact-card fallbacks use displayCard while analytical hand classe
   assert.equal(app.evaluate('displayCard("Th")'), `${app.evaluate('displayCardRank("T")')}♥`);
   assert.equal(app.evaluate('displayCard(null)'), '');
   app.call('updateMetrics');
-  assert.equal(text(app.byId('mEquity')), app.call('formatHand', ['As', 'Kd']) || ['As', 'Kd'].map((card) => app.evaluate(`displayCard(${JSON.stringify(card)})`)).join(' '));
+  assert.equal(text(app.byId('mHeroHand')), app.call('formatHand', ['As', 'Kd']) || ['As', 'Kd'].map((card) => app.evaluate(`displayCard(${JSON.stringify(card)})`)).join(' '));
   // Matrix cells keep analytical hand classes (AKs above the diagonal).
   const cells = freshChart();
   assert.ok(cells[1].classList.contains('hand-suited'));

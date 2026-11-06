@@ -102,7 +102,7 @@ Source keys: **sweep** = PRODUCT-QA-SWEEP-2026-10 · **owner** = owner UI/UX QA 
 | ANALYZE-OPP | ticket | "Opponent assumptions" disclosure not built (no data) | P3 | Open | M3 | |
 | ANALYZE-FULLHAND-BANNER | ticket | The Full Hand handoff into Analyze shows the Saved banner and opens Explain; the Review handoff does not | P3 | Open | M2 | From EXTRACT-ANALYZE-000. The EXTRACT tickets keep the difference; decide it in EXTRACT-ANALYZE-003 (handoff banners) |
 | ANALYZE-SECOND-DECISION | ticket | A hand's second decision cannot be opened from Analyze until Back to Hand (`getHeroDecisionJournal` is unavailable while a decision is open) | P3 | Open | M2 | From EXTRACT-ANALYZE-000 |
-| ANALYZE-FACT-IDS | ticket | The "Hero hand" fact has id `mEquity` and the "Board" fact has id `mRake` | P3 | Open | M1 | From ANALYZE-INVENTORY-001 and EXTRACT-ANALYZE-000. Rename with the ANALYZE-001 redesign; tests and CSS key on the ids |
+| ANALYZE-FACT-IDS | ticket | The "Hero hand" fact has id `mEquity` and the "Board" fact has id `mRake` | P3 | Fixed (ANALYZE-001a: now `mHeroHand` and `mBoard`); acceptance pending | M1 | From ANALYZE-INVENTORY-001 and EXTRACT-ANALYZE-000. Rename with the ANALYZE-001 redesign; tests and CSS key on the ids |
 | QA-ANALYZE-COMPOSITION-002 | QA | Explain collapsed by default leaves an empty region under the Result panel at 1920 | — | Decision made: stays collapsed (owner) | — | Dead-space concern remains under OWNER-20 |
 | GEOMETRY-TOOL | ticket | `verify_product_ui002r3_geometry.cjs` still probes the removed Betting context strip | P3 | Open | M1 | Test hygiene |
 | RL-05 | QA | Playbook long-page / analysis-location composition | P3 | Open | M1 (Analyze finish) | Likely superseded by the v4 Analyze |

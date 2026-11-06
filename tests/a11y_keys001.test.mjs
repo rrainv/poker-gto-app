@@ -96,7 +96,7 @@ test('reopening the picker puts the Tab stop on the first drafted card', async (
 
 test('the strategy matrix is an ARIA grid with one Tab stop, arrow keys and a focus ring', async () => {
   await app.navigate('analyze');
-  await app.click('#gtoMode [data-gto-view="chart"]');
+  // ANALYZE-001a: the Matrix is inline on the Decision view (preflop); there is no tab to open.
   app.evaluate('app.matrixModel = null');
   app.call('renderChart');
   const grid = app.byId('strategyGrid');

@@ -10,7 +10,7 @@ const app = await bootApp();
 test('Range Matrix gives every cell a local action list and never writes window.actions', async () => {
   await app.navigate('analyze');
   await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
-  await app.click('[data-gto-view="chart"]');
+  // ANALYZE-001a: the Matrix is inline on the Decision view (preflop); there is no tab to open.
   await app.settle(200);
   app.call('renderChart');
 

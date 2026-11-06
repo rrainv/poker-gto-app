@@ -2193,6 +2193,17 @@ Object.assign(he, {
     ['max', 'макс', 'שחקנים'],
     ['Not shown for this decision: {facts}', 'Не показано для этого решения: {facts}', 'לא מוצג בהחלטה הזו: {facts}']
   ]) { ru[key] = russian; he[key] = hebrew; }
+  // ANALYZE-001a: the v4 result side (hero card, tiles, All details, inline matrix). Terms per docs/TERMINOLOGY.md.
+  for (const [key, russian, hebrew] of [
+    ['All details', 'Все детали', 'כל הפרטים'],
+    ['Source and limits', 'Источник и ограничения', 'מקור ומגבלות'],
+    ['Recommendation', 'Рекомендация', 'המלצה'],
+    ['Combos', 'Комбинации', 'קומבינציות'],
+    ['{available} of {total} combos', '{available} из {total} комбинаций', '{available} מתוך {total} קומבינציות'],
+    ['Your hand', 'Ваша рука', 'היד שלך'],
+    ['Equity needed to call', 'Нужное эквити для колла', 'אקוויטי נדרש לקול'],
+    ['Exact · price only', 'Точно · только цена', 'מדויק · מחיר בלבד']
+  ]) { ru[key] = russian; he[key] = hebrew; }
   // ANALYZE-HANDOFF-STACK-001 Hand->Analyze stack note and the lossy-context warning (owner review of RU/HE wording).
   for (const [key, russian, hebrew] of [
     ['Stack at this decision: Hero {hero}, effective {effective}. Edit as Scenario starts from the starting stack ({starting}) and cannot keep these, so SPR and pot odds can change.',

@@ -1181,73 +1181,94 @@
                 <button id="analysisEditInputs" class="ui-button ui-button--primary" type="button" data-i18n="Edit decision inputs">Edit decision inputs</button>
               </div>
 
-              <!-- ANALYZE-COMPOSITION-001: verdict block (eyebrow, verdict, summary, honest limits) beside the strategy mix card. -->
-              <div class="recommend-top analyze-verdict">
-                <div class="analyze-verdict-copy">
-                  <div class="eyebrow"><span id="strategyTruthHeading" data-i18n="Heuristic baseline">Baseline</span><span id="strategyTier"> · <span id="strategyTierLabel" data-i18n="Estimated" title="Baseline guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span> · <span id="streetLabel" data-i18n="Preflop">Preflop</span></div>
-                  <div class="action-name" id="bestAction" data-verdict-kind="dominant">Open</div>
+              <!-- ANALYZE-001a: v4 result side. Hero answer card (verdict, the one source/tier label, labelled mix bar, the one truth statement), tiles from real facts, Explain, and an All details region (limits, spot facts, alternate wheel). -->
+              <article id="analyzeHero" class="analyze-hero" data-motion="drill" aria-label="Recommendation" data-i18n-aria-label="Recommendation">
+                <div class="analyze-hero-head">
+                  <p class="analyze-hero-source">
+                    <span id="analyzeSourceTier" class="rl-source-tier" data-tier="estimated"><span id="strategyTruthHeading" data-i18n="Heuristic baseline">Baseline</span><span id="strategyTier"> · <span id="strategyTierLabel" data-i18n="Estimated" title="Baseline guidance, not yet verified against references." data-i18n-title="Heuristic guidance, not yet verified against references.">Estimated</span></span></span>
+                    <span id="streetLabel" class="analyze-hero-street" data-i18n="Preflop">Preflop</span>
+                  </p>
+                  <div class="analyze-hero-actions">
+                    <div id="scenarioSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--scenario" data-playbook-scenario data-tutorial-anchor="scenario-save">
+                      <div id="savedStudySourceActions" class="saved-study-source-actions">
+                        <button id="savedStudySaveButton" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" aria-describedby="savedStudySourceStatus" data-i18n="Save spot">Save spot</button>
+                        <button id="savedStudyEditButton" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Edit saved item">Edit saved item</button>
+                        <span id="savedStudySourceStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-i18n="This spot is not saved.">This spot is not saved.</span>
+                      </div>
+                    </div>
+                    <button id="analyzeAllDetailsToggle" class="ui-button ui-button--quiet analyze-details-toggle" type="button" aria-expanded="false" aria-controls="analyzeAllDetails"><span data-i18n="All details">All details</span><span class="analyze-details-chevron" aria-hidden="true"></span></button>
+                  </div>
+                </div>
+
+                <div class="analyze-hero-verdict">
+                  <div class="action-name rl-verdict" id="bestAction" data-verdict-kind="dominant" data-verdict="dominant">Open</div>
                   <div class="action-sizing" id="bestSizing" hidden></div>
-                  <p class="analyze-verdict-close" id="bestActionClose" hidden></p>
-                  <div class="action-copy" id="bestReason">Strong opening candidate in this position.</div>
-                  <p id="strategyTruthNote" class="strategy-truth-note" data-i18n="Approximate exploratory guidance. Agreement is not correctness.">Approximate exploratory guidance. Agreement is not correctness.</p>
-                  <div class="badge status-badge status-badge--info" id="sourceBadge" hidden data-i18n="HEURISTIC" aria-label="Strategy source: Baseline" data-i18n-aria-label="Strategy source: Heuristic fallback" aria-describedby="strategySourceProvenance" title="Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy." data-i18n-title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">BASELINE</div>
-                  <span id="strategySourceProvenance" class="sr-only" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.</span>
                 </div>
+                <p class="analyze-verdict-close" id="bestActionClose" hidden></p>
+                <div class="analyze-hero-mix" data-motion="drill">
+                  <div id="actionFrequencyStack" class="analyze-mix"></div>
+                  <p id="analyzeMixRest" class="analyze-mix-rest" hidden></p>
+                </div>
+                <p class="action-copy" id="bestReason">Strong opening candidate in this position.</p>
+                <p id="strategyTruthNote" class="strategy-truth-note" data-i18n="Approximate exploratory guidance. Agreement is not correctness.">Approximate exploratory guidance. Agreement is not correctness.</p>
+                <div class="badge status-badge status-badge--info" id="sourceBadge" hidden data-i18n="HEURISTIC" aria-label="Strategy source: Baseline" data-i18n-aria-label="Strategy source: Heuristic fallback" aria-describedby="strategySourceProvenance" title="Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy." data-i18n-title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">BASELINE</div>
+                <span id="strategySourceProvenance" class="sr-only" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">Baseline guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.</span>
 
-                <div class="frequency-visualization">
-                  <div class="frequency-heading"><strong data-i18n="Strategy mix">Strategy mix</strong><button id="toggleFrequencyAlternate" class="small-link" type="button" aria-expanded="false" aria-controls="actionWheelContainer" data-i18n="Alternate view">Alternate view</button></div>
-                  <div class="wheel-container" id="actionWheelContainer" hidden>
-                    <div class="wheel" id="actionWheel">
-                      <div class="wheel-inner">
-                        <span id="wheelCenterText">76%</span>
-                      </div>
+                <section id="analyzeDetailsCard" class="rl-panel-card analyze-details" data-panel="analyze-details" data-open="false" data-motion="panel">
+                  <div id="analyzeAllDetails" class="rl-panel-card__body" role="region" aria-label="All details" data-i18n-aria-label="All details" hidden>
+                    <div class="analyze-details-body">
+                      <section class="analyze-details-group" aria-labelledby="analyzeDetailsSourceTitle">
+                        <h3 id="analyzeDetailsSourceTitle" class="analyze-overline" data-i18n="Source and limits">Source and limits</h3>
+                        <p id="playbookModeProvenance" class="analyze-provenance-authority"></p>
+                        <div class="strategy-warning ui-callout" data-tone="caution" id="strategyWarnings" role="note" hidden></div>
+                        <p class="recommendation-meta" id="strategyMeta" hidden></p>
+                        <p id="analyzeOmittedFacts" class="analyze-provenance-omitted" hidden></p>
+                      </section>
+                      <section class="analyze-details-group" aria-labelledby="analyzeDetailsFactsTitle">
+                        <h3 id="analyzeDetailsFactsTitle" class="analyze-overline" data-i18n="Spot facts">Spot facts</h3>
+                        <dl class="analyze-context-facts" data-state-surface="derived">
+                          <div class="analyze-context-fact" data-fact="mPosition"><dt data-i18n="Position">Position</dt><dd id="mPosition">-</dd></div>
+                          <div class="analyze-context-fact" data-fact="mFacing"><dt data-i18n="Facing">Facing</dt><dd id="mFacing">-</dd></div>
+                          <div class="analyze-context-fact" data-fact="mStack"><dt data-i18n="Stack">Stack</dt><dd id="mStack">-</dd></div>
+                          <div class="analyze-context-fact" data-fact="mHeroHand"><dt data-i18n="Hero hand">Hero hand</dt><dd id="mHeroHand">-</dd></div>
+                          <div class="analyze-context-fact" data-fact="mBoard"><dt data-i18n="Board">Board</dt><dd id="mBoard">-</dd></div>
+                        </dl>
+                      </section>
+                      <section class="analyze-details-group analyze-details-mix" aria-labelledby="analyzeDetailsMixTitle">
+                        <h3 id="analyzeDetailsMixTitle" class="analyze-overline" data-i18n="Strategy mix">Strategy mix</h3>
+                        <div class="frequency-visualization">
+                          <div class="wheel-container" id="actionWheelContainer">
+                            <div class="wheel" id="actionWheel">
+                              <div class="wheel-inner">
+                                <span id="wheelCenterText">76%</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="frequency-bars">
+                            <div class="frequency" data-action-kind="aggressive">
+                              <span class="freq-name" id="f1name" data-i18n="Open">Open</span>
+                              <div class="bar"><div class="fill" id="f1" data-action-kind="aggressive" style="width:76%"></div></div>
+                              <span class="freq-num" id="f1num">76%</span>
+                            </div>
+                            <div class="frequency" data-action-kind="passive">
+                              <span class="freq-name" id="f2name" data-i18n="Limp">Limp</span>
+                              <div class="bar"><div class="fill" id="f2" data-action-kind="passive" style="width:10%"></div></div>
+                              <span class="freq-num" id="f2num">10%</span>
+                            </div>
+                            <div class="frequency" data-action-kind="fold">
+                              <span class="freq-name" id="f3name" data-i18n="Fold">Fold</span>
+                              <div class="bar"><div class="fill" id="f3" data-action-kind="fold" style="width:14%"></div></div>
+                              <span class="freq-num" id="f3num">14%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </section>
                     </div>
                   </div>
-                  <div class="frequency-bars">
-                    <div class="frequency-stack" id="actionFrequencyStack" role="img" aria-label="Open 76%, Limp 10%, Fold 14%">
-                      <span class="frequency-stack-segment" data-action-kind="aggressive" style="width:76%"></span>
-                      <span class="frequency-stack-segment" data-action-kind="passive" style="width:10%"></span>
-                      <span class="frequency-stack-segment" data-action-kind="fold" style="width:14%"></span>
-                    </div>
-                    <div class="frequency" data-action-kind="aggressive">
-                      <span class="freq-name" id="f1name" data-i18n="Open">Open</span>
-                      <div class="bar">
-                        <div class="fill" id="f1" data-action-kind="aggressive" style="width:76%"></div>
-                      </div>
-                      <span class="freq-num" id="f1num">76%</span>
-                    </div>
-                    <div class="frequency" data-action-kind="passive">
-                      <span class="freq-name" id="f2name" data-i18n="Limp">Limp</span>
-                      <div class="bar">
-                        <div class="fill" id="f2" data-action-kind="passive" style="width:10%"></div>
-                      </div>
-                      <span class="freq-num" id="f2num">10%</span>
-                    </div>
-                    <div class="frequency" data-action-kind="fold">
-                      <span class="freq-name" id="f3name" data-i18n="Fold">Fold</span>
-                      <div class="bar">
-                        <div class="fill" id="f3" data-action-kind="fold" style="width:14%"></div>
-                      </div>
-                      <span class="freq-num" id="f3num">14%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </section>
+              </article>
 
-              <div class="strategy-warning ui-callout" data-tone="caution" id="strategyWarnings" role="note" hidden></div>
-
-              <div class="metric-grid playbook-metric-strip analyze-facts" aria-label="Decision metrics" data-i18n-aria-label="Decision metrics" data-state-surface="derived">
-                <div class="playbook-facts-heading sr-only"><span data-i18n="Facts">Facts</span><strong data-i18n="Decision facts">Decision facts</strong><small data-i18n="Exact context for the current recommendation">Exact context for the current recommendation</small></div>
-                <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">-</b></div>
-                <div class="metric"><span data-i18n="Pot">Pot</span><b id="mPot">-</b></div>
-                <div class="metric"><span data-i18n="Facing">Facing</span><b id="mFacing">-</b></div>
-                <div class="metric"><span data-i18n="To call">To call</span><b id="mToCall">-</b></div>
-                <div class="metric"><span data-i18n="Stack">Stack</span><b id="mStack">-</b></div>
-                <div class="metric"><span data-i18n="Hero hand">Hero hand</span><b id="mEquity">-</b></div>
-                <div class="metric"><span data-i18n="Pot odds">Pot odds</span><b id="mPotOdds">-</b></div>
-                <div class="metric"><span data-i18n="SPR">SPR</span><b id="mSPR">-</b></div>
-                <div class="metric"><span data-i18n="Board">Board</span><b id="mRake">-</b></div>
-              </div>
+              <div id="analyzeTiles" class="analyze-tiles" role="group" aria-label="Decision metrics" data-i18n-aria-label="Decision metrics" data-state-surface="derived"></div>
 
               <section class="teacher-panel analyze-explain" aria-labelledby="analyzeExplainTitle" data-tutorial-anchor="playbook-analysis-explanation">
                 <div class="analyze-explain-head">
@@ -1260,16 +1281,61 @@
                   <button id="analysisTeachDecision" class="ui-button ui-button--secondary decision-teach-action" data-size="sm" type="button" data-i18n="Teach from this decision">Teach from this decision</button>
                 </div>
                 <div id="teacherContent" class="analysis-panel-content workspace-readable" style="display: none;"></div>
-                <details id="analysisProvenanceDisclosure" class="ui-disclosure analyze-provenance">
-                  <summary><span data-i18n="Provenance & limitations">Provenance & limitations</span><small class="playbook-spot-disclosure-meta" data-i18n="Source version, coverage, method notes">Source version, coverage, method notes</small></summary>
-                  <div class="analyze-provenance-body">
-                    <p id="playbookModeProvenance" class="analyze-provenance-authority"></p>
-                    <p class="recommendation-meta" id="strategyMeta" hidden></p>
-                    <p id="analyzeOmittedFacts" class="analyze-provenance-omitted" hidden></p>
-                  </div>
-                </details>
               </section>
 
+            </section>
+
+            <!-- ANALYZE-001a: the Range Matrix is part of the Decision view for preflop spots (the separate tab is retired). -->
+            <section id="chartView" class="panel range-matrix-panel analyze-matrix" aria-labelledby="matrixPanelTitle" data-tutorial-anchor="range-matrix" data-motion="panel" hidden>
+              <div class="analyze-matrix-head">
+                <div class="analyze-matrix-titles">
+                  <h3 id="matrixPanelTitle" class="panel-title" data-i18n="Range Matrix">Range Matrix</h3>
+                  <p id="matrixPanelDescription" class="panel-note" data-i18n="All 169 hand classes · click any square for its current mix.">All 169 hand classes · click any square for its current mix.</p>
+                </div>
+                <span class="rl-source-tier" data-tier="estimated" data-i18n="Heuristic baseline">Baseline</span>
+              </div>
+              <div class="chart-summary poker-data-token" id="chartSummary">-</div>
+
+              <div class="range-matrix-layout">
+                <div class="range-matrix-main">
+                  <div class="matrix-wrap">
+                    <div class="strategy-grid" id="strategyGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand strategy matrix" data-i18n-aria-label="13 by 13 starting hand strategy matrix"></div>
+                  </div>
+                </div>
+
+                <aside class="selected-hand matrix-hand-inspector" aria-labelledby="selectedHand" aria-live="polite" data-tutorial-anchor="range-matrix-selection">
+                  <div class="matrix-inspector-heading">
+                    <span class="matrix-inspector-eyebrow" data-i18n="Selected hand">Selected hand</span>
+                    <strong id="selectedHand" data-i18n="Select a hand">Select a hand</strong>
+                  </div>
+                  <div class="matrix-inspector-meta">
+                    <span id="selectedHandKind" data-i18n="Hand class">Hand class</span>
+                    <strong id="selectedHandPrimary" data-i18n="No action selected">No action selected</strong>
+                  </div>
+                  <dl class="matrix-inspector-facts">
+                    <div><dt data-i18n="Combos">Combos</dt><dd id="selectedAvailableCombos" class="poker-data-token">-</dd></div>
+                    <div><dt data-i18n="Removed combos">Removed combos</dt><dd id="selectedRemovedCombos" class="poker-data-token">-</dd></div>
+                    <div><dt data-i18n="Source">Source</dt><dd id="selectedRangeSource">-</dd></div>
+                  </dl>
+                  <div id="selectedMix">
+                    <span data-i18n="Click a cell to inspect action frequencies.">Click a cell to inspect action frequencies.</span>
+                  </div>
+                  <section class="matrix-inspector-legend" aria-labelledby="matrixInspectorLegendTitle">
+                    <strong id="matrixInspectorLegendTitle" data-i18n="Legend">Legend</strong>
+                    <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors and states" data-i18n-aria-label="Strategy action colors and states">
+                      <span class="key" role="listitem"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
+                      <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span data-i18n="Check / call">Check / call</span></span>
+                      <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span data-i18n="All-in">All-in</span></span>
+                      <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
+                      <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
+                      <span class="key" role="listitem"><i data-matrix-state="hero"></i><span data-i18n="Your hand">Your hand</span></span>
+                      <span class="key" role="listitem"><i data-matrix-state="unavailable"></i><span data-i18n="Unavailable">Unavailable</span></span>
+                      <span class="key" role="listitem"><i data-matrix-state="removed"></i><span data-i18n="Removed by known cards">Removed by known cards</span></span>
+                      <span class="matrix-legend-note" data-i18n="Tint shows the dominant action · band shows the full mix">Tint shows the dominant action · band shows the full mix</span>
+                    </div>
+                  </section>
+                </aside>
+              </div>
             </section>
 
 
@@ -1508,158 +1574,10 @@
             </div>
           <div id="playbookAnalysisTabs" class="sub-tabs ui-tabs" role="tablist" aria-label="Playbook analysis views" data-i18n-aria-label="Playbook analysis views">
               <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
-              <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Range Matrix">Range Matrix</button>
               <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Category Comparison">Range Category Comparison</button>
-            </div>
-            <div class="playbook-result-actions" data-playbook-scenario>
-              <div id="scenarioSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--scenario" data-tutorial-anchor="scenario-save">
-                <div id="savedStudySourceActions" class="saved-study-source-actions">
-                  <button id="savedStudySaveButton" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" aria-describedby="savedStudySourceStatus" data-i18n="Save spot">Save spot</button>
-                  <button id="savedStudyEditButton" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Edit saved item">Edit saved item</button>
-                  <span id="savedStudySourceStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-i18n="This spot is not saved.">This spot is not saved.</span>
-                </div>
-              </div>
-              <button class="ui-button playbook-view-all-hands" data-variant="quiet" data-size="sm" type="button" id="openCharts" data-i18n="View all hands">View all hands</button>
             </div>
           </nav>
 
-          <div id="chartView" class="gto-view" style="display: none;">
-
-            <section class="panel range-matrix-panel" data-tutorial-anchor="range-matrix">
-
-              <div class="panel-head range-matrix-head">
-
-                <div>
-
-                  <div class="panel-title" data-i18n="Range Matrix">Range Matrix</div>
-
-                  <div id="matrixPanelDescription" class="panel-note" data-i18n="All 169 hand classes · click any square for its current mix.">All
-
-                    169 hand classes · click any square for its current mix.</div>
-
-                </div>
-
-                <div class="range-matrix-head-actions">
-
-                  <div id="chartSelectionPreview"
-                    class="range-matrix-selection-status" role="status" aria-live="polite">
-
-                    <!-- Dynamically populated by JS -->
-
-                  </div>
-
-                  <button class="secondary" id="backContext" data-i18n="Back to decision">Back to decision</button>
-
-                </div>
-
-              </div>
-
-              <div class="chart-toolbar range-matrix-toolbar">
-
-                <div class="street-tabs">
-
-                  <button class="street-tab ui-tab active" type="button" role="tab" aria-selected="true" data-chart-street="preflop" data-i18n="Preflop">Preflop</button>
-
-                  <button class="street-tab ui-tab" type="button" role="tab" aria-selected="false" data-chart-street="flop" data-i18n="Flop">Flop</button>
-
-                  <button class="street-tab ui-tab" type="button" role="tab" aria-selected="false" data-chart-street="turn" data-i18n="Turn">Turn</button>
-
-                  <button class="street-tab ui-tab" type="button" role="tab" aria-selected="false" data-chart-street="river" data-i18n="River">River</button>
-
-                </div>
-
-                <label class="matrix-mode-control" for="chartAction"><span data-i18n="View">View</span>
-
-                <select id="chartAction" class="control-select">
-
-                  <option value="strategy" data-i18n="Strategy colors">Strategy colors</option>
-
-                  <option value="raise" data-i18n="Raise / Bet %">Raise / Bet %</option>
-
-                  <option value="call" data-i18n="Call / Check %">Call / Check %</option>
-
-                  <option value="fold" data-i18n="Fold %">Fold %</option>
-
-                </select></label>
-
-              </div>
-
-              <div class="chart-summary poker-data-token" id="chartSummary">-</div>
-
-              <section id="postflopMatrixEmpty" class="matrix-empty-state" aria-labelledby="postflopMatrixEmptyTitle" hidden>
-                <div>
-              <span class="matrix-empty-eyebrow" data-i18n="Postflop Range Matrix">Postflop Range Matrix</span>
-              <h3 id="postflopMatrixEmptyTitle" data-i18n="Range expansion not available yet">Range expansion not available yet</h3>
-              <p data-i18n="Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.">Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.</p>
-                </div>
-              <button id="postflopMatrixBack" class="ui-button ui-button--secondary" type="button" data-i18n="Back to Decision">Back to Decision</button>
-              </section>
-
-              <div class="range-matrix-layout">
-
-                <div class="range-matrix-main">
-
-                <div class="matrix-wrap">
-
-                <div class="strategy-grid" id="strategyGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand strategy matrix" data-i18n-aria-label="13 by 13 starting hand strategy matrix"></div>
-
-              </div>
-
-                </div>
-
-              <aside class="selected-hand matrix-hand-inspector" aria-labelledby="selectedHand" aria-live="polite" data-tutorial-anchor="range-matrix-selection">
-
-                <div class="matrix-inspector-heading">
-
-                  <span class="matrix-inspector-eyebrow" data-i18n="Selected hand">Selected hand</span>
-
-                  <strong id="selectedHand" data-i18n="Select a hand">Select a hand</strong>
-
-                </div>
-
-                <div class="matrix-inspector-meta">
-
-              <span id="selectedHandKind" data-i18n="Hand class">Hand class</span>
-
-              <strong id="selectedHandPrimary" data-i18n="No action selected">No action selected</strong>
-
-                </div>
-
-                <dl class="matrix-inspector-facts">
-                  <div><dt data-i18n="Available combos">Available combos</dt><dd id="selectedAvailableCombos" class="poker-data-token">-</dd></div>
-                  <div><dt data-i18n="Removed combos">Removed combos</dt><dd id="selectedRemovedCombos" class="poker-data-token">-</dd></div>
-                  <div><dt data-i18n="Source">Source</dt><dd id="selectedRangeSource">-</dd></div>
-                </dl>
-
-                <div id="selectedMix">
-
-                  <span data-i18n="Click a cell to inspect action frequencies.">Click a cell to inspect action
-
-                    frequencies.</span>
-
-                </div>
-
-                <section class="matrix-inspector-legend" aria-labelledby="matrixInspectorLegendTitle">
-                  <strong id="matrixInspectorLegendTitle" data-i18n="Legend">Legend</strong>
-                  <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors and states" data-i18n-aria-label="Strategy action colors and states">
-                    <span class="key" role="listitem"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
-                    <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span data-i18n="Check / call">Check / call</span></span>
-                    <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span data-i18n="All-in">All-in</span></span>
-                    <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
-                    <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
-                    <span class="key" role="listitem"><i data-matrix-state="unavailable"></i><span data-i18n="Unavailable">Unavailable</span></span>
-                    <span class="key" role="listitem"><i data-matrix-state="removed"></i><span data-i18n="Removed by known cards">Removed by known cards</span></span>
-                    <span class="matrix-legend-note" data-i18n="Tint shows the dominant action · band shows the full mix">Tint shows the dominant action · band shows the full mix</span>
-                  </div>
-                </section>
-
-              </aside>
-
-              </div>
-
-            </section>
-
-          </div>
 
 
 

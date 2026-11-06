@@ -162,21 +162,29 @@ test('ordinary Playbook updates invalidate hidden work instead of rendering ever
     await app.call('updateContext', 'test');
     assert.ok(spy.count('invalidatePlaybookDerivedSurfaces') >= 1);
     assert.ok(spy.count('renderVisiblePlaybookDerivedSurfaces') >= 1);
-    // Hidden Matrix, range comparison and tree views are not rendered.
-    for (const view of ['chart', 'range', 'tree']) {
+    // ANALYZE-001a: the Matrix is inline on the visible Decision view (preflop), so it renders
+    // once with the update; the hidden range comparison and tree views are not rendered.
+    assert.ok(spy.count('renderChart') <= 1, 'the visible inline matrix renders at most once');
+    for (const view of ['range', 'tree']) {
       const node = app.byId(`${view}View`);
       if (node && !app.isShown(node)) {
-        const name = { chart: 'renderChart', range: 'renderRangeAdvantage', tree: 'renderBettingTree' }[view];
+        const name = { range: 'renderRangeAdvantage', tree: 'renderBettingTree' }[view];
         assert.equal(spy.count(name), 0, `${name} while hidden`);
       }
     }
-    // Opening the Matrix renders the dirty surface once.
+    // Under the Range tab the matrix is hidden: an update only marks it dirty, and showing
+    // the Decision view renders the dirty surface once.
+    const rangeTab = app.$('.sub-tab[data-gto-view="range"]');
+    const decisionTab = app.$('.sub-tab[data-gto-view="context"]');
+    assert.ok(rangeTab && decisionTab, 'the two result tabs exist');
+    assert.equal(app.$('.sub-tab[data-gto-view="chart"]'), null, 'the Matrix tab is retired');
+    await app.click(rangeTab);
     spy.reset();
-    const tab = app.$('.sub-tab[data-gto-view="chart"]');
-    assert.ok(tab, 'the Matrix tab exists');
-    await app.click(tab);
+    await app.call('updateContext', 'test hidden matrix');
+    assert.equal(spy.count('renderChart'), 0, 'renderChart while hidden');
+    spy.reset();
+    await app.click(decisionTab);
     assert.equal(spy.count('renderChart'), 1);
-    await app.click(app.$('.sub-tab[data-gto-view="context"]') || tab);
   } finally {
     spy.restore();
   }

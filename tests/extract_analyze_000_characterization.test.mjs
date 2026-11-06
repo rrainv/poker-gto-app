@@ -47,6 +47,12 @@ async function showTab(view) {
 
 /** Count provider resolves (and which contexts) while `callback` runs. */
 const resolvesDuring = (callback) => probe.count(callback);
+// ANALYZE-001a: the Decision view shows the Range Matrix inline for a preflop
+// spot (the separate tab is retired). PERF-001 is unchanged: the decision is
+// resolved once per update; the 169 cell resolves belong to the visible matrix
+// and happen only on a memo miss (a changed context key), never while hidden.
+const decisionResolves = (resolves) => resolves.filter((context) => context === resolvedContext());
+const matrixResolves = (resolves) => resolves.length - decisionResolves(resolves).length;
 
 /* ------------------------------------------------------------------ */
 /* (a) DOM contract per state                                          */
@@ -69,9 +75,17 @@ test('a1: empty gate: no Hero cards shows "Complete this decision", no strategy 
   assert.equal(text('bestReason'), t('Choose both Hero cards before requesting strategy.'));
   assert.equal(byId('strategyWarnings').hidden, false);
   assert.equal(byId('strategyMeta').hidden, true);
-  for (const id of ['mPosition', 'mPot', 'mFacing', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake']) {
+  // ANALYZE-FACT-IDS: the Hero hand and Board facts carry their own ids now.
+  for (const id of ['mPosition', 'mPot', 'mFacing', 'mStack', 'mHeroHand', 'mPotOdds', 'mSPR', 'mBoard', 'mToCall']) {
     assert.equal(text(id), '-', `${id} shows a dash, never zero`);
   }
+  assert.equal(byId('mEquity'), null, 'the old mEquity id is gone');
+  assert.equal(byId('mRake'), null, 'the old mRake id is gone');
+  // The incomplete decision shows the labelled grid with no strategy (nothing resolves, nothing is focusable).
+  assert.equal(byId('chartView').hidden, false);
+  assert.equal(byId('chartView').dataset.matrixState, 'waiting');
+  assert.equal(app.$$('#strategyGrid [role="gridcell"]').length, 169);
+  assert.equal(app.$('#chartView .range-matrix-layout').hasAttribute('inert'), true);
   assert.equal(text('wheelCenterText'), '-');
   // Teach is only offered for a resolved decision.
   assert.equal(byId('analysisTeachDecision').hidden, true);
@@ -80,8 +94,8 @@ test('a1: empty gate: no Hero cards shows "Complete this decision", no strategy 
   assert.equal(app.window.app.playbookResolution.status, 'unavailable');
   const resolves = await resolvesDuring(() => app.call('updateContext', 'gate'));
   assert.equal(resolves.length, 0, 'an incomplete decision never resolves a strategy');
-  // The three result tabs exist; Decision is the selected one.
-  assert.deepEqual(app.$$('.sub-tab').map((node) => [node.dataset.gtoView, node.getAttribute('aria-selected')]), [['context', 'true'], ['chart', 'false'], ['range', 'false']]);
+  // Two result tabs remain (the Range Matrix is inline on Decision); Decision is the selected one.
+  assert.deepEqual(app.$$('.sub-tab').map((node) => [node.dataset.gtoView, node.getAttribute('aria-selected')]), [['context', 'true'], ['range', 'false']]);
 });
 
 test('a2: Scenario with Hero cards: lossy context is a warning state and the verdict is dominant', async () => {
@@ -202,12 +216,12 @@ test('a5: close verdict DOM contract: "A or B", the close note and dots, never a
 /* ------------------------------------------------------------------ */
 
 test('b1: exactly one strategyProvider.resolve per decision update, on every tab', async () => {
-  for (const view of ['context', 'chart', 'range', 'context']) {
+  for (const view of ['context', 'range', 'context']) {
     await showTab(view);
     const resolves = await resolvesDuring(() => app.call('updateContext', `update on ${view}`));
-    const main = resolves.filter((context) => context === resolvedContext());
-    assert.equal(main.length, 1, `${view}: the decision is resolved once`);
-    if (view !== 'chart') assert.equal(resolves.length, 1, `${view}: nothing else resolves`);
+    assert.equal(decisionResolves(resolves).length, 1, `${view}: the decision is resolved once`);
+    // Same context key: the visible matrix reuses its memoised model; a hidden one is not built.
+    assert.equal(resolves.length, 1, `${view}: nothing else resolves`);
   }
 });
 
@@ -226,7 +240,9 @@ test('b2: coalesced slider input: several inputs in one frame produce one update
       await app.settle(300);
     });
     assert.equal(spy.count('updateContext'), 1);
-    assert.equal(resolves.length, 1);
+    assert.equal(decisionResolves(resolves).length, 1, 'one decision resolve for three inputs');
+    // The pot is part of the matrix key: the visible inline matrix rebuilds once (169 cells), not per input.
+    assert.equal(matrixResolves(resolves), 169);
     assert.equal(resolvedContext().potBb, 7, 'the latest value won');
     assert.equal(recommendation().dataset.recomputing, undefined);
   } finally {
@@ -239,24 +255,26 @@ test('b2: coalesced slider input: several inputs in one frame produce one update
 });
 
 test('b3: the 169-cell matrix resolves only when visible and preflop; a hidden matrix is only marked dirty', async () => {
-  await showTab('context');
+  // The Range Category Comparison tab hides the inline matrix (it lives on Decision).
+  await showTab('range');
   app.evaluate('app.matrixModel = null');
   // Hidden: a full update resolves the decision once and builds no matrix.
-  const spy = app.spy(['renderChart', 'prepareMatrixStrategyModel', 'renderRangeAdvantage', 'renderBettingTree']);
+  const spy = app.spy(['renderChart', 'prepareMatrixStrategyModel', 'renderBettingTree']);
   try {
     let resolves = await resolvesDuring(() => app.call('updateContext', 'hidden matrix'));
     assert.equal(resolves.length, 1);
     assert.equal(spy.count('renderChart'), 0);
     assert.equal(spy.count('prepareMatrixStrategyModel'), 0);
-    assert.equal(spy.count('renderRangeAdvantage'), 0);
     assert.equal(spy.count('renderBettingTree'), 0);
     assert.equal(app.window.app.chartUpdatePending, true, 'the hidden matrix is marked dirty');
     assert.equal(app.evaluate('app.matrixModel'), null);
+    assert.equal(byId('chartView').hidden, true, 'the matrix section is hidden with the Decision view');
 
-    // Showing it renders the dirty surface once: 169 provider cells, no more.
-    resolves = await resolvesDuring(async () => { await showTab('chart'); });
+    // Showing the Decision view renders the dirty surface once: 169 provider cells, no more.
+    resolves = await resolvesDuring(async () => { await showTab('context'); });
     assert.equal(spy.count('renderChart'), 1, 'rendered exactly once when shown');
     assert.equal(resolves.length, 169);
+    assert.equal(byId('chartView').hidden, false);
     assert.equal(app.window.app.chartUpdatePending, false);
     assert.equal(app.$$('#strategyGrid [role="gridcell"]').length, 169);
 
@@ -267,10 +285,8 @@ test('b3: the 169-cell matrix resolves only when visible and preflop; a hidden m
     assert.equal(resolves.length, 1, 'the model is memoised by a key that excludes the Hero cards');
 
     // A changed context key rebuilds all 169 cells (plus the decision).
-    await showTab('context');
     await app.setValue('#players', '6');
     await app.settle(300);
-    await showTab('chart');
     spy.reset();
     resolves = await resolvesDuring(async () => { await app.setValue('#players', '7'); await app.settle(300); });
     assert.equal(resolves.length, 1 + 169, 'a visible matrix rebuilds when the table size changes');
@@ -327,8 +343,11 @@ test('b4: hidden Range comparison and Explain surfaces are marked dirty and rend
 /* ------------------------------------------------------------------ */
 
 test('d1: each tab shows exactly its view and keeps aria-selected in step', async () => {
-  const views = { context: 'contextView', chart: 'chartView', range: 'rangeView' };
-  for (const view of ['chart', 'range', 'context']) {
+  // The Range Matrix is no longer a tab: it sits inside the Decision view (preflop).
+  const views = { context: 'contextView', range: 'rangeView' };
+  assert.equal(tab('chart'), null, 'the Range Matrix tab is retired');
+  assert.equal(byId('chartView').closest('#contextView') !== null, true, 'the matrix is part of the Decision view');
+  for (const view of ['range', 'context']) {
     await showTab(view);
     for (const [name, id] of Object.entries(views)) {
       assert.equal(viewDisplay(id), name === view ? 'block' : 'none', `${view}: ${id}`);
@@ -336,16 +355,13 @@ test('d1: each tab shows exactly its view and keeps aria-selected in step', asyn
       assert.equal(tab(name).classList.contains('active'), name === view);
     }
     if (byId('treeView')) assert.equal(viewDisplay('treeView'), 'none');
+    // The matrix is told it is shown only while the Decision view is (preflop).
+    assert.equal(app.call('matrixView').isVisible(), view === 'context', `${view}: matrix visibility`);
   }
-  // "Back to decision" on the matrix returns to Decision.
-  await showTab('chart');
-  await app.click('#backContext');
-  await app.settle(100);
-  assert.equal(viewDisplay('contextView'), 'block');
 });
 
 test('d2: Matrix grid is an ARIA grid with one tab stop, physical arrow keys and an inspector', async () => {
-  await showTab('chart');
+  await showTab('context');
   const grid = byId('strategyGrid');
   const cells = () => app.$$('#strategyGrid [role="gridcell"]');
   assert.equal(cells().length, 169);
@@ -400,46 +416,37 @@ test('d2: Matrix grid is an ARIA grid with one tab stop, physical arrow keys and
   await showTab('context');
 });
 
-test('d3: postflop Matrix tab shows the empty state, builds no provider matrix and says why', async () => {
+test('d3: postflop has no matrix: the section is hidden, nothing builds, and the Spot table opens by default', async () => {
+  await showTab('context');
   await pickHero(['As', 'Kd']);
   await setCards('board', ['Qh', '7c', '2d']);
   assert.equal(resolvedContext().street, 'flop');
-  await showTab('chart');
   const resolves = await resolvesDuring(() => app.call('updateContext', 'postflop matrix'));
   assert.equal(resolves.length, 1, 'only the decision resolves; no 169-cell matrix postflop');
-  assert.equal(byId('postflopMatrixEmpty').hidden, false);
-  assert.equal(app.isShown(byId('postflopMatrixEmpty')), true);
-  assert.equal(app.$('.range-matrix-layout').hidden, true);
-  assert.equal(text('selectedHand'), t('Exact hand only'));
-  assert.equal(text('selectedHandKind'), t('Postflop decision'));
-  assert.equal(text('selectedHandPrimary'), t('Range expansion unavailable'));
-  assert.equal(text('chartSummary'), t('Use Decision for exact-hand postflop strategy.'));
-  assert.equal(text('matrixPanelDescription'), t('Range expansion is not available yet; use Decision for exact-hand postflop strategy.'));
-  await app.click('#postflopMatrixBack');
-  await app.settle(100);
-  assert.equal(viewDisplay('contextView'), 'block', 'Back to Decision leaves the empty state');
+  assert.equal(byId('chartView').hidden, true, 'the matrix section is hidden postflop');
+  assert.equal(byId('chartView').dataset.matrixState, 'hidden');
+  assert.equal(app.call('matrixView').isVisible(), false);
+  // The column is not empty: the Spot table is open until the user chooses otherwise.
+  assert.equal(byId('toggleTableBtn').getAttribute('aria-expanded'), 'true');
+  assert.equal(byId('table-wrapper').classList.contains('collapsed'), false);
 });
 
 /* ------------------------------------------------------------------ */
 /* (e) language refresh after a tab change                              */
 /* ------------------------------------------------------------------ */
 
-test('e1: language refresh EN, RU, HE after a tab change: visible text follows, hidden surfaces re-render once when shown', async () => {
-  // A preflop Scenario whose Matrix and Range tabs have been shown once (clean) and then hidden.
+test('e1: language refresh EN, RU, HE: the visible tab follows at once, the hidden inline matrix re-renders once when its view is shown', async () => {
+  // A preflop Scenario whose Range tab has been shown once (clean) and then hidden.
   await pickHero(['As', 'Ad']);
   await setCards('board', []);
   assert.equal(resolvedContext().street, 'preflop');
-  await showTab('chart');
   await showTab('range');
   await showTab('context');
-  assert.equal(viewDisplay('chartView'), 'none');
   assert.equal(viewDisplay('rangeView'), 'none');
   const english = {
     verdict: text('bestAction'), street: text('streetLabel'), gate: text('analysisEditInputs'),
-    matrix: null, range: null,
+    matrix: text('matrixPanelDescription'), range: null,
   };
-  await showTab('chart');
-  english.matrix = text('matrixPanelDescription');
   await showTab('range');
   english.range = text('rangeAdvantageStatus');
   await showTab('context');
@@ -447,11 +454,13 @@ test('e1: language refresh EN, RU, HE after a tab change: visible text follows, 
   const spy = app.spy(['renderChart', 'renderRangeAdvantage']);
   try {
     for (const language of ['ru', 'he', 'en']) {
+      // The Range tab is the visible one while the language changes; the matrix (Decision view) is hidden.
+      await showTab('range');
       spy.reset();
       app.window.setLanguage(language);
       await app.settle(100);
       assert.equal(app.document.documentElement.dir, language === 'he' ? 'rtl' : 'ltr', `${language}: direction`);
-      // The visible Decision surface follows the language immediately.
+      // The Decision hero follows the language immediately even though its tab is hidden.
       // (The lossy-context warning sentence is still English in RU/HE today, so it is not asserted.)
       for (const [key, id] of [['verdict', 'bestAction'], ['street', 'streetLabel'], ['gate', 'analysisEditInputs']]) {
         if (language === 'en') assert.equal(text(id), english[key], `en: ${key}`);
@@ -459,20 +468,17 @@ test('e1: language refresh EN, RU, HE after a tab change: visible text follows, 
       }
       assert.equal(text('streetLabel'), t('Preflop'), `${language}: street`);
       assert.equal(text('analysisEditInputs'), t('Edit decision inputs'), `${language}: gate button`);
-      // Hidden Matrix and Range are not rendered by a language change (PERF-001) ...
+      // The visible Range tab re-renders in the new language; the hidden matrix is only marked dirty (PERF-001) ...
+      assert.equal(spy.count('renderRangeAdvantage'), 1, `${language}: visible range follows`);
       assert.equal(spy.count('renderChart'), 0, `${language}: hidden matrix not rendered`);
-      assert.equal(spy.count('renderRangeAdvantage'), 0, `${language}: hidden range not rendered`);
-      // ... they were only marked dirty, so each renders once, in the new language, when shown.
-      await showTab('chart');
+      if (language === 'en') assert.equal(text('rangeAdvantageStatus'), english.range);
+      else assert.notEqual(text('rangeAdvantageStatus'), english.range, `${language}: range is not left in the previous language`);
+      // ... and renders once, in the new language, when the Decision view is shown.
+      await showTab('context');
       assert.equal(spy.count('renderChart'), 1, `${language}: matrix rendered once on show`);
       assert.equal(text('matrixPanelDescription'), t('All 169 hand classes · click any square for its current mix.'), `${language}: matrix copy`);
       if (language === 'en') assert.equal(text('matrixPanelDescription'), english.matrix);
       else assert.notEqual(text('matrixPanelDescription'), english.matrix);
-      await showTab('range');
-      assert.equal(spy.count('renderRangeAdvantage'), 1, `${language}: range rendered once on show`);
-      if (language === 'en') assert.equal(text('rangeAdvantageStatus'), english.range);
-      else assert.notEqual(text('rangeAdvantageStatus'), english.range, `${language}: range is not left in the previous language`);
-      await showTab('context');
     }
   } finally {
     spy.restore();
@@ -481,8 +487,8 @@ test('e1: language refresh EN, RU, HE after a tab change: visible text follows, 
   }
 });
 
-test('e2: a language change while the Matrix is visible re-renders it immediately and the RU copy differs from EN', async () => {
-  await showTab('chart');
+test('e2: a language change while the inline Matrix is visible re-renders it immediately and the RU copy differs from EN', async () => {
+  await showTab('context');
   const spy = app.spy(['renderChart']);
   try {
     const english = text('matrixPanelDescription');
@@ -784,7 +790,9 @@ test('c3: Training Full Hand handoff: Hand context routes Back to Training with 
   } finally {
     spy.restore();
   }
-  assert.equal(resolves.length, 1);
+  // A preflop decision opens with the inline matrix visible: the decision once, plus the 169 cells on a memo miss.
+  assert.equal(decisionResolves(resolves).length, 1);
+  assert.ok([0, 169].includes(matrixResolves(resolves)), 'only the visible matrix adds resolves');
   assert.equal(byId('analyzeHandContext').hidden, false);
   assert.equal(text('analyzeHandContextReturn'), t('Back to Training'));
   assert.deepEqual(Object.keys(handFacts()), FACT_LABELS);
@@ -829,7 +837,8 @@ test('c4: Saved handoff: the Saved banner, restored controls and exact title; cl
     await app.call('openHomeSavedItem', id);
     await app.settle(400);
   });
-  assert.equal(resolves.length, 1, 'one strategy resolve for the opened saved spot');
+  assert.equal(decisionResolves(resolves).length, 1, 'one strategy resolve for the opened saved spot');
+  assert.ok([0, 169].includes(matrixResolves(resolves)), 'only the visible matrix adds resolves');
   assert.equal(app.$('.riverline-shell').dataset.activeMode, 'gto');
   assert.equal(byId('savedSpotViewerBanner').hidden, false);
   assert.equal(byId('analyzeHandContext').hidden, true, 'a Saved handoff has no Hand context');

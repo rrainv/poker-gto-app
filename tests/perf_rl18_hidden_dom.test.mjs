@@ -115,7 +115,7 @@ test('targeted picker cleanup leaves Matrix caching and postflop zero-cell behav
   // a postflop spot empties the grid; Matrix rendering never touches the deck
   // or the picker.
   await app.pickCards(heroEditor(), ['As', 'Kd']);
-  await app.click('[data-gto-view="chart"]');
+  // ANALYZE-001a: the Matrix is inline on the Decision view (preflop); there is no tab to open.
   await app.settle(200);
   const spy = app.spy(['closePicker', 'renderDeck']);
   try {

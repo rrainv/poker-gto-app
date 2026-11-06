@@ -265,15 +265,16 @@ test('the Hand setup previews fixed collection outside the pot', async () => {
   }
 });
 
-test('recommendation uses stacked frequencies first and demotes the wheel', () => {
-  const stack = markup.getElementById('actionFrequencyStack');
-  assert.ok(stack);
-  assert.equal(markup.getElementById('actionWheelContainer').hidden, true);
-  assert.equal(markup.getElementById('toggleFrequencyAlternate').getAttribute('aria-expanded'), 'false');
-  assert.ok(stack.classList.contains('frequency-stack'));
-  withDestination('hand', () => assert.equal(css.cascaded(stack, 'height'), '18px'));
-  // (Superseded: ANALYZE-COMPOSITION-001 slims the Analyze bar to 10px.)
-  withDestination('analyze', () => assert.equal(css.cascaded(stack, 'height'), '10px'));
+test('recommendation leads with the thick labelled mix bar and demotes the wheel under All details', async () => {
+  // ANALYZE-001a: the wheel is not a toggled alternate view any more; it sits inside All details.
+  assert.ok(markup.getElementById('actionFrequencyStack'));
+  assert.ok(markup.getElementById('actionWheelContainer').closest('#analyzeAllDetails'));
+  assert.equal(markup.getElementById('toggleFrequencyAlternate'), null);
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const bar = app.byId('actionFrequencyStack').querySelector('.rl-mix');
+  assert.ok(bar, 'the bar is the shared mix component');
+  assert.equal(css.cascaded(bar, 'height'), '44px');
 });
 
 test('recommendation states clear stale output and retain truthful provenance', async () => {
@@ -306,11 +307,13 @@ test('recommendation states clear stale output and retain truthful provenance', 
 });
 
 test('supporting metrics are compact and DecisionContext-backed', async () => {
-  for (const id of ['mPosition', 'mPot', 'mFacing', 'mStack', 'mPotOdds', 'mSPR', 'mRake']) {
+  // The spot facts are static markup; the four tiles are built by the decision panel at mount.
+  for (const id of ['mPosition', 'mFacing', 'mStack', 'mBoard']) {
     assert.ok(markup.getElementById(id), id);
   }
   await app.navigate('analyze');
   await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  for (const id of ['mPot', 'mPotOdds', 'mSPR']) assert.ok(app.byId(id), id);
   const spy = app.spy(['updateMetrics']);
   try {
     await app.call('updateContext');
@@ -320,8 +323,8 @@ test('supporting metrics are compact and DecisionContext-backed', async () => {
   } finally {
     spy.restore();
   }
-  // (Superseded: four columns became the eight-column fact strip.)
-  assert.equal(css.resolved(markup.querySelector('.playbook-metric-strip'), 'grid-template-columns'), 'repeat(8, minmax(0, 1fr))');
+  // (Superseded: the eight-column fact strip became up to four tiles; the rest live under All details.)
+  assert.equal(css.resolved(markup.getElementById('analyzeTiles'), 'grid-template-columns'), 'repeat(4, minmax(0, 1fr))');
 });
 
 test('canonical table projection includes actor, hero, stacks, contributions, and statuses', async () => {

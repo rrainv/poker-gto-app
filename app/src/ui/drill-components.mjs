@@ -67,7 +67,7 @@ export function createSourceTierLabel(doc, { text, tier = 'estimated', reason = 
  * A number tile. The derivation shows on hover (fine pointer) and on keyboard
  * focus or tap; `locked` keeps the value hidden until the answer (Hard).
  */
-export function createFactTile(doc, { value, label, derivation = '', locked = false, lockedText = '', name = '' } = {}) {
+export function createFactTile(doc, { value, label, derivation = '', locked = false, lockedText = '', name = '', scope = '' } = {}) {
   const derivationId = nextId('rl-fact-derivation');
   const tile = h(doc, 'div', {
     class: 'rl-fact-tile',
@@ -79,6 +79,8 @@ export function createFactTile(doc, { value, label, derivation = '', locked = fa
   },
   h(doc, 'strong', { class: 'rl-fact-tile__value' }, locked ? lockedText : pokerIsland(doc, value)),
   h(doc, 'span', { class: 'rl-fact-tile__label', text: label }),
+  // Scope tag ("Exact · price only"): what the number is based on (ANALYZE-001a).
+  scope ? h(doc, 'span', { class: 'rl-fact-tile__scope', text: scope }) : null,
   derivation ? h(doc, 'span', { class: 'rl-fact-tile__derivation', id: derivationId, role: 'tooltip', text: derivation }) : null);
   tile.setAttribute('aria-label', `${label}: ${locked ? lockedText : value}`);
   return tile;
@@ -88,7 +90,7 @@ export function createFactTile(doc, { value, label, derivation = '', locked = fa
  * Moment 4 (rolling digits): each character rolls in, 60 ms apart. The value
  * is set before any motion, so it is never stale.
  */
-export function setRollingText(doc, element, text, { roll = true } = {}) {
+export function setRollingText(doc, element, text, { roll = true, plain = false } = {}) {
   const next = String(text);
   if (element.dataset.rollValue === next) return;
   const previous = element.dataset.rollValue;
@@ -97,11 +99,13 @@ export function setRollingText(doc, element, text, { roll = true } = {}) {
     element.replaceChildren(doc.createTextNode(next));
     return;
   }
+  // `plain` keeps textContent equal to the value (no hidden duplicate for
+  // assistive technology), for surfaces whose value is read back as text.
   element.replaceChildren(...[...next].map((character, index) => {
-    const span = h(doc, 'span', { class: 'rl-roll-digit', text: character, 'aria-hidden': 'true' });
+    const span = h(doc, 'span', { class: 'rl-roll-digit', text: character, 'aria-hidden': plain ? null : 'true' });
     span.style.setProperty('--rl-roll-index', String(index));
     return span;
-  }), h(doc, 'span', { class: 'sr-only', text: next }));
+  }), plain ? null : h(doc, 'span', { class: 'sr-only', text: next }));
 }
 
 // ── Action card + Confirm (P1-03) ──────────────────────────────────────────

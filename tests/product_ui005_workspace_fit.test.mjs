@@ -15,52 +15,48 @@ const css = appStyleSheet();
 const app = await bootApp();
 await app.navigate('analyze');
 await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
-await app.click('[data-gto-view="chart"]');
+// ANALYZE-001a: the Matrix is inline on the Decision view (preflop); there is no tab to open.
 await app.settle(200);
 
 const grid = () => app.byId('strategyGrid');
 const cells = () => app.$$('#strategyGrid .hand-cell');
 
 test('analysis navigation is a labeled part of the current-spot analytical workspace', async () => {
-  // Protects: a labelled tablist with Decision/Matrix/Range tabs placed before
-  // the views and the table; "View all hands" and both "Back to decision"
-  // controls select and reveal their destination.
+  // Protects: a labelled tablist with Decision/Range tabs placed before the
+  // views and the table; the tabs select their destination. ANALYZE-001a: the
+  // Range Matrix tab, "View all hands" and both "Back to decision" controls are
+  // retired; the matrix is part of the Decision view.
   const navigation = markup.getElementById('playbookAnalysisNavigation');
   assert.equal(navigation.getAttribute('aria-labelledby'), 'playbookAnalysisNavigationTitle');
   assert.equal(navigation.querySelector('#playbookAnalysisTabs').getAttribute('role'), 'tablist');
-  for (const view of ['context', 'chart', 'range']) assert.ok(navigation.querySelector(`[data-gto-view="${view}"]`), view);
+  for (const view of ['context', 'range']) assert.ok(navigation.querySelector(`[data-gto-view="${view}"]`), view);
+  assert.equal(navigation.querySelector('[data-gto-view="chart"]'), null);
   const order = (id) => Number(css.cascaded(app.byId(id), 'order'));
-  assert.ok(order('playbookAnalysisNavigation') < order('chartView'));
-  assert.ok(order('chartView') < order('table-wrapper'));
+  assert.ok(order('playbookAnalysisNavigation') < order('contextView'));
+  assert.ok(order('contextView') < order('table-wrapper'));
+  assert.ok(app.byId('chartView').closest('#contextView'), 'the matrix is part of the Decision view');
 
-  for (const [control, view] of [['#openCharts', 'chart'], ['#backContext', 'context'], ['#postflopMatrixBack', 'context']]) {
-    await app.click(view === 'chart' ? '[data-gto-view="context"]' : '[data-gto-view="chart"]');
-    const destination = app.byId(view === 'chart' ? 'chartView' : 'contextView');
-    destination._scrolledIntoView = undefined;
-    app.$(control).click();
-    await app.flush();
-    assert.equal(app.$(`[data-gto-view="${view}"]`).getAttribute('aria-selected'), 'true', control);
-    assert.equal(destination.style.display, 'block', control);
-    assert.ok(destination._scrolledIntoView, `${control} reveals its destination`);
+  for (const view of ['range', 'context']) {
+    await app.click(`[data-gto-view="${view}"]`);
+    const destination = app.byId(view === 'range' ? 'rangeView' : 'contextView');
+    assert.equal(app.$(`[data-gto-view="${view}"]`).getAttribute('aria-selected'), 'true', view);
+    assert.equal(destination.style.display, 'block', view);
   }
-  await app.click('[data-gto-view="chart"]');
 });
 
-test('postflop Matrix uses one compact truthful empty state and no 169 unavailable cells', async () => {
-  // Protects: a hidden-by-default empty state with truthful copy; a postflop
-  // spot shows it, hides the Matrix layout and renders zero cells.
-  const empty = markup.getElementById('postflopMatrixEmpty');
-  assert.equal(empty.hidden, true);
-  assert.match(text(empty), /Range expansion not available yet/);
-  assert.match(text(empty), /Exact-hand postflop strategy is available in Decision/);
+test('postflop has no Matrix section: it is hidden, renders no cells and not 169 unavailable ones', async () => {
+  // Protects: the retired postflop empty state stays gone; a postflop spot
+  // hides the inline matrix section and renders zero cells; clearing the
+  // board brings the matrix back.
+  assert.equal(markup.getElementById('postflopMatrixEmpty'), null);
+  assert.equal(app.byId('chartView').hidden, false);
 
   await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['2c', '7d', '9h']);
   app.call('renderChart');
   assert.equal(grid().children.length, 0);
   assert.equal(app.$('.range-matrix-layout').hidden, true);
-  assert.equal(app.byId('postflopMatrixEmpty').hidden, false);
+  assert.equal(app.byId('chartView').hidden, true);
   assert.doesNotMatch(text(app.byId('chartView')), /^Unavailable$/m);
-  assert.ok(css.cascaded(app.byId('postflopMatrixEmpty'), 'min-height') !== undefined);
 
   await app.click('[data-card-clear-command="clear_board"]').catch(async () => {
     app.window.app.gto.board.length = 0;
@@ -68,7 +64,7 @@ test('postflop Matrix uses one compact truthful empty state and no 169 unavailab
   });
   await app.settle(200);
   app.call('renderChart');
-  assert.equal(app.byId('postflopMatrixEmpty').hidden, true);
+  assert.equal(app.byId('chartView').hidden, false);
   assert.equal(app.$('.range-matrix-layout').hidden, false);
 });
 

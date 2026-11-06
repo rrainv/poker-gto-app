@@ -28,18 +28,16 @@ test('both tabs mount with the controller interface, one controller each', async
   assert.equal(app.call('rangeComparisonView'), comparison(), 'one comparison controller per page');
 });
 
-test('tab visibility is pushed with setVisible by the tab switch, never read from display', async () => {
+test('visibility is pushed with setVisible: the matrix follows the Decision view (ANALYZE-001a), the comparison follows its tab', async () => {
   await app.navigate('analyze');
-  assert.equal(matrix().isVisible(), false);
-  assert.equal(comparison().isVisible(), false);
-  await app.click('[data-gto-view="chart"]');
+  // Decision is the default view; the matrix section is inline on it (labelled grid, no strategy yet).
   assert.equal(matrix().isVisible(), true);
   assert.equal(comparison().isVisible(), false);
   await app.click('[data-gto-view="range"]');
   assert.equal(matrix().isVisible(), false);
   assert.equal(comparison().isVisible(), true);
   await app.click('[data-gto-view="context"]');
-  assert.equal(matrix().isVisible(), false);
+  assert.equal(matrix().isVisible(), true);
   assert.equal(comparison().isVisible(), false);
 });
 
@@ -47,7 +45,8 @@ test('PERF-001: 169 resolves only when the preflop matrix renders, none while hi
   await app.navigate('analyze');
   await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
   await app.settle(200);
-  await app.click('[data-gto-view="context"]');
+  // Hide the matrix with the Decision view, then drop its model.
+  await app.click('[data-gto-view="range"]');
   app.evaluate('app.matrixModel = null');
   const hidden = await probe.count(async () => {
     app.call('invalidatePlaybookDerivedSurfaces');
@@ -56,7 +55,7 @@ test('PERF-001: 169 resolves only when the preflop matrix renders, none while hi
   assert.equal(hidden.length, 0, 'a hidden matrix is not prepared');
   assert.equal(app.evaluate('app.matrixModel'), null);
 
-  const shown = await probe.count(() => app.click('[data-gto-view="chart"]'));
+  const shown = await probe.count(() => app.click('[data-gto-view="context"]'));
   assert.equal(shown.length, 169, 'one provider resolve per hand class when shown');
   assert.ok(shown.every((cell) => cell.heroCards.length === 2));
 
@@ -84,7 +83,7 @@ test('the matrix reaches the provider only through the injected resolveCell', ()
 
 test('language refresh does not render a hidden tab and keeps idle copy translatable', async () => {
   await app.navigate('analyze');
-  await app.click('[data-gto-view="context"]');
+  await app.click('[data-gto-view="range"]');
   app.evaluate('app.matrixModel = null');
   const resolves = await probe.count(() => {
     matrix().refreshLanguage();
