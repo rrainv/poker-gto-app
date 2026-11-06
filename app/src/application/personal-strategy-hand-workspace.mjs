@@ -9,6 +9,7 @@ import { continuePersonalHandNode, inspectPersonalActionBranch, personalExactAmo
 import { createExactIntentAction, exactActionKey } from '../personal-strategy/exact-node-intent.mjs';
 import { continuationCopy, renderPersonalRangeMutations, personalNodeRegionLabel } from './personal-hand-continuation-language.mjs';
 import { formatLocaleNumber } from './locale-number-format.mjs';
+import { bindLocaleNumberInput } from './locale-number-input.mjs';
 import { bindDisclosureDismissal } from '../ui/study-disclosure.mjs';
 
 // Ephemeral form drafts only. The application owns node identity, legal actions,
@@ -93,6 +94,12 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
   const label = (key, input) => { const node = el('label', copy(key), 'personal-hand-field'); node.append(input); return node; };
   const option = (value, text) => { const node = el('option', text); node.value = value; return node; };
   const percent = () => { const node = el('input'); node.type = 'number'; node.min = '0'; node.max = '100'; node.step = 'any'; node.required = true; node.inputMode = 'decimal'; return node; };
+  const bbAmount = (field) => {
+    const node = el('input'); node.type = 'number'; node.min = '0'; node.step = '0.001'; node.dataset.handField = field;
+    const bound = bindLocaleNumberInput(node, { language: lang, fractionDigits: 3, view: doc.defaultView ?? globalThis });
+    if (bound) renderLifecycle.signal.addEventListener('abort', () => bound.dispose(), { once: true });
+    return node;
+  };
   let status, focusTeaching = null, focusConcept = null;
   function shell() {
     renderLifecycle.abort(); renderLifecycle = new AbortController();
@@ -251,7 +258,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
       if (candidate) { select.value = candidate.comboId; selectedCombo = candidate.comboId; renderInputs(); renderTeacher(); select.focus(); }
     };
     const custom = el('details'); custom.append(el('summary', cc('custom')));
-    const size = el('input'); size.type = 'number'; size.step = '0.001'; size.min = '0'; size.dataset.handField = 'custom-size';
+    const size = bbAmount('custom-size');
     const sizeLabel = el('label', cc('custom')); sizeLabel.append(size);
     const addSize = button('choose'); addSize.textContent = cc('add'); addSize.dataset.handAction = 'add-size';
     listen(addSize, 'click', () => {
@@ -352,7 +359,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
     const cards = el('select'); cards.dataset.handField = 'next-card';
     cards.append(...study.contextFacts.availableCards.map(card => option(card, card)));
     const cardLabel = el('label', cc('card')); cardLabel.append(cards);
-    const opponent = el('input'); opponent.type = 'number'; opponent.min = '0'; opponent.step = '0.001'; opponent.dataset.handField = 'opponent-bet';
+    const opponent = bbAmount('opponent-bet');
     const opponentLabel = el('label', cc('opponent')); opponentLabel.append(opponent);
     const advanced = el('details'); advanced.append(el('summary', cc('opponent')), opponentLabel);
     if (currentNode().street !== 'river') section.append(cardLabel, advanced);
