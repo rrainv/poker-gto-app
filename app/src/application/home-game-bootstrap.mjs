@@ -523,7 +523,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       copy.append(element(document, 'strong', null, session.title));
       copy.append(element(document, 'small', null, translate(browserWindow, session.archived ? 'Archived session' : session.status === 'completed' ? 'Session complete' : session.status === 'active' ? 'Active session' : 'Draft session')));
       const controls = element(document, 'span', 'home-game-row-actions');
-      const open = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, 'Open'));
+      const open = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, 'Open this session'));
       open.type = 'button';
       open.addEventListener('click', () => perform(() => bridge.openSession(session.sessionId)));
       controls.append(element(document, 'span', 'status-badge', session.currency.code), open);

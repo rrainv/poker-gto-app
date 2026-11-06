@@ -627,6 +627,25 @@
   Object.assign(ru, rangeAnalysisTutorial.ru);
   Object.assign(he, rangeAnalysisTutorial.he);
 
+  // ANALYZE-001a-FINISH: the Range Matrix is no longer a tab; it sits under the answer on Decision.
+  const analyzeMatrixTutorial = {
+    en: {
+      'Decision shows the exact spot and, for preflop, the Range Matrix of surrounding hand classes below the answer. Range Category Comparison gives a coarse descriptive board comparison.': 'Decision shows the exact spot and, for preflop, the Range Matrix of surrounding hand classes below the answer. Range Category Comparison gives a coarse descriptive board comparison.',
+      'Decision explains one selected spot and, for preflop, shows the provider-backed Range Matrix below the answer. Range Category Comparison remains a separate coarse baseline sample view.': 'Decision explains one selected spot and, for preflop, shows the provider-backed Range Matrix below the answer. Range Category Comparison remains a separate coarse baseline sample view.'
+    },
+    ru: {
+      'Decision shows the exact spot and, for preflop, the Range Matrix of surrounding hand classes below the answer. Range Category Comparison gives a coarse descriptive board comparison.': '«Решение» показывает выбранный спот, а на префлопе под ответом — матрицу диапазона с соседними классами рук. «Сравнение категорий диапазонов» даёт грубое описательное сравнение на борде.',
+      'Decision explains one selected spot and, for preflop, shows the provider-backed Range Matrix below the answer. Range Category Comparison remains a separate coarse baseline sample view.': '«Решение» объясняет один выбранный спот, а на префлопе под ответом показывает матрицу диапазона от текущего провайдера. «Сравнение категорий диапазонов» остаётся отдельным грубым представлением выборок базовой стратегии.'
+    },
+    he: {
+      'Decision shows the exact spot and, for preflop, the Range Matrix of surrounding hand classes below the answer. Range Category Comparison gives a coarse descriptive board comparison.': "החלטה מציגה את הספוט המדויק, ובפרה-פלופ מתחת לתשובה גם את מטריצת הריינג'ים עם מחלקות הידיים הסמוכות. השוואת קטגוריות ריינג'ים נותנת השוואה תיאורית גסה על הבורד.",
+      'Decision explains one selected spot and, for preflop, shows the provider-backed Range Matrix below the answer. Range Category Comparison remains a separate coarse baseline sample view.': "החלטה מסבירה ספוט אחד שנבחר, ובפרה-פלופ מציגה מתחת לתשובה את מטריצת הריינג'ים ממקור האסטרטגיה. השוואת קטגוריות ריינג'ים נשארת תצוגה נפרדת וגסה של דגימות אסטרטגיית הבסיס."
+    }
+  };
+  Object.assign(en, analyzeMatrixTutorial.en);
+  Object.assign(ru, analyzeMatrixTutorial.ru);
+  Object.assign(he, analyzeMatrixTutorial.he);
+
   const bluffAnalysisTutorial = {
     en: {
       'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.',
