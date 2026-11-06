@@ -77,23 +77,22 @@ function withoutPreset(check) {
   }
 }
 
-test('recommendation provenance has a dedicated grid row outside Strategy Mix flow', () => {
-  const top = app.$('.recommend-top');
-  const badge = top.querySelector('#sourceBadge');
-  assert.ok(badge);
-  assert.equal(css.cascaded(top, 'display'), 'grid');
-  assert.equal(css.cascaded(badge, 'justify-self'), 'start');
-  assert.equal(css.cascaded(badge, 'white-space'), 'nowrap');
-  // Base layout: one column; the Analyze preset adds the verdict/mix column.
-  withoutPreset(() => assert.equal(css.cascaded(top, 'grid-template-columns'), 'minmax(0, 1fr)'));
+test('recommendation provenance has one place: the source/tier label in the hero head, never in the mix flow', () => {
+  // ANALYZE-001a: the hero card replaces .recommend-top; the reference badge (hidden unless a comparative reference) stays inside it.
+  const hero = app.$('#analyzeHero');
+  assert.ok(hero.querySelector('#sourceBadge'));
+  assert.ok(hero.querySelector('.analyze-hero-head #analyzeSourceTier'));
+  assert.equal(hero.querySelector('.analyze-hero-mix #analyzeSourceTier'), null);
+  assert.equal(css.cascaded(hero, 'display'), 'grid');
+  assert.equal(css.cascaded(app.$('#analyzeSourceTier'), 'white-space'), 'nowrap');
 });
 
 test('Betting Context composes its utility action in the heading and values in a responsive grid', () => {
-  for (const id of ['heroPos', 'lastAction', 'facingSize', 'potSize', 'openCharts']) assert.ok(markup.getElementById(id), id);
-  // ANALYZE-COMPOSITION-001: the center Betting context strip moved into the Spot rail (Action section)
-  // and its utility action (View all hands) into the Result header actions.
-  assert.ok(markup.querySelector('.playbook-result-actions #openCharts'));
-  assert.equal(markup.querySelector('.playbook-field-pair #openCharts'), null);
+  for (const id of ['heroPos', 'lastAction', 'facingSize', 'potSize']) assert.ok(markup.getElementById(id), id);
+  // ANALYZE-COMPOSITION-001: the center Betting context strip moved into the Spot rail (Action section);
+  // ANALYZE-001a retired its utility action (View all hands) and the Result header actions.
+  assert.equal(markup.getElementById('openCharts'), null);
+  assert.equal(markup.querySelector('.playbook-result-actions'), null);
   // ANALYZE-COMPOSITION-001 amendment 2 removed the strip's dead CSS (.playbook-context-grid,
   // .playbook-inline-heading); the rail pair lays out position and prior action instead.
   assert.equal(css.rulesMentioning('.playbook-context-grid').length + css.rulesMentioning('.playbook-inline-heading').length, 0);

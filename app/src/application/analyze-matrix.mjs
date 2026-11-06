@@ -149,8 +149,14 @@ export function mountAnalyzeMatrix(container, deps) {
       selectedPrimary.textContent = cell.dataset.primaryLabel || t('Strategy unavailable');
       selectedPrimary.dataset.actionKind = cell.dataset.primaryAction || 'unavailable';
     }
-    if (available) available.textContent = cell.dataset.availableCombos || '-';
+    // "7 of 12 combos": what is still possible after the known cards.
+    if (available) {
+      const [eligible, total] = String(cell.dataset.availableCombos || '').split(' / ');
+      available.textContent = eligible && total ? t('{available} of {total} combos', { available: eligible, total }) : '-';
+    }
     if (removed) removed.textContent = cell.dataset.removedCombos || '-';
+    const removedRow = removed?.closest('div');
+    if (removedRow) removedRow.hidden = !(Number(cell.dataset.removedCombos) > 0);
     if (source) source.textContent = cell.dataset.sourceLabel || t('Unavailable');
     if (mix) {
       const detail = cell.dataset.strategyCue || t('Strategy unavailable');
@@ -158,6 +164,23 @@ export function mountAnalyzeMatrix(container, deps) {
         ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${action.kind}"></i><span>${action.name}</span><strong>${deps.formatNumber(action.value, { minimumFractionDigits: 0, maximumFractionDigits: 1 })}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${action.kind}" style="width:${action.value}%"></i>`).join('')}</div>`
         : `<span class="matrix-inspector-unavailable">${detail}</span>`;
     }
+  }
+
+  // No hand is inspected (an incomplete decision, or no selection): the card
+  // says so instead of keeping the last spot's numbers.
+  function resetInspector() {
+    const set = (id, text) => { const element = byId(id); if (element) element.textContent = text; };
+    set('selectedHand', t('Select a hand'));
+    set('selectedHandKind', t('Hand class'));
+    set('selectedHandPrimary', t('No action selected'));
+    byId('selectedHandPrimary')?.setAttribute('data-action-kind', 'unavailable');
+    set('selectedAvailableCombos', '-');
+    set('selectedRemovedCombos', '-');
+    const removedRow = byId('selectedRemovedCombos')?.closest('div');
+    if (removedRow) removedRow.hidden = true;
+    set('selectedRangeSource', '-');
+    const mix = byId('selectedMix');
+    if (mix) mix.innerHTML = `<span>${t('Click a cell to inspect action frequencies.')}</span>`;
   }
 
   function restoreSelectedInspector(grid) {
@@ -273,13 +296,16 @@ export function mountAnalyzeMatrix(container, deps) {
     const modelSource = model.source;
     const modelClaimPolicy = model.claimPolicy;
     const layout = container.querySelector('.range-matrix-layout');
-    const emptyState = byId('postflopMatrixEmpty');
-    const toolbar = container.querySelector('.range-matrix-toolbar');
     const description = byId('matrixPanelDescription');
 
+    // ANALYZE-001a: the matrix sits inline on the Decision view for preflop
+    // spots; postflop the orchestrator hides the whole section, so this branch
+    // only keeps the inspector copy honest if it is ever rendered.
     if (layout) layout.hidden = isPostFlop;
-    if (emptyState) emptyState.hidden = !isPostFlop;
-    if (toolbar) toolbar.hidden = isPostFlop;
+    container.dataset.waiting = contextUnavailable ? 'true' : 'false';
+    // An incomplete decision shows the labelled grid with no strategy; nothing
+    // in it can be focused or clicked until a decision exists.
+    layout?.toggleAttribute('inert', contextUnavailable);
     if (description) {
       description.textContent = t(isPostFlop
         ? 'Range expansion is not available yet; use Decision for exact-hand postflop strategy.'
@@ -297,9 +323,8 @@ export function mountAnalyzeMatrix(container, deps) {
     bindInteractions(grid);
     const gridCells = matrixGridCells(grid);
     const selected = deps.selectedHand.get();
-    const chartMode = byId('chartAction')?.value || 'strategy';
     const visualKind = (action) => deps.visualActionKind(action);
-    let previewHTML = '';
+    let inspected = false;
 
     ranks.forEach((_, row) => ranks.forEach((__, column) => {
       const hand = deps.handCode(row, column);
@@ -334,22 +359,12 @@ export function mountAnalyzeMatrix(container, deps) {
       button.dataset.cardRemovalState = matrixCell?.cardRemovalState || 'unavailable';
       button.dataset.strategyCue = detail;
       button.setAttribute('aria-pressed', String(isSelected));
+      // The Hero hand class is always outlined, selected or not.
+      button.dataset.hero = !contextUnavailable && currentHeroClass === hand ? 'true' : 'false';
 
-      let cellSubtext = '';
-      let cellBg = '';
-      button.style.removeProperty('background');
-
-      const modeKinds = { raise: ['aggressive', '--action-aggressive'], call: ['passive', '--action-passive'], fold: ['fold', '--action-fold'] };
-      if (modeKinds[chartMode]) {
-        const [kind, token] = modeKinds[chartMode];
-        const val = actions.find((a) => a.kind === kind)?.value;
-        cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
-        if (actions.length) cellBg = `color-mix(in srgb, var(${token}) ${val || 0}%, transparent)`;
-      }
-
-      button.innerHTML = cellSubtext
-        ? `<span class="matrix-hand-label">${hand}</span><div class="matrix-cell-subtext">${cellSubtext}</div>`
-        : `<span class="matrix-hand-label">${hand}</span>`;
+      // Labelled cells: the hand code is the cell's text (hand codes are
+      // universal poker notation; the grid is never mirrored).
+      button.innerHTML = `<span class="matrix-hand-label">${hand}</span>`;
 
       button.dataset.hand = hand;
 
@@ -370,21 +385,14 @@ export function mountAnalyzeMatrix(container, deps) {
         value: action.value,
       })));
 
-      if (cellBg) {
-        button.style.background = cellBg;
-      } else if (actions.length > 0) {
+      if (actions.length > 0) {
         button.insertAdjacentHTML('beforeend', `<span class="matrix-mix-bar" aria-hidden="true">${actions.map((action) => `<i data-action-kind="${visualKind(action)}" style="width:${action.value}%"></i>`).join('')}</span>`);
       }
 
-      if (isSelected) {
-        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${dominantAction ? `${t(dominantAction.name)} ${dominantAction.value}%` : t('Unavailable')}</span>`;
-        renderInspector(button);
-      }
+      if (isSelected) { renderInspector(button); inspected = true; }
     }));
+    if (!inspected) resetInspector();
     syncMatrixTabStop(grid);
-
-    const previewContainer = byId('chartSelectionPreview');
-    if (previewContainer) previewContainer.innerHTML = previewHTML || `<span>${t('Select a hand')}</span>`;
 
     const chartSummary = byId('chartSummary');
     if (chartSummary) {

@@ -6309,6 +6309,44 @@ function playbookModeIsVisible() {
   return Boolean(activeWorkspaceMode() === 'gto' && mode && mode.style.display !== 'none' && !mode.hidden);
 }
 
+// ANALYZE-001a: the Range Matrix is part of the Decision view for preflop spots
+// on the Analyze destination (the separate tab is retired). 'live' resolves the
+// 169 cells like the old tab did (only while shown, memoised by the same key);
+// 'waiting' shows the labelled grid with no strategy and resolves nothing (the
+// decision is incomplete); 'hidden' is postflop, the Range tab, or Hand.
+function analyzeMatrixSurfaceState() {
+  const mode = $('#gtoMode');
+  if (!mode || mode.dataset.productDestination !== 'analyze') return 'hidden';
+  if ($('#contextView')?.style.display === 'none') return 'hidden';
+  const street = app.decisionContext?.street || currentStreet();
+  if (street !== 'preflop') return 'hidden';
+  return app.decisionContext ? 'live' : 'waiting';
+}
+
+// Pushes the section's visibility to the matrix module (it never reads the DOM
+// for it) and, because a postflop spot has no matrix, opens the Spot table by
+// default so the column is not empty (until the user chooses).
+let analyzeTableChosen = false;
+function syncAnalyzeMatrixSection() {
+  const state = analyzeMatrixSurfaceState();
+  const section = $('#chartView');
+  if (section) {
+    section.hidden = state === 'hidden';
+    section.dataset.matrixState = state;
+  }
+  matrixView()?.setVisible(state !== 'hidden');
+  const mode = $('#gtoMode');
+  if (mode?.dataset.productDestination === 'analyze' && !analyzeTableChosen
+    && $('#contextView')?.style.display !== 'none' && app.decisionContext) {
+    const wanted = app.decisionContext.street !== 'preflop';
+    if (playbookTableExpandedByDestination.analyze !== wanted) {
+      playbookTableExpandedByDestination.analyze = wanted;
+      setCanonicalTableExpanded(wanted);
+    }
+  }
+  return state;
+}
+
 function playbookSurfaceIsVisible(surface) {
   // The decision panel is told whether the workspace is visible (setVisible);
   // it never reads the DOM for it.
@@ -7165,6 +7203,7 @@ async function updateContext(reason = 'Context updated') {
       : null;
     invalidatePlaybookDerivedSurfaces();
     if (typeof renderUnavailableStrategy === 'function') renderUnavailableStrategy(playbookResolution);
+    syncAnalyzeMatrixSection();
     renderVisiblePlaybookDerivedSurfaces();
     if (window.RiverlineSavedStudyObjects) void refreshSavedStudySource();
     return playbookResolution;
@@ -7213,28 +7252,11 @@ async function updateContext(reason = 'Context updated') {
 
   decisionPanel()?.renderResult(Object.freeze({ decisionContext, strategyResult, claimPolicy, state: recommendationState }));
 
-  // Dynamically disable irrelevant street tabs on the chart page
-
-  $$('.street-tab').forEach((button) => {
-
-      const isCurrent = button.dataset.chartStreet === street;
-
-      button.classList.toggle('active', isCurrent);
-      button.setAttribute('aria-selected', String(isCurrent));
-
-      button.disabled = !isCurrent;
-
-      button.style.opacity = isCurrent ? '1' : '0.3';
-
-      button.style.cursor = isCurrent ? 'default' : 'not-allowed';
-
-  });
-
-
   updateMetrics(decisionContext);
 
   renderPath(street);
 
+  syncAnalyzeMatrixSection();
   renderVisiblePlaybookDerivedSurfaces();
 
 
@@ -8599,7 +8621,7 @@ function bindEvents() {
   }));
 
   const revealPlaybookDestination = (view, control) => {
-    const destination = view === 'context' ? $('#contextView') : $(`#${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
+    const destination = view === 'context' ? $('#contextView') : $(`#${view === 'range' ? 'range' : 'tree'}View`);
     if (!destination) return;
     const reducedMotion = !motionTravelAllowed();
     destination.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
@@ -8610,7 +8632,7 @@ function bindEvents() {
 
     const view = button.dataset.gtoView;
 
-    const destination = view === 'context' ? $('#contextView') : $(`#${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
+    const destination = view === 'context' ? $('#contextView') : $(`#${view === 'range' ? 'range' : 'tree'}View`);
 
     $$('.gto-view').forEach((item) => item.classList.toggle('is-view-entering', item === destination));
 
@@ -8622,18 +8644,16 @@ function bindEvents() {
 
     if ($('#contextView')) $('#contextView').style.display = view === 'context' ? 'block' : 'none';
 
-    if ($('#chartView')) $('#chartView').style.display = view === 'chart' ? 'block' : 'none';
-
     if ($('#rangeView')) $('#rangeView').style.display = view === 'range' ? 'block' : 'none';
 
     if ($('#treeView')) $('#treeView').style.display = view === 'tree' ? 'block' : 'none';
 
-    matrixView()?.setVisible(view === 'chart');
+    // The matrix lives inside the Decision view: it is told when that view is
+    // shown or hidden and renders (once, when dirty) only while it is shown.
+    syncAnalyzeMatrixSection();
     rangeComparisonView()?.setVisible(view === 'range');
 
-    if (view === 'chart') {
-      if (!playbookSurfaceInvalidator.renderIfNeeded('matrix')) renderChart();
-    }
+    if (view === 'context') playbookSurfaceInvalidator.renderIfNeeded('matrix');
 
     if (view === 'range') playbookSurfaceInvalidator.renderIfNeeded('range');
 
@@ -8643,11 +8663,6 @@ function bindEvents() {
   };
 
   $$('.sub-tab').forEach((button) => button.addEventListener('click', () => selectPlaybookAnalysisView(button)));
-
-  if ($('#openCharts')) $('#openCharts').addEventListener('click', () => {
-    const el = document.querySelector('[data-gto-view="chart"]');
-    if (el) selectPlaybookAnalysisView(el, true);
-  });
 
   $('#scenarioRandomizeButton')?.addEventListener('click', () => {
     void randomizeCurrentAnalyzeScenario('spot');
@@ -8680,19 +8695,6 @@ function bindEvents() {
       && event.target !== $('#scenarioRandomizeButton')) {
       scenarioRandomizationMenu.open = false;
     }
-  });
-
-  ['backContext', 'postflopMatrixBack'].forEach((id) => {
-    if ($('#' + id)) $('#' + id).addEventListener('click', () => {
-      const el = document.querySelector('[data-gto-view="context"]');
-      if (el) selectPlaybookAnalysisView(el, true);
-    });
-  });
-
-  
-
-  if ($('#chartAction')) $('#chartAction').addEventListener('change', () => {
-    if (!playbookSurfaceInvalidator.renderIfNeeded('matrix')) renderChart();
   });
 
   ['rangeAdvHeroPos', 'rangeAdvVilPos'].forEach((id) => {
@@ -8837,7 +8839,9 @@ function bindEvents() {
       const wrapper = $('#table-wrapper');
       if (!wrapper) return;
       const expanded = wrapper.classList.contains('collapsed');
-      playbookTableExpandedByDestination[$('#gtoMode')?.dataset.productDestination === 'hand' ? 'hand' : 'analyze'] = expanded;
+      const destination = $('#gtoMode')?.dataset.productDestination === 'hand' ? 'hand' : 'analyze';
+      playbookTableExpandedByDestination[destination] = expanded;
+      if (destination === 'analyze') analyzeTableChosen = true;
       setCanonicalTableExpanded(expanded);
     });
   }

@@ -330,6 +330,9 @@ function createHarness() {
     const updateMetrics = syncNoop;
     const renderPath = syncNoop;
     const renderChart = syncNoop;
+    // ANALYZE-001a: updateContext pushes the inline matrix section's visibility
+    // through matrixView(); this harness mounts no matrix.
+    const matrixView = () => null;
     const renderRangeAdvantage = syncNoop;
     const renderBettingTree = syncNoop;
     const formatHand = (cards) => {

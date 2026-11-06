@@ -10,6 +10,13 @@
 // setVisible, ...panel methods }. Everything the panel needs from the page is
 // injected (see `deps` below); it never reaches for window.app.
 
+// ANALYZE-001a: the v4 result side. The hero answer card (verdict, the one
+// source/tier label, a labelled mix bar, the one truth statement), four fact
+// tiles built from the shared drill components, and an All details region that
+// holds the limits, the spot facts and the alternate wheel. Still a pure
+// renderer: the orchestrator keeps the ONE strategyProvider.resolve.
+import { createFactTile, createMixBar, setPanelCardOpen, setRollingText, MIX_LABEL_MIN_PERCENT } from '../ui/drill-components.mjs';
+
 export const ANALYZE_DECISION_PANEL_SCHEMA_VERSION = 'analyze-decision-panel/v1';
 
 // Invisible word joiners fence the placeholders inside the translated
@@ -17,7 +24,19 @@ export const ANALYZE_DECISION_PANEL_SCHEMA_VERSION = 'analyze-decision-panel/v1'
 const WORD_JOINER = '⁠';
 const MARK_PATTERN = /(⁠[FfSs]⁠)/;
 
-const FACT_METRIC_IDS = Object.freeze(['mPosition', 'mPot', 'mFacing', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake']);
+// Tiles show real facts only; the ids stay the fact ids used by the tests and
+// the omission rule. Context facts (position, facing, stack, hero hand, board)
+// live under All details; the rail already shows them.
+const TILE_SPECS = Object.freeze([
+  Object.freeze({ id: 'mPotOdds', label: 'Equity needed to call', scope: 'Exact · price only' }),
+  Object.freeze({ id: 'mPot', label: 'Pot', scope: '' }),
+  Object.freeze({ id: 'mToCall', label: 'To call', scope: '' }),
+  Object.freeze({ id: 'mSPR', label: 'SPR', scope: '' }),
+]);
+const FACT_METRIC_IDS = Object.freeze(['mPosition', 'mPot', 'mFacing', 'mStack', 'mHeroHand', 'mPotOdds', 'mSPR', 'mBoard']);
+// A tile value rolls in only for a discrete change; a drag (many updates in a
+// row) updates in place so the numbers never flicker.
+const ROLL_QUIET_MS = 450;
 
 function setSizing(element, recommendationAction, deps, { refresh = false } = {}) {
   if (!element) return;
@@ -48,10 +67,12 @@ export function renderVerdict({ element, closeNote, document: doc }, strategyRes
   if (!verdict || verdict.kind === 'unavailable') {
     element.textContent = t(strategyResult?.recommendation?.label || 'Unavailable');
     element.dataset.verdictKind = 'unavailable';
+    element.dataset.verdict = 'unavailable';
     if (closeNote) closeNote.hidden = true;
     return verdict;
   }
   element.dataset.verdictKind = verdict.kind;
+  element.dataset.verdict = verdict.kind;
   if (verdict.kind === 'close') {
     element.textContent = t('{first} or {second}', { first: t(verdict.primary.label), second: t(verdict.secondary.label) });
     if (closeNote) {
@@ -122,8 +143,64 @@ function mountAnalyzeDecisionPanel(container, deps) {
 
   let visible = true;
   let explainOpen = false;
+  let detailsOpen = false;
   let lastResultView = null;
   let disposed = false;
+
+  // --- Fact tiles (shared fact-tile component) ----------------------------
+
+  const lastFactChange = new Map();
+  const now = () => (deps.now ? deps.now() : Date.now());
+
+  function labelTile(tile, spec) {
+    const label = tile.querySelector('.rl-fact-tile__label');
+    if (label) label.textContent = t(spec.label);
+    const scope = tile.querySelector('.rl-fact-tile__scope');
+    if (scope) scope.textContent = t(spec.scope);
+    const value = tile.querySelector('.rl-fact-tile__value');
+    tile.setAttribute('aria-label', `${t(spec.label)}: ${value?.textContent ?? ''}`);
+  }
+
+  function buildTiles() {
+    const host = el('analyzeTiles');
+    if (!host) return;
+    host.replaceChildren(...TILE_SPECS.map((spec) => {
+      const tile = createFactTile(doc, { value: '-', label: t(spec.label), scope: spec.scope ? t(spec.scope) : '', name: spec.id });
+      // The id lands on the poker-island inside the tile so facts keep their ids
+      // and a plain textContent write stays left-to-right in Hebrew.
+      const island = tile.querySelector('.rl-fact-tile__value .poker-island');
+      if (island) island.id = spec.id;
+      return tile;
+    }));
+  }
+
+  function refreshTileLabels() {
+    TILE_SPECS.forEach((spec) => {
+      const tile = container.querySelector(`.rl-fact-tile[data-fact="${spec.id}"]`);
+      if (tile) labelTile(tile, spec);
+    });
+  }
+
+  // A fact value is written as plain text; a tile value may roll in (moment 4,
+  // each character 60 ms apart) for a discrete change. A drag updates in place.
+  function setFactText(id, text, { allowRoll = false } = {}) {
+    const node = el(id);
+    if (!node) return;
+    const value = String(text);
+    const changed = node.textContent !== value;
+    const stamp = now();
+    const quiet = stamp - (lastFactChange.get(id) || 0) > ROLL_QUIET_MS;
+    if (changed) lastFactChange.set(id, stamp);
+    if (allowRoll && changed && quiet && /\d/.test(value) && node.dataset.rollValue !== undefined) {
+      setRollingText(doc, node, value, { plain: true });
+    } else {
+      node.textContent = value;
+      node.dataset.rollValue = value;
+    }
+    const tile = node.closest('.rl-fact-tile');
+    const spec = tile && TILE_SPECS.find((entry) => entry.id === id);
+    if (tile && spec) tile.setAttribute('aria-label', `${t(spec.label)}: ${value}`);
+  }
 
   // --- Mix bar and wheel -------------------------------------------------
 
@@ -144,9 +221,71 @@ function mountAnalyzeDecisionPanel(container, deps) {
     if (row) row.hidden = !(Number(action.value) > 0);
   }
 
-  function paintMix(displayActions, { wheel }) {
+  // The hero mix: the shared thick labelled bar (LTR in every language, P1-30).
+  // A new decision, or a change in which actions and labels the bar holds,
+  // rebuilds it and the reveal plays (moment 3, drill tempo). Same structure:
+  // the shares update in place, so dragging a slider never replays the reveal.
+  // Actions too small to carry a label inside the bar are named below it.
+  let mixSignature = '';
+  function paintHeroMix(displayActions, { reveal }) {
+    const host = el('actionFrequencyStack');
+    if (!host) return;
+    const rest = el('analyzeMixRest');
+    const populated = displayActions.filter((action) => Number(action.value) > 0);
+    const segments = populated.map((action) => ({
+      kind: deps.actionKind(action),
+      value: Number(action.value),
+      name: t(action.name),
+      valueText: `${action.value}%`,
+      title: `${t(action.name)}: ${action.value}%`,
+      label: `${t(action.name)} ${action.value}%`,
+    }));
+    const ariaLabel = segments.length
+      ? segments.map((segment) => segment.label).join(', ')
+      : t('Strategy frequencies unavailable');
+    const signature = segments.map((segment) => `${segment.kind}:${segment.name}:${segment.value >= MIX_LABEL_MIN_PERCENT}`).join('|');
+    if (!segments.length) {
+      mixSignature = '';
+      host.replaceChildren();
+      host.classList.add('is-empty');
+    } else if (signature === mixSignature && host.firstElementChild) {
+      const bar = host.firstElementChild;
+      bar.setAttribute('aria-label', ariaLabel);
+      [...bar.querySelectorAll('.rl-mix__segment')].forEach((node, index) => {
+        node.style.setProperty('--rl-mix-share', `${segments[index].value}%`);
+        node.title = segments[index].title;
+        const share = node.querySelector('.poker-island');
+        if (share) share.textContent = segments[index].valueText;
+      });
+    } else {
+      mixSignature = signature;
+      host.classList.remove('is-empty');
+      host.dataset.reveal = reveal ? 'on' : 'off';
+      host.replaceChildren(createMixBar(doc, { segments, ariaLabel }));
+    }
+    if (rest) {
+      const small = segments.filter((segment) => segment.value < MIX_LABEL_MIN_PERCENT);
+      rest.replaceChildren(...small.map((segment) => {
+        const item = doc.createElement('span');
+        item.className = 'analyze-mix-rest-item';
+        const dot = doc.createElement('i');
+        dot.className = 'verdict-dot';
+        dot.dataset.actionKind = segment.kind;
+        dot.setAttribute('aria-hidden', 'true');
+        const share = doc.createElement('bdi');
+        share.dir = 'ltr';
+        share.className = 'poker-island';
+        share.textContent = segment.valueText;
+        item.append(dot, doc.createTextNode(`${segment.name} `), share);
+        return item;
+      }));
+      rest.hidden = small.length === 0;
+    }
+  }
+
+  function paintMix(displayActions, { wheel, reveal = true }) {
     displayActions.forEach((action, index) => setFrequency(index + 1, action));
-    renderFrequencyStack(el('actionFrequencyStack'), displayActions, deps);
+    paintHeroMix(displayActions, { reveal });
     const wheelElement = el('actionWheel');
     const centerText = el('wheelCenterText');
     if (wheel === 'unavailable') {
@@ -221,15 +360,27 @@ function mountAnalyzeDecisionPanel(container, deps) {
       warnings.hidden = false;
     }
     paintMix(Array.from({ length: 3 }, () => ({ name: '-', value: 0, kind: 'unavailable' })), { wheel: 'unavailable' });
-    FACT_METRIC_IDS.forEach((id) => {
-      if (el(id)) el(id).textContent = '-';
-    });
+    FACT_METRIC_IDS.concat('mToCall').forEach((id) => setFactText(id, '-'));
   }
 
   // --- Verdict, truth, provenance ----------------------------------------
 
-  function paintVerdict(strategyResult) {
-    return renderVerdict({ element: el('bestAction'), closeNote: el('bestActionClose'), document: doc }, strategyResult, deps);
+  // Moment 3: a verdict that changes swaps in with a 2 px blur bridge (the swap
+  // attribute restarts the CSS animation). The text is already final, so the
+  // swap never owns or delays the answer; a refresh (language) never animates.
+  function paintVerdict(strategyResult, { refresh = false } = {}) {
+    const element = el('bestAction');
+    const before = element ? `${element.textContent}|${element.dataset.verdict || ''}` : '';
+    const verdict = renderVerdict({ element, closeNote: el('bestActionClose'), document: doc }, strategyResult, deps);
+    if (element && !refresh && before && before !== `${element.textContent}|${element.dataset.verdict || ''}`
+      && element.dataset.verdictPainted === 'true') {
+      element.dataset.swap = element.dataset.swap === 'a' ? 'b' : 'a';
+      // The reason fades in after the verdict has risen (moment 3).
+      const reason = el('bestReason');
+      if (reason) reason.dataset.swap = reason.dataset.swap === 'a' ? 'b' : 'a';
+    }
+    if (element) element.dataset.verdictPainted = 'true';
+    return verdict;
   }
 
   function paintTruth(strategyResult, decisionContext) {
@@ -251,6 +402,9 @@ function mountAnalyzeDecisionPanel(container, deps) {
     // One provenance indicator per surface (OWNER-19): source + tier above the verdict.
     const tier = el('strategyTier');
     if (tier) tier.hidden = truth.state !== 'heuristic_comparison';
+    // The one source/tier label's tier colour (never a "Verified" pill).
+    const label = el('analyzeSourceTier');
+    if (label) label.dataset.tier = truth.state === 'heuristic_comparison' ? 'estimated' : 'reference';
     const note = el('strategyTruthNote');
     if (note) { note.dataset.i18n = presentation.description; note.textContent = t(presentation.description); }
     if (truth.state === 'accepted_reference_comparison') {
@@ -317,7 +471,7 @@ function mountAnalyzeDecisionPanel(container, deps) {
     const profile = deps.profileFor(strategyResult);
     if (!refresh) setRecommendationState(view.state);
     lastResultView = view;
-    paintVerdict(strategyResult);
+    paintVerdict(strategyResult, { refresh });
     paintTruth(strategyResult, decisionContext);
     setSizing(el('bestSizing'), strategyResult.recommendation?.action, deps, { refresh });
     if (el('bestReason')) el('bestReason').textContent = profile.reason;
@@ -329,7 +483,7 @@ function mountAnalyzeDecisionPanel(container, deps) {
     }
     paintMeta(claimPolicy);
     paintWarnings(strategyResult, claimPolicy);
-    paintMix(paddedActions(profile), { wheel: refresh ? 'center' : 'full' });
+    paintMix(paddedActions(profile), { wheel: refresh ? 'center' : 'full', reveal: !refresh });
   }
 
   // --- Facts -------------------------------------------------------------
@@ -360,23 +514,25 @@ function mountAnalyzeDecisionPanel(container, deps) {
   // dash: its cell is omitted, the table reflows evenly, and the omitted facts
   // are listed in Provenance & limitations.
   function applyFactOmission(context) {
-    const strip = container.querySelector('.analyze-facts');
-    if (!strip) return;
+    // Two groups share the rule: the tiles above and the spot facts in All details.
     const omitted = [];
-    let shown = 0;
-    strip.querySelectorAll('.metric').forEach((cell) => {
-      const value = cell.querySelector('b');
-      const label = cell.querySelector('span')?.textContent?.trim() || '';
+    let shownTiles = 0;
+    container.querySelectorAll('[data-fact]').forEach((cell) => {
+      const value = el(cell.dataset.fact);
+      const label = (cell.querySelector('.rl-fact-tile__label') || cell.querySelector('dt'))?.textContent?.trim() || '';
       const unavailable = Boolean(context) && analyzeFactIsUnavailable(value?.id, value?.textContent, context);
       cell.hidden = unavailable;
       if (unavailable) {
         // "— (Price unavailable)" -> "Price unavailable"; a bare dash carries no reason.
         const reason = String(value?.textContent || '').replace(/^[—-]\s*\(?/, '').replace(/\)$/, '').trim();
         omitted.push(reason ? `${label} (${reason})` : label);
-      } else shown += 1;
+      } else if (cell.classList.contains('rl-fact-tile')) shownTiles += 1;
     });
-    strip.style.setProperty('--fact-cols', String(Math.max(1, shown)));
-    strip.style.setProperty('--fact-cols-narrow', String(Math.max(1, Math.ceil(shown / 2))));
+    const strip = el('analyzeTiles');
+    if (strip) {
+      strip.style.setProperty('--fact-cols', String(Math.max(1, shownTiles)));
+      strip.hidden = Boolean(context) && shownTiles === 0;
+    }
     const note = el('analyzeOmittedFacts');
     if (note) {
       note.hidden = omitted.length === 0;
@@ -391,36 +547,15 @@ function mountAnalyzeDecisionPanel(container, deps) {
     const { context, heroPosition, lastAction, pot, facing, stack, heroCards, boardCards, isPreflopOpenDecision } = facts;
     const callAmount = context ? context.callAmountBb : null;
 
-    const hand = el('mEquity');
-    if (hand) hand.textContent = heroCards.length
-      ? (deps.formatHand(heroCards) || heroCards.map(deps.displayCard).join(' '))
-      : t('Unknown');
-
-    const potOdds = el('mPotOdds');
-    if (potOdds) {
-      if (isPreflopOpenDecision) {
-        potOdds.textContent = t('— (Unopened)');
-      } else if (!Number.isFinite(callAmount)) {
-        potOdds.textContent = t('— (Price unavailable)');
-      } else if (lastAction === 'unopened' || callAmount === 0) {
-        potOdds.textContent = '-';
-      } else {
-        potOdds.textContent = Number.isFinite(context.requiredRawEquity)
-          ? `${deps.formatFixed(context.requiredRawEquity * 100, 1)}%`
-          : '-';
-      }
+    // Required equity is the exact price-only number from the canonical call
+    // amount; it is formatted here, never computed.
+    let potOddsText = '-';
+    if (isPreflopOpenDecision) potOddsText = t('— (Unopened)');
+    else if (!Number.isFinite(callAmount)) potOddsText = t('— (Price unavailable)');
+    else if (lastAction !== 'unopened' && callAmount !== 0 && Number.isFinite(context.requiredRawEquity)) {
+      potOddsText = `${deps.formatFixed(context.requiredRawEquity * 100, 1)}%`;
     }
-
-    const spr = el('mSPR');
-    if (spr) {
-      const ratio = deps.stackToPotRatio(context);
-      spr.textContent = Number.isFinite(ratio) ? deps.formatFixed(ratio, 1) : '-';
-    }
-
-    const board = el('mRake');
-    if (board) board.textContent = boardCards.length
-      ? boardCards.map(deps.displayCard).join(' ')
-      : t('Preflop · no board');
+    const ratio = deps.stackToPotRatio(context);
 
     const values = {
       mPosition: heroPosition || '-',
@@ -429,9 +564,21 @@ function mountAnalyzeDecisionPanel(container, deps) {
       mToCall: toCallFact(context),
       mStack: `${deps.formatFixed(stack, 0)} bb`,
     };
-    Object.entries(values).forEach(([id, value]) => {
-      if (el(id)) el(id).textContent = value;
-    });
+    // Tiles may roll a discrete change in; the spot facts under All details never do.
+    const tileValues = {
+      mPotOdds: potOddsText,
+      mPot: values.mPot,
+      mToCall: values.mToCall,
+      mSPR: Number.isFinite(ratio) ? deps.formatFixed(ratio, 1) : '-',
+    };
+    Object.entries(tileValues).forEach(([id, value]) => setFactText(id, value, { allowRoll: true }));
+    setFactText('mHeroHand', heroCards.length
+      ? (deps.formatHand(heroCards) || heroCards.map(deps.displayCard).join(' '))
+      : t('Unknown'));
+    setFactText('mBoard', boardCards.length
+      ? boardCards.map(deps.displayCard).join(' ')
+      : t('Preflop · no board'));
+    ['mPosition', 'mFacing', 'mStack'].forEach((id) => setFactText(id, values[id]));
     applyFactOmission(context);
     return Object.freeze(values);
   }
@@ -477,16 +624,21 @@ function mountAnalyzeDecisionPanel(container, deps) {
     else if (target.id === 'analyzeExplainFacts') { if (explainOpen) toggleExplain(); }
     else if (target.id === 'analysisEditInputs') deps.editInputs();
     else if (target.id === 'analysisTeachDecision') deps.teachDecision();
-    else if (target.id === 'toggleFrequencyAlternate') {
-      const wheel = el('actionWheelContainer');
-      if (!wheel) return;
-      const expanded = target.getAttribute('aria-expanded') === 'true';
-      target.setAttribute('aria-expanded', String(!expanded));
-      wheel.hidden = expanded;
-    }
+    else if (target.id === 'analyzeAllDetailsToggle') setDetailsOpen(!detailsOpen);
   };
   container.addEventListener('click', onClick);
   syncExplainDepthControls();
+  buildTiles();
+
+  // All details: limits, spot facts and the alternate wheel. It grows from its
+  // card (moment 7, panel tempo); keyboard and Reduced open it at once.
+  function setDetailsOpen(open) {
+    const card = el('analyzeDetailsCard');
+    if (!card) return;
+    detailsOpen = Boolean(open);
+    setPanelCardOpen(card, detailsOpen);
+    el('analyzeAllDetailsToggle')?.setAttribute('aria-expanded', String(detailsOpen));
+  }
 
   return {
     schemaVersion: ANALYZE_DECISION_PANEL_SCHEMA_VERSION,
@@ -503,6 +655,8 @@ function mountAnalyzeDecisionPanel(container, deps) {
     renderExplain,
     toggleExplain,
     isExplainOpen: () => explainOpen,
+    setDetailsOpen,
+    isDetailsOpen: () => detailsOpen,
     // Visibility is pushed in by the orchestrator, never read from the DOM.
     setVisible(next) { visible = Boolean(next); },
     isVisible: () => visible,
@@ -512,7 +666,9 @@ function mountAnalyzeDecisionPanel(container, deps) {
     // passes the view built from its current state; without one the last
     // rendered view is used. Returns false when there is nothing to repaint.
     refreshLanguage(view = lastResultView) {
-      if (disposed || !view) return false;
+      if (disposed) return false;
+      refreshTileLabels();
+      if (!view) return false;
       paintResult(view, { refresh: true });
       return true;
     },

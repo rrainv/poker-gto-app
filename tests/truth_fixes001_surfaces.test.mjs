@@ -40,7 +40,8 @@ test('OWNER-19: Analyze names its heuristic provenance once, above the verdict, 
   // the "Estimated" tier sits beside the source heading above the verdict
   // and shows only for a heuristic comparison.
   const eyebrow = markup.getElementById('strategyTruthHeading').parentNode;
-  assert.ok(eyebrow.classList.contains('eyebrow'));
+  // ANALYZE-001a: the one source/tier label (a pill) holds the heading and the tier.
+  assert.ok(eyebrow.classList.contains('rl-source-tier'));
   const tierMarkup = markup.getElementById('strategyTier');
   assert.ok(eyebrow.contains(tierMarkup));
   assert.ok(tierMarkup.querySelector('[data-i18n="Estimated"]'), 'the tier reads Estimated');

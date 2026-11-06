@@ -41,46 +41,53 @@ test('A1: the mix card lists only actions present in the mix', () => {
 });
 
 function applyFacts(values, context) {
-  // The real facts strip, rebuilt with the given cells.
-  const strip = analyze('.analyze-facts');
-  const original = [...strip.children];
-  strip.replaceChildren(...values.map(([id, label, value]) => {
-    const cell = app.document.createElement('div');
-    cell.className = 'metric';
-    cell.innerHTML = `<span>${label}</span><b id="${id}-probe">${value}</b>`;
-    cell.querySelector('b').id = id;
-    return cell;
-  }));
-  // EXTRACT-ANALYZE-001: the omission rule moved into the decision panel module.
+  // ANALYZE-001a: the real tiles and spot facts, set to the given values (each value element keeps its id).
+  const originals = values.map(([id]) => [id, app.byId(id).textContent]);
+  values.forEach(([id, , value]) => { app.byId(id).textContent = value; });
+  // EXTRACT-ANALYZE-001: the omission rule lives in the decision panel module.
   app.call('decisionPanel').applyFactOmission(context);
-  const cells = [...strip.children];
+  const cell = (id) => app.byId(id).closest('[data-fact]');
   const note = app.byId('analyzeOmittedFacts');
-  const result = { cells, strip, note: { hidden: note.hidden, textContent: note.textContent } };
-  return { ...result, restore: () => strip.replaceChildren(...original) };
+  return {
+    cell,
+    strip: app.byId('analyzeTiles'),
+    note: { hidden: note.hidden, textContent: note.textContent },
+    restore: () => {
+      originals.forEach(([id, original]) => { app.byId(id).textContent = original; });
+      app.call('decisionPanel').applyFactOmission(app.window.app.decisionContext);
+    },
+  };
 }
 
-test('A2: fact-cell omission rule — unavailable facts leave the table, reflow evenly, and stay in Provenance', () => {
-  const { cells, strip, note, restore } = applyFacts([
+test('A2: fact-cell omission rule — unavailable facts leave the tiles, reflow evenly, and stay under All details', () => {
+  const { cell, strip, note, restore } = applyFacts([
     ['mPosition', 'Position', 'BTN'], ['mPot', 'Pot', '5.0 bb'], ['mFacing', 'Facing', '3.0 bb'],
-    ['mToCall', 'To call', 'price unavailable'], ['mStack', 'Stack', '100 bb'], ['mEquity', 'Hero hand', 'AKs'],
-    ['mPotOdds', 'Pot odds', '— (Price unavailable)'], ['mSPR', 'SPR', '-'], ['mRake', 'Board', 'Preflop · no board'],
+    ['mToCall', 'To call', 'price unavailable'], ['mStack', 'Stack', '100 bb'], ['mHeroHand', 'Hero hand', 'AKs'],
+    ['mPotOdds', 'Equity needed to call', '— (Price unavailable)'], ['mSPR', 'SPR', '-'], ['mBoard', 'Board', 'Preflop · no board'],
   ], { callAmountBb: null });
   try {
-    assert.deepEqual(cells.map((cell) => cell.hidden), [false, false, false, true, false, false, true, true, false]);
-    assert.equal(strip.style.getPropertyValue('--fact-cols'), '6');
-    assert.equal(strip.style.getPropertyValue('--fact-cols-narrow'), '3');
+    const ids = ['mPotOdds', 'mPot', 'mToCall', 'mSPR', 'mPosition', 'mFacing', 'mStack', 'mHeroHand', 'mBoard'];
+    assert.deepEqual(ids.map((id) => cell(id).hidden), [true, false, true, true, false, false, false, false, false]);
+    assert.equal(strip.style.getPropertyValue('--fact-cols'), '1');
+    assert.equal(strip.hidden, false);
     assert.equal(note.hidden, false);
-    assert.equal(note.textContent, 'Not shown for this decision: To call (price unavailable) · Pot odds (Price unavailable) · SPR');
-    // Never a bare dash in the table: the grid uses the visible count.
-    assert.equal(css.cascaded(strip, 'grid-template-columns', wide), 'repeat(var(--fact-cols, 8), minmax(0, 1fr))');
-    assert.equal(css.cascaded(cells[3], 'display', wide), 'none');
+    assert.equal(note.textContent, 'Not shown for this decision: Equity needed to call (Price unavailable) · To call (price unavailable) · SPR');
+    // Never a bare dash in the tiles: the grid uses the visible count.
+    assert.equal(css.cascaded(strip, 'grid-template-columns', wide), 'repeat(var(--fact-cols, 4), minmax(0, 1fr))');
+    assert.equal(css.cascaded(cell('mToCall'), 'display', wide), 'none');
   } finally {
     restore();
   }
-  // An exact canonical price keeps the To call cell.
-  const hand = applyFacts([['mToCall', 'To call', '6.0 bb'], ['mSPR', 'SPR', '3.1']], { callAmountBb: 6 });
+  // An exact canonical price keeps the To call tile.
+  const hand = applyFacts([
+    ['mPosition', 'Position', 'BTN'], ['mPot', 'Pot', '5.0 bb'], ['mFacing', 'Facing', '3.0 bb'],
+    ['mToCall', 'To call', '6.0 bb'], ['mStack', 'Stack', '100 bb'], ['mHeroHand', 'Hero hand', 'AKs'],
+    ['mPotOdds', 'Equity needed to call', '38.5%'], ['mSPR', 'SPR', '3.1'], ['mBoard', 'Board', 'Preflop · no board'],
+  ], { callAmountBb: 6 });
   try {
-    assert.deepEqual(hand.cells.map((cell) => cell.hidden), [false, false]);
+    assert.equal(hand.cell('mToCall').hidden, false);
+    assert.equal(hand.cell('mSPR').hidden, false);
+    assert.equal(hand.strip.style.getPropertyValue('--fact-cols'), '4');
     assert.equal(hand.note.hidden, true);
   } finally {
     hand.restore();
@@ -88,8 +95,7 @@ test('A2: fact-cell omission rule — unavailable facts leave the table, reflow 
   const omitted = markup.getElementById('analyzeOmittedFacts');
   assert.equal(omitted.localName, 'p');
   assert.ok(omitted.classList.contains('analyze-provenance-omitted'));
-  assert.equal(omitted.hidden, true);
-  assert.equal(text(omitted), '');
+  assert.ok(omitted.closest('#analyzeAllDetails'), 'the omitted facts are listed under All details');
   assert.ok(translations.includes("['Not shown for this decision: {facts}',"));
 });
 
@@ -210,7 +216,7 @@ test('D21: a pending recompute fades only the verdict and mix card; dimensions n
   const recommendation = app.byId('recommendation');
   app.call('schedulePlaybookUpdate', 'test');
   assert.equal(recommendation.dataset.recomputing, 'true');
-  const targets = [analyze('#recommendation .analyze-verdict-copy'), analyze('#recommendation .frequency-visualization')];
+  const targets = [analyze('#recommendation .analyze-hero-verdict'), analyze('#recommendation .analyze-hero-mix')];
   const geometry = ['width', 'height', 'min-height', 'display', 'position', 'transform', 'margin', 'padding'];
   const snapshot = () => targets.map((node) => geometry.map((property) => css.cascaded(node, property, wide)).join('|'));
   const during = snapshot();

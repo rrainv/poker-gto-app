@@ -128,7 +128,7 @@ test('the range matrix remains a dense 13 by 13 LTR poker matrix', () => {
 });
 
 test('matrix selection and hover use bounded non-color emphasis without zoom', async () => {
-  await app.click('.sub-tab[data-gto-view="chart"]');
+  // ANALYZE-001a: the Matrix is inline on the Decision view (preflop); there is no tab to open.
   const cell = app.$$('#strategyGrid .hand-cell').find((node) => node.getAttribute('aria-pressed') === 'false');
   await app.click(cell);
   const selected = app.$('#strategyGrid .hand-cell[aria-pressed="true"]');
@@ -156,14 +156,18 @@ test('mixed strategy cells and detailed allocations share stable semantic action
   }
 });
 
-test('frequency bars expose exact values and a primary stacked representation', () => {
-  const stack = markup.getElementById('actionFrequencyStack');
-  assert.equal(stack.getAttribute('aria-label'), 'Open 76%, Limp 10%, Fold 14%');
-  assert.deepEqual(stack.querySelectorAll('[data-action-kind]').map((node) => [node.dataset.actionKind, node.getAttribute('style')]), [
-    ['aggressive', 'width:76%'], ['passive', 'width:10%'], ['fold', 'width:14%'],
-  ]);
-  // The running stack's label describes its rendered values.
-  assert.match(app.byId('actionFrequencyStack').getAttribute('aria-label') || '', /\d+%/);
+test('frequency bars expose exact values and a primary stacked representation', async () => {
+  // ANALYZE-001a: the hero mix is the shared thick labelled bar, built at runtime; the per-action rows
+  // (with exact values) live under All details.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const bar = app.byId('actionFrequencyStack').querySelector('.rl-mix');
+  assert.ok(bar, 'the hero mix bar renders for a resolved decision');
+  assert.equal(bar.getAttribute('dir'), 'ltr', 'the bar is a left-to-right data island');
+  assert.equal(bar.getAttribute('role'), 'img');
+  assert.ok(bar.querySelectorAll('.rl-mix__segment').every((segment) => segment.dataset.kind && segment.style.getPropertyValue('--rl-mix-share').endsWith('%')));
+  // The running bar's label describes its rendered values.
+  assert.match(bar.getAttribute('aria-label') || '', /\d+%/);
   app.call('setFrequency', 1, { name: 'Raise', value: 64, kind: 'aggressive' });
   app.call('setFrequency', 2, { name: 'Call', value: 0, kind: 'passive' });
   assert.equal(app.byId('f1').style.width, '64%');

@@ -202,7 +202,10 @@ test('audio remains event-owned with no hover, slider, Matrix, progress, or tab 
     spy.reset();
     app.dispatch(app.$('.mode-nav-item[data-navigation-id="training"]'), new app.window.MouseEvent('mouseover', { bubbles: true }));
     await app.setValue('#players', '7');
-    await app.click('.sub-tab[data-gto-view="chart"]');
+    // ANALYZE-001a: the Matrix is inline on the Decision view (preflop); there is no tab to open.
+    // An incomplete decision shows it inert, so complete the decision first.
+    await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+    spy.reset();
     app.call('renderChart');
     await app.click(app.$('#strategyGrid .hand-cell'));
     const tab = app.$$('.sub-tabs [role="tab"]').find((node) => node.getAttribute('aria-selected') !== 'true' && app.isShown(node));

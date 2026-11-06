@@ -59,29 +59,22 @@ test('mode and modal transitions clear workflow-scoped transient feedback', asyn
   assert.equal(toastElement().textContent, '');
 });
 
-test('analysis navigation selects, reveals, and focuses its actual destination', async () => {
-  // Protects: "View all hands" selects the Range Matrix tab, shows its view,
-  // scrolls it into view (smooth unless reduced motion) and focuses the tab.
+test('analysis navigation selects its actual destination', async () => {
+  // Protects: the two result tabs select their view and swap the visible one. (ANALYZE-001a retired
+  // "View all hands" and the Range Matrix tab with it, so there is no reveal-and-focus path left to test.)
   await app.navigate('analyze');
-  const chartTab = app.$('[data-gto-view="chart"]');
-  for (const reducedMotion of [false, true]) {
-    app.environment.media.reducedMotion = reducedMotion;
-    // The Motion setting follows the system preference by default.
-    app.document.documentElement.dataset.motionMode = reducedMotion ? 'reduced' : 'standard';
-    // A pointer click (earlier tests pressed keys, which the keyboard rule keeps instant).
-    app.document.documentElement.dataset.motionInput = 'pointer';
-    await app.click('[data-gto-view="context"]');
-    app.byId('chartView')._scrolledIntoView = undefined;
-    await app.click('#openCharts');
-    assert.equal(chartTab.getAttribute('aria-selected'), 'true');
-    assert.ok(chartTab.classList.contains('active'));
-    assert.equal(app.byId('chartView').style.display, 'block');
-    assert.equal(app.byId('contextView').style.display, 'none');
-    assert.deepEqual(app.byId('chartView')._scrolledIntoView, { behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
-    assert.ok(app.document.activeElement === chartTab);
-  }
-  app.environment.media.reducedMotion = false;
-  app.document.documentElement.dataset.motionMode = 'standard';
+  assert.equal(app.$('[data-gto-view="chart"]'), null, 'the Range Matrix tab is retired');
+  assert.equal(app.byId('openCharts'), null, 'View all hands is retired');
+  const rangeTab = app.$('[data-gto-view="range"]');
+  await app.click('[data-gto-view="context"]');
+  await app.click(rangeTab);
+  assert.equal(rangeTab.getAttribute('aria-selected'), 'true');
+  assert.ok(rangeTab.classList.contains('active'));
+  assert.equal(app.byId('rangeView').style.display, 'block');
+  assert.equal(app.byId('contextView').style.display, 'none');
+  await app.click('[data-gto-view="context"]');
+  assert.equal(app.byId('contextView').style.display, 'block');
+  assert.equal(app.byId('rangeView').style.display, 'none');
 });
 
 test('sidebar state has concrete expanded and collapsed layout contracts at narrow desktop widths', async () => {
