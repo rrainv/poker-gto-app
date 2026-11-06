@@ -1,31 +1,92 @@
 name: Node CI
 
+# CI-GATE-001: CI runs the full suite (the repo is public, so minutes are free).
+# Local runs stay targeted; a red run here blocks updating main.
+# Docs-only pushes skip this workflow; docs-tests.yml always runs.
+
 on:
   push:
     branches: [codex/stabilization, main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
+  schedule:
+    # Nightly, 03:17 UTC, so a quiet week still gets checked.
+    - cron: '17 3 * * *'
 
 permissions:
   contents: read
 
+concurrency:
+  group: node-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Scheduled runs start on the default branch (main); check the integration line instead.
+  CI_REF: ${{ github.event_name == 'schedule' && 'codex/stabilization' || github.ref }}
+
 jobs:
   test:
+    name: Full suite
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CI_REF }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
+
+      # No npm install: the suite uses only Node built-ins and in-repo code.
+      # No secrets: tests pass without app/auth-config.js.
 
       - name: Check canonical entry-point syntax
         run: |
           node --check app/src/core/logic.js
           node --check app/main.js
 
-      - name: Run canonical Node test suite
-        run: node --test --test-concurrency=4 tests/*.test.js tests/*.test.mjs
+      - name: Check test manifest covers every test file
+        run: node tools/run-tests.mjs --check
+
+      - name: Run full test suite
+        run: |
+          mkdir -p "$RUNNER_TEMP/timings"
+          node tools/run-tests.mjs --all --concurrency 4 --timings "$RUNNER_TEMP/timings/test-timings.json"
+
+      - name: Upload per-file durations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-timings
+          path: ${{ runner.temp }}/timings/test-timings.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  solver:
+    name: Solver tests (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CI_REF }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run solver unit tests
+        env:
+          PYTHONPATH: solver:.
+        run: python -B -m unittest discover -s tests/solver -p 'test_*.py'

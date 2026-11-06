@@ -1,0 +1,34 @@
+name: Docs tests
+
+# CI-GATE-001: the two docs tests always run, including on docs-only pushes
+# that node-ci.yml skips with paths-ignore. Tiny and fast.
+
+on:
+  push:
+    branches: [codex/stabilization, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Docs tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Run docs tests
+        run: node tools/run-tests.mjs --files tests/docs_capability_dossiers001_integrity.test.mjs,tests/docs_integrity001_governance.test.mjs

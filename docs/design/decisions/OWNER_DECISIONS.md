@@ -10,6 +10,7 @@ Recorded by DOCS-RESET-002 from the owner's repository review and the approved t
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-11-06 | **CI RUNS THE FULL SUITE (the repo is public, so it is free); local runs stay targeted; a red CI blocks updating main and is the first thing the next ticket fixes.** (CI-GATE-001) | Free minutes make the full suite cheap on every push, so local full runs add no signal; a red run left standing hides the next regression. |
 | 2026-11-04 | **The full suite is a gate, not a habit; CI is the merge gate.** Test policy lives in [WORKFLOW](../../WORKFLOW.md): T1 runs the ticket's TEST SET, T2 adds the CSS guard group when `styles.css` changed, the full suite runs only for shared harness/tokens/core paths and for `main` or milestones, never two suites at once. (WORKFLOW-001) | Cost: about 20 full-suite runs in 4 days for little new signal; CI already runs every PR, so local re-runs duplicate the gate. |
 | 2026-11-04 | **Analyze spot chips wrap the Facing / Pot / Stack / Table sliders.** A chip opens a popover holding the same controls, sliders included; the readiness gate is unchanged. | The sentence-style spot stays compact while the sliders remain the one set of inputs; wrapping them adds no second input path and no new gating rule. |
 | 2026-11-04 | **The mockup's "Verified" pill on the Analyze answer is dropped.** | Baseline output is never "verified"; the pill would claim a strength the deterministic baseline does not have (honesty rule: never GTO, solved or "correct"). |
