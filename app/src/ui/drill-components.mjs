@@ -101,11 +101,11 @@ export function setRollingText(doc, element, text, { roll = true, plain = false 
   }
   // `plain` keeps textContent equal to the value (no hidden duplicate for
   // assistive technology), for surfaces whose value is read back as text.
-  element.replaceChildren(...[...next].map((character, index) => {
+  element.replaceChildren(...[...[...next].map((character, index) => {
     const span = h(doc, 'span', { class: 'rl-roll-digit', text: character, 'aria-hidden': plain ? null : 'true' });
     span.style.setProperty('--rl-roll-index', String(index));
     return span;
-  }), plain ? null : h(doc, 'span', { class: 'sr-only', text: next }));
+  }), plain ? null : h(doc, 'span', { class: 'sr-only', text: next })].filter(Boolean));
 }
 
 // ── Action card + Confirm (P1-03) ──────────────────────────────────────────

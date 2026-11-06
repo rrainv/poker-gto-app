@@ -225,7 +225,7 @@ test('D21: a pending recompute fades only the verdict and mix card; dimensions n
   assert.equal(recommendation.dataset.recomputing, undefined, 'updateContext clears the flag');
   assert.deepEqual(snapshot(), during, 'only opacity changes');
   for (const node of targets) assert.notEqual(css.cascaded(node, 'opacity', wide), '.55');
-  for (const node of targets) assert.equal(css.cascaded(node, 'transition', { ...wide, reducedMotion: true }), 'none');
+  for (const node of targets) assert.equal(css.cascaded(node, 'transition', { ...wide, reducedMotion: true }), 'opacity 0s', 'Reduced drops the recompute fade (zero duration; the foundation lint forbids a bare none here)');
 });
 
 test('D22: interaction states use motion tokens and focus-visible outlines', () => {

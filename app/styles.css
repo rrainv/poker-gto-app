@@ -18919,7 +18919,7 @@ html[data-layout-preset] #gtoMode #analyzeHero #strategyTruthNote { margin: 0; }
 html[data-layout-preset] #gtoMode #analyzeHero :is(.analyze-hero-verdict, .analyze-hero-mix, #bestReason) { transition: opacity var(--motion-micro) var(--ease-out); }
 html[data-layout-preset] #gtoMode #recommendation[data-recomputing="true"] #analyzeHero :is(.analyze-hero-verdict, .analyze-hero-mix, #bestReason) { opacity: .55; }
 /* Motion: Reduced (the recompute fade is dropped; Reduced keeps real fades only). */
-html:where([data-motion-mode="reduced"])[data-layout-preset] #gtoMode #analyzeHero :is(.analyze-hero-verdict, .analyze-hero-mix, #bestReason) { transition: none; }
+html:where([data-motion-mode="reduced"])[data-layout-preset] #gtoMode #analyzeHero :is(.analyze-hero-verdict, .analyze-hero-mix, #bestReason) { transition: opacity 0s; }
 
 /* All details: limits, spot facts, alternate wheel. Grows from the hero card. */
 html[data-layout-preset] #gtoMode #analyzeHero .analyze-details { margin: 0; border: 0; border-radius: 0; background: none; }
