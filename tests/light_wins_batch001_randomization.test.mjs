@@ -101,7 +101,10 @@ test('empty Analyze dice adapter commits once and requests one normal resolution
     assert.equal(bridgeCalls, 1);
     assert.equal(spy.count('applyRandomizedScenarioToControls'), 1);
     assert.equal(spy.count('updateContext'), 1);
-    assert.equal(resolves.length, 1, 'one normal strategy resolution');
+    // A random preflop spot also shows the inline Range Matrix (ANALYZE-001a), whose
+    // 169 cell resolves belong to the matrix, not to the decision: count the decision only.
+    const decisionResolves = resolves.filter((context) => context === page.window.app.decisionContext);
+    assert.equal(decisionResolves.length, 1, 'one normal strategy resolution');
   } finally {
     spy.restore();
     Object.defineProperty(page.window, 'RiverlinePlaybookState', descriptor);

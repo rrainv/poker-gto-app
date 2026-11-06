@@ -25,6 +25,8 @@ const productSources = [
   // EXTRACT-ANALYZE-002: the moved Matrix and Category Comparison renderers.
   path.join(repoRoot, 'app', 'src', 'application', 'analyze-matrix.mjs'),
   path.join(repoRoot, 'app', 'src', 'application', 'analyze-range-comparison.mjs'),
+  // EXTRACT-ANALYZE-003: the moved Spot rail (randomize messages, banners).
+  path.join(repoRoot, 'app', 'src', 'application', 'analyze-spot-setup.mjs'),
   path.join(repoRoot, 'app', 'src', 'ui', 'teacher.js'),
   path.join(repoRoot, 'app', 'src', 'ui', 'TableRenderer.js'),
   analysisTranslationsPath,
