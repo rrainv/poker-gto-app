@@ -39,7 +39,14 @@ function globToRegExp(glob) {
   }
   return new RegExp(`^${re}$`);
 }
-const areaTests = (name) => (manifest.areas[name]?.tests ?? manifest.groups[name]?.tests ?? null);
+const CSS_SOURCE_RE = /styles\.css|css-model\.mjs|appStyleSheet|StyleSheetModel|assertDeclared|assertCascaded/;
+const computeCssTests = () => allTests.filter((p) => CSS_SOURCE_RE.test(fs.readFileSync(path.join(root, p), 'utf8')));
+const groupTests = (name) => {
+  if (name === 'css') return [...new Set([...computeCssTests(), ...(manifest.groups.css?.tests ?? []).map(withDir)])].sort();
+  return manifest.groups[name]?.tests.map(withDir) ?? null;
+};
+const areaTests = (name) => (manifest.areas[name]?.tests.map(withDir) ?? groupTests(name));
+const resolveAlsoRun = (entry) => groupTests(entry) ?? [withDir(entry)];
 
 function checkManifest() {
   const seen = new Map(); const problems = [];
@@ -56,11 +63,12 @@ function checkManifest() {
     for (const f of v.tests) if (!allTests.includes(withDir(f))) problems.push(`group ${g}: ${f} does not exist`);
   }
   for (const [g, list] of Object.entries(manifest.alsoRun ?? {})) {
-    for (const f of list) if (!allTests.includes(withDir(f))) problems.push(`alsoRun ${g}: ${f} does not exist`);
+    for (const f of list) if (!manifest.groups[f] && !allTests.includes(withDir(f))) problems.push(`alsoRun ${g}: ${f} does not exist`);
   }
-  const css = allTests.filter((p) => fs.readFileSync(path.join(root, p), 'utf8').includes('styles.css'));
+  const css = computeCssTests();
   const listed = new Set(manifest.groups.css.tests.map(withDir));
-  for (const p of css) if (!listed.has(p)) problems.push(`group css is missing ${p} (reads styles.css)`);
+  for (const p of css) if (!listed.has(p)) problems.push(`group css is missing ${p} (reads styles.css or css-model.mjs)`);
+  for (const p of listed) if (!css.includes(p)) problems.push(`group css lists ${p} which does not read styles.css or css-model.mjs`);
   return problems;
 }
 
@@ -79,10 +87,11 @@ function changedSelection() {
 
 function selectionFromPaths(paths) {
   const areas = new Set(); const reasons = []; const extra = new Set();
-  // alsoRun: path globs that must always add named tests (e.g. locale text -> terminology tests).
+  // alsoRun: path globs that must always add named tests or groups (e.g. locale text -> terminology tests; ui -> locale_numbers001/motion/ds_tokens/design; index.html/logic.js -> smoke).
   const alsoRunMatchers = Object.entries(manifest.alsoRun ?? {}).map(([g, t]) => [globToRegExp(g), t]);
   const matchers = Object.entries(manifest.areas).map(([n, v]) => [n, v.sources.map(globToRegExp)]);
-  for (const p of paths) {
+  for (const rawPath of paths) {
+    const p = rawPath === 'logic.js' ? 'app/src/core/logic.js' : rawPath;
     const hit = [];
     if (/^tests\/[^/]+\.test\.m?js$/.test(p)) { reasons.push(`${p} -> itself`); continue; }
     for (const [n, res] of matchers) if (res.some((r) => r.test(p))) hit.push(n);
@@ -91,8 +100,12 @@ function selectionFromPaths(paths) {
     if (hit.length === 0) hit.push('misc');
     hit.forEach((h) => areas.add(h));
     reasons.push(`${p} -> ${hit.join(', ')}`);
-    for (const [re, tests] of alsoRunMatchers) {
-      if (re.test(p)) { tests.forEach((t) => extra.add(withDir(t))); reasons.push(`${p} -> alsoRun ${tests.length} test(s)`); }
+    for (const [re, entries] of alsoRunMatchers) {
+      if (re.test(p)) {
+        const resolved = entries.flatMap(resolveAlsoRun);
+        resolved.forEach((t) => extra.add(t));
+        reasons.push(`${p} -> alsoRun ${resolved.length} test(s)`);
+      }
     }
   }
   const files = new Set(paths.filter((p) => /^tests\/[^/]+\.test\.m?js$/.test(p) && allTests.includes(p)));
@@ -120,8 +133,8 @@ else if (opt('--area')) {
   }
   files = [...files].sort();
 } else if (opt('--group')) {
-  const g = manifest.groups[opt('--group')]; if (!g) fail(`Unknown group. Groups: ${Object.keys(manifest.groups).join(', ')}`);
-  files = g.tests.map(withDir);
+  const g = groupTests(opt('--group')); if (!g) fail(`Unknown group. Groups: ${Object.keys(manifest.groups).join(', ')}`);
+  files = g;
 } else if (opt('--files')) {
   files = opt('--files').split(',').map((f) => withDir(norm(f.trim())));
   for (const f of files) if (!fs.existsSync(path.join(root, f))) fail(`No such test file: ${f}`);
