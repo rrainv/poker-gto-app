@@ -34,7 +34,7 @@ export const STUDY_COPY = freeze({
   exploitAnalysis: ['Assumption-labelled exploit analysis', 'Эксплойт-анализ с явными предположениями', 'ניתוח ניצול עם הנחות מפורשות'],
   normativeAssessment: ['Normative assessment', 'Нормативная оценка', 'הערכה נורמטיבית'],
   unavailable: ['Unavailable', 'Недоступно', 'לא זמין'],
-  fold: ['Fold', 'Пас', 'קיפול'], check: ['Check', 'Чек', 'צ׳ק'], call: ['Call', 'Колл', 'השוואה'],
+  fold: ['Fold', 'Пас', 'פולד'], check: ['Check', 'Чек', 'צ׳ק'], call: ['Call', 'Колл', 'השוואה'],
   bet: ['Bet', 'Бет', 'הימור'], raise: ['Raise', 'Рейз', 'העלאה'], all_in: ['All-in', 'Олл-ин', 'אול־אין'],
   preflop: ['Preflop', 'Префлоп', 'פרה־פלופ'], flop: ['Flop', 'Флоп', 'פלופ'], turn: ['Turn', 'Тёрн', 'טרן'], river: ['River', 'Ривер', 'ריבר'],
   inspected: ['Current intent at your last inspection; inspect again after editing your Approach.', 'Текущее намерение при последней проверке; проверьте снова после изменения подхода.', 'הכוונה הנוכחית בבדיקה האחרונה; יש לבדוק שוב לאחר עריכת הגישה.'],
