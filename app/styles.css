@@ -14919,7 +14919,7 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 .table-environment { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 6px 12px; text-align: start; border-block-start: 1px solid var(--border-subtle); }
 .table-cast[open] { grid-column: 1 / -1; }
 .table-cast:not([open]) > summary { padding-block: 4px; }
-.training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="review"]) .training-full-hand-table-wrapper #visual-table-container { --play-stage-reserve: 400px; }
+html .training-workspace:is([data-training-full-hand-phase="live"], [data-training-full-hand-phase="review"]) .training-full-hand-table-wrapper #visual-table-container { --play-stage-reserve: 430px; }
 .table-environment[hidden], .table-environment [hidden] { display: none; }
 .table-environment-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
 .table-context-chip { display: inline-flex; flex-wrap: wrap; gap: 6px; font-size: .75rem; line-height: 1.5; }

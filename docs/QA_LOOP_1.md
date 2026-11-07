@@ -15,6 +15,10 @@ The owner's QA backlog, grouped by screen. Short lines; the owner orders them. P
 - The owner's pending corrections (to be listed by the owner).
 - Technical right-rail panels (Canonical replay, Seed, Assistance, On this profile) go behind one disclosure.
 - Skip / Confirm labels go stale on language switch.
+- TRAINING-FULLHAND-001: the "Opponent assumptions in this hand" block on the hand-complete screen is a long wall of text; it should sit behind a disclosure.
+- TRAINING-FULLHAND-001: the right rail is mostly empty below its panels (about 460 px at 1920×1080).
+- TRAINING-FULLHAND-001: the Daylight dealer button looks blank. It predates this ticket (no dealer rule was touched); check the button's glyph colour on the Daylight felt.
+- TRAINING-FULLHAND-001: the deal has no 3D flip (cards drop and fade only; MOTION_SPEC moment 6 asks for drop face down, then flip).
 
 ## Home
 
