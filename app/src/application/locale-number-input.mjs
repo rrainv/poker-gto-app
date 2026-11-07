@@ -93,9 +93,9 @@ export function bindLocaleNumberInput(input, { language = () => undefined, fract
     schemaVersion: LOCALE_NUMBER_INPUT_SCHEMA_VERSION,
     refresh: normalize,
     dispose() {
-      input.removeEventListener('change', normalize);
-      input.removeEventListener('blur', normalize);
-      input.removeEventListener('paste', onPaste);
+      input.removeEventListener?.('change', normalize);
+      input.removeEventListener?.('blur', normalize);
+      input.removeEventListener?.('paste', onPaste);
       view.removeEventListener?.('riverline:languagechange', onLanguage);
       delete input.value;
       delete input.valueAsNumber;

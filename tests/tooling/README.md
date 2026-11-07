@@ -4,6 +4,32 @@
 
 `node tools/run-tests.mjs` runs only the tests that matter. `tests/areas.json` maps every `tests/*.test.{js,mjs}` file to exactly one area (home, training, analyze, equity, hand-review, settings-shell, personal-strategy, saved, game-night, domain, i18n, design-system, tooling-docs, misc) with source globs, plus the groups `css` (tests reading `app/styles.css`) and `smoke` (boot-level tests, reason per file in the manifest). Modes: `--area a,b`, `--group css|smoke`, `--files p1,p2`, `--changed` (git diff against `origin/codex/stabilization`; `styles.css` adds css, `logic.js`/`index.html`/`shared/` add smoke, unknown paths add misc), `--all`, `--list` (select only), `--check` (manifest covers every file once). Concurrency defaults to 2; a lock file in the OS temp dir stops two runs overlapping; per-file durations go to `riverline-test-timings.json` in the OS temp dir (`--timings <file>`). Add a new test to its area in `areas.json` (`--check` fails otherwise).
 
+## Reusable screen capture (`capture-screens.mjs`)
+
+`node tests/tooling/capture-screens.mjs` captures a JSON list of named application states on an isolated OS-assigned dev-server port (`port: 0`) using `createBrowserRuntime` and cleans up the Firefox browser context and HTTP server on exit.
+
+```powershell
+node tests/tooling/capture-screens.mjs `
+  --states path/to/states.json `
+  --out path/to/output-dir
+```
+
+Options:
+- `--states <path>` or `--spec <path>` — path to a JSON file containing an array of state specs (or `{ "states": [...] }`), or an inline JSON array.
+- `--out <dir>` or `--output-dir <dir>` — output directory for the captured `.png` files and `INDEX.md` (defaults to a fresh `riverline-screens-*` directory in the OS temp folder).
+
+Each state entry supports:
+- `name` (required) and optional `fileName` (defaults to `<slug>.png`)
+- `viewport` (`1920`, `"1920x1080"`, `"1366x768"`, or `{ "width": 1920, "height": 1080, "deviceScaleFactor": 1 }`)
+- `theme` (`"midnight"` / `"dark"` or `"daylight"` / `"light"`, default `"midnight"`)
+- `language` (`"en"`, `"ru"`, or `"he"`, default `"en"`)
+- `guest` (boolean, default `true`)
+- `dismissFirstRunOverlays` (boolean, default `true`; confirms the age gate and closes first-run Welcome/orientation overlays)
+- `destination` (`"home"`, `"training"`, `"analyze"`, `"hand"`, `"personal-strategy"`, `"saved"`, `"equity"`, `"game-night"`, etc.)
+- `steps` (array of step objects or string shortcuts: `{ "navigate": "training" }`, `{ "click": "#trainingNewHand" }`, `{ "waitForSelector": "#trainingFocusPromptCard" }`, `{ "fill": { "selector": "...", "value": "..." } }`, `{ "press": "Escape" }`, `{ "settle": true }`)
+
+The runner writes one PNG per state plus `INDEX.md` summarizing each state's name, filename, viewport, theme, language, guest status, and active destination.
+
 ## Focused Beta coherence check
 
 `node tests/tooling/verify_beta_coherence_firefox.mjs` uses the shared runtime on

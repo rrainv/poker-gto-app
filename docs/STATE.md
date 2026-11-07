@@ -56,6 +56,16 @@ The owner's open decisions (D-23 … D-38, Rust toolchain, Daylight values, Game
 
 Branch move (`codex/stabilization` → `main`); RU/HE native review of the Baseline wording; DEAD-THEME-FELT and EXPLAIN-HEURISTIC-WORDS decisions; back up `Riverline_archive`; paste research round 5 into `docs/_incoming/` (not yet present); acceptance of TRAINING-QUICK-001 and of the DS-TOKENS-001 / SHELL-002 / MOTION-FOUNDATION-001 visuals; Rust toolchain yes/no (SOLVER-PILOT-001); the open decisions above.
 
+## Before release
+
+Parked on purpose (decision log, 2026-11-06, HELPLINES PARKED); none blocks building M1:
+
+- Helplines per language for the responsible-gambling line.
+- Legal review.
+- Name and trademark check.
+- Whether existing users should see the 18+ confirmation.
+- GitHub branch protection (make the CI checks required for `main`).
+
 ## Pointers
 
 [NORTH_STAR](NORTH_STAR.md) · [area direction](project/AREA_DIRECTION.md) · [project spec index](project/README.md) · [DESIGN_SYSTEM](project/DESIGN_SYSTEM.md) · [TERMINOLOGY](TERMINOLOGY.md) · [IDEA_BANK](IDEA_BANK.md) · [THIRD_PARTY](THIRD_PARTY.md) · [research](research/README.md) · [archive](archive/README.md)

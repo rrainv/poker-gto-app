@@ -19,6 +19,10 @@ import {
   formatSuggestedSizingBb,
 } from './poker-sizing-presentation.mjs';
 import {
+  formatLocaleNumber,
+  formatLocalePercent,
+} from './locale-number-format.mjs';
+import {
   VERDICT_CLOSE_MARGIN,
   VERDICT_MEANINGFUL_SHARE,
   describeAnalyzeVerdict,
@@ -51,7 +55,9 @@ const UNAVAILABLE_COPY = Object.freeze({
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  Object.values(value).forEach(deepFreeze);
+  for (const descriptor of Object.values(Object.getOwnPropertyDescriptors(value))) {
+    if ('value' in descriptor) deepFreeze(descriptor.value);
+  }
   return Object.freeze(value);
 }
 
@@ -70,12 +76,24 @@ function rounded(value, digits = 1) {
   return Number(Number(value).toFixed(digits));
 }
 
-function percent(value, digits = 0) {
-  return `${(Number(value) * 100).toFixed(digits)}%`;
+function compactDecimal(value, digits = 2, language) {
+  return formatLocaleNumber(rounded(value, digits), {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: digits,
+    useGrouping: false,
+  }, language);
 }
 
-function bb(value) {
-  return `${rounded(value, 2)}bb`;
+function percent(value, digits = 0, language) {
+  return formatLocalePercent(Number(value) * 100, digits, language);
+}
+
+function wholePercent(value, language) {
+  return formatLocalePercent(value, 0, language);
+}
+
+function bb(value, language) {
+  return `${compactDecimal(value, 2, language)}bb`;
 }
 
 export function formatAnalysisTemplate(fallback, values = {}) {
@@ -84,15 +102,36 @@ export function formatAnalysisTemplate(fallback, values = {}) {
   ));
 }
 
+function localizedValues(values = {}) {
+  const target = {};
+  for (const [key, entry] of Object.entries(values)) {
+    if (typeof entry === 'function') {
+      Object.defineProperty(target, key, {
+        get: entry,
+        enumerable: true,
+        configurable: false,
+      });
+    } else {
+      target[key] = entry;
+    }
+  }
+  return Object.freeze(target);
+}
+
 function textPart(key, fallback, values = {}, kind = 'interpretation') {
-  const safeValues = { ...values };
-  return {
+  const safeValues = localizedValues(values);
+  const part = {
     key,
     kind,
     templateKey: key,
     values: safeValues,
-    text: formatAnalysisTemplate(fallback, safeValues),
   };
+  Object.defineProperty(part, 'text', {
+    get: () => formatAnalysisTemplate(fallback, safeValues),
+    enumerable: true,
+    configurable: false,
+  });
+  return part;
 }
 
 function fact(key, {
@@ -105,8 +144,8 @@ function fact(key, {
   fallback,
   values = {},
 }) {
-  const safeValues = { ...values };
-  return {
+  const safeValues = localizedValues(values);
+  const entry = {
     key,
     kind,
     label,
@@ -115,8 +154,13 @@ function fact(key, {
     unit,
     templateKey,
     values: safeValues,
-    text: formatAnalysisTemplate(fallback, safeValues),
   };
+  Object.defineProperty(entry, 'text', {
+    get: () => formatAnalysisTemplate(fallback, safeValues),
+    enumerable: true,
+    configurable: false,
+  });
+  return entry;
 }
 
 function section(key, title, importance, facts, textParts = []) {
@@ -136,7 +180,7 @@ function warning(code, message, severity = 'info', values = {}, messageKey = nul
     severity,
     messageKey: messageKey || `analysis.warning.${code}`,
     message,
-    values,
+    values: localizedValues(values),
   };
 }
 
@@ -159,11 +203,12 @@ function normalizeAuthority(authority) {
   };
 }
 
-function normalizeHistory(history, authorityType) {
+function normalizeHistory(history, authorityType, language) {
   if (authorityType === 'scenario' || !Array.isArray(history)) return [];
   return history.map((entry, index) => {
     const amountBb = finiteNumber(entry?.amountBb);
-    return {
+    const explicitAmountLabel = entry?.amountLabel ? String(entry.amountLabel) : null;
+    const record = {
       sequence: Number.isInteger(entry?.sequence) ? entry.sequence : index,
       street: String(entry?.street || ''),
       actorLabel: String(entry?.actorLabel || entry?.position || 'Unknown player'),
@@ -171,11 +216,16 @@ function normalizeHistory(history, authorityType) {
       actionType: String(entry?.actionType || 'unknown'),
       actionLabel: String(entry?.actionLabel || entry?.actionType || 'Action'),
       amountBb,
-      amountLabel: entry?.amountLabel
-        ? String(entry.amountLabel)
-        : (amountBb === null ? null : formatExactPokerAmountBb(amountBb)),
       isHero: Boolean(entry?.isHero),
     };
+    Object.defineProperty(record, 'amountLabel', {
+      get: () => (explicitAmountLabel !== null
+        ? explicitAmountLabel
+        : (amountBb === null ? null : formatExactPokerAmountBb(amountBb, { language }))),
+      enumerable: true,
+      configurable: false,
+    });
+    return record;
   }).sort((left, right) => left.sequence - right.sequence);
 }
 
@@ -431,7 +481,7 @@ function handBoardSection(context, trustedFacts, rangeAnalysisFacts, warnings, d
   return facts.length ? section('hand_board', 'Hand & Board', 'primary', facts, parts) : null;
 }
 
-function blockerSection(rangeAnalysisFacts) {
+function blockerSection(rangeAnalysisFacts, language) {
   if (!rangeAnalysisFacts || !rangeAnalysisFacts.blockers.heroCards.length) return null;
   const structural = rangeAnalysisFacts.blockers;
   const facts = [fact('hero_blocker_structure', {
@@ -465,12 +515,12 @@ function blockerSection(rangeAnalysisFacts) {
       fallback: 'Hero cards remove known combo mass {mass} from {rangeLabel}.',
       values: {
         rangeLabel: analysis.label,
-        mass: rounded(analysis.blockers.heroRemovedKnownComboMass, 2),
+        mass: () => compactDecimal(analysis.blockers.heroRemovedKnownComboMass, 2, language),
         physicalBefore: analysis.blockers.physicalEligibleComboCountBeforeHero,
         physicalAfter: analysis.blockers.physicalEligibleComboCountAfterHero,
         physicalRemoved: analysis.blockers.heroRemovedComboCount,
         knownAffected: analysis.blockers.heroRemovedKnownComboCount,
-        knownCoverage: percent(analysis.eligibility.eligibleCoverageRatio, 1),
+        knownCoverage: () => percent(analysis.eligibility.eligibleCoverageRatio, 1, language),
         knownMassAvailable: analysis.blockers.heroRemovedKnownComboCount > 0,
       },
     }));
@@ -485,7 +535,7 @@ function blockerSection(rangeAnalysisFacts) {
   ]);
 }
 
-function bluffPressureSection(bluffAnalysisFacts) {
+function bluffPressureSection(bluffAnalysisFacts, language) {
   if (!bluffAnalysisFacts) return null;
   const facts = [];
   const action = bluffAnalysisFacts.action;
@@ -498,7 +548,7 @@ function bluffPressureSection(bluffAnalysisFacts) {
       values: {
         action: action.label,
         actionType: action.type,
-        probability: Number.isFinite(action.probability) ? percent(action.probability, 0) : null,
+        probability: Number.isFinite(action.probability) ? () => percent(action.probability, 0, language) : null,
       },
     }));
   }
@@ -508,13 +558,13 @@ function bluffPressureSection(bluffAnalysisFacts) {
         kind: 'derived', label: 'Risk', labelKey: 'analysis.fact.bluffRisk',
         value: economics.riskBb, unit: 'bb',
         templateKey: 'analysis.bluff.risk', fallback: 'Incremental risk: {risk}.',
-        values: { risk: bb(economics.riskBb) },
+        values: { risk: () => bb(economics.riskBb, language) },
       }),
       fact('bluff_immediate_reward', {
         kind: 'derived', label: 'Immediate reward', labelKey: 'analysis.fact.bluffReward',
         value: economics.immediateRewardBb, unit: 'bb',
         templateKey: 'analysis.bluff.reward', fallback: 'Immediate reward if all relevant opponents fold: {reward}.',
-        values: { reward: bb(economics.immediateRewardBb) },
+        values: { reward: () => bb(economics.immediateRewardBb, language) },
       }),
       fact('bluff_break_even_folds', {
         kind: 'derived',
@@ -527,7 +577,7 @@ function bluffPressureSection(bluffAnalysisFacts) {
         templateKey: 'analysis.bluff.breakEven',
         fallback: 'Break-even folds for a zero-equity bluff: {frequency}.',
         values: {
-          frequency: percent(economics.breakEvenFoldFrequency, 1),
+          frequency: () => percent(economics.breakEvenFoldFrequency, 1, language),
           opponentCount: economics.opponentCount,
           requirementKind: economics.foldRequirementKind,
         },
@@ -583,8 +633,8 @@ function bluffPressureSection(bluffAnalysisFacts) {
       fallback: 'Simplified river reference: 1 bluff per {valueUnits} value bets; bluff share {share}.',
       values: {
         bluffUnits: 1,
-        valueUnits: rounded(1 / reference.bluffToValueRatio, 3),
-        share: percent(reference.bluffShareOfBettingRange, 1),
+        valueUnits: () => compactDecimal(1 / reference.bluffToValueRatio, 3, language),
+        share: () => percent(reference.bluffShareOfBettingRange, 1, language),
       },
     }));
   }
@@ -615,7 +665,7 @@ function positiveCompositionEntries(group) {
     }));
 }
 
-function rangeSection(rangeAnalysisFacts, warnings) {
+function rangeSection(rangeAnalysisFacts, warnings, language) {
   if (!rangeAnalysisFacts) return null;
   const analyses = Object.values(rangeAnalysisFacts.ranges);
   if (!analyses.length) {
@@ -634,7 +684,6 @@ function rangeSection(rangeAnalysisFacts, warnings) {
 
   const facts = [];
   for (const analysis of analyses) {
-    const coveragePercent = percent(analysis.eligibility.eligibleCoverageRatio, 1);
     facts.push(fact(`supplied_range_summary_${analysis.key}`, {
       label: analysis.label, labelKey: 'analysis.fact.suppliedRange',
       value: {
@@ -651,8 +700,8 @@ function rangeSection(rangeAnalysisFacts, warnings) {
       fallback: '{rangeLabel}: known combo mass after blockers {mass}; known coverage {coverage}.',
       values: {
         rangeLabel: analysis.label,
-        mass: rounded(analysis.eligibility.knownEligibleComboMass, 2),
-        coverage: coveragePercent,
+        mass: () => compactDecimal(analysis.eligibility.knownEligibleComboMass, 2, language),
+        coverage: () => percent(analysis.eligibility.eligibleCoverageRatio, 1, language),
         state: analysis.inspection.state,
         fullyUnknown: analysis.inspection.fullyUnknown,
         eligible: analysis.eligibility.eligibleComboCount,
@@ -805,19 +854,19 @@ function positionSection(context, trustedFacts) {
   return section('position', 'Position', 'context', facts);
 }
 
-function potOddsSection(context) {
+function potOddsSection(context, language) {
   const potBeforeCallBb = finiteNumber(context.currentPotBb ?? context.potBb);
   const callAmountBb = finiteNumber(context.callAmountBb);
   if (potBeforeCallBb === null || potBeforeCallBb < 0) return null;
   const facts = [fact('pot_before_action', {
     label: 'Pot before action', labelKey: 'analysis.fact.potBeforeAction', value: potBeforeCallBb, unit: 'bb',
-    templateKey: 'analysis.pot.current', fallback: 'The current pot is {pot}.', values: { pot: bb(potBeforeCallBb) },
+    templateKey: 'analysis.pot.current', fallback: 'The current pot is {pot}.', values: { pot: () => bb(potBeforeCallBb, language) },
   })];
   if (callAmountBb !== null && callAmountBb >= 0) {
     facts.push(fact('call_amount', {
       label: 'Amount to call', labelKey: 'analysis.fact.callAmount', value: callAmountBb, unit: 'bb',
       templateKey: 'analysis.pot.callAmount', fallback: 'The trusted amount to call is {callAmount}.',
-      values: { callAmount: bb(callAmountBb) },
+      values: { callAmount: () => bb(callAmountBb, language) },
     }));
     if (callAmountBb > 0) {
       const potAfterCallBb = finiteNumber(context.actorContestablePotAfterCallBb);
@@ -827,12 +876,15 @@ function potOddsSection(context) {
         fact('pot_after_call', {
           kind: 'factual', label: 'Contestable if you call', labelKey: 'analysis.fact.potAfterCall', value: potAfterCallBb, unit: 'bb',
           templateKey: 'analysis.pot.afterCall', fallback: 'Calling {callAmount} makes the contested pot {potAfterCall}.',
-          values: { callAmount: bb(callAmountBb), potAfterCall: bb(potAfterCallBb) },
+          values: {
+            callAmount: () => bb(callAmountBb, language),
+            potAfterCall: () => bb(potAfterCallBb, language),
+          },
         }),
         fact('required_raw_equity', {
           kind: 'derived', label: 'Required raw equity', labelKey: 'analysis.fact.requiredEquity', value: requiredEquity, unit: 'probability',
           templateKey: 'analysis.pot.requiredEquity', fallback: 'The raw break-even equity is {requiredEquity}.',
-          values: { requiredEquity: percent(requiredEquity, 1) },
+          values: { requiredEquity: () => percent(requiredEquity, 1, language) },
         }),
       );
       else facts.push(fact('call_price_availability', {
@@ -860,7 +912,7 @@ function potOddsSection(context) {
   ] : []);
 }
 
-function sprSection(context, warnings) {
+function sprSection(context, warnings, language) {
   if (context.street === 'preflop' || context.opponentCount !== 1) return null;
   const stackBb = finiteNumber(context.effectiveStackBb);
   const afterCallBb = finiteNumber(context.actorContestablePotAfterCallBb);
@@ -875,12 +927,12 @@ function sprSection(context, warnings) {
     fact('stack_bb', {
       label: 'Effective stack', labelKey: 'analysis.fact.stackBb', value: stackBb, unit: 'bb',
       templateKey: 'analysis.spr.stack', fallback: 'The heads-up effective stack is {stack}.',
-      values: { stack: bb(stackBb) },
+      values: { stack: () => bb(stackBb, language) },
     }),
     fact('spr', {
       kind: 'derived', label: 'SPR', labelKey: 'analysis.fact.spr', value: spr, unit: 'ratio',
       templateKey: 'analysis.spr.value', fallback: 'Stack-to-pot ratio is {spr}, a broadly {category} SPR.',
-      values: { spr: rounded(spr, 1), category },
+      values: { spr: () => compactDecimal(spr, 1, language), category },
     }),
   ]);
 }
@@ -890,7 +942,7 @@ function historyText(record) {
   return `${record.actorLabel}: ${record.actionLabel}${amount}.`;
 }
 
-function actionContextSection(context, authority, history, depth, warnings) {
+function actionContextSection(context, authority, history, depth, warnings, language) {
   const facts = [
     fact('context_authority', {
       label: 'Context authority', labelKey: 'analysis.fact.contextAuthority', value: authority.type,
@@ -907,7 +959,7 @@ function actionContextSection(context, authority, history, depth, warnings) {
     facts.push(fact('facing_size', {
       label: 'Facing size', labelKey: 'analysis.fact.facingSize', value: context.facingSizeBb, unit: 'bb',
       templateKey: 'analysis.action.facing', fallback: 'Hero faces {facingSize}.',
-      values: { facingSize: bb(context.facingSizeBb) },
+      values: { facingSize: () => bb(context.facingSizeBb, language) },
     }));
   } else {
     facts.push(fact('no_voluntary_wager_faced', {
@@ -926,16 +978,19 @@ function actionContextSection(context, authority, history, depth, warnings) {
     visibleHistory.forEach((record) => facts.push(fact(`history_${record.sequence}`, {
       label: 'Action history', labelKey: 'analysis.fact.actionHistory', value: record,
       templateKey: 'analysis.action.historyRecord', fallback: '{historyText}',
-      values: { historyText: historyText(record) },
+      values: { historyText: () => historyText(record) },
     })));
   }
   return section('action_context', 'Action Context', 'context', facts);
 }
 
-function strategySection(actions, presentation, depth) {
+function strategySection(actions, presentation, depth, language) {
   if (!actions.length) return null;
   const { verdict } = presentation;
-  const share = (position) => `${presentation.displayValue(position) ?? Math.round(actions[position].probability * 100)}%`;
+  const share = (position) => wholePercent(
+    presentation.displayValue(position) ?? Math.round(actions[position].probability * 100),
+    language,
+  );
   const displayed = actions
     .map((entry, position) => ({ entry, position, value: presentation.displayValue(position) }))
     .filter(({ value }) => value !== null);
@@ -944,30 +999,35 @@ function strategySection(actions, presentation, depth) {
     .map(({ entry, value }) => fact(`strategy_action_${entry.action.type}_${entry.index}`, {
       label: entry.label, labelKey: 'analysis.fact.actionProbability', value: value / 100, unit: 'probability',
       templateKey: 'analysis.strategy.actionProbability', fallback: '{action}: {probability}.',
-      values: { action: entry.label, probability: `${value}%` },
+      values: { action: entry.label, probability: () => wholePercent(value, language) },
     }));
   const primary = verdict.primary;
   let part;
   if (verdict.kind === 'close') {
     part = textPart('analysis.strategy.close', '{primary} or {secondary} · close ({primaryProbability} and {secondaryProbability}).', {
-      primary: primary.label, primaryProbability: share(primary.index),
-      secondary: verdict.secondary.label, secondaryProbability: share(verdict.secondary.index),
+      primary: primary.label,
+      primaryProbability: () => share(primary.index),
+      secondary: verdict.secondary.label,
+      secondaryProbability: () => share(verdict.secondary.index),
     });
   } else {
     const next = displayed.find(({ position }) => position !== primary.index);
     part = next
       ? textPart('analysis.strategy.dominant.withSecondary', 'This is mostly {primary} ({primaryProbability}), with {secondary} at {secondaryProbability}.', {
-        primary: primary.label, primaryProbability: share(primary.index),
-        secondary: next.entry.label, secondaryProbability: `${next.value}%`,
+        primary: primary.label,
+        primaryProbability: () => share(primary.index),
+        secondary: next.entry.label,
+        secondaryProbability: () => wholePercent(next.value, language),
       })
       : textPart('analysis.strategy.dominant', 'This is mostly {primary} ({primaryProbability}).', {
-        primary: primary.label, primaryProbability: share(primary.index),
+        primary: primary.label,
+        primaryProbability: () => share(primary.index),
       });
   }
   return section('strategy_mix', 'Strategy Mix', 'primary', facts, [part]);
 }
 
-function sizingSection(context, actions) {
+function sizingSection(context, actions, language) {
   const sized = actions.filter((entry) => entry.action.amountBb !== null || entry.action.potFraction !== null);
   if (!sized.length) return null;
   const facts = sized.map((entry, index) => {
@@ -978,8 +1038,8 @@ function sizingSection(context, actions) {
     const fraction = explicitFraction ?? derivedFraction;
     const values = {
       action: entry.label,
-      amount: amount === null ? 'not supplied' : formatSuggestedSizingBb(amount),
-      potShare: fraction === null ? 'not supplied' : percent(fraction, 0),
+      amount: amount === null ? 'not supplied' : () => formatSuggestedSizingBb(amount, { language }),
+      potShare: fraction === null ? 'not supplied' : () => percent(fraction, 0, language),
     };
     return fact(`sizing_${entry.action.type}_${index}`, {
       kind: derivedFraction === null ? 'fact' : 'derived',
@@ -997,7 +1057,7 @@ function sizingSection(context, actions) {
   ]);
 }
 
-function equitySection(trustedFacts, warnings) {
+function equitySection(trustedFacts, warnings, language) {
   const equity = boundedProbability(trustedFacts?.equity?.heroEquity);
   if (equity === null) {
     warnings.push(warning('equity_unavailable', 'No already-calculated trusted equity result was supplied.'));
@@ -1008,7 +1068,7 @@ function equitySection(trustedFacts, warnings) {
     fact('hero_equity', {
       label: 'Hero equity', labelKey: 'analysis.fact.heroEquity', value: equity, unit: 'probability',
       templateKey: 'analysis.equity.hero', fallback: 'The supplied equity result gives Hero {equity}.',
-      values: { equity: percent(equity, 1) },
+      values: { equity: () => percent(equity, 1, language) },
     }),
     fact('equity_method', {
       label: 'Equity method', labelKey: 'analysis.fact.equityMethod', value: method,
@@ -1017,7 +1077,7 @@ function equitySection(trustedFacts, warnings) {
   ]);
 }
 
-function heuristicSampleSection(strategyResult, warnings) {
+function heuristicSampleSection(strategyResult, warnings, language) {
   if (strategyResult?.source !== STRATEGY_SOURCES.HEURISTIC_POSTFLOP) return null;
   const sample = strategyResult?.details?.heuristicSample;
   const sampledEquity = boundedProbability(sample?.eq);
@@ -1034,7 +1094,7 @@ function heuristicSampleSection(strategyResult, warnings) {
       value: sampledEquity, unit: 'probability',
       templateKey: 'analysis.heuristicSample.equity',
       fallback: 'The fallback estimated {equity} showdown share against its assumed opponent range.',
-      values: { equity: percent(sampledEquity, 1) },
+      values: { equity: () => percent(sampledEquity, 1, language) },
     }),
   ];
   if (Number.isInteger(sample.completedSamples) && sample.completedSamples > 0) {
@@ -1061,7 +1121,7 @@ function heuristicSampleSection(strategyResult, warnings) {
       value: boundedProbability(sample.rangeFraction), unit: 'probability',
       templateKey: 'analysis.heuristicSample.rangeFraction',
       fallback: 'The crude assumed range contains {rangeFraction} of currently unblocked starting combinations.',
-      values: { rangeFraction: percent(sample.rangeFraction, 1) },
+      values: { rangeFraction: () => percent(sample.rangeFraction, 1, language) },
     }));
   }
   warnings.push(warning(
@@ -1104,6 +1164,7 @@ export function createAnalysisExplanation({
   authority = 'scenario',
   depth = 'detailed',
   unavailableReason = null,
+  language = undefined,
 } = {}) {
   if (decisionContext !== null && decisionContext !== undefined
     && decisionContext.schemaVersion !== DECISION_CONTEXT_SCHEMA_VERSION) {
@@ -1124,7 +1185,7 @@ export function createAnalysisExplanation({
   if (!['concise', 'detailed'].includes(depth)) throw new TypeError('Analysis depth must be concise or detailed');
 
   const normalizedAuthority = normalizeAuthority(authority);
-  const history = normalizeHistory(trustedFacts?.actionHistory, normalizedAuthority.type);
+  const history = normalizeHistory(trustedFacts?.actionHistory, normalizedAuthority.type, language);
   const truth = historicalStrategyEvidence ? historicalStrategyTruth(historicalStrategyEvidence)
     : projectStrategyTruth({ strategyResult, decisionContext });
   const claimPolicy = truth.claimPolicy;
@@ -1151,27 +1212,27 @@ export function createAnalysisExplanation({
       depth,
     );
     if (handBoard) sections.push(handBoard);
-    const bluffPressure = bluffPressureSection(bluffAnalysisFacts);
+    const bluffPressure = bluffPressureSection(bluffAnalysisFacts, language);
     if (bluffPressure) sections.push(bluffPressure);
-    const blockers = blockerSection(rangeAnalysisFacts);
+    const blockers = blockerSection(rangeAnalysisFacts, language);
     if (blockers) sections.push(blockers);
-    const range = rangeSection(rangeAnalysisFacts, warnings);
+    const range = rangeSection(rangeAnalysisFacts, warnings, language);
     if (range) sections.push(range);
     sections.push(positionSection(decisionContext, trustedFacts));
-    const potOdds = potOddsSection(decisionContext);
+    const potOdds = potOddsSection(decisionContext, language);
     if (potOdds) sections.push(potOdds);
-    const spr = sprSection(decisionContext, warnings);
+    const spr = sprSection(decisionContext, warnings, language);
     if (spr) sections.push(spr);
-    sections.push(actionContextSection(decisionContext, normalizedAuthority, history, depth, warnings));
-    const strategy = strategySection(actions, presentation, depth);
+    sections.push(actionContextSection(decisionContext, normalizedAuthority, history, depth, warnings, language));
+    const strategy = strategySection(actions, presentation, depth, language);
     if (strategy) sections.push(strategy);
-    const heuristicSample = heuristicSampleSection(strategyResult, warnings);
+    const heuristicSample = heuristicSampleSection(strategyResult, warnings, language);
     if (heuristicSample) sections.push(heuristicSample);
     const sizing = claimPolicy.claims[STRATEGY_CLAIMS.ACTION_SIZING]
-      ? sizingSection(decisionContext, actions)
+      ? sizingSection(decisionContext, actions, language)
       : null;
     if (sizing) sections.push(sizing);
-    const equity = equitySection(trustedFacts, warnings);
+    const equity = equitySection(trustedFacts, warnings, language);
     if (equity) sections.push(equity);
   } else {
     warnings.push(warning('decision_context_unavailable', 'DecisionContext v1 is unavailable.'));
@@ -1204,24 +1265,20 @@ export function createAnalysisExplanation({
   const leadingAction = actions[0] || null;
   const headline = reason ? 'Analysis unavailable' : 'Why this action?';
   const headlineKey = reason ? 'analysis.headline.unavailable' : 'analysis.headline.available';
-  const summaryValues = reason ? { reason: UNAVAILABLE_COPY[reason] || UNAVAILABLE_COPY.strategy_unavailable } : {
+  const summaryValues = localizedValues(reason ? { reason: UNAVAILABLE_COPY[reason] || UNAVAILABLE_COPY.strategy_unavailable } : {
     action: leadingAction?.label || strategyResult?.recommendation?.label || 'The recommendation',
-    probability: leadingAction ? `${presentation.displayValue(0) ?? Math.round(leadingAction.probability * 100)}%` : 'unknown',
+    probability: () => (leadingAction
+      ? wholePercent(presentation.displayValue(0) ?? Math.round(leadingAction.probability * 100), language)
+      : 'unknown'),
     source: strategyTruthPresentation(truth).sourceLabel,
-  };
-  const summary = reason
-    ? summaryValues.reason
-    // Provenance is shown once per surface (above the verdict); details live in Provenance & limitations.
-    : formatAnalysisTemplate('{action} leads at {probability}.', summaryValues);
-
-  return deepFreeze({
+  });
+  const explanation = {
     schemaVersion: ANALYSIS_EXPLANATION_SCHEMA_VERSION,
     depth,
     availability,
     unavailableReason: reason,
     headline,
     headlineKey,
-    summary,
     summaryKey: reason ? `analysis.unavailable.${reason}` : 'analysis.summary.recommendation',
     summaryValues,
     sections,
@@ -1238,5 +1295,15 @@ export function createAnalysisExplanation({
       ...normalizedAuthority,
       historyAvailable: history.length > 0,
     },
+  };
+  Object.defineProperty(explanation, 'summary', {
+    get: () => (reason
+      ? summaryValues.reason
+      // Provenance is shown once per surface (above the verdict); details live in Provenance & limitations.
+      : formatAnalysisTemplate('{action} leads at {probability}.', summaryValues)),
+    enumerable: true,
+    configurable: false,
   });
+
+  return deepFreeze(explanation);
 }
