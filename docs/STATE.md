@@ -16,6 +16,7 @@ Goal: docs and truth fixed, design and motion foundation, Training and Settings 
 |---|---|---|
 | SETTINGS-001 | `4ee37f1` | Settings is a workspace: rail, search, modified markers with per-row reset, sticky preview, Language cards, Shortcuts list, Account counts. Owner accepted; full suite 2951 pass, 0 fail; report [SETTINGS-001](archive/agent-reports/2026-11/SETTINGS-001.md); new register rows SETTINGS-* |
 | MERGE-NIGHT-001 | merges `e06d707` … `56170fe` | Night batch merged into `codex/stabilization`: HOME-INVENTORY-001 (`e943a8b`, report only), ASSETS-SHIP-001 (`e75400d`), CSS-DEADTHEME-001 (`fc25e93`), LOCALE-NUMBERS-003 (`be5a782`), TERMS-HEURISTIC-001 (`7fd1b38`), night summary (`0437ac2`). Full suite 2879 tests, 0 fail. Owner acceptance pending |
+| MERGE-ARGON-004 | merge `6fa2971` | Argon batch 4 (A1-A5) merged: I18N-HE-FOLD-001, PS-BB-FIELDS-LOCALE-001, TOOLING-BROWSER-RUNTIME-001, LOCALE-NUMBERS-002, TEST-RUNNER-002; PR CI green, no conflicts. Owner acceptance pending |
 | EXTRACT-QUICKDRILL-001 | `8c31945` | Quick drill is a mounted module; rows QUICKDRILL-* in the register |
 | HOUSEKEEPING-001 | `e884ce6` | CI on PRs, archive of old tooling, repo hygiene |
 | SHELL-002 | `7904a23` | Hub sidebar, hub screens, workspace header with context chip |
@@ -54,7 +55,7 @@ The owner's open decisions (D-23 … D-38, Rust toolchain, Daylight values, Game
 
 ## Waiting on the owner
 
-Branch move (`codex/stabilization` → `main`); RU/HE native review of the Baseline wording; DEAD-THEME-FELT and EXPLAIN-HEURISTIC-WORDS decisions; back up `Riverline_archive`; paste research round 5 into `docs/_incoming/` (not yet present); acceptance of TRAINING-QUICK-001 and of the DS-TOKENS-001 / SHELL-002 / MOTION-FOUNDATION-001 visuals; Rust toolchain yes/no (SOLVER-PILOT-001); the open decisions above.
+Review the Hebrew table in [I18N-HE-FOLD-001](archive/agent-reports/2026-11/I18N-HE-FOLD-001.md); Branch move (`codex/stabilization` → `main`); RU/HE native review of the Baseline wording; DEAD-THEME-FELT and EXPLAIN-HEURISTIC-WORDS decisions; back up `Riverline_archive`; paste research round 5 into `docs/_incoming/` (not yet present); acceptance of TRAINING-QUICK-001 and of the DS-TOKENS-001 / SHELL-002 / MOTION-FOUNDATION-001 visuals; Rust toolchain yes/no (SOLVER-PILOT-001); the open decisions above.
 
 ## Before release
 
