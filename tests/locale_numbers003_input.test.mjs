@@ -14,10 +14,15 @@ const {
   parseLocaleNumber,
 } = await import('../app/src/application/locale-number-format.mjs');
 const { bindLocaleNumberInput } = await import('../app/src/application/locale-number-input.mjs');
+const {
+  mountRangeCalibrationWorkspace,
+} = await import('../app/src/application/range-calibration-workspace.mjs');
+await mountRangeCalibrationWorkspace();
 
 const AMOUNT_FIELD_IDS = [
   'facingSizeNum', 'potSizeNum', 'stackNum', 'anteNum',
   'handStackBb', 'handAnteBb', 'handActionAmountBb', 'trainingStackNum',
+  'personalCollectionBb', 'personalAnteBb', 'calibrationEffectiveStack', 'personalSetupStack',
 ];
 
 const setLanguage = async (language) => {
@@ -75,7 +80,7 @@ test('input formatter: app-language decimal mark, no grouping, no padding, unkno
   for (const unknown of ['', 'abc', null, undefined, Number.NaN]) assert.equal(formatLocaleInputNumber(unknown, 'en'), '');
 });
 
-test('every amount field in Analyze, Hand and Training is a decimal text field bound to the app language', () => {
+test('every amount field in Analyze, Hand, Training and Personal Strategy is a decimal text field bound to the app language', () => {
   for (const id of AMOUNT_FIELD_IDS) {
     const input = app.byId(id);
     assert.ok(input, `${id} exists`);
@@ -87,17 +92,20 @@ test('every amount field in Analyze, Hand and Training is a decimal text field b
 });
 
 test('the remaining number fields are counts, seeds and percentages or the exact-money Home Game fields', () => {
-  // Left on type="number" on purpose (reported in the ticket): integers (counts, seeds, percentages),
-  // the exact-money Home Game fields, and Personal Strategy amounts (outside the four workspaces of this ticket).
+  // Left on type="number" on purpose (reported in the ticket): integers (counts, seeds, percentages)
+  // and the exact-money Home Game fields.
   const allowed = new Set([
     'handTableSize', 'playersNum', 'trainingPlayersNum', 'equitySeed', 'trainingSeedInput', 'trainingOpponentSeed',
     'opponent-facingRaisePercent', 'opponent-freeAggressionPercent', 'opponent-largePriceCallPercent', 'opponent-smallPriceCallPercent',
     'homeGameAnte', 'homeGameBigBlind', 'homeGameInitialBuyIn', 'homeGameSmallBlind',
-    'personalAnteBb', 'personalCollectionBb', 'calibrationEffectiveStack', 'personalSetupStack', 'personalSetupTable',
+    'personalSetupTable',
   ]);
   const remaining = app.$$('input[type="number"]').map((input) => input.id).filter(Boolean);
   assert.deepEqual(remaining.filter((id) => !allowed.has(id)), [], 'no new browser-locale number field appeared');
   assert.deepEqual(remaining.filter((id) => AMOUNT_FIELD_IDS.includes(id)), [], 'no converted field went back to type="number"');
+  for (const moneyId of ['homeGameAnte', 'homeGameBigBlind', 'homeGameInitialBuyIn', 'homeGameSmallBlind']) {
+    assert.equal(app.byId(moneyId)?.getAttribute('type'), 'number', `${moneyId} remains a Home Game money field`);
+  }
 });
 
 test('English app: typing "1,5" or "1.5" is the same value and is shown with a point', async () => {
@@ -202,4 +210,62 @@ test('binding is idempotent and can be undone', () => {
   assert.equal(input.value, '1.5');
   first.dispose();
   assert.equal(Object.prototype.hasOwnProperty.call(input, 'value'), false);
+});
+
+test('Personal Strategy bb amount fields accept "." and "," across EN/RU/HE, support paste, and preserve values across language switches', async () => {
+  await setLanguage('ru');
+  app.byId('calibrationCreateFirstProfile').click();
+  await app.flush();
+  app.byId('calibrationProfileDisplayName').value = 'Setup Locale Test';
+  await typeText('#personalSetupStack', '125,5');
+  assert.equal(app.byId('personalSetupStack').value, '125.5');
+  assert.equal(shownText('#personalSetupStack'), '125,5');
+  await setLanguage('en');
+  assert.equal(shownText('#personalSetupStack'), '125.5');
+  assert.equal(app.byId('personalSetupStack').value, '125.5');
+  await setLanguage('he');
+  assert.equal(shownText('#personalSetupStack'), '125.5');
+  await setLanguage('ru');
+  assert.equal(shownText('#personalSetupStack'), '125,5');
+
+  app.byId('calibrationProfileForm').dispatchEvent(new app.window.Event('submit', { bubbles: true, cancelable: true }));
+  await app.settle();
+  assert.equal(app.window.RiverlineRangeCalibration.getState().selection.context.effectiveStackBb, 125.5);
+  assert.equal(shownText('#calibrationEffectiveStack'), '125,5');
+
+  await typeText('#personalCollectionBb', '0,25');
+  assert.equal(app.byId('personalCollectionBb').value, '0.25');
+  assert.equal(shownText('#personalCollectionBb'), '0,25');
+  assert.equal(app.window.RiverlineRangeCalibration.getState().selection.context.collectionBb, 0.25);
+
+  app.byId('personalAnteType').value = 'big_blind';
+  const anteInput = app.byId('personalAnteBb');
+  nativeValueSetter(anteInput).call(anteInput, '');
+  const pasteEvent = new app.window.Event('paste', { bubbles: true, cancelable: true });
+  pasteEvent.clipboardData = { getData: () => '0.125' };
+  anteInput.dispatchEvent(pasteEvent);
+  anteInput.dispatchEvent(new app.window.Event('change', { bubbles: true }));
+  await app.settle();
+  assert.equal(pasteEvent.defaultPrevented, true);
+  assert.equal(anteInput.value, '0.125');
+  assert.equal(shownText('#personalAnteBb'), '0,125');
+  assert.equal(app.window.RiverlineRangeCalibration.getState().selection.context.anteBb, 0.125);
+
+  await setLanguage('en');
+  assert.equal(shownText('#personalCollectionBb'), '0.25');
+  assert.equal(shownText('#personalAnteBb'), '0.125');
+  assert.equal(shownText('#calibrationEffectiveStack'), '125.5');
+  await typeText('#calibrationEffectiveStack', '45,5');
+  assert.equal(app.byId('calibrationEffectiveStack').value, '45.5');
+  assert.equal(shownText('#calibrationEffectiveStack'), '45.5');
+  assert.equal(app.window.RiverlineRangeCalibration.getState().selection.context.effectiveStackBb, 45.5);
+
+  await setLanguage('he');
+  await typeText('#personalCollectionBb', '0,5');
+  assert.equal(app.byId('personalCollectionBb').value, '0.5');
+  assert.equal(shownText('#personalCollectionBb'), '0.5');
+  await setLanguage('ru');
+  assert.equal(shownText('#personalCollectionBb'), '0,5');
+  assert.equal(shownText('#calibrationEffectiveStack'), '45,5');
+  await setLanguage('en');
 });

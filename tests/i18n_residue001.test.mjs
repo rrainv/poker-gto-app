@@ -64,18 +64,26 @@ test('I18N-RESIDUE-001: application and personal-strategy modules use canonical 
   // Exploit Opportunity & Teacher Language
   assert.match(exploitOpportunityCopy('more_calls_less_fold_pressure', 'ru'), /тонкое валью/);
   assert.match(exploitOpportunityCopy('more_calls_less_fold_pressure', 'ru'), /пасов/);
+  assert.match(exploitOpportunityCopy('more_calls_less_fold_pressure', 'he'), /פולד/);
+  assert.doesNotMatch(exploitOpportunityCopy('more_calls_less_fold_pressure', 'he'), /קיפול/);
   assert.match(exploitOpportunityCopy('more_folds_fewer_value_calls', 'he'), /ריינג'/);
   assert.match(exploitOpportunityCopy('more_folds_fewer_value_calls', 'he'), /ואליו דק/);
+  assert.match(exploitOpportunityCopy('more_folds_fewer_value_calls', 'he'), /פולדים/);
+  assert.match(exploitOpportunityCopy('mixed_response_tradeoff', 'he'), /פולד/);
   assert.equal(exploitOpportunityCopy('value', 'ru'), 'Область валью');
   assert.equal(exploitOpportunityCopy('value', 'he'), 'אזור ואליו');
   assert.match(exploitCopy('threshold', 'ru'), /паса/);
+  assert.match(exploitCopy('threshold', 'he'), /פולד/);
   assert.match(exploitCopy('unchanged', 'ru'), /пасов/);
+  assert.match(exploitCopy('unchanged', 'he'), /הפולדים/);
+  assert.match(exploitCopy('structuralCandidate', 'he'), /פולדים/);
   assert.match(exploitCopy('catcherUnavailable', 'he'), /ריינג'י ואליו/);
   // Showdown value in HE remains ordinary value ("ערך בהצגה"), not poker value bet
   const exploitTeacherRaw = fs.readFileSync('app/src/application/exploit-teacher-language.mjs', 'utf8');
   assert.match(exploitTeacherRaw, /ערך בהצגה/);
   assert.doesNotMatch(exploitTeacherRaw, /фолд/i);
   assert.doesNotMatch(exploitTeacherRaw, /טווח/);
+  assert.doesNotMatch(exploitTeacherRaw, /קיפול/);
 
   // Opponent Learning & Policy Language
   assert.equal(OPPONENT_POLICY_COPY.ru.fold, 'пас');
@@ -91,14 +99,28 @@ test('I18N-RESIDUE-001: application and personal-strategy modules use canonical 
   assert.match(continuationCopy('value_boundary', 'ru'), /валью/);
   assert.match(continuationCopy('value_boundary', 'he'), /ל־ואליו/);
   assert.equal(personalHandCopy('fold', 'ru'), 'Пас');
+  assert.equal(personalHandCopy('fold', 'he'), 'פולד');
   assert.match(personalHandCopy('remainder', 'ru'), /пас/);
+  assert.match(personalHandCopy('remainder', 'he'), /פולד/);
   assert.match(personalHandCopy('assumption', 'he'), /הריינג'/);
 
   // Study Language
   assert.equal(STUDY_COPY.fold[1], 'Пас');
+  assert.equal(STUDY_COPY.fold[2], 'פולד');
   assert.equal(studyCopy('open', 'he'), 'פתח מקור');
   assert.match(studyCopy('exploit', 'he'), /הריינג'ים/);
   assert.match(studyCopy('policyLimit', 'he'), /והירו/);
+
+  // Exploit Review & Node Coach Hebrew fold terminology (I18N-HE-FOLD-001)
+  const exploitReviewRaw = fs.readFileSync('app/src/application/exploit-review-workspace.mjs', 'utf8');
+  assert.match(exploitReviewRaw, /fold:\s*\['Fold',\s*'Пас',\s*'פולד'\]/);
+  assert.doesNotMatch(exploitReviewRaw, /קיפול/);
+  const nodeCoachRaw = fs.readFileSync('app/src/personal-strategy/node-coach.mjs', 'utf8');
+  assert.doesNotMatch(nodeCoachRaw, /קיפול/);
+  assert.match(nodeCoachRaw, /יעד פולד סביר/);
+  assert.match(nodeCoachRaw, /ריינג\\' השוואה, פולד או העלאה/);
+  assert.match(nodeCoachRaw, /מכוונות לפולד/);
+  assert.match(nodeCoachRaw, /לפולדים של ידיים טובות יותר/);
 });
 
 test('I18N-RESIDUE-001: intent-interpretation keeps legacy RU input alias while displaying canonical HE range term', () => {
@@ -135,6 +157,9 @@ test('I18N-RESIDUE-001: locale catalogs enforce RU Hero, HE ואליו, HE mascu
   assert.equal(appTranslations.ru['FOLD'], 'ПАС');
   assert.equal(appTranslations.he['Value'], 'ואליו');
   assert.equal(trainingWorkspaceTranslations.he['Hero to act'], 'תור הירו');
+  assert.equal(trainingWorkspaceTranslations.he['Hand ended by fold. Hero result: {result}.'], 'היד הסתיימה בפולד. התוצאה של הירו: {result}.');
+  assert.equal(trainingWorkspaceTranslations.he['Ended by fold · Hero {result}'], 'הסתיים בפולד · הירו {result}');
+  assert.doesNotMatch(fs.readFileSync('app/src/locales/i18n.js', 'utf8'), /קיפול/);
 
   // HE Open buttons use masculine imperative "פתח ..."
   assert.equal(appTranslations.he['Open Hand'], 'פתח יד');

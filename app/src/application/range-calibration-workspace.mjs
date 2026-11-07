@@ -36,6 +36,7 @@ import {
   personalStrategyStatusLabelKey,
 } from './personal-strategy-presentation.mjs';
 import { formatLocaleNumber } from './locale-number-format.mjs';
+import { bindLocaleNumberInput } from './locale-number-input.mjs';
 
 let mountedWorkspace = null;
 
@@ -183,6 +184,18 @@ export function startFreshPersonalRangeMapping({ view, session, directCount, sco
 function createController(root, application, initialWorkspace, activationStartedAt, profileLoadMs) {
   const query = (selector) => document.querySelector(selector);
   const lifecycle = new AbortController();
+  const amountInputControllers = [
+    '#personalCollectionBb',
+    '#personalAnteBb',
+    '#calibrationEffectiveStack',
+    '#personalSetupStack',
+  ].map((selector) => bindLocaleNumberInput(query(selector), {
+    language: () => window.appLang ?? document.documentElement.lang,
+    view: window,
+  })).filter(Boolean);
+  lifecycle.signal.addEventListener('abort', () => {
+    for (const controller of amountInputControllers) controller.dispose();
+  }, { once: true });
   let workspace = initialWorkspace;
   let selection = initialSelection(workspace);
   let calibrationState = null;
@@ -1098,7 +1111,7 @@ function createController(root, application, initialWorkspace, activationStarted
     }));
   }
 
-  function renderContextControls() {
+  function renderContextControls({ preserveAmountInputs = false } = {}) {
     if (lifecycle.signal.aborted || application.lifecycleScope?.signal.aborted) return;
     const context = selection.context;
     const environment = query('#calibrationEnvironment');
@@ -1126,13 +1139,15 @@ function createController(root, application, initialWorkspace, activationStarted
       option.selected = name === context.heroPosition;
       return option;
     }));
-    stack.value = String(context.effectiveStackBb);
-    query('#personalCollectionBb').value = String(context.collectionBb ?? 0);
-    query('#personalAnteBb').value = String(context.anteBb ?? 0);
+    if (!preserveAmountInputs) {
+      stack.value = String(context.effectiveStackBb);
+      query('#personalCollectionBb').value = String(context.collectionBb ?? 0);
+      query('#personalAnteBb').value = String(context.anteBb ?? 0);
+      stack.removeAttribute('aria-invalid');
+      query('#calibrationStackError').textContent = '';
+    }
     query('#personalAnteType').value = context.anteType ?? 'none';
     for (const id of ['personalCollectionBb', 'personalAnteBb', 'personalAnteType']) query(`#${id}`).disabled = context.environment !== 'custom';
-    stack.removeAttribute('aria-invalid');
-    query('#calibrationStackError').textContent = '';
   }
 
   function contextSpotLabel(contextSelection = selection.context) {
@@ -2950,7 +2965,7 @@ function createController(root, application, initialWorkspace, activationStarted
     window.addEventListener('riverline:languagechange', () => {
       if (calibrationState) renderQuestion();
       else if (root.dataset.calibrationState === 'configured') {
-        renderContextControls();
+        renderContextControls({ preserveAmountInputs: true });
         renderDerivedContext();
         if (personalStrategySubview === 'understanding') void understanding?.load();
         else if (personalStrategySubview === 'teacher') renderRangeTeacher();

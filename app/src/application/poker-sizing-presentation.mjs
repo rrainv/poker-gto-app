@@ -1,3 +1,5 @@
+import { formatLocaleNumber } from './locale-number-format.mjs';
+
 export const SUGGESTED_SIZING_INCREMENT_BB = 0.5;
 
 function finiteNumber(value) {
@@ -5,12 +7,12 @@ function finiteNumber(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-function compactDecimal(value, maximumFractionDigits = 3) {
-  return new Intl.NumberFormat('en-US', {
+function compactDecimal(value, maximumFractionDigits = 3, language) {
+  return formatLocaleNumber(value, {
     maximumFractionDigits,
     minimumFractionDigits: 0,
     useGrouping: false,
-  }).format(value);
+  }, language);
 }
 
 export function roundSuggestedSizingBb(value, incrementBb = SUGGESTED_SIZING_INCREMENT_BB) {
@@ -20,16 +22,17 @@ export function roundSuggestedSizingBb(value, incrementBb = SUGGESTED_SIZING_INC
   return Number((Math.round(numeric / increment) * increment).toFixed(6));
 }
 
-export function formatSuggestedSizingBb(value, { spaced = true } = {}) {
+export function formatSuggestedSizingBb(value, { spaced = true, language } = {}) {
   const rounded = roundSuggestedSizingBb(value);
   if (rounded === null) return null;
-  return `${compactDecimal(rounded, 1)}${spaced ? ' ' : ''}bb`;
+  return `${compactDecimal(rounded, 1, language)}${spaced ? ' ' : ''}bb`;
 }
 
-export function formatExactPokerAmountBb(value, { spaced = false } = {}) {
+export function formatExactPokerAmountBb(value, { spaced = false, language } = {}) {
   const numeric = finiteNumber(value);
   if (numeric === null) return null;
   // Exact/canonical values are display-only here: never quantize them through
   // the human suggested-sizing increment or a decimal precision cap.
-  return `${String(numeric)}${spaced ? ' ' : ''}bb`;
+  const fractionDigits = String(Math.abs(numeric)).split('.')[1]?.length ?? 0;
+  return `${compactDecimal(numeric, Math.max(fractionDigits, 6), language)}${spaced ? ' ' : ''}bb`;
 }

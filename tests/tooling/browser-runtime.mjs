@@ -22,6 +22,43 @@ export async function settle(page) {
   });
 }
 
+const CRITICAL_RESOURCE_TYPES = new Set(['document', 'script', 'stylesheet', 'image', 'font']);
+const EXTENSION_RESOURCE_TYPES = {
+  '.html': 'document', '.htm': 'document',
+  '.js': 'script', '.mjs': 'script', '.cjs': 'script',
+  '.css': 'stylesheet',
+  '.svg': 'image', '.png': 'image', '.jpg': 'image', '.jpeg': 'image', '.webp': 'image', '.gif': 'image', '.ico': 'image',
+  '.woff': 'font', '.woff2': 'font', '.ttf': 'font', '.otf': 'font',
+};
+
+export function safeRequestResourceType(request, response = null) {
+  try {
+    const type = request?.resourceType?.();
+    if (typeof type === 'string' && type) return type.toLowerCase();
+  } catch {
+    // Firefox WebDriver BiDi under puppeteer-core 25.10 throws UnsupportedOperation on resourceType().
+  }
+  try {
+    if (request?.isNavigationRequest?.()) return 'document';
+    const dest = request?.headers?.()?.['sec-fetch-dest']?.toLowerCase?.();
+    if (dest === 'style') return 'stylesheet';
+    if (dest && CRITICAL_RESOURCE_TYPES.has(dest)) return dest;
+    const contentType = response?.headers?.()?.['content-type']?.toLowerCase?.() ?? '';
+    if (contentType.includes('text/html')) return 'document';
+    if (contentType.includes('javascript')) return 'script';
+    if (contentType.includes('text/css')) return 'stylesheet';
+    if (contentType.startsWith('image/')) return 'image';
+    if (contentType.startsWith('font/') || contentType.includes('woff')) return 'font';
+    const pathname = new URL(request?.url?.() ?? '', 'http://127.0.0.1').pathname.toLowerCase();
+    if (pathname === '/' || pathname.endsWith('/')) return 'document';
+    const ext = path.posix.extname(pathname);
+    if (EXTENSION_RESOURCE_TYPES[ext]) return EXTENSION_RESOURCE_TYPES[ext];
+  } catch {
+    // Fall back to 'other' if request/response metadata is unavailable.
+  }
+  return 'other';
+}
+
 export async function createBrowserRuntime({ port = process.env.RIVERLINE_BROWSER_PORT ?? 3000, launch = launchFirefox } = {}) {
   // Reuse the production dev-server implementation in-process. Never adopt/kill an unknown server.
   const server = await startDevWebServer({ port }).catch(error => { throw Error(`Cannot own browser smoke server on port ${port}: ${error.message}. Stop the existing server or set RIVERLINE_BROWSER_PORT=0 for an isolated OS-assigned port.`); });
@@ -37,15 +74,19 @@ export async function createBrowserRuntime({ port = process.env.RIVERLINE_BROWSE
     page.setDefaultTimeout(12000);
     page.setDefaultNavigationTimeout(30000);
     const diagnostics = [], checks = [];
-    const record = (kind, message) => diagnostics.push({ kind, message, flow: currentFlow });
+    const isOptionalAuthConfigProbe = value => /\/auth-config\.js\b/.test(String(value ?? ''));
+    const record = (kind, message) => {
+      if (isOptionalAuthConfigProbe(message)) return;
+      diagnostics.push({ kind, message, flow: currentFlow });
+    };
     let currentFlow = 'startup', artifactDirectory;
     page.on('pageerror', error => record('pageerror', String(error)));
     page.on('console', message => { if (['error', 'warn'].includes(message.type())) record(`console-${message.type()}`, message.text()); });
     page.on('requestfailed', request => {
-      if (['document', 'script', 'stylesheet', 'image', 'font'].includes(request.resourceType())) record('asset', `${request.url()} ${request.failure()?.errorText}`);
+      if (CRITICAL_RESOURCE_TYPES.has(safeRequestResourceType(request))) record('asset', `${request.url()} ${request.failure()?.errorText}`);
     });
     page.on('response', response => {
-      if (response.status() >= 400 && ['document', 'script', 'stylesheet', 'image', 'font'].includes(response.request().resourceType())) record('asset', `${response.status()} ${response.url()}`);
+      if (response.status() >= 400 && CRITICAL_RESOURCE_TYPES.has(safeRequestResourceType(response.request(), response))) record('asset', `${response.status()} ${response.url()}`);
     });
     await page.evaluateOnNewDocument(() => {
       window.__betaRejections = [];
