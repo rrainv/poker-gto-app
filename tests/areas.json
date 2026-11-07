@@ -122,7 +122,9 @@
     "extract_analyze_000_characterization.test.mjs",
     "analyze_open_label001.test.mjs",
     "extract_analyze_001_decision_panel.test.mjs",
-    "extract_analyze_002_matrix_comparison.test.mjs"
+    "extract_analyze_002_matrix_comparison.test.mjs",
+    "extract_analyze_003_characterization.test.mjs",
+    "extract_analyze_003_spot_setup.test.mjs"
    ],
    "sources": [
     "app/src/application/analyze-*",
