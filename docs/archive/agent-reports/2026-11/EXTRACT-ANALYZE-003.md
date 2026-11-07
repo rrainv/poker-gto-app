@@ -107,4 +107,6 @@ None new. AGENTS.md now says `logic.js` is "about 14,900 lines at 2026-11-04"; i
 
 ## 10. Git
 
-Two code commits plus this report, exact file lists, rebased onto `origin/codex/stabilization` `43f3e54`, pushed as a fast-forward. The pre-rebase commits are also on `origin/wip/EXTRACT-ANALYZE-003`. `.codex/config.toml` and `.claude/` were not staged. No pre-existing dirty files. Two scratch worktrees and the screenshots live only in the session scratchpad.
+Two code commits, this report and a manifest fix, exact file lists, rebased onto `origin/codex/stabilization` `43f3e54`, pushed as fast-forwards. The first push (`8018291`) failed the CI "test manifest covers every test file" step in 11 s because the two new test files were not in `tests/areas.json`; the fix (`d2cc63c`, two lines in the analyze area) passed `node tools/run-tests.mjs --check` locally.
+
+CI: run 42393902559 (Node CI, `d2cc63c`) green; Docs tests run 42393902505 green. The pre-rebase commits are also on `origin/wip/EXTRACT-ANALYZE-003`. `.codex/config.toml` and `.claude/` were not staged. No pre-existing dirty files. Two scratch worktrees and the screenshots live only in the session scratchpad.
