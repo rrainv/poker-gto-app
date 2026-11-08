@@ -130,7 +130,14 @@ test('A: HTML slider-pair bounds match the field table used by these tests', () 
   }
 });
 
+// ANALYZE-001b: the setup fields live in the Spot drawer; a user opens it (Edit spot) before typing.
+const openSpotDrawer = (t) => {
+  app.call('spotSetup').openDrawer({ instant: true });
+  t.after(() => { app.call('spotSetup').closeDrawer({ restore: false, instant: true }); });
+};
+
 test('A: every slider-pair field keeps intermediate text exactly and commits only valid parses', async (t) => {
+  openSpotDrawer(t);
   // Ante lives in the Advanced rules disclosure: open it as the user would.
   const advanced = app.byId('toggleAdvanced');
   if (!advanced.classList.contains('on')) await app.click(advanced);
@@ -255,7 +262,8 @@ test('A: typing 2.5 / 6.5 resolves exactly once per update with the typed values
   }
 });
 
-test('A: programmatic facing resets never overwrite a focused draft', async () => {
+test('A: programmatic facing resets never overwrite a focused draft', async (t) => {
+  openSpotDrawer(t);
   const number = app.byId('facingSizeNum');
   const initial = app.byId('facingSize').value;
   number.focus();

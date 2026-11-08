@@ -139,10 +139,10 @@ test('A4/A5: rail card sizes and the compact dead-card row; randomization text u
   assert.ok(header.querySelector('[data-card-clear-command="clear_dead_set"]'));
   const deadSlots = header.querySelector('.card-slots[data-slots="dead"]');
   assert.equal(deadSlots.childElementCount, 0);
-  const meta = rail.querySelector('header + .playbook-spot-meta');
-  assert.ok(meta, 'the spot meta follows the rail header');
-  assert.equal(meta.firstElementChild.id, 'scenarioRandomizeStatus');
-  assert.ok(meta.querySelector('#scenarioRandomizationDetails'));
+  // ANALYZE-001b: the randomization text sits on the sentence row (status) and in the randomize menu (recipe details).
+  const sub = markup.querySelector('#analyzeSpotCard .analyze-spot-sub');
+  assert.ok(sub?.querySelector('#scenarioRandomizeStatus'), 'the status follows the sentence on the sentence row');
+  assert.ok(markup.querySelector('#analyzeSpotCard .analyze-spot-random #scenarioRandomizationMenu #scenarioRandomizationDetails'));
   // The whole-set editor still opens from the dead slots.
   assert.ok(app.$('#gtoMode [data-slots="dead"] [data-card-set-edit="dead"], #gtoMode [data-card-set-edit="dead"]'));
   assert.match(app.call('deadCardSetEditorMarkup', 'dead', [], 2), /data-card-set-edit="dead"/);

@@ -312,7 +312,9 @@ function mountAnalyzeDecisionPanel(container, deps) {
 
   // --- State and gate ----------------------------------------------------
 
-  function setRecommendationState(state) {
+  let lastPickHand = false; // the gate keeps its label across language refreshes
+  function setRecommendationState(state, { pickHand = lastPickHand } = {}) {
+    lastPickHand = pickHand;
     container.dataset.recommendationState = state;
     const teach = el('analysisTeachDecision');
     if (teach) teach.hidden = !['ready', 'mixed', 'warning'].includes(state);
@@ -323,16 +325,18 @@ function mountAnalyzeDecisionPanel(container, deps) {
     el('analysisInputMessage').textContent = state === 'loading' ? t('Loading…') : t('Check the cards and decision context to continue.');
     const edit = el('analysisEditInputs');
     edit.hidden = state === 'loading';
-    const editLabel = deps.isHandMode() ? 'Return to hand' : 'Edit decision inputs';
+    // ANALYZE-001b: with no Hero hand the one primary action is "Pick your hand".
+    const editLabel = deps.isHandMode() ? 'Return to hand' : pickHand ? 'Pick your hand' : 'Edit decision inputs';
     edit.dataset.i18n = editLabel;
     edit.textContent = t(editLabel);
+    inputState.dataset.emptyKind = pickHand ? 'hand' : 'inputs';
   }
 
   // The gate for a decision that cannot be resolved yet. `message` is already
   // localized by the orchestrator; the panel shows it and clears the result.
-  function renderUnavailable({ message, waiting }) {
+  function renderUnavailable({ message, waiting, pickHand = false }) {
     lastResultView = null;
-    setRecommendationState(waiting ? 'waiting' : 'unavailable');
+    setRecommendationState(waiting ? 'waiting' : 'unavailable', { pickHand });
     const inputMessage = el('analysisInputMessage');
     if (inputMessage) inputMessage.textContent = message;
     const best = el('bestAction');
@@ -469,7 +473,7 @@ function mountAnalyzeDecisionPanel(container, deps) {
   function paintResult(view, { refresh }) {
     const { decisionContext, strategyResult, claimPolicy } = view;
     const profile = deps.profileFor(strategyResult);
-    if (!refresh) setRecommendationState(view.state);
+    if (!refresh) setRecommendationState(view.state, { pickHand: false });
     lastResultView = view;
     paintVerdict(strategyResult, { refresh });
     paintTruth(strategyResult, decisionContext);

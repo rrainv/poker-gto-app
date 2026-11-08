@@ -206,12 +206,14 @@ test('no status line above the workspace; the authority meaning stays live and i
 // Structure: two containers, tabs, stepper
 // ---------------------------------------------------------------------------
 
-test('Analyze has exactly two containers: one Spot rail panel and one Result panel', () => {
-  assert.equal(cascaded('#gtoMode .playbook-workspace', 'grid-template-columns'), 'var(--analyze-rail-width) minmax(0, 1fr)');
-  for (const selector of ['.playbook-spot-panel', '#gtoMode .playbook-decision-workspace']) {
-    assert.equal(cascaded(selector, 'border'), '1px solid var(--border-default)', selector);
-    assert.equal(cascaded(selector, 'border-radius'), 'var(--radius-panel)', selector);
-  }
+test('Analyze has exactly two containers: the Spot sentence card (its rail is a drawer) and one Result panel', () => {
+  // ANALYZE-001b: the Spot rail left the grid for a drawer; the rails are gone and the Spot is a v4 card above the Result panel.
+  assert.equal(cascaded('.playbook-context-rail', 'display'), 'none');
+  assert.equal(cascaded('#analyzeSpotCard', 'border'), '1px solid var(--border-default)');
+  assert.equal(cascaded('#analyzeSpotCard', 'border-radius'), '16px');
+  assert.equal(cascaded('#gtoMode .playbook-decision-workspace', 'border'), '1px solid var(--border-default)');
+  assert.equal(cascaded('#gtoMode .playbook-decision-workspace', 'border-radius'), 'var(--radius-panel)');
+  assert.equal(cascaded('.playbook-spot-panel', 'border'), '0', 'inside the drawer the rail panel is flat');
   assert.equal(cascaded('.playbook-support-rail', 'display'), 'none');
   for (const selector of ['#recommendation', '.range-comparison-panel', '#playbookDecisionPathPanel']) {
     assert.equal(cascaded(selector, 'background'), 'none', `${selector} is a section, not a box`);
@@ -239,8 +241,10 @@ test('the Spot rail keeps every control, the readiness/numeric-entry ids and ord
     .map((selector) => spot.querySelector(selector));
   order.forEach((node, index) => assert.ok(node, `control ${index}`));
   order.slice(1).forEach((node, index) => assert.ok(precedes(order[index], node), `${node.id || node.dataset.slots} in order`));
-  const head = spot.querySelector('.playbook-spot-head.playbook-randomize-head');
-  assert.ok(head?.querySelector('#scenarioRandomizeButton'), 'randomize is a quiet rail-header control');
+  // ANALYZE-001b: Random spot and its keep / change-only menu moved to the sentence row.
+  const random = markup.querySelector('#analyzeSpotCard .analyze-spot-random');
+  assert.ok(random?.querySelector('#scenarioRandomizeButton') && random.querySelector('#scenarioRandomizationMenu'), 'randomize is one click away on the sentence row');
+  assert.equal(spot.contains(markup.getElementById('scenarioRandomizeButton')), false, 'and no longer in the drawer header');
   assert.equal(markup.getElementById('sharedControls').classList.contains('playbook-betting-context'), false, 'the center Betting context strip is gone');
 });
 
@@ -278,13 +282,15 @@ test('the street stepper replaces the Action path rail at every width', () => {
     spy.restore();
     app.window.matchMedia = matchMedia;
   }
-  assert.equal(cascaded('#playbookCompactActionPathMount', 'order'), '2');
+  // ANALYZE-001b: the stepper is the underline street stepper inside the Spot sentence card.
+  assert.ok($('#analyzeSpotCard #playbookCompactActionPathMount'), 'the stepper mount is in the sentence card');
   const progress = $('#playbookDecisionPathPanel .path-progress');
   assert.ok(progress);
   assert.equal(cascaded(progress, 'flex-direction'), 'row');
-  const node = $('#playbookDecisionPathPanel .path-step.active .path-node');
-  assert.ok(node, 'an active step is rendered');
-  assert.equal(cascaded(node, 'background'), 'var(--accent-primary)', 'the active step carries the accent');
+  const step = $('#playbookDecisionPathPanel .path-step.active');
+  assert.ok(step, 'an active step is rendered');
+  assert.equal(cascaded(step, 'border-block-end-color'), 'var(--accent-primary)', 'the active street carries the accent underline');
+  assert.equal(cascaded($('#playbookDecisionPathPanel .path-step.active .path-node'), 'display'), 'none', 'no node dots in the underline stepper');
 });
 
 test('the Spot table is a collapsed section of the Result panel; Hand keeps its table open', async () => {
@@ -293,7 +299,9 @@ test('the Spot table is a collapsed section of the Result panel; Hand keeps its 
   assert.equal($('#table-wrapper').classList.contains('collapsed'), false, 'open in Hand');
   await app.navigate('analyze');
   assert.equal($('#table-wrapper').classList.contains('collapsed'), true);
-  assert.equal(cascaded('.playbook-table-toggle', 'order'), '4');
+  // ANALYZE-001b: the table toggle is a grid item of the Result panel, under the decision (column 1, row 3).
+  assert.equal(cascaded('.playbook-table-toggle', 'grid-column'), '1');
+  assert.equal(cascaded('.playbook-table-toggle', 'grid-row'), '3');
 });
 
 // ---------------------------------------------------------------------------

@@ -556,12 +556,22 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
     async click(target, { force = false } = {}) {
       const element = typeof target === 'string' ? document.querySelector(target) : target;
       if (!element) throw new Error(`click: no element for ${target}`);
-      if (!force) {
-        const reason = harness.unclickableReason(element);
-        if (reason) throw new Error(`click: ${describe(element)} is not clickable (${reason})`);
+      // ANALYZE-001b: the Spot controls live in a drawer. A user opens it (Edit spot)
+      // before touching them, so a click on a closed drawer's control opens it first
+      // and closes it again after, leaving the rest of the page reachable.
+      const spotDrawer = element.closest?.('#analyzeSpotDrawer');
+      const opensDrawer = Boolean(spotDrawer?.hasAttribute('hidden')) && !force;
+      if (opensDrawer) harness.call('spotSetup')?.openDrawer({ instant: true });
+      try {
+        if (!force) {
+          const reason = harness.unclickableReason(element);
+          if (reason) throw new Error(`click: ${describe(element)} is not clickable (${reason})`);
+        }
+        element.click();
+        await harness.flush();
+      } finally {
+        if (opensDrawer) harness.call('spotSetup')?.closeDrawer({ restore: false, instant: true });
       }
-      element.click();
-      await harness.flush();
       return element;
     },
     /** Which element (self or ancestor) hides `element`, and how. */

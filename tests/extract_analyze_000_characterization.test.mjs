@@ -65,7 +65,8 @@ test('a1: empty gate: no Hero cards shows "Complete this decision", no strategy 
   assert.equal(byId('analysisInputState').hidden, false, 'the gate is shown');
   assert.equal(app.isShown(byId('analysisInputState')), true);
   assert.equal(text('analysisInputMessage'), t('Choose both Hero cards before requesting strategy.'));
-  assert.equal(text('analysisEditInputs'), t('Edit decision inputs'));
+  // ANALYZE-001b: with no Hero hand the gate's one primary action is Pick your hand (it opens the Spot drawer).
+  assert.equal(text('analysisEditInputs'), t('Pick your hand'));
   assert.equal(byId('analysisEditInputs').hidden, false);
   // The verdict, source and mix say "unavailable"; nothing is invented.
   assert.equal(text('bestAction'), t('Unavailable'));

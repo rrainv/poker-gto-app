@@ -835,84 +835,92 @@
         <button id="togglePlaybookContext" class="ui-button ui-button--quiet playbook-context-toggle" type="button" aria-expanded="true" aria-controls="playbookSpotPanel playbookHandWorkspace" data-i18n="Toggle context controls">Toggle context controls</button>
       </div>
 
-      <div class="app-grid playbook-workspace">
+      <!-- ANALYZE-001b: the Spot is a sentence built only from known inputs; the setup controls (the old Spot rail) live in a drawer opened by Edit spot or a chip. -->
+      <div id="analyzeSpot" class="analyze-spot" data-analyze-spot>
+              <section id="analyzeHandContext" class="playbook-spot-section analyze-hand-context" hidden aria-labelledby="analyzeHandContextTitle">
+                <div class="analyze-hand-context-head">
+                  <h3 id="analyzeHandContextTitle" class="playbook-spot-overline" data-i18n="Hand decision">Hand decision</h3>
+                  <span class="ui-badge" data-tone="neutral" data-i18n="Read-only">Read-only</span>
+                  <button id="analyzeHandContextReturn" class="ui-button" data-variant="secondary" data-size="sm" type="button" data-i18n="Back to Hand">Back to Hand</button>
+                </div>
+                <strong id="analyzeHandContextName" class="analyze-hand-context-name" dir="auto"></strong>
+                <p class="analyze-hand-context-truth" data-i18n="Exact decision facts from the Hand. Editing turns this into a Scenario.">Exact decision facts from the Hand. Editing turns this into a Scenario.</p>
+                <dl id="analyzeHandContextFacts" class="ui-facts analyze-hand-context-facts"></dl>
+                <p id="analyzeHandContextStackNote" class="analyze-hand-context-truth" role="note" hidden></p>
+                <div class="analyze-hand-context-actions">
+                  <button id="analyzeHandContextEdit" class="ui-button" data-variant="quiet" data-size="sm" type="button" aria-expanded="false" aria-controls="scenarioCardsPanel sharedControls scenarioConfigurationPanel" data-i18n="Edit as Scenario">Edit as Scenario</button>
+                </div>
+              </section>
+              <section id="savedSpotViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--spot" hidden aria-labelledby="savedSpotViewerTitle" data-tutorial-anchor="saved-spot-context">
+                <div>
+                  <span class="badge status-badge status-badge--info" data-i18n="Saved Spot">Saved Spot</span>
+                  <strong id="savedSpotViewerTitle" dir="auto">Saved study spot</strong>
+                  <span id="savedSpotViewerTruth">History unavailable</span>
+                </div>
+                <button id="savedSpotCloseButton" class="ui-button ui-button--quiet" type="button" data-i18n="Close saved context">Close saved context</button>
+              </section>
+        <section id="analyzeSpotCard" class="analyze-spot-card" aria-labelledby="analyzeSpotSentence" data-state-surface="derived">
+          <div id="analyzeSpotCards" class="analyze-spot-cards" dir="ltr" role="img" aria-label="Hero hand" data-i18n-aria-label="Hero hand"></div>
+          <div class="analyze-spot-copy">
+            <h2 id="analyzeSpotSentence" class="analyze-spot-sentence" dir="auto"></h2>
+            <div class="analyze-spot-sub">
+              <span id="analyzeSpotChips" class="analyze-spot-chips"></span>
+              <button id="analyzeSpotEdit" class="ui-button ui-button--quiet analyze-spot-edit" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="analyzeSpotDrawer" data-i18n="Edit spot">Edit spot</button>
+              <p id="scenarioRandomizeStatus" class="playbook-randomize-status" role="status" aria-live="polite" aria-atomic="true"></p>
+            </div>
+          </div>
+          <div id="playbookCompactActionPathMount" class="playbook-action-path-mount playbook-action-path-mount--compact analyze-spot-stepper"></div>
+          <div class="analyze-spot-random" data-playbook-scenario>
+      <div class="playbook-randomize-compact">
+        <button id="scenarioRandomizeButton" class="playbook-randomize-trigger" type="button" aria-label="New random spot" data-i18n-aria-label="New random spot" title="New random spot" data-i18n-title="New random spot">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg>
+        </button>
+        <details id="scenarioRandomizationMenu" class="playbook-randomize-menu">
+          <summary class="playbook-randomize-settings-trigger" aria-label="Randomization settings" data-i18n-aria-label="Randomization settings" title="Randomization settings" data-i18n-title="Randomization settings">
+          <span class="playbook-randomize-chevron" aria-hidden="true">&#9662;</span>
+          </summary>
+          <div class="playbook-randomize-popover">
+          <div class="playbook-randomize-settings-title" data-i18n="Keep while generating">Keep while generating</div>
+          <div class="playbook-keep-list" role="group" aria-label="Keep while generating" data-i18n-aria-label="Keep while generating">
+            <button type="button" aria-pressed="false" data-scenario-keep="hero" data-i18n="Hero">Hero</button>
+            <button type="button" aria-pressed="false" data-scenario-keep="board" data-i18n="Board / street">Board / street</button>
+            <button type="button" aria-pressed="false" data-scenario-keep="position" data-i18n="Position">Position</button>
+            <button type="button" aria-pressed="false" data-scenario-keep="stack" data-i18n="Stack">Stack</button>
+            <button type="button" aria-pressed="false" data-scenario-keep="betting_context" data-i18n="Betting context">Betting context</button>
+          </div>
+          <div class="playbook-randomize-settings-title" data-i18n="Change only">Change only</div>
+          <div class="playbook-randomize-menu-items" role="group" aria-label="Change only" data-i18n-aria-label="Change only">
+            <button type="button" data-scenario-randomize-target="hero" data-i18n="New Hero">New Hero</button>
+            <button type="button" data-scenario-randomize-target="board" data-i18n="New board">New board</button>
+            <button type="button" data-scenario-randomize-target="position" data-i18n="New position">New position</button>
+            <button type="button" data-scenario-randomize-target="stack" data-i18n="New stack">New stack</button>
+            <button type="button" data-scenario-randomize-target="betting_context" data-i18n="New betting context">New betting context</button>
+          </div>
+          <details id="scenarioRandomizationDetails" class="playbook-randomization-details" hidden>
+          <summary data-i18n="Randomization details">Randomization details</summary>
+          <dl>
+          <div><dt data-i18n="Changed">Changed</dt><dd id="scenarioRecipeTarget">-</dd></div>
+          <div><dt data-i18n="Seed">Seed</dt><dd id="scenarioRecipeSeed" class="poker-data-token">-</dd></div>
+          <div><dt data-i18n="Version">Version</dt><dd id="scenarioRecipeVersion">-</dd></div>
+          </dl>
+          <button id="scenarioCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button>
+          </details>
+          </div>
+        </details>
+      </div>
+          </div>
+        </section>
 
-        <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration" data-i18n-aria-label="Playbook context and configuration">
-
-          <!-- ANALYZE-COMPOSITION-001: one Spot panel; sections are separated by spacing and hairlines. -->
+        <div id="analyzeSpotScrim" class="analyze-spot-scrim" hidden></div>
+        <aside id="analyzeSpotDrawer" class="analyze-spot-drawer" role="dialog" aria-modal="true" aria-labelledby="playbookSpotTitle" tabindex="-1" hidden>
           <section id="playbookSpotPanel" class="panel playbook-spot-panel" data-playbook-scenario aria-labelledby="playbookSpotTitle">
-            <header class="playbook-spot-head playbook-randomize-head">
+            <header class="playbook-spot-head">
               <h2 id="playbookSpotTitle" class="playbook-spot-title" data-i18n="Spot">Spot</h2>
               <div id="liveContextIndicator" class="live-indicator">
-                    <i class="dot"></i><span id="liveContextText">Live</span>
+                <i class="dot"></i><span id="liveContextText">Live</span>
               </div>
-              <div class="playbook-randomize-compact">
-                <button id="scenarioRandomizeButton" class="playbook-randomize-trigger" type="button" aria-label="New random spot" data-i18n-aria-label="New random spot" title="New random spot" data-i18n-title="New random spot">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg>
-                </button>
-                <details id="scenarioRandomizationMenu" class="playbook-randomize-menu">
-                  <summary class="playbook-randomize-settings-trigger" aria-label="Randomization settings" data-i18n-aria-label="Randomization settings" title="Randomization settings" data-i18n-title="Randomization settings">
-                  <span class="playbook-randomize-chevron" aria-hidden="true">&#9662;</span>
-                  </summary>
-                  <div class="playbook-randomize-popover">
-                  <div class="playbook-randomize-settings-title" data-i18n="Keep while generating">Keep while generating</div>
-                  <div class="playbook-keep-list" role="group" aria-label="Keep while generating" data-i18n-aria-label="Keep while generating">
-                    <button type="button" aria-pressed="false" data-scenario-keep="hero" data-i18n="Hero">Hero</button>
-                    <button type="button" aria-pressed="false" data-scenario-keep="board" data-i18n="Board / street">Board / street</button>
-                    <button type="button" aria-pressed="false" data-scenario-keep="position" data-i18n="Position">Position</button>
-                    <button type="button" aria-pressed="false" data-scenario-keep="stack" data-i18n="Stack">Stack</button>
-                    <button type="button" aria-pressed="false" data-scenario-keep="betting_context" data-i18n="Betting context">Betting context</button>
-                  </div>
-                  <div class="playbook-randomize-settings-title" data-i18n="Change only">Change only</div>
-                  <div class="playbook-randomize-menu-items" role="group" aria-label="Change only" data-i18n-aria-label="Change only">
-                    <button type="button" data-scenario-randomize-target="hero" data-i18n="New Hero">New Hero</button>
-                    <button type="button" data-scenario-randomize-target="board" data-i18n="New board">New board</button>
-                    <button type="button" data-scenario-randomize-target="position" data-i18n="New position">New position</button>
-                    <button type="button" data-scenario-randomize-target="stack" data-i18n="New stack">New stack</button>
-                    <button type="button" data-scenario-randomize-target="betting_context" data-i18n="New betting context">New betting context</button>
-                  </div>
-                  </div>
-                </details>
-              </div>
+              <button id="analyzeSpotClose" class="ui-button ui-button--quiet analyze-spot-close" type="button" aria-label="Close" data-i18n-aria-label="Close" title="Close" data-i18n-title="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </header>
-            <!-- Amendment 2: randomization feedback is quiet secondary text under the rail header. -->
-            <div class="playbook-spot-meta">
-              <p id="scenarioRandomizeStatus" class="playbook-randomize-status" role="status" aria-live="polite" aria-atomic="true"></p>
-              <details id="scenarioRandomizationDetails" class="playbook-randomization-details" hidden>
-                <summary data-i18n="Randomization details">Randomization details</summary>
-                <dl>
-                  <div><dt data-i18n="Changed">Changed</dt><dd id="scenarioRecipeTarget">-</dd></div>
-                  <div><dt data-i18n="Seed">Seed</dt><dd id="scenarioRecipeSeed" class="poker-data-token">-</dd></div>
-                  <div><dt data-i18n="Version">Version</dt><dd id="scenarioRecipeVersion">-</dd></div>
-                </dl>
-                <button id="scenarioCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button>
-              </details>
-            </div>
-
-            <section id="analyzeHandContext" class="playbook-spot-section analyze-hand-context" hidden aria-labelledby="analyzeHandContextTitle">
-              <div class="analyze-hand-context-head">
-                <h3 id="analyzeHandContextTitle" class="playbook-spot-overline" data-i18n="Hand decision">Hand decision</h3>
-                <span class="ui-badge" data-tone="neutral" data-i18n="Read-only">Read-only</span>
-                <button id="analyzeHandContextReturn" class="ui-button" data-variant="secondary" data-size="sm" type="button" data-i18n="Back to Hand">Back to Hand</button>
-              </div>
-              <strong id="analyzeHandContextName" class="analyze-hand-context-name" dir="auto"></strong>
-              <p class="analyze-hand-context-truth" data-i18n="Exact decision facts from the Hand. Editing turns this into a Scenario.">Exact decision facts from the Hand. Editing turns this into a Scenario.</p>
-              <dl id="analyzeHandContextFacts" class="ui-facts analyze-hand-context-facts"></dl>
-              <p id="analyzeHandContextStackNote" class="analyze-hand-context-truth" role="note" hidden></p>
-              <div class="analyze-hand-context-actions">
-                <button id="analyzeHandContextEdit" class="ui-button" data-variant="quiet" data-size="sm" type="button" aria-expanded="false" aria-controls="scenarioCardsPanel sharedControls scenarioConfigurationPanel" data-i18n="Edit as Scenario">Edit as Scenario</button>
-              </div>
-            </section>
-
-            <section id="savedSpotViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--spot" hidden aria-labelledby="savedSpotViewerTitle" data-tutorial-anchor="saved-spot-context">
-              <div>
-                <span class="badge status-badge status-badge--info" data-i18n="Saved Spot">Saved Spot</span>
-                <strong id="savedSpotViewerTitle" dir="auto">Saved study spot</strong>
-                <span id="savedSpotViewerTruth">History unavailable</span>
-              </div>
-              <button id="savedSpotCloseButton" class="ui-button ui-button--quiet" type="button" data-i18n="Close saved context">Close saved context</button>
-            </section>
-
             <section id="scenarioCardsPanel" class="playbook-spot-section playbook-cards-panel" data-tutorial-anchor="scenario-cards" aria-labelledby="scenarioCardsTitle">
               <h3 id="scenarioCardsTitle" class="playbook-spot-overline" data-i18n="Cards">Cards</h3>
               <p id="scenarioCardsHint" class="sr-only" data-i18n="Click a card slot to choose from the available deck.">Click a card slot to choose from the available deck.</p>
@@ -1080,6 +1088,15 @@
               </div>
             </details>
           </section>
+        </aside>
+      </div>
+
+
+      <div class="app-grid playbook-workspace">
+
+        <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration" data-i18n-aria-label="Playbook context and configuration">
+
+
 
 
           <section id="playbookHandWorkspace" class="panel playbook-hand-workspace" data-playbook-hand hidden aria-hidden="true">
@@ -1181,9 +1198,13 @@
 
             <section class="panel recommend playbook-primary-decision" id="recommendation" data-recommendation-state="ready" aria-live="polite" aria-atomic="false" data-tutorial-anchor="playbook-recommendation">
 
-              <div id="analysisInputState" class="workspace-empty-state" hidden>
-                <h2 data-i18n="Complete this decision">Complete this decision</h2>
-                <p id="analysisInputMessage"></p>
+              <!-- ANALYZE-001b: the designed empty state; with no Hero hand its one primary action is Pick your hand (opens the Spot drawer). -->
+              <div id="analysisInputState" class="workspace-empty-state analyze-empty" data-empty-kind="inputs" hidden>
+                <span class="analyze-empty-cards" aria-hidden="true"><i class="riverline-card-back" data-card-size="full"></i><i class="riverline-card-back" data-card-size="full"></i></span>
+                <div class="analyze-empty-copy">
+                  <h2 data-i18n="Complete this decision">Complete this decision</h2>
+                  <p id="analysisInputMessage"></p>
+                </div>
                 <button id="analysisEditInputs" class="ui-button ui-button--primary" type="button" data-i18n="Edit decision inputs">Edit decision inputs</button>
               </div>
 

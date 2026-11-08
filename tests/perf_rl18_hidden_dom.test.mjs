@@ -83,7 +83,10 @@ test('the card picker builds its deck only while open and detaches it on close',
   assert.equal(deck().children.length, 0);
 });
 
-test('picker keeps focus in the draft deck and restores it to the originating set editor on close', async () => {
+test('picker keeps focus in the draft deck and restores it to the originating set editor on close', async (t) => {
+  // ANALYZE-001b: the set editors live in the Spot drawer; a user keeps it open while the picker is up.
+  app.call('spotSetup').openDrawer({ instant: true });
+  t.after(() => { app.call('spotSetup').closeDrawer({ restore: false, instant: true }); });
   // Protects: open focuses the first enabled (or drafted) deck card; select
   // keeps focus on the chosen card; apply and cancel return focus to the set
   // editor that opened the picker.

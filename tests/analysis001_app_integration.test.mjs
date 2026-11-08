@@ -271,13 +271,15 @@ test('expanded Playbook analysis owns the full Decision-grid row at desktop widt
   // The Explain panel spans the whole Decision row. (Superseded: the >=1200px
   // grid became a block flow in which the panel is full-width; it still
   // spans every column wherever the row is a grid.)
+  // ANALYZE-001b: between 1280 and 1499 px #recommendation is display: contents, so the hero spans the
+  // page and the tiles and Explain sit beside the matrix; the spans-the-row contract holds at wide desktop.
   const primary = panel.closest('.playbook-primary-decision');
   assert.ok(primary);
-  const display = css.cascaded(primary, 'display', { width: 1440 });
+  const display = css.cascaded(primary, 'display', { width: 1600 });
   assert.ok(['block', 'grid'].includes(display), display);
-  assert.equal(css.cascaded(panel, 'grid-column', { width: 1440 }), '1 / -1');
+  assert.equal(css.cascaded(panel, 'grid-column', { width: 1600 }), '1 / -1');
   assert.equal(css.cascaded(panel, 'min-width'), '0');
-  assert.ok(['auto', '100%'].includes(css.cascaded(panel, 'width', { width: 1440 })));
+  assert.ok(['auto', '100%'].includes(css.cascaded(panel, 'width', { width: 1600 })));
 });
 
 test('unavailable analysis remains compact while retaining only useful facts and provenance', () => {

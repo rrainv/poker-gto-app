@@ -2775,7 +2775,11 @@ function syncCanonicalDecisionDisplay(decisionContext) {
 function renderUnavailableStrategy(resolution) {
   const message = playbookResolutionMessage(resolution);
   const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
-  decisionPanel()?.renderUnavailable({ message, waiting });
+  // ANALYZE-001b: a Scenario without Hero cards gets the designed "Pick your hand" empty state.
+  const pickHand = resolution?.mode !== 'hand'
+    && resolution?.reason === 'scenario_not_ready'
+    && resolution?.readiness?.reasons?.[0]?.fields?.[0] === 'heroCards';
+  decisionPanel()?.renderUnavailable({ message, waiting, pickHand });
   if (resolution?.mode === 'hand') {
     renderUnavailableActionPath(message, waiting ? 'waiting' : 'unavailable');
   } else if (typeof renderPath === 'function') {
@@ -6042,9 +6046,9 @@ function decisionPanel() {
   return analyzeDecisionPanelController ?? mountDecisionPanel();
 }
 
-// EXTRACT-ANALYZE-003: the Spot rail (randomize menu, setup controls, control
-// authority, readiness focus) lives in application/analyze-spot-setup.mjs,
-// mounted on #playbookSpotPanel. The update scheduler (PERF-001), the
+// EXTRACT-ANALYZE-003 / ANALYZE-001b: the Spot (sentence, drawer, randomize menu,
+// setup controls, control authority, readiness focus) lives in
+// application/analyze-spot-setup.mjs, mounted on #analyzeSpot. The update scheduler (PERF-001), the
 // slider-pair kit and the single strategy resolution stay here; the dependencies
 // are late-bound so page-function spies and overrides apply.
 let analyzeSpotSetupController = null;
@@ -6052,13 +6056,13 @@ let analyzeSpotSetupMountReported = false;
 
 function mountSpotSetup() {
   if (analyzeSpotSetupController) return analyzeSpotSetupController;
-  const container = $('#playbookSpotPanel');
+  const container = $('#analyzeSpot');
   const module = window.RiverlineAnalyzeSpotSetup;
   if (!container || !module) {
     if (!analyzeSpotSetupMountReported) {
       analyzeSpotSetupMountReported = true;
       console.error('[Riverline Analyze] Spot setup could not be mounted:',
-        !container ? '#playbookSpotPanel is missing' : 'window.RiverlineAnalyzeSpotSetup is missing');
+        !container ? '#analyzeSpot is missing' : 'window.RiverlineAnalyzeSpotSetup is missing');
     }
     return null;
   }
@@ -6098,6 +6102,8 @@ function mountSpotSetup() {
     streetLabel: (street) => reviewStreetLabel(street),
     displayCard: (card) => displayCard(card),
     formatFixed: (value, digits) => formatUiFixed(value, digits),
+    formatNumber: (value) => formatUiNumber(value, { maximumFractionDigits: 1 }),
+    cardMarkup: (card) => cardMarkup(card),
     expandContext: () => {
       if ($('#gtoMode')?.classList.contains('is-context-collapsed')) $('#togglePlaybookContext')?.click();
     },
@@ -6969,6 +6975,8 @@ async function updateContext(reason = 'Context updated') {
   }
   app.playbookMode = playbookResolution.mode;
   app.playbookResolution = playbookResolution;
+  // ANALYZE-001b: the sentence is built from the inputs already read for this update.
+  spotSetup()?.renderSpot({ snapshot: inputSnapshot, resolution: playbookResolution });
 
   if (playbookResolution.status !== 'available' || !playbookResolution.decisionContext) {
     app.decisionContext = null;
